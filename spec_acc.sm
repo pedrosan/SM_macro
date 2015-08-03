@@ -1,0 +1,431 @@
+#-------------------------------------------------------------------------------
+# prepare_data  : asks for prefix string of simulation run
+prepare_data 101
+
+	reset_graph
+
+	define times_gauss "0.02 0.05 0.07 0.2 0.5 2.0 4 6 8 10"
+	define times_pl   " 1.0 1.25 1.5 1.75 2 2.25 2.5 2.75 3"
+
+	set in_times = < $1 >
+
+	define case ? < What test run [e.g. gf1] : > 
+	define 9 $case
+
+        data $9_input_parameters.dat
+
+	define R      read  1 1
+	define delta  read 35 1
+	define z      read 36 1
+
+        define n_spec read 13 1           # number of spectra saved for each R/c
+        define t_evol read 11 1           # it is in units of R/c
+	define n_tot $($n_spec*$t_evol)   # Total number of spectra
+
+	## define n_nu   read 37 1
+	define spec_dt $(1.0/$n_spec)
+
+	echo "+-------------------------------------------------"
+	echo "| Total simulation duration in R/C : "$t_evol
+	echo "| N spectra in each R/c            : "$n_spec
+	echo "| N spectra total                  : "$n_tot
+	echo "| dT between spectra               : "$spec_dt
+	echo "+-------------------------------------------------"
+
+	set temp_times = in_times
+	set in_times = in_times     if( temp_times <= $t_evol )
+
+	if( dimen(in_times) < dimen(temp_times) ) {
+	   echo " WARNING: the requested times exceed the simulation duration "
+	   echo "          The list has been reduced and restricted to < T_tot"
+	}
+
+	set temp_idx = in_times/$spec_dt 
+	set idx_in_times = int( in_times/$spec_dt + 0.5)
+
+	print < in_times temp_idx idx_in_times >
+
+#-------------------------------------------------------------------------------
+# plot_seds  : asks for prefix string of simulation run
+plot_seds 101
+
+	prepare_data $1
+
+	define n_nu 200
+	define pi   3.1415
+
+	define 9 $case
+	data $9_out2_spectra.dat
+	read < x 1 y 2 >
+
+	define whatplot ? < nLn or nIn [1|2] : > 
+
+	if( $whatplot == 1 ) { 
+            set x = x + lg($delta/(1.+$z))
+            set y = y + x + 3.*lg($delta) + lg(16.*$pi*$pi/3.) + 2.*lg($R)
+	    define laby "\\nu L_\\nu [erg/s]"
+
+	    limits 0 7 -10 4
+	    limits 1 7 -8 -4
+	    limits 2 5.2 -8 -4
+	} else {
+            set x = x 
+            set y = y + x 
+	    define laby "\\nu I_\\nu"
+
+	    limits 0 7 -1 6 
+	}
+
+	# limits 8 28 40 48 
+	if( substr('$9',0,1) == 'g' ) { 
+	   range  0 13 
+	   limits 8 27 y
+	}
+	if( substr('$9',0,1) == 'p' ) { 
+	   range  0 7
+	   limits 9 26 y
+	}
+
+	ctype 0
+	ticksize 0 0 0 0 
+	box 
+	xlabel \\nu [Hz]
+	ylabel $laby
+
+        ctype 4
+	lweight 2
+	ltype 3
+
+	#---------------------------------------
+	set ii=1,dimen(x)
+	set cv = < 2 3 4 5 6 7 8 >
+	set lv = < 0 2 1 >
+
+        lweight 3
+        ctype 7
+	##do 2=1,$n_tot {
+	define j 0 
+	foreach 2 idx_in_times {
+	   define i1 $( ($2-1)*200 + 1)
+	   define i2 $( $2*200 )
+	   #define ic $( $2 % 7 )
+	   #define il $( $2 % 3 )
+	   define ic $( $j % 7 )
+	   define il $( $j % 3 )
+	   echo " ["$2 ":" $(in_times[$j]) "] CTYPE: "$(cv[$ic])"   LTYPE: "$(lv[$il])
+	   ctype $(cv[$ic])
+	   ltype $(lv[$il])
+	   connect x y    if( ii >= $i1 && ii <= $i2 )
+
+	   set x2p = x    if( ii >= $i1 && ii <= $i2 )
+	   set y2p = y    if( ii >= $i1 && ii <= $i2 )
+	   define nf $(sprintf('%.3f',$(in_times[$j])))
+	   print $9"_sed_t="$nf.dat '  %7.3f  %7.3f\n' < x2p y2p >
+
+	   define j $($j+1)
+	}
+	#---------------------------------------
+	
+	ctype 2 
+	ltype 0
+	lweight 3
+
+#-------------------------------------------------------------------------------
+# plot_electrons
+plot_electrons 101
+
+	prepare_data $1
+
+	define 9 $case
+	data $9_out3_electrons.dat
+	read < x 1 y 2 >
+
+	define whatplot ? < Plot N(g) or g^2*N(g) [1|2] : > 
+
+	if( $whatplot == 1 ) { 
+	    limits 0 7 -10 4
+	    limits 1 7 -8 -4
+	    limits 2 5.2 -8 -4
+	    if( substr('$9',0,1) == 'g' ) { limits 2 5.2 -8 -4 }
+	    if( substr('$9',0,1) == 'p' ) { limits 0 7 -10 4 }
+	} else {
+	    limits 0 7 -1 6 
+	}
+
+	# expand 2
+	ltype 0
+	lweight 3
+        ctype 0
+	box
+	xlabel Log \gamma
+	ylabel Log N(\gamma)
+
+        # ctype = {0 20 20 100 0 155 255 200 255} + 256*({0 100 160 0 160 250 180 50 40}+256*{0 200 200 155 40 20 0 40 90})
+	
+	if( $whatplot == 2 ) { 
+	  set y = y + 2.*x
+	}
+
+	#---------------------------------------
+	set ii=1,dimen(x)
+	#set cv = < 8 2 3 4 5 6 7 >
+	#set lv = < 1 0 2 >
+	set cv = < 2 3 4 5 6 7 8 >
+	set lv = < 0 2 1 >
+
+        lweight 3
+        ctype 7
+	## do 2=1,$n_tot {
+	define j (0)
+	foreach 2 idx_in_times {
+	   define i1 $( ($2-1)*200 + 1)
+	   define i2 $( $2*200 )
+	   #define ic $( $2 % 7 )
+	   #define il $( $2 % 3 )
+	   define ic $( $j % 7 )
+	   define il $( $j % 3 )
+	   echo " ["$2 ":" $(in_times[$j]) "] CTYPE: "$(cv[$ic])"   LTYPE: "$(lv[$il])
+	   ctype $(cv[$ic])
+	   ltype $(lv[$il])
+	   connect x y    if( ii >= $i1 && ii <= $i2 )
+
+	   set x2p = x    if( ii >= $i1 && ii <= $i2 )
+	   set y2p = y    if( ii >= $i1 && ii <= $i2 )
+	   define nf $(sprintf('%.3f',$(in_times[$j])))
+	   print $9"_ele_t="$nf.dat '  %7.3f  %7.3f\n' < x2p y2p >
+
+	   define j $($j+1)
+	}
+	#---------------------------------------
+	
+	ctype 2 
+	ltype 0
+	lweight 3
+
+#-------------------------------------------------------------------------------
+# plot_lc <case string>
+plot_lc 1
+
+	reset_graph
+
+	define case $1
+	define nuvec ? < give frequencies (log) for l.c. : >
+	
+	set nuvec = < $nuvec >
+
+	#--------------------------------------------------
+	# reads some parameters from code input file
+	#--------------------------------------------------
+        data $1_input_parameters.dat
+	define R      read  1 1
+	define delta  read 35 1
+	define z      read 36 1
+
+	define R ($R*1.0)
+
+	define t_evol read 11 1
+	define n_spec read 13 1
+
+	define n_nu   read 37 1
+
+	## define tstep $( ($R/3e10)/$n_spec ) ##/$delta*(1.+$z) )
+	define tstep $( ($R/3e10)/$n_spec/$delta*(1.+$z) )
+	set xlc = 1,$($n_spec*$t_evol)
+	set xlc = (xlc - 0.5)*$tstep
+
+	echo "+------------------------------------------------"
+	echo "| Total duration in units of R/C : "$t_evol
+	echo "| Total duration in obs. seconds : "$($n_spec*$t_evol*$tstep)
+	echo "| Number of slices per R/C       : "$n_spec
+	echo "| Total number of spectra        : "$($n_spec*$t_evol)
+	echo "+------------------------------------------------"
+
+	define n_nu 200
+	define pi   3.1415
+
+	#--------------------------------------------------
+	# loads SEDs
+	#--------------------------------------------------
+	data $1_out2_spectra.dat
+	read < x 1 y 2 >
+        set x = x + lg($delta/(1.+$z))
+        set y = y + x + 3.*lg($delta) + lg(16.*$pi*$pi/3.) + 2.*lg($R)
+
+	set x1=pop(-1,x)
+	set x2=pop(1,x)
+	set dx=x2-x1
+	set dx=dx  if(dx>0)
+	vecminmax dx dx_a dx_b
+	if( $(($dx_b-$dx_a)/$dx_a) < 0.01 ) {
+	   echo " frequency array has regular spacing "
+	   echo "    "$dx_a "  " $dx_b
+	   define test_dx $($dx_a/2.01)
+	}
+
+	do 9=0,dimen(nuvec)-1 { 
+	   define nu1 $(nuvec[$9])
+	   set dnu   = abs(x - $nu1)
+	   set ylc$9 = y  if( dnu <= $test_dx )
+	}
+	
+	set test_ylc = ylc0
+	do 9=1,dimen(nuvec)-1 { 
+	   set test_ylc = test_ylc CONCAT ylc$9
+	}
+
+	limits xlc test_ylc
+	ctype 0
+	ticksize 0 0 0 0 
+	box 1 2 4 0
+	xlabel Time [s]  (obs.)
+	ylabel luminosity [erg/s]
+
+	#---------------------------------------
+	set ii=1,dimen(x)
+	set cv = < 3 4 5 6 7 >
+	# set lv = < 1 0 2 >
+
+        lweight 3
+	ltype 0
+	expand 1.1
+	do 2=0,dimen(nuvec)-1 {
+	   define ic $( $2 % 5 )
+	   echo " ["$2" = "$(nuvec[$2])"] C: "$ic
+	   ctype $(cv[$ic])
+	   connect xlc ylc$2
+
+	   angle -90
+	   relocate ( $($gx2 + 500) $($gy2 - 3000*$2) )
+	   putlabel 6 $(nuvec[$2])
+	   angle 0
+	}
+	#---------------------------------------
+	expand 1.5
+	
+	ctype 2 
+	ltype 0
+
+	relocate ( $($gx2 + 500) $gy1 )
+	angle -90
+	putlabel 4 $1
+	angle 0
+
+	ctype 0
+	limits $($fx1/($R/3e10)/(1.+$z)*$delta) $($fx2/($R/3e10)/(1.+$z)*$delta)  test_ylc
+	# limits $($fx1/($R/3e10)) $($fx2/($R/3e10))  test_ylc
+	box 4 4 1 4
+
+##-------------------------------------------------------------------------------
+dslk	lines 10001 10500
+	read {x 1 y 2}
+        lweight 4
+        ctype 0
+	connect x y
+
+##-------------------------------------------------------------------------------
+ueiwu	lines 20001 20500
+	read {x 1 y 2}
+        lweight 4 
+	#ltype 3
+        ctype 2
+	connect x y
+	#
+	lines 30001 30500
+	read {x 1 y 2}
+        lweight 4 
+	#ltype 3
+        ctype 3
+	connect x y
+	#
+	lines 40001 40500
+	read {x 1 y 2}
+        lweight 4 
+	#ltype 3
+        ctype 4
+	connect x y
+	#
+	lines 50001 50500
+	read {x 1 y 2}
+        lweight 4 
+	#ltype 3
+        ctype 5
+	connect x y
+	#
+	lines 60001 60500
+	read {x 1 y 2}
+        lweight 4
+        ctype 6
+	connect x y
+	#
+	lines 70001 70500
+	read {x 1 y 2}
+        lweight 4
+        ctype 7
+	connect x y
+	#
+	lines 80001 80500
+	read {x 1 y 2}
+        lweight 4 
+	#ltype 3
+        ctype 8
+	connect x y
+	#
+	lines 90001 90500
+	read {x 1 y 2}
+        lweight 4 
+	#ltype 3
+        ctype 1
+	connect x y
+	#
+	lines 100001 100500
+	read {x 1 y 2}
+        lweight 4 
+	#ltype 3
+        ctype 2
+	connect x y
+
+#-------------------------------------------------------------------------------
+# plot_seds_sssc
+plot_seds_sssc
+
+	reset_graph
+
+	define delta ? < Doppler factor : >
+	define z     ? <       redshift : >
+
+	# define case ? < What test run [e.g. gf1] : > 
+	# define 1 $case
+
+        # data $1_input_sSSC.dat
+        data input_sSSC.dat
+	define R      read  1 1
+
+	echo " R : "$R
+
+	define n_nu 400
+	define pi   3.1415
+
+	# data $1_sSSC_out2_spectra.dat
+	data sSSC_out2_spectra.dat
+	read < x 1 y 2 >
+
+        set x = x + lg($delta/(1.+$z))
+        set y = y + x + 3.*lg($delta) + lg(16.*$pi*$pi/3.) + 2.*lg($R)
+
+	limits 8 28 y
+	limits 8 28 28 40
+	ctype 0
+	ticksize 0 0 0 0 
+	box 
+	xlabel \\nu [Hz]
+	ylabel luminosity [erg/s]
+
+        ctype 4
+	lweight 2
+	ltype 3
+	   connect x y  
+	ctype 2 
+	ltype 0
+	lweight 3
+
+#-------------------------------------------------------------------------------

@@ -1,0 +1,178 @@
+#-------------------------------------------------------------------------------
+# Fitting formula for Cold+Hot+Baryon universes with arbitrary curvature
+# and cosmological constant.
+#
+# This defines the macro TFmdm_transfer_function, which takes a series
+# of arguments involving the wave number and cosmological parameters.
+#
+# There are two ways to use this routine.  The first is to input a
+# vector of wavenumbers (argument 1) and scalars for the other inputs.
+# This will compute the transfer function at various wave numbers for a
+# single cosmology.  The second way to use the macro is to input a scalar
+# wavenumber and vectors for the cosmological inputs.  This will allow
+# you to compute intermediate quantities as a function of cosmology.
+# Basically, the only requirement is that each input either be a scalar
+# or a vector, with all vectors having the same length.
+#
+# Version 1.0 -- Original version
+# Version 1.1 -- 04/09/98 -- Corrected typo in tf_zerobaryon calculation.
+#		 	  Other "real" TF's were unaffected.
+#-------------------------------------------------------------------------------
+# TFmdm_transfer_function 8 
+# Input: $1 Vector of wave numbers, in units of h Mpc^-1.
+#	 $2 Hubble constant, in units of 100 km/s/Mpc
+#	 $3 Omega_0, including CDM, HDM, and baryons 
+#	 $4 Omega_b
+#	 $5 Omega_hdm
+#	 $6 Omega_Lambda
+#	 $7 Redshift to output
+#	 $8 Number of degenerate neutrino species
+# Output: tf_cb -- The transfer function (sans baryon oscillations), density
+#		weighted between CDM and baryons.
+# 	  tf_cbnu -- The transfer function (sans baryon oscillations), density
+#		weighted between CDM and baryons and HDM.
+#	  tf_master -- The time-independent master TF underlying these forms.
+#	  tf_zerobaryon -- The transfer function that would result if 
+#		all the matter were CDM.
+#
+# While the input is given in h Mpc^-1, all internal computations are 
+# done simply in Mpc^-1.  All scales computed below are in Mpc!
+# The temperature of the CMB is assumed to be 2.728.
+#
+TFmdm_transfer_function 8 
+
+        set kk = $1*$2		# We'll use Mpc^-1 below.
+        set hubble = $2
+        set omega_matter  = $3
+        set omega_baryon = $4
+        set omega_hdm = $5
+        set omega_lambda = $6
+        set redshift = $7
+        set degen_hdm = $8
+        # The numbered inputs are not used below; only the above names are.
+        
+        # Set the temperature of the CMB
+        set theta_cmb = 2.728/2.7 
+        # This routine would crash if baryons or neutrinos were zero, so don't allow:
+        set omega_baryon = (omega_baryon==0)?0.0001:omega_baryon
+        set omega_hdm = (omega_hdm==0)?0.0001:omega_hdm
+        
+        set omega_curv = 1-omega_matter-omega_lambda
+        set omhh = omega_matter*hubble**2
+        set obhh = omega_baryon*hubble**2
+        set onhh = omega_hdm*hubble**2
+        set f_baryon = omega_baryon/omega_matter
+        set f_hdm = omega_hdm/omega_matter
+        set f_cdm = 1-f_baryon-f_hdm
+        set f_cb = f_cdm+f_baryon
+        set f_bnu = f_baryon+f_hdm
+        
+        # Compute the equality scale
+        set z_equality = 25000*omhh*theta_cmb**-4	# Actually 1+z_eq
+        set yy = z_equality/(1+redshift)
+        set k_equality = 0.0746*omhh*theta_cmb**-2
+        set qq = kk/omhh*theta_cmb**2
+        
+        # Compute the drag epoch and sound horizon
+        set z_drag_b1 = 0.313*omhh**-0.419*(1+0.607*omhh**0.674)
+        set z_drag_b2 = 0.238*omhh**0.223
+        set z_drag = 1291*omhh**0.251/(1+0.659*omhh**0.828)*(1+z_drag_b1*obhh**z_drag_b2)
+        set y_drag = z_equality/(1+z_drag)
+        
+        set sound_horizon_fit = 44.5*ln(9.83/omhh)/sqrt(1+10*obhh**0.75)
+        
+        # Compute the free-streaming &amp; infall growth functions
+        set p_c = 0.25*(5-sqrt(1+24*f_cdm))
+        set p_cb = 0.25*(5-sqrt(1+24*f_cb))
+        
+        set y_freestream = 17.2*f_hdm*(1+0.488*f_hdm**(-7/6))*(degen_hdm*qq/f_hdm)**2
+        
+        set omega_denom = omega_lambda+(1+redshift)**2*(omega_curv+omega_matter*(1+redshift))
+        set omega_lambda_z = omega_lambda/omega_denom 
+        set omega_matter_z = omega_matter*(1+redshift)**3/omega_denom
+        set growth_k0 = yy*2.5*omega_matter_z/(omega_matter_z**(4/7)-omega_lambda_z+(1+omega_matter_z/2)*(1+omega_lambda_z/70))
+        
+        set growth_to_z0 = yy*2.5*omega_matter/(omega_matter**(4/7)-omega_lambda+(1+omega_matter/2)*(1+omega_lambda/70))
+        set growth_to_z0 = growth_k0/growth_to_z0
+        
+        set growth_cb = (1+(growth_k0/(1+y_freestream))**0.7)**(p_cb/0.7)*growth_k0**(1-p_cb)
+        set growth_cbnu = (f_cb**(0.7/p_cb)+(growth_k0/(1+y_freestream))**0.7)**(p_cb/0.7)*growth_k0**(1-p_cb)
+        
+        # Compute the master function
+        set alpha_nu_part1 = f_cdm/f_cb*(5-2*(p_c+p_cb))/(5-4*p_cb)*(1+y_drag)**(p_cb-p_c)
+        set alpha_nu_part2 = (1-0.553*f_bnu+0.126*f_bnu**3)/(1-0.193*f_hdm**0.5*degen_hdm**0.5+0.169*f_hdm*degen_hdm**0.2)
+        set alpha_nu_part3 = 1+(p_c-p_cb)/2*(1+1/(3-4*p_c)/(7-4*p_cb))/(1+y_drag)
+        set alpha_nu = alpha_nu_part1*alpha_nu_part2*alpha_nu_part3
+        
+        set alpha_gamma = sqrt(alpha_nu)
+        set gamma_eff =omhh*(alpha_gamma+(1-alpha_gamma)/(1+(kk*sound_horizon_fit*0.43)**4))
+        set qq_eff = qq*omhh/gamma_eff
+        
+        set beta_c = 1/(1-0.949*f_bnu)
+        set tf_sup_L = ln(2.71828+1.84*beta_c*alpha_gamma*qq_eff)
+        set tf_sup_C = 14.4+325/(1+60.5*qq_eff**1.11)
+        #set tf_sup_C = 14.4+386/(1+69.9*qq_eff**1.08)
+        set tf_sup = tf_sup_L/(tf_sup_L+tf_sup_C*qq_eff**2)
+        
+        set qq_nu = 3.92*qq*sqrt(degen_hdm/f_hdm)
+        set max_fs_correction = 1+1.2*f_hdm**0.64*degen_hdm**(0.3+0.6*f_hdm)/(qq_nu**-1.6+qq_nu**0.8)
+        
+        set tf_master = tf_sup*max_fs_correction
+        
+        # Now compute the CDM+HDM+baryon transfer functions
+        set tf_cb = tf_master*growth_cb/growth_k0
+        set tf_cbnu = tf_master*growth_cbnu/growth_k0
+        
+        # Compute what would have happened were all matter CDM
+        set tf_zero_L = ln(2.71828+1.84*qq)
+        set tf_zero_C = 14.4+325/(1+60.5*qq**1.11)
+        # Error in original code:
+        #set tf_zero_C = 14.4+325/(1+60.5*qq)
+        set tf_zerobaryon = tf_zero_L/(tf_zero_L+tf_zero_C*qq**2)
+
+#-------------------------------------------------------------------------------
+# plot <h> <Omega_0> <Omega_b> <Omega_hdm> <Omega_Lambda> <z> <N_nu>
+# Input: $1 Vector of wave numbers, in units of h Mpc^-1.
+#	 $2 Hubble constant, in units of 100 km/s/Mpc
+#	 $3 Omega_0, including CDM, HDM, and baryons 
+#	 $4 Omega_b
+#	 $5 Omega_hdm
+#	 $6 Omega_Lambda
+#	 $7 Redshift to output
+#	 $8 Number of degenerate neutrino species
+plot 7 
+
+	location 6000 31000 9000 28000
+	define smallscale ? < smaller scale (Mpc) : >
+	define largescale ? < larger  scale (Mpc) : >
+
+	set scale=$smallscale,$largescale,0.01
+	set k=1/scale
+	set lg_k = lg(k)
+
+	TFmdm_transfer_function k $1 $2 $3 $4 $5 $6 $7
+
+	foreach 9 < cb cbnu > { 
+	  set tf_$9_ratio = tf_$9/tf_zerobaryon
+	  set lg_tf_$9_ratio = lg(tf_$9_ratio)
+	}
+
+	reset_graph
+
+	limits lg_k $(lg(0.02)) $(lg(1.4))
+	ticksize -1 0 -1 0 
+	box
+	xlabel k [h Mpc^{-1}]
+	ylabel T(k)/T_{CDM}(k)
+
+	relocate ( $($gx1) $($gy2 + 1000) )
+	putlabel 6 z=$6
+
+	ltype 3
+	ctype 3 connect lg_k lg_tf_cb_ratio
+	ctype 5 connect lg_k lg_tf_cbnu_ratio
+
+	ltype 0
+	ctype 2 
+
+#-------------------------------------------------------------------------------

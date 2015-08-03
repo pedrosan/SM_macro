@@ -1,0 +1,78 @@
+#---------------------------------------------------------------------------
+# color_map 12
+color_map 12
+
+	#---------------------------------------------
+	# Color stuff
+	#
+        set colours = CTYPE()
+        set cnames  = CTYPE(STRING)
+
+	if($?1) { 
+           set c1dum = 0,255,$(1024/$1)
+           set c2dum = c1dum*0 + 255
+           set c3dum = c1dum*0 
+	} else {
+	   define 1
+           set c1dum = 0,255,$(1024/$1)
+           set c2dum = c1dum*0 + 255
+           set c3dum = c1dum*0 
+	}
+
+	if(!$?2) { 
+	    echo -----------------------------------
+	    echo ** Available color palettes: 
+	    echo [-1] B&W   ( high is white )
+	    echo  [0] B&W   ( high is black )
+	    echo  [1] rainbow (black--->yellow)
+	    echo  [2] rainbow (yellow--->black)
+	    echo  [3] 'heat'
+	    echo  [4] cyan-->blue
+	    define mappa ? { Which Palette ? }
+	} else {
+	    define mappa $2 
+	} 
+
+	if ( $mappa == -1 ) {
+	   set coldum = 0,255,$(256/$1)
+           ctype = (1 + 256 + 256*256)*coldum
+	}
+
+	if ( $mappa == 0 ) {
+	   set coldum = 0,255,$(256/$1)
+           ctype = (1 + 256 + 256*256)*(255-coldum)
+	}
+
+	if ( $mappa == 1 ) {
+           set blue  = c1dum       CONCAT (255-c1dum) CONCAT c3dum       CONCAT c1dum
+           set green = c3dum       CONCAT c3dum       CONCAT c1dum       CONCAT c2dum
+           set red   = c3dum       CONCAT c1dum       CONCAT c2dum       CONCAT c2dum 
+        
+           ctype    = red + 256*green + 256*256*blue
+           set cvec = red + 256*green + 256*256*blue
+
+           set coldum = red
+	}
+
+	if ( $mappa == 2 ) {
+           set blue  = (255-c1dum) CONCAT c3dum       CONCAT c1dum       CONCAT (255-c1dum)
+           set green = c2dum       CONCAT (255-c1dum) CONCAT c3dum       CONCAT c3dum
+           set red   = c2dum       CONCAT c2dum       CONCAT (255-c1dum) CONCAT c3dum 
+        
+           ctype    = red + 256*green + 256*256*blue
+           set cvec = red + 256*green + 256*256*blue
+
+           set coldum = red
+	}
+
+	if ( $mappa == 3 ) {
+	   set coldum = 0,255,$(256/$1)
+           ctype = 255 + 256*(255-coldum)
+	}
+
+	if ( $mappa == 4 ) {
+	   set coldum = 0,255,$(256/$1)
+           ctype = 0 + 256*(255-coldum) + 256*256*255
+	}
+
+#---------------------------------------------------------------------------

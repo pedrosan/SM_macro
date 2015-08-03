@@ -1,0 +1,1082 @@
+#-------------------------------------------------------------------------------
+# plot_jb_mw
+plot_jb_mw
+
+        foreach 9 < radq   radha  radhb  \
+                    mmq    mmha   \ 
+                    irasa  irasb  \ 
+                    irq    irha   \ 
+                    opta   optb   \ 
+                    uvq    uvha   \ 
+                    euvq   euvb   euvc   \ 
+                    mxq   >  {
+           points n$9 f$9 
+        }
+        
+        foreach 9 < mxha xha xhb xhc xspec > {
+           points n$9 f$9 
+        }
+        
+        foreach 9 < osse comp gq gha ghb > {
+           points n$9 f$9 
+        }
+        
+        foreach 9 < wha whb wqb > {
+           points n$9 f$9 
+        }
+        
+        # these are read from file and are several-points spectra
+        foreach 9 < xq x95 > 
+           # points n$9 f$9 
+        }
+        
+#-------------------------------------------------------------------------------
+# jb_mw_data
+jb_mw_data
+
+	define doasca (0)
+
+        #-------------------------------------------------------------------------------
+        # from file: mrk421_march19.kumac
+        # READ Commands:
+        # vec/read nsync,fsync m4synch.dat
+        # vec/read nssc,fssc m4ic.dat
+        # vec/read nxq,fxq,exq asca_sparse_may93.dat
+        # vec/read nxha,fxha,exha asca_sparse_may94.dat
+        # vec/read nx95,fx95 asca_april95_raw.dat
+        # * vec/read nxha,fxha,exha asca_may94.dat
+        # vec/read je,jf,jem,jep,jfm,jfp jeff_convert.dat
+        # vec/read energy,elow,ehigh,flux,fluxerr rebillot_spectrum_perrun.dat
+        # * vec/read nw96,fw96,fwm96,fwp96 whipple_may7_raw.dat
+        # vec/read nw96b,fw96b,fwm96b,fwp96b whipple_may15_raw.dat
+        # vec/read nw98,fw98,fwm98,fwp98 whipple_april98_raw.dat
+        # vec/read nh98,fh98,fhm98 hegra_april98.dat
+        #
+        #  +  nsync,fsync                     m4synch.dat
+        #  +  nssc,fssc                       m4ic.dat
+        #  +  nxq,fxq,exq                     asca_sparse_may93.dat
+        #  +  nxha,fxha,exha                  asca_sparse_may94.dat
+        #  +  nx95,fx95                       asca_april95_raw.dat
+        #  + (nxha,fxha,exha                  asca_may94.dat)
+        #  +  je,jf,jem,jep,jfm,jfp           jeff_convert.dat
+        #  +  energy,elow,ehigh,flux,fluxerr  rebillot_spectrum_perrun.dat
+        #  + (nw96,fw96,fwm96,fwp96           whipple_may7_raw.dat)
+        #  +  nw96b,fw96b,fwm96b,fwp96b       whipple_may15_raw.dat
+        #  +  nw98,fw98,fwm98,fwp98           whipple_april98_raw.dat
+        #  +  nh98,fh98,fhm98                 hegra_april98.dat
+        #-------------------------------------------------------------------------------
+
+        #===========================================================
+        # Data from Macomb, 1995
+        #
+        # Michigan: April 10,11,12 1994 (quiescent)
+        # (radio)
+        # (erg cm^-2 s^-1)
+        #
+        set nradq = < 9.68 9.90 10.16 > 
+        set fradq = < 3.7e-14 5.04e-14 8.85e-14 > 
+        set eradq = < 0.34e-14 0.80e-14 0.15e-14 > 
+        
+        #---------------------------------------
+        # Michigan: May 10,19,14 1994 (high-a)
+        # (radio)
+        # (erg cm^-2 s^-1)
+        #
+        set nradha = < 9.68 9.90 10.16 >
+        set fradha = < 3.55e-14 4.05e-14 7.54e-14 >
+        set eradha = < 0.05e-14 0.48e-14 0.29e-14 >
+        
+        #---------------------------------------
+        # Michigan: May 20,16, April 29 1995 (high-b)
+        # (radio)
+        # (erg cm^-2 s^-1)
+        #
+        set nradhb = < 9.68 9.90 10.16 >
+        set fradhb = < 3.02e-14 5.36e-14 8.41e-14 >
+        set eradhb = < 0.096e-14 0.32e-14 0.29e-14 >
+        
+        #---------------------------------------
+        # JCMT: April 11,1994 (quiescent)
+        # (mm)
+        #
+        set nmmq = < 11.18 11.36 11.44 >
+        set fmmq = < 4.2e-13 5.08e-13 6.28e-13 >
+        set emmq = < 0.9e-13 0.69e-13 0.82e-13 >
+        
+        #---------------------------------------
+        # JCMT: May 15,1994 (high-a)
+        # (mm)
+        #
+        set nmmha = < 11.18 11.36 11.44 >
+        set fmmha = < 3.75e-13 5.54e-13 8.19e-13 >
+        set emmha = < 0.0 0.0e-13 2.46e-13 >
+        
+        #---------------------------------------
+        # IRAS: (state a)
+        #
+        set nirasa = < 13.398 13.079 12.477 >
+        set firasa = < 3.22e-11 2.11e-11 2.16e-11 >
+        set eirasa = < 0.85e-11 0.41e-11 0.33e-11 >
+        
+        #---------------------------------------
+        # IRAS: (state b)
+        #
+        set nirasb = < 13.398 13.079 12.699 12.477 >
+        set firasb = < 2.25e-11 1.14e-11 0.905e-11 1.08e-11 >
+        set eirasb = < 0.38e-11 0.23e-11 0.110e-11 0.20e-11 >
+        
+        #---------------------------------------
+        # UKIRT: May 10, 1994 (quiescent)
+        # (IR)
+        #
+        set nirq = < 14.14 14.26 14.39 >
+        set firq = < 5.13e-11 6.73e-11 7.78e-11 >
+        set eirq = < 0.92e-11 1.42e-11 0.80e-11 >
+        
+        #---------------------------------------
+        # UKIRT: May 17, 1994 (high-a)
+        # (IR)
+        #
+        set nirha = < 14.14 14.26 14.39 >
+        set firha = < 4.22e-11 5.54e-11 4.27e-11 >
+        set eirha = < 0.8e-11 1.05e-11 1.24e-11 >
+        
+        #---------------------------------------
+        # IR-Opt: March 1977, Cruz-Gonzalez and Huchra, 1984
+        #
+        set nopta = < 14.91 14.84 14.74 14.63 14.38 14.26 14.13 13.92 13.46 >
+        set fopta = < 0.816e-10 0.950e-10 1.08e-10 1.18e-10 1.11e-10 0.995e-10 0.721e-10 0.358e-10 0.0755e-10 >
+        set eopta = < 1.e-12 1.e-12 1.e-12 1.e-12 1.e-12 1.e-12 1.e-12 1.e-12 1.e-12 >
+        
+        #---------------------------------------
+        # IR-Opt: Feb,March 1984, Makino et al. 1984, Mt. Lemon+UKIRT+NASA IR
+        #
+        set noptb = < 14.91 14.84 14.74 14.63 14.52 14.38 14.26 14.13 13.94 13.89 13.80 13.46 >
+        set foptb = < 5.40e-11 5.24e-11 5.01e-11 4.76e-11 4.08e-11 3.81e-11 3.69e-11 3.06e-11 2.48e-11 2.18e-11 2.08e-11 1.45e-11 >
+        set eoptb = < 1.e-13 1.e-13 1.e-13 1.e-13 1.e-13 1.e-13 1.e-13 1.e-13 1.e-13 1.e-13 1.e-13 1.e-13  >
+        
+        #---------------------------------------
+        # IUE: April 11, 1994 (quiescent)
+        # (UV)
+        #
+        set nuvq = < 15.36  >
+        set fuvq = < 8.97e-11 >
+        set euvq = < 0.52e-11 >
+        
+        #---------------------------------------
+        # IUE: May 15, 1994 (high)
+        # (UV)
+        #
+        set nuvha = < 15.36  >
+        set fuvha = < 8.97e-11 >
+        set euvha = < 0.52e-11 >
+        
+        #---------------------------------------
+        # EUVE: All sky survey (November 1992) 
+        #
+        set neuvq = < 16.61 >
+        set feuvq = < 3.19e-11 >
+        set eeuvq = < 0.58e-11 >
+        
+        #---------------------------------------
+        # EUVE: April, 1995 (high-b)
+        #
+        set neuvb = < 16.57 >
+        set feuvb = < 2.8e-10 >
+        set eeuvb = < 0.082e-10 >  # ???
+        
+        #---------------------------------------
+        # EUVE: April 2-12, 1994 (high-c) 
+        #
+        set neuvc = < 16.57 >
+        set feuvc = < 1.1e-10 >
+        set eeuvc = < 0.01e-10 > # ??? 
+        
+	############################################################
+	###  X-ray bands
+	############################################################
+        #---------------------------------------
+        # ASCA: May, 1993 (quiescent) From corrected Macomb et al. 1995
+        #
+        set nmxq = < 17.23     17.73     18.38    >
+        set fmxq = < 5.74e-11  2.84e-11  5.13e-12 >
+        set emxq = < 1.00e-11  0.49e-11  0.90e-12 >
+        
+        #---------------------------------------
+        # ASCA: May, 1994 (high-a) From corrected Macomb et al. 1995
+        #
+        set nmxha = < 17.23     17.60     18.38    >
+        set fmxha = < 1.93e-10  2.09e-10  1.06e-10 >
+        set emxha = < 0.39e-10  0.43e-10  0.33e-10 >
+        
+        #---------------------------------------
+        # ASCA: April, 1995 (high-b)
+        #
+        # I think that I made a mistake here originally.
+        # I ploted the integral power between 2 and 10 at the median energy
+        # i.e. 1.8 at 3.64keV, but this value is really appropriate at 2keV.
+        # Now I first convert the integral power and spectral index to a diff.
+        # spectrum dN/dE=N E^-2.5, solving for N by 
+        # erg cm^-2 s^-1 = integral(N E E^-2.5) etc.
+        #
+        set nxhb = < 17.945 >
+        set fxhb = < 1.21e-10 >
+        set exhb = < 0.29e-10 >
+        
+	if( $doasca ) { 
+        #===========================================================
+	# "real" spectra, multiple data points
+        #---------------------------------------
+        # ASCA: May, 1993 (quiescent)
+        #  asca_sparse_may93.dat
+        #
+        data asca_sparse_may93.dat
+        read < nxq 1 fxq 2 exq 3 >
+        # set nxq=10.0**(nxq)
+        
+        #---------------------------------------
+        # ASCA: May, 1994 (high-a)
+        #  asca_sparse_may94.dat
+        #
+        data asca_sparse_may94.dat
+        read < nxha 1 fxha 2 exha 3 >
+        # set nxha=10.0**(nxha)
+        
+        #---------------------------------------
+        # ASCA: April 1995, From Takahashi et al. 1999
+        #  asca_april95_raw.dat
+        #
+        # set ex95(21) R 0.0
+        data asca_april95_raw.dat
+        read < nx95 1 fx95 2 > 
+        set nx95 =  -9.0 + (nx95 - 396.0)*0.005788
+        set fx95 = -10.0 + (fx95 - 598.0)*0.003909
+        set nx95 = 2.41797e26 * 10.0**(nx95)
+        set fx95 =  10.0**(fx95)
+
+        # set nxha(195) R
+        # set fxha(195) R
+        # set exha(195) R
+        # vec/read nxha,fxha,exha asca_may94.dat
+	}
+        
+        #===========================================================
+        # XTE: May 1996 big flare - highest x-ray point which came before flare
+        #
+        # Initially MS gave me 5.8x10^-10 
+        set nxhc = < 17.97   >
+        set fxhc = < 3.7e-10 >
+        set exhc = < 0.0e-10 >
+       
+        # XTE: May 1996 big flare - MS says the index is 2.3+-0.5
+        # between 2 and 10 keV - calculate the "bow-tie" region
+        #
+        set nxspec = < 17.68    18.38    18.38    17.68    17.68    17.68    18.38 >
+        set fxspec = < 4.45e-10 2.54e-10 2.79e-10 4.18e-10 4.45e-10 4.31e-10 2.66e-10 >
+      
+	############################################################
+	###  Gamma ray bands
+	############################################################
+        # OSSE:
+        #
+        set nosse = < 19.30   19.79   > # 20.22
+        set fosse = < 9.9e-12 3.2e-11 > # 2.0e-10
+        set eosse = < 0.0     0.0     > # 0.0 
+      
+        #---------------------------------------
+        # COMPTEL: 1998 
+        #
+        set ncomp  = < 81.0 83.0 86.3 90.0 >
+        set fcomp  = < 92.5 90.0 87.0 90.0 >
+        set fucomp = < 92.5 90.0 90.5 93.0 >
+        set ecomp  = < 0.0 0.0 0.0 0.0 >
+        # set xecomp = < 0.0 >
+        set ncomp  = 10.0**( 11.0 + 0.13850*(ncomp-14.0))
+        set fcomp  = 10.0**(-13.0 + 0.04838*(fcomp-20.0))
+        set fucomp = 10.0**(-13.0 + 0.04838*(fucomp-20.0))
+        set ecomp  = fucomp-fcomp
+      
+        #---------------------------------------
+        # EGRET: June 1991 - April 1994 (quiescent)
+        #
+        set ngq = < 22.08    22.42    22.90    23.48    24.16  >
+        set fgq = < 2.07e-11 1.64e-11 2.97e-11 2.64e-11 7.06e-11 >
+        set egq = < 0.89e-11 0.41e-11 0.52e-11 0.69e-11 3.63e-11 >
+     
+        #---------------------------------------
+        # EGRET: May 10 - 17 (high-a)
+        #
+        # set ngha = < 22.20     22.68     23.20     24.12  > # As in table not figure
+        set ngha = < 22.20     22.68     23.20     23.9     > # As in figure not table
+        set fgha = < 4.75e-11  3.27e-11  6.36e-11  2.24e-10 >
+        set egha = < 0.0       0.0       2.48e-11  1.37e-10 >
+        
+        #---------------------------------------
+        # EGRET: May 10 - 17 (high-b)
+        #
+        set nghb = < 23.24   >
+        set fghb = < 2.8e-11 >
+        set eghb = < 0.0     >
+        
+        #---------------------------------------
+        # Whipple: 1994 May 15 (high-a)
+        #
+        set nwha = < 25.974    >
+        set fwha = < 13.80e-11 >
+        set ewha = < 1.67e-11  >
+        
+        #---------------------------------------
+        # Whipple: 1995 April 26 (high-b)
+        #
+        set nwhb = < 25.898    >
+        set fwhb = < 7.71e-11  >
+        set ewhb = < 0.474e-11 >
+        
+        #---------------------------------------
+        # Whipple: 1994/1995 average
+        #
+        set nwqb = < 25.885   >
+        set fwqb = < 3.13e-11 >
+        set ewqb = < 0.14e-11 >
+        
+#---------------------------------------
+# jb_whipple_data_2001
+jb_whipple_data_2001
+
+        #===========================================================
+        # Whipple: May 1996 ``big flare'' spectrum
+        #  jeff_convert.dat
+        #
+        data jeff_convert.dat 
+        read < je 1 jf 2 jem 3 jep 4 jfm 5 jfp 6 > 
+        set nwhc  = 26.38 + log10(je)
+        set npwhc = log10(je+jep) - log10(je)
+        set nmwhc = log10(je) - log10(je-jem)
+        set fwhc  = 1.602e-4*je*je*jf
+        set fpwhc = 1.602e-4*je*je*jfp
+        set fmwhc = 1.602e-4*je*je*jfm
+        set nwhc  = 10.0**(nwhc)
+        set npwhc = 10.0**(npwhc)
+        set nmwhc = 10.0**(nmwhc)
+        
+        #===========================================================
+        # Whipple March 19 2001
+        # Rebillot Analysis
+        #  rebillot_spectrum_perrun.dat
+        # In TeV, photons/m^2/s/TeV
+        #
+        data rebillot_spectrum_perrun.dat
+        read < energy 1 elow 2 ehigh 3 flux 4 fluxerr 5 > 
+        set fw  = (flux)    * energy**2.0 * 1.6037e-04
+        set ew  = (fluxerr) * energy**2.0 * 1.6037e-04 
+        set fwp = (flux + fluxerr) * energy**2.0 * 1.6037e-04
+        set fwm = (flux - fluxerr) * energy**2.0 * 1.6037e-04
+        set nw  = energy * 2.41797e26
+        set nwp = energy + ehigh
+        set nwm = energy - elow
+        set nwp=nwp * 2.41797e26
+        set nwm=nwm * 2.41797e26
+
+        #---------------------------------------
+        # Whipple March 19 2001
+        #
+        # In TeV, photons/m^2/s/TeV
+        #
+        set energy = < 0.383     0.562    0.824     1.774 >
+        set flux   = < 6.14e-06  1.10e-06 5.88e-07  4.65e-08 >
+        set errory = < 1.44e-06  5.55e-07 2.06e-07  3.72e-08 >
+        
+        set ew01a = (errory) * energy**2.0 * 1.6037e-04 
+        set fw01a = (flux)   * energy**2.0 * 1.6037e-04
+        set nw01a = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 b
+        #
+        # In TeV, photons/m^2/s/TeV
+        #
+        set energy = < 0.383     0.562    0.824         1.774      2.612    >
+        set flux   = < 5.88e-06  1.21e-06 1.45e-06     1.72e-07    5.21e-08 >
+        set errory = < 2.22e-06  8.85e-07 3.67e-07     6.75e-08    2.90e-08 >
+        
+        set fw01b = (flux)   * energy**2.0 * 1.6037e-04
+        set ew01b = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01b = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 c
+        #
+        # In TeV, photons/m^2/s/TeV
+        #
+        set energy = <  0.383     0.562      0.824     1.211    1.774      2.612    >
+        set flux   = < 6.08e-06   3.22e-06   9.69e-07  5.00e-07 8.58e-08   1.26e-07 >
+        set errory = < 2.45e-06   1.02e-06   3.53e-07  1.67e-07 6.22e-08   3.72e-08 >
+        
+        set fw01c = (flux) * energy**2.0 * 1.6037e-04
+        set ew01c = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01c = energy * 2.41797e26
+       
+        #---------------------------------------
+        # Whipple March 19 2001 d
+        #
+        # In TeV, photons/m^2/s/TeV
+        #
+        set energy = < 0.383     0.562      0.824     1.211     1.774      2.612     3.828    > 
+        set flux   = < 5.88e-06  3.30e-06   1.11e-06   6.35e-07  2.04e-07  1.04e-07  2.70e-08 > 
+        set errory = < 2.39e-06  9.41e-07   3.49e-07   1.64e-07  6.11e-08  3.94e-08  1.26e-08 > 
+      
+        set fw01d = (flux) * energy**2.0 * 1.6037e-04
+        set ew01d = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01d = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 e
+        #
+        # In TeV, photons/m^2/s/TeV
+        # set 2a: (run number 17431   corresponds to  6.85 h )
+        #
+        set energy = <  0.383     0.562     0.824      1.211     1.774    2.606      3.828    5.623    > 
+        set flux   = <  6.47e-06 5.15e-06  1.21e-06   8.08e-07  2.89e-07  1.04e-07   4.95e-08 6.51e-09 > 
+        set errory = < 2.43e-06  1.01e-06  3.53e-07   1.75e-07   6.86e-08 3.94e-08   1.62e-08 4.56e-09 > 
+        
+        set fw01e = (flux)   * energy**2.0 * 1.6037e-04
+        set ew01e = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01e = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 f
+        #
+        # In TeV, photons/m^2/s/TeV
+        # set 2b:  (run number 17432   corresponds to 7.35 h  )
+        #
+        set energy = < 0.383     0.562     0.824      1.211     1.774    2.606      3.828 >
+        set flux   = < 9.41e-06  4.02e-06 2.18e-06  1.17e-06   2.04e-07  1.71e-07   3.15e-08 >
+        set errory = < 2.59e-06  1.05e-06 4.08e-07  2.02e-07   7.18e-08  4.17e-08   1.75e-08 >
+        
+        set fw01f = (flux)   * energy**2.0 * 1.6037e-04
+        set ew01f = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01f = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 g
+        #
+        # In TeV, photons/m^2/s/TeV
+        # set 3: (run number 17433   corresponds to   7.8 h )
+        #
+        set energy = < 0.383     0.562     0.824      1.211     1.774    2.606     3.828    5.623     8.260 > 
+        set flux   = < 2.41e-05 8.68e-06   3.56e-06   1.17e-06  3.65e-07 1.93e-07 5.85e-08  2.61e-08  5.35e-09 > 
+        set errory = < 2.92e-06 1.17e-06  4.57e-07    2.10e-07  8.15e-08  4.31e-08 2.07e-08 9.12e-09 3.93e-09 > 
+        
+        set fw01g = (flux)   * energy**2.0 * 1.6037e-04
+        set ew01g = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01g = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 h
+        #
+        # In TeV, photons/m^2/s/TeV
+        # set 4: (run number  17434    corresponds to   8.3 h    )
+        #
+        set energy = < 0.383     0.562     0.824      1.211     1.774    2.606     3.828     5.623     8.260 >
+        set flux   = < 2.59e-05  1.05e-05  3.87e-06  1.02e-06   6.54e-07 2.23e-07  7.64e-08  1.63e-08  8.92e-09 >
+        set errory = < 2.98e-06  1.24e-06  4.67e-07  2.02e-07   9.86e-08 4.61e-08  2.25e-08  7.17e-09  4.64e-09 >
+        
+        set fw01h = (flux)   * energy**2.0 * 1.6037e-04
+        set ew01h = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01h = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 i
+        #
+        # In TeV, photons/m^2/s/TeV
+        # set 5a:  (run number  17435    corresponds to  8.8 h )
+        #
+        set energy = <  0.383     0.562     0.824      1.211     1.774      2.606    3.828     5.623 >
+        set flux   = < 2.24e-05  9.49e-06  2.70e-06    1.19e-06  5.15e-07  2.31e-07  3.15e-08  2.93e-08 >
+        set errory = < 3.12e-06  1.25e-06   4.81e-07    2.19e-07  9.86e-08  5.28e-08 1.98e-08  1.17e-08 >
+
+        set fw01i = (flux)   * energy**2.0 * 1.6037e-04
+        set ew01i = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01i = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 j
+        #
+        # In TeV, photons/m^2/s/TeV
+        # set 5b:   (run number  17436   corresponds to  9.3 h  )
+        #
+        set energy = <  0.383     0.562     0.824      1.211     1.774      2.606      3.828 > 
+        set flux   = < 1.94e-05  5.79e-06  1.49e-06    4.62e-07  1.39e-07   1.26e-07   2.25e-08 > 
+        set errory = < 3.06e-06  1.15e-06  4.29e-07   1.89e-07  7.93e-08   4.24e-08    1.75e-08 > 
+        
+        set fw01j = (flux)   * energy**2.0 * 1.6037e-04
+        set ew01j = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01j = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 
+        #
+        # In TeV, photons/m^2/s/TeV
+        # set 5a:  (run number  17435    corresponds to  8.8 h )
+        #
+        set energy = <  0.383     0.562     0.824      1.211     1.774      2.606    3.828     5.623 >
+        set flux   = < 2.24e-05  9.49e-06  2.70e-06    1.19e-06  5.15e-07  2.31e-07  3.15e-08  2.93e-08 >
+        set errory = < 3.12e-06  1.25e-06   4.81e-07    2.19e-07  9.86e-08  5.28e-08 1.98e-08  1.17e-08 >
+        
+        set fw01i = (flux)   * energy**2.0 * 1.6037e-04
+        set ew01i = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01i = energy * 2.41797e26
+        
+#---------------------------------------
+# jb_whipple_1996_1998
+jb_whipple_1996_1998
+
+        #===========================================================
+        # * Whipple: May 7 1996, From Krennrich et al. 1999 (ICRC)
+        # *   whipple_may7_raw.dat
+        # * 
+        # set nw96(10) R
+        # set nwp96(10) R 0.0
+        # set nwm96(10) R 0.0
+        # set fw96(10) R
+        # set fwp96(10) R
+        # set fwm96(10) R
+        # set ew96(10) R 
+        # vec/read nw96,fw96,fwm96,fwp96 whipple_may7_raw.dat
+        # sigma nw96=(nw96-323.0)/50.0
+        # sigma nw96=10.0**(nw96)
+        # sigma fw96=-13.0+(fw96-480.0)/14.0
+        # sigma fw96=10**(fw96) * nw96**2.0 * 1.6037
+        # sigma fwp96=-13.0+(fwp96-480.0)/14.0
+        # sigma fwp96=10**(fwp96) * nw96**2.0 * 1.6037
+        # sigma fwm96=-13.0+(fwm96-480.0)/14.0
+        # sigma fwm96=10**(fwm96) * nw96**2.0 * 1.6037
+        # sigma fwp96=fwp96-fw96
+        # sigma fwm96=fw96-fwm96
+        # sigma nw96=nw96 * 2.41797e26
+        #
+        #---------------------------------------
+        # Whipple: May 7 1996, From Krennrich et al. 1999 (ICRC)
+        #  whipple_may15_raw.dat
+        #
+        data whipple_may15_raw.dat
+        read < nw96b 1 fw96b 2 fwm96b 3 fwp96b 4 >
+        set nw96b  = (nw96b-323.0)/50.0
+        set nw96b  =  10.0**(nw96b)
+        set fw96b  = -13.0+(fw96b-378.0)/14.0
+        set fw96b  =  10**(fw96b) * nw96b**2.0 * 1.6037
+        set fwp96b = -13.0+(fwp96b-378.0)/14.0
+        set fwp96b =  10**(fwp96b) * nw96b**2.0 * 1.6037
+        set wm96b  = -13.0+(fwm96b-378.0)/14.0
+        set fwm96b =  10**(fwm96b) * nw96b**2.0 * 1.6037
+        set fwp96b = fwp96b - fw96b
+        set fwm96b = fw96b  - fwm96b
+        set nw96b  = nw96b * 2.41797e26
+       
+        #---------------------------------------
+        # Whipple: April 21 1998, From Krennrich et al. 1999 (ICRC)
+        #  whipple_april98_raw.dat
+        # 
+        data whipple_april98_raw.dat
+        read < nw98 1 fw98 2 fwm98 3 fwp98 4 >
+        set nw98  = (nw98-323.0)/50.0
+        set nw98  =  10.0**(nw98)
+        set fw98  = -13.0+(fw98-275.0)/14.0
+        set fw98  =  10**(fw98) * nw98**2.0 * 1.6037
+        set fwp98 = -13.0+(fwp98-275.0)/14.0
+        set fwp98 =  10**(fwp98) * nw98**2.0 * 1.6037
+        set fwm98 = -13.0+(fwm98-275.0)/14.0
+        set fwm98 =  10**(fwm98) * nw98**2.0 * 1.6037
+        set fwp98 = fwp98 - fw98
+        set fwm98 = fw98  - fwm98
+        set nw98  = nw98 * 2.41797e26
+        
+        #===========================================================
+        # * Whipple: March 19 2001
+        # *
+        # set nwma(4) R 0.0
+        # set fwma(4) R 0.0
+        # set ewma(4) R 0.0
+        # set fpwma(4) R 0.0
+        # set fmwma(4) R 0.0
+        # set npwma(4) R 0.0
+        # set nmwma(4) R 0.0
+        # set flux(4) R 0.0
+        # set energy(4) R 0.0
+        # set errory(4) R 0.0
+        # vector/input flux      6.14e-06  1.10e-06 5.88e-07      4.65e-08
+        # vector/input energy    0.383     0.562    0.824         1.774
+        # vector/input errory    1.44e-06  5.55e-07 2.06e-07      3.72e-08
+        # sigma nwma = 26.38 + log10(energy)
+        # * sigma npwma = log10(je+jep) - log10(je)
+        # * sigma nmwma = log10(je) - log10(je-jem)
+        # sigma fwma = 1.602e-4*energy*energy*flux
+        # sigma fpwma = 1.602e-4*energy*energy*(flux+errory)
+        # sigma fmwma = 1.602e-4*energy*energy*(flux-errory)
+        # sigma nwma = 10.0**(nwhc)
+        # sigma npwma = 10.0**(npwhc)
+        # sigma nmwma = 10.0**(nmwhc)
+        #
+        #===========================================================
+        # HEGRA: April 1998, From Aharonian et al. 1999, A&A, 350, 757
+        #  hegra_april98.dat
+        # 
+        data hegra_april98.dat
+        read < nh98 1 fh98 2 fhm98 3 >
+        set fh98  = (fh98)  * nh98**2.0 * 1.6037
+        set fhm98 = (fhm98) * nh98**2.0 * 1.6037
+        set nh98  = nh98 * 2.41797e26
+        
+        #---------------------------------------
+        # HEGRA: 1994/1995 average
+        #
+        set nhegra = < 26.383 > 
+        set fhegra = < 3.32e-11 > 
+        set ehegra = < 0.83e-11 > 
+        
+## jb_whipple_data_2001
+## 
+##         set nwhc  = 26.38 + log10(je)
+##         set npwhc = log10(je+jep) - log10(je)
+##         set nmwhc = log10(je) - log10(je-jem)
+##         set nwhc  = 10.0**(nwhc)
+##         set npwhc = 10.0**(npwhc)
+##         set nmwhc = 10.0**(nmwhc)
+##         set nw  = energy * 2.41797e26
+##         set nwp = energy + ehigh
+##         set nwm = energy - elow
+##         set nwp=nwp * 2.41797e26
+##         set nwm=nwm * 2.41797e26
+##         set nw01a = energy * 2.41797e26
+##         set nw01b = energy * 2.41797e26
+##         set nw01c = energy * 2.41797e26
+##         set nw01d = energy * 2.41797e26
+##         set nw01e = energy * 2.41797e26
+##         set nw01f = energy * 2.41797e26
+##         set nw01g = energy * 2.41797e26
+##         set nw01h = energy * 2.41797e26
+##         set nw01i = energy * 2.41797e26
+##         set nw01j = energy * 2.41797e26
+##         set nw01i = energy * 2.41797e26
+## 
+## 
+## jb_whipple_1996_1998
+## 
+##         set nw96b  = (nw96b-323.0)/50.0
+##         set nw96b  =  10.0**(nw96b)
+##         set nw96b  = nw96b * 2.41797e26
+##         set nw98  = (nw98-323.0)/50.0
+##         set nw98  =  10.0**(nw98)
+##         set nw98  = nw98 * 2.41797e26
+## 
+##         set nh98  = nh98 * 2.41797e26
+##         set nhegra = < 26.383 > 
+
+##------------------------------------------------------------------------------
+## junk
+junk
+
+        #===========================================================
+        #===========================================================
+        # Initialize the plot
+        #
+        pict/create blah
+        #
+        # set color
+        #
+        IGSET PMCI 1
+        IGSET PLCI 1
+        GR/ATTRIBUTES/COLOR_TABLE 1 0 0 0
+        #
+        # set plot attributes
+        #
+        opt tic | Draw cross-wires i.e. ticks on both sides
+        #
+        # define box and plot range
+        #
+        # null 1.0e13 0.9e28 1.0e-12 2.0e-9
+        # null 1.0e09 0.9e28 1.0e-14 2.0e-9
+         null 1.0e09 0.9e28 1.0e-16 2.0e-9
+        # null 5.0e15 3.0e27 1.0e-16 2.0e-9
+        atitle '[n] (Hz)' '[n]F?[n]! (erg cm^-2! s^-1!)'
+        #
+        # Override default color settings if this is a color plot
+        #
+        IF [fcolor].eq.1 THEN
+        IGSET PMCI 1
+        IGSET PLCI 1
+        ENDIF
+         exec mrk421_march19#perror nradq fradq xe(1:3) eradq 3 20 0.18 
+         exec mrk421_march19#perror nmmq fmmq xe(1:3) emmq 3 20 0.18 
+        #
+        # Huchra says that the Cruz-Gonzalez data may be contaminated
+        # with galaxy light, so comment out this line
+         exec mrk421_march19#perror noptb foptb xe(1:9) eoptb 12 20 0.18 
+         exec mrk421_march19#perror nuvq fuvq xe(1:1) euvq 1 20 0.18 
+         exec mrk421_march19#perror neuvq feuvq xe(1:1) eeuvq 1 20 0.18 
+         exec mrk421_march19#perror neuvc feuvc xe(1:1) eeuvb 1 20 0.18
+         exec mrk421_march19#perror nirq firq xe(1:3) eirq 3 20 0.18 
+         exec mrk421_march19#perror nirasa firasa xe(1:3) eirasa 3 20 0.18 
+         exec mrk421_march19#perror nirasb firasb xe(1:4) eirasb 4 20 0.18 
+         exec mrk421_march19#perror nmxq fmxq xe(1:3) emxq 3 20 0.18 20
+         graph 3 nmxq fmxq 'cs'
+        # exec mrk421_march19#perror nosse fosse xe(1:2) eosse 2 20 0.18 
+        #
+         exec mrk421_march19#perror ngq fgq xe(1:5) egq 5 20 0.18 
+         exec mrk421_march19#perror nwqb fwqb xe(1:1) ewqb 6 20 0.18 
+         exec mrk421_march19#perror nhegra fhegra xe(1:1) ehegra 1 20 0.18
+        # *
+        # * Override all colors and make all old data grey with the same point type
+        # *
+        # IGSET PMCI 7
+        # IGSET PLCI 7
+        # GR/ATTRIBUTES/COLOR_TABLE 1 0 1 1
+        #
+        # Add the possible COMPTEL detection:
+        #
+        # IF [fcolor].eq.1 THEN
+        # IGSET PMCI 7
+        # IGSET PLCI 7
+        # GR/ATTRIBUTES/COLOR_TABLE 1 0 1 1
+        # ENDIF
+        # exec mrk421_march19#perror ncomp fcomp xe(1:4) ecomp 4 20 0.18 
+        # set mtyp 1          | marker type
+        #
+        IF [fcolor].eq.1 THEN
+        IGSET PMCI 3
+        IGSET PLCI 3
+        GR/ATTRIBUTES/COLOR_TABLE 1 0 1 0
+        ENDIF
+        #
+         exec mrk421_march19#perror nradha fradha xe(1:3) eradha 3 20 0.18 
+         exec mrk421_march19#perror nmmha fmmha xe(1:3) emmha 3 20 0.18 
+         exec mrk421_march19#perror nirha firha xe(1:3) eirha 3 20 0.18 
+         exec mrk421_march19#perror nuvha fuvha xe(1:1) euvha 1 20 0.18 
+        # * exec mrk421_march19#perror nmxha fmxha xe(1:3) emxha 3 20 0.18 20
+         graph 3 nmxha fmxha 'cs'
+        set xas = < 17.684 18.383
+        set yas = < 2.429e-10 1.086e-10
+        # exec mrk421_march19#perror ngha fgha xe(1:4) egha 4 20 0.18
+        # exec mrk421_march19#perror nwha fwha xe(1:1) ewha 1 20 0.18 
+        IF [fcolor].eq.1 THEN
+        GR/ATTRIBUTES/COLOR_TABLE 1 0 0 0
+        IGSET PMCI 2
+        IGSET PLCI 2
+        GR/ATTRIBUTES/COLOR_TABLE 1 1 0 0
+        ENDIF
+        #
+        exec mrk421_march19#perror neuvb feuvb xe(1:1) eeuvb 1 20 0.18
+        # graph 21 nx95 fx95 p
+        # exec mrk421_march19#perror nghb fghb xe(1:1) eghb 1 20 0.18
+        # exec mrk421_march19#perror nradhb fradhb xe(1:3) eradhb 3 20 0.18
+        # exec mrk421_march19#perror nwhb fwhb xe(1:1) ewhb 1 20 0.18
+        IF [fcolor].eq.1 THEN
+        IGSET PMCI 4
+        IGSET PLCI 4
+        GR/ATTRIBUTES/COLOR_TABLE 1 0 0 1
+        ENDIF
+        #
+        set mscf 0.18
+        set mtyp 20
+        # Added from Krennrich 1999
+        # graph 10 nw96 fw96 p
+        #
+        set mtyp 1
+        set mscf 1.0
+        # Added from Krennrich 1999
+        # hpl/aerr nw96 fw96 nwm96 nwp96 fwm96 fwp96 10 0 0.015 1
+        #
+        # exec mrk421_march19#perror nxhc fxhc xe(1:1) exhb 1 20 0.18
+        graph 5 nxspec fxspec 'sl'
+        #
+        # April 21 1998
+        #
+        IF [fcolor].eq.1 THEN
+        IGSET PMCI 7
+        IGSET PLCI 7
+        GR/ATTRIBUTES/COLOR_TABLE 1 0 1 1
+        ENDIF
+        # Added from Krennrich 1999
+        # Whipple Observations, April 21, 1998
+        set mscf 0.18
+        set mtyp 20
+        set ftyp 1
+        igset fais 1
+        igset fasi 1
+        igset faci 2
+        # hpl/aerr nw98 fw98 nwm98 nwp98 fwm98 fwp98 8 0 0.015 3 | filled area
+        # * hpl/aerr nw98 fw98 nwm98 nwp98 fwm98 fwp98 8 0 0.015 2 | error rectangles
+        # * HEGRA Observations, April, 1998
+        set mscf 0.18
+        set mtyp 20
+        # graph 11 nh98 fh98 p
+        # hpl/aerr nh98 fh98 nhm98 nhp98 fhm98 fhm98 11 0 0.015 1
+        #
+        # May 15, 1996
+        #
+        IF [fcolor].eq.1 THEN
+        IGSET PMCI 6
+        IGSET PLCI 6
+        GR/ATTRIBUTES/COLOR_TABLE 1 1 0 1
+        ENDIF
+        # Added from Krennrich 1999
+        # Whipple Observations, May 15, 1996 (15 min flare)
+        set mscf 0.18
+        set mtyp 20
+        # graph 9 nw96b fw96b p
+        # hpl/aerr nw96b fw96b nwm96b nwp96b fwm96b fwp96b 9 0 0.015 1
+        #
+        igset MTYP
+        IF [fcolor].eq.1 THEN
+        # IGSET PMCI 6
+        # IGSET PLCI 6
+        # GR/ATTRIBUTES/COLOR_TABLE 1 1 0 0
+        IGSET PMCI 3
+        IGSET PLCI 3
+        GR/ATTRIBUTES/COLOR_TABLE 1 0 1 0
+        ENDIF
+        #
+        # March 19, 2001 - RXTE 
+        # Kris Gutierrez and Henric Krawczynski analysis
+        # JB0506 do this later while plotting TeV spectral points so corresponding
+        # data sets have the same color
+        # VERIFY THAT TIME BINS MATCH!!!
+        #
+        # do i=1,6
+        # j=[i]+0.001
+        # mess "Calling xbow.f: ",[j]
+        # call xbow.f([j])
+        # wait
+        # enddo
+        #
+        #===========================================================
+        # March 19, 2001 - Whipple TeV gamma-ray
+        # Rebillot results
+        #
+        sigthresh = 1.5
+        #
+        IF [frebillot].eq.1 THEN
+        IF [fcolor].eq.1 THEN
+        IGSET PMCI 3
+        IGSET PLCI 3
+        GR/ATTRIBUTES/COLOR_TABLE 1 0 1 0
+        ENDIF
+        set mtyp 1
+        set mscf 1.0
+        # set mscf 0.18
+        # set mtyp 20
+        GR/ATTRIBUTES/COLOR_TABLE 1 0 0 0
+        # exec mrk421_march19#perror nw(1:9) fw(1:9) nwp(1:9) ew(1:9) 9 20 0.18 
+        # exec mrk421_march19#perror nw(1:7) fw(1:7) nwp(1:7) ew(1:7) 9 20 0.18 
+        
+        exec mrk421_march19#pxyerr nw(1:8) nwm(1:8) nwp(1:8) fw(1:8) fwm(1:8) fwp(1:8) [sigthresh] 9 20 0.18 
+        #* call xbow.f(1.001)
+        text 0.5*nw(1) fw(1)  '1' '0.34' 0 'r'
+        SET LTYP 3
+        g/pr/dline nw(1) 10.0*nw(1) fw(1) fw(1)
+        SET LTYP 1
+        # graph 9 nw(1:9) fw(1:9) 'sl'
+        #
+        IF [fscalecurve].eq.1 THEN
+          sigma fw = fw*[scalefact]
+          sigma fwp = fwp*[scalefact]
+          sigma fwm = fwm*[scalefact]
+          sigma ew = ew*[scalefact]
+        ENDIF 
+        GR/ATTRIBUTES/COLOR_TABLE 1 1 0 0
+        # exec mrk421_march19#perror nw(10:16) fw(10:16) nwp(10:16) ew(10:16) 7 20 0.18 
+        exec mrk421_march19#pxyerr nw(10:16) nwm(10:16) nwp(10:16) fw(10:16) fwm(10:16) fwp(10:16) [sigthresh] 7 20 0.18 
+        #* call xbow.f(2.001)
+        text 0.5*nw(1) fw(1)  '2' '0.34' 0 'r'
+        SET LTYP 3
+        g/pr/dline nw(1) 10.0*nw(1) fw(1) fw(1)
+        SET LTYP 1
+        # graph 7 nw(10:16) fw(10:16) 'sl'
+        #
+        IF [fscalecurve].eq.1 THEN
+          sigma fw = fw*[scalefact]
+          sigma fwp = fwp*[scalefact]
+          sigma fwm = fwm*[scalefact]
+          sigma ew = ew*[scalefact]
+        ENDIF 
+        GR/ATTRIBUTES/COLOR_TABLE 1 0 1 0
+        # exec mrk421_march19#perror nw(19:26) fw(19:26) nwp(19:26) ew(19:26) 9 20 0.18 
+        exec mrk421_march19#pxyerr nw(19:26) nwm(19:26) nwp(19:26) fw(19:26) fwm(19:26) fwp(19:26) [sigthresh] 9 20 0.18 
+        #* call xbow.f(3.001)
+        text 0.5*nw(1) fw(1)  '3' '0.34' 0 'r'
+        SET LTYP 3
+        g/pr/dline nw(1) 10.0*nw(1) fw(1) fw(1)
+        SET LTYP 1
+        # graph 9 nw(19:27) fw(19:27) 'sl'
+        #
+        IF [fscalecurve].eq.1 THEN
+          sigma fw = fw*[scalefact]
+          sigma fwp = fwp*[scalefact]
+          sigma fwm = fwm*[scalefact]
+          sigma ew = ew*[scalefact]
+        ENDIF 
+        GR/ATTRIBUTES/COLOR_TABLE 1 1 1 0
+        # exec mrk421_march19#perror nw(28:36) fw(28:36) nwp(28:36) ew(28:36) 9 20 0.18 
+        exec mrk421_march19#pxyerr nw(28:36) nwm(28:36) nwp(28:36) fw(28:36) fwm(28:36) fwp(28:36) [sigthresh] 9 20 0.18 
+        #* call xbow.f(4.001)
+        text 0.5*nw(1) fw(1)  '4' '0.34' 0 'r'
+        SET LTYP 3
+        g/pr/dline nw(1) 10.0*nw(1) fw(1) fw(1)
+        SET LTYP 1
+        # graph 9 nw(28:36) fw(28:36) 'sl'
+        #
+        IF [fscalecurve].eq.1 THEN
+          sigma fw = fw*[scalefact]
+          sigma fwp = fwp*[scalefact]
+          sigma fwm = fwm*[scalefact]
+          sigma ew = ew*[scalefact]
+        ENDIF 
+        GR/ATTRIBUTES/COLOR_TABLE 1 0 0 1
+        # exec mrk421_march19#perror nw(37:45) fw(37:45) nwp(37:45) ew(37:45) 9 20 0.18 
+        exec mrk421_march19#pxyerr nw(37:45) nwm(37:45) nwp(37:45) fw(37:45) fwm(37:45) fwp(37:45) [sigthresh] 9 20 0.18 
+        #* call xbow.f(5.001)
+        text 0.5*nw(1) fw(1)  '5' '0.34' 0 'r'
+        SET LTYP 3
+        g/pr/dline nw(1) 10.0*nw(1) fw(1) fw(1)
+        SET LTYP 1
+        # graph 9 nw(37:45) fw(37:45) 'sl'
+        #
+        IF [fscalecurve].eq.1 THEN
+          sigma fw = fw*[scalefact]
+          sigma fwp = fwp*[scalefact]
+          sigma fwm = fwm*[scalefact]
+          sigma ew = ew*[scalefact]
+        ENDIF 
+        GR/ATTRIBUTES/COLOR_TABLE 1 1 0 1
+        # exec mrk421_march19#perror nw(46:54) fw(46:54) nwp(46:54) ew(46:54) 9 20 0.18 
+        exec mrk421_march19#pxyerr nw(46:53) nwm(46:53) nwp(46:53) fw(46:53) fwm(46:53) fwp(46:53) [sigthresh] 9 20 0.18 
+        #* call xbow.f(6.001)
+        text 0.5*nw(1) fw(1)  '6' '0.34' 0 'r'
+        SET LTYP 3
+        g/pr/dline nw(1) 10.0*nw(1) fw(1) fw(1)
+        SET LTYP 1
+        # graph 9 nw(46:54) fw(46:54) 'sl'
+        #
+        IF [fscalecurve].eq.1 THEN
+          sigma fw = fw*[scalefact]
+          sigma fwp = fwp*[scalefact]
+          sigma fwm = fwm*[scalefact]
+          sigma ew = ew*[scalefact]
+        ENDIF 
+        GR/ATTRIBUTES/COLOR_TABLE 1 0 1 1
+        # exec mrk421_march19#perror nw(55:63) fw(55:63) nwp(55:63) ew(55:63) 9 20 0.18 
+        exec mrk421_march19#pxyerr nw(55:58) nwm(55:58) nwp(55:58) fw(55:58) fwm(55:58) fwp(55:58) [sigthresh] 9 20 0.18 
+        #* call xbow.f(6.001)
+        text 0.5*nw(1) fw(1)  '7' '0.34' 0 'r'
+        SET LTYP 3
+        g/pr/dline nw(1) 10.0*nw(1) fw(1) fw(1)
+        SET LTYP 1
+        # graph 9 nw(55:63) fw(55:63) 'sl'
+        #
+        # hpl/aerr nw01a fw01a nwm01a nwp01a fwm01a fwp01a 4 0 0.015 1
+        igset MTYP
+        IF [fcolor].eq.1 THEN
+        # IGSET PMCI 6
+        # IGSET PLCI 6
+        # GR/ATTRIBUTES/COLOR_TABLE 1 1 0 0
+        IGSET PMCI 3
+        IGSET PLCI 3
+        GR/ATTRIBUTES/COLOR_TABLE 1 0 1 0
+        ENDIF
+        ENDIF
+        #
+        #===========================================================
+        # March 19, 2001
+        # Krennrich results
+        #
+        IF [fkrennrich] THEN
+        IF [fcolor].eq.1 THEN
+        IGSET PMCI 3
+        IGSET PLCI 3
+        GR/ATTRIBUTES/COLOR_TABLE 1 0 1 0
+        ENDIF
+        # Added from Krennrich 2001
+        set mtyp 1
+        set mscf 1.0
+        # set mscf 0.18
+        # set mtyp 20
+        exec mrk421_march19#perror nw01a fw01a xe(1:4) ew01a 4 20 0.18 
+        # graph 4 nw01a fw01a 'sl'
+        exec mrk421_march19#perror nw01b fw01b xe(1:4) ew01b 4 20 0.18 
+        # graph 4 nw01b fw01b 'sl'
+        exec mrk421_march19#perror nw01c fw01c xe(1:4) ew01c 4 20 0.18 
+        # graph 4 nw01c fw01c 'sl'
+        exec mrk421_march19#perror nw01d fw01d xe(1:4) ew01d 4 20 0.18 
+        # graph 4 nw01d fw01d 'sl'
+        exec mrk421_march19#perror nw01a fw01e xe(1:4) ew01e 4 20 0.18 
+        # graph 4 nw01e fw01e 'sl'
+        exec mrk421_march19#perror nw01f fw01f xe(1:4) ew01f 4 20 0.18 
+        # graph 4 nw01f fw01f 'sl'
+        exec mrk421_march19#perror nw01g fw01g xe(1:4) ew01g 4 20 0.18 
+        # graph 4 nw01g fw01g 'sl'
+        exec mrk421_march19#perror nw01h fw01h xe(1:4) ew01h 4 20 0.18 
+        # graph 4 nw01h fw01h 'sl'
+        exec mrk421_march19#perror nw01i fw01i xe(1:4) ew01i 4 20 0.18 
+        # graph 4 nw01i fw01i 'sl'
+        exec mrk421_march19#perror nw01j fw01j xe(1:4) ew01j 4 20 0.18 
+        # graph 4 nw01j fw01j 'sl'
+        # hpl/aerr nw01a fw01a nwm01a nwp01a fwm01a fwp01a 4 0 0.015 1
+        # hpl/aerr nmwma fmwma nmwma npwma fmwma fpwma 4 0 0.015 1
+        #
+        igset MTYP
+        IF [fcolor].eq.1 THEN
+        # IGSET PMCI 6
+        # IGSET PLCI 6
+        # GR/ATTRIBUTES/COLOR_TABLE 1 1 0 0
+        IGSET PMCI 3
+        IGSET PLCI 3
+        GR/ATTRIBUTES/COLOR_TABLE 1 0 1 0
+        ENDIF
+        ENDIF
+        #
+        #
+        #===========================================================
+        # Plot the SSC curve
+        #
+        IF [fplotssc].eq.1 THEN
+        set dmod 2
+        graph 28 nsync fsync 'ls'
+        graph 29 nssc fssc 'ls'
+        set dmod 1
+        #
+        IF [fcolor].eq.1 THEN
+        GR/ATTRIBUTES/COLOR_TABLE 1 0 0 0
+        #
+        IGSET PMCI 1
+        IGSET PLCI 1
+        IGSET TXCI 4
+        ENDIF
+        ENDIF
+        #
+        #===========================================================
+        # Label axes
+        #
+        IF [flabel].eq.1 THEN
+        text 7.94e09 1.5e-14 'Radio' '0.24' 45 'l'
+        text 1.99e11 1.5e-14 'mm' '0.24' 45 'l'
+        text 5.01e12 1.5e-14 'Far IR' '0.24' 45 'l'
+        text 3.16e13 1.5e-14 'Near IR' '0.24' 45 'l'
+        text 3.16e14 1.5e-14 'Optical' '0.24' 45 'l'
+        text 1.58e15 1.5e-14 'UV' '0.24' 45 'l'
+        text 3.16e16 1.5e-14 'XUV' '0.24' 45 'l'
+        text 1.58e17 1.5e-14 'X-Ray' '0.24' 45 'l'
+        text 1.99e19 1.5e-14 '100keV' '0.24' 45 'l'
+        text 2.51e22 1.5e-14 '1GeV [g]-ray' '0.24' 45 'l'
+        text 1.00e26 1.5e-14 '1TeV [g]-ray' '0.24' 45 'l'
+        #
+        ENDIF
+        IF [fcolor].eq.1 THEN
+        IGSET TXCI 1
+        ENDIF
+        opt ntic
+        opt linx
+        opt liny
+        null 0 15 0 16.5 'ABS'
+        IF [fcolor].eq.1 THEN
+        IGSET PMCI 7
+        ENDIF

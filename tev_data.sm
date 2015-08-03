@@ -1,0 +1,1838 @@
+#---------------------------------------------------------------------------
+# read_whipple_98
+read_whipple_98
+
+	data tev_light_curve_definitive.dat
+	read { time 1 rate_whipple 2 err_rate_whipple_u 3 err_rate_whipple_d 4 }
+	
+	echo "----------------------------------------------"
+	echo "  DATA are the DEFINITIVE release, July 1999"
+	echo "  TeV data are already rescaled "
+	echo "  to a Start time 1998-04-21 0:00 UTC"
+	echo "----------------------------------------------"
+	set err_rate_whipple = 0.5*(err_rate_whipple_u+err_rate_whipple_d)
+	do 1=0,$(dimen(rate_whipple)-1) {
+	    if( err_rate_whipple_d[$1] <=0 ) { set err_rate_whipple_d[$1] = abs(rate_whipple[$1]) }
+	    # if( rate_whipple[$1] <=0 ) { 
+	    #    set rate_whipple[$1] = rate_whipple[$1] + err_rate_whipple_u[$1]
+	    #    set err_rate_whipple_d[$1] = err_rate_whipple_d[$1] + err_rate_whipple_u[$1]
+	    #    set err_rate_whipple_u[$1] = 0.0
+	    # }
+	}
+	set newt_whipple   = time
+	set newt1_whipple  = newt_whipple
+	set newt2_whipple  = newt_whipple
+	set newbin_whipple = 0*newt_whipple + 840
+
+	stats rate_whipple mean_whipple sigma_whipple kurt_whipple
+	define width_whipple ($sigma_whipple)
+	echo "------------------------------------------------------------"
+        echo "* Average cts/min =" $(sprintf('%7.3f',$mean_whipple)) "+/-" $(sprintf('%7.3f',$width_whipple))
+	echo "------------------------------------------------------------"
+
+	set cvrfr_whipple   = 0*rate_whipple + 1
+	set dt_true_whipple = 0*newt_whipple + 1
+	set counts_whipple  = rate_whipple*dt_true_whipple
+	set err_counts_whipple  = rate_whipple*dt_true_whipple
+
+##---------------------------------------------------------------------------
+## read_whipple_old
+read_whipple_old
+
+	data tev_light_curve_revised.dat
+	read { time 3 rate_tevold 4 err_rate_tevold 5 }
+	
+	echo "----------------------------------------"
+	echo "  TeV data are already rescaled "
+	echo "  to a Start time 1998-04-21 0:00 UTC"
+	echo "----------------------------------------"
+	set newt_tevold   = time*3600 
+	set newt1_tevold  = newt_tevold
+	set newt2_tevold  = newt_tevold
+	set newbin_tevold = 0*newt_tevold + 840
+
+	stats rate_tevold mean_tevold sigma_tevold kurt_tevold
+	define width_tevold ($sigma_tevold)
+
+	set cvrfr_tevold      = 0*rate_tevold + 1
+	set dt_true_tevold    = 0*newt_tevold + 1
+	set counts_tevold     = rate_tevold*dt_true_tevold
+	set err_counts_tevold = rate_tevold*dt_true_tevold
+
+##---------------------------------------------------------------------------
+## read_whipple_01old
+read_whipple_01old
+
+	data lc_whipple_2001_quicklook.dat
+	read { time 1 rate_whipple 2 err_rate_whipple 3 }
+	
+	echo "---------------------------------------------------------------"
+	echo " DATA are the PRELIMINARY release, March 2001 (from M.Jordan)"
+	echo " TeV data are already rescaled "
+	echo " to a Start time 2001-03-19 00:00 UTC [=11987.0 TJD]"
+	echo " "
+	echo " Array names are: *_whipple"
+	echo "---------------------------------------------------------------"
+	# set err_rate_whipple = 0.5*(err_rate_whipple_u+err_rate_whipple_d)
+
+	do 1=0,$(dimen(rate_whipple)-1) {
+	    if( err_rate_whipple[$1] <=0 ) { set err_rate_whipple[$1] = abs(rate_whipple[$1]) }
+	    # if( rate_whipple[$1] <=0 ) { 
+	    #    set rate_whipple[$1] = rate_whipple[$1] + err_rate_whipple_u[$1]
+	    #    set err_rate_whipple_d[$1] = err_rate_whipple_d[$1] + err_rate_whipple_u[$1]
+	    #    set err_rate_whipple_u[$1] = 0.0
+	    # }
+	}
+	set newt_whipple   = time
+	set newt1_whipple  = newt_whipple
+	set newt2_whipple  = newt_whipple
+	set newbin_whipple = 0*newt_whipple + 840
+
+	stats rate_whipple mean_whipple sigma_whipple kurt_whipple
+	define width_whipple ($sigma_whipple)
+
+	set cvrfr_whipple   = 0*rate_whipple + 1
+	set dt_true_whipple = 0*newt_whipple + 1
+	set counts_whipple  = rate_whipple*dt_true_whipple
+	set err_counts_whipple  = rate_whipple*dt_true_whipple
+
+##---------------------------------------------------------------------------
+## read_whipple_01new: uses 256s/reb/rbr time bins.
+read_whipple_01new
+
+	define tbin ? <* What binning time [256s/reb2/reb3/reb4/rbr/mix24] : >
+
+	define 1 $tbin
+	#data lc_whipple_2001_$1_with_dT.dat 
+	data "/home/gfossati/Science/Mkn421/2001/Temporal/"lc_whipple_2001_$1_with_dT.dat
+
+	read { time_whipple 1 dt_whipple 3 rate_whipple 4 err_rate_whipple 5 nrebin_whipple 6 }
+	set weight_whipple = nrebin_whipple
+	
+	echo "---------------------------------------------------------------"
+	echo " ** June 2002 release (by M.Jordan) **"
+	echo " DATA are the binned in 256s bins, or Run-by-Run or "
+	echo "    the x2 rebinning made by myself."
+	echo " "
+	echo " Times are in TJD : "$(time_whipple[0])" is the first time."
+	echo " "
+	echo " The macro rescales the times to 51987.00 in order to"
+	echo "   have data format homogeneous with the rxte/pca data."
+	echo " "
+	echo " Array names are: *_whipple"
+	echo "---------------------------------------------------------------"
+
+	do 1=0,$(dimen(rate_whipple)-1) {
+	    if( err_rate_whipple[$1] <=0 ) { set err_rate_whipple[$1] = abs(rate_whipple[$1]) }
+	    # if( rate_whipple[$1] <=0 ) { 
+	    #    set rate_whipple[$1] = rate_whipple[$1] + err_rate_whipple_u[$1]
+	    #    set err_rate_whipple_d[$1] = err_rate_whipple_d[$1] + err_rate_whipple_u[$1]
+	    #    set err_rate_whipple_u[$1] = 0.0
+	    # }
+	}
+
+	define dt_unit 256
+
+	#-------------------------------------------------------------------------------
+	# For the following case dT in the file is incorrect, but l.c. dT is regular,
+	#   *approximately* (though not exactly) constant.
+	#
+	if(substr('$tbin',0,2) == '25') { define dt  256 }
+	if(substr('$tbin',0,2) == 'mi') { define dt 1024 }
+	if(substr('$tbin',0,2) == 're') { 
+	   if(substr('$tbin',0,4) == 'reb2') { define dt  512 }
+	   if(substr('$tbin',0,4) == 'reb3') { define dt  768 }
+	   if(substr('$tbin',0,4) == 'reb4') { define dt 1024 }
+	   if(substr('$tbin',0,4) == 'reb7') { define dt 1792 }
+	}
+	if(substr('$tbin',0,2) == 'rb') { define dt $(28*60) }
+
+	set newt_whipple   = (time_whipple - 51987.00)*86400.0
+	# set newbin_whipple = 0*newt_whipple + $dt
+
+	# NEW 2007.03.28: it should work for all cases, superseding the above 'if's
+	set newbin_whipple = nrebin_whipple*$dt_unit
+	# ...except for the run-by-run case
+	if(substr('$tbin',0,2) == 'rb') { set newbin_whipple = newt_whipple*0 + 28*60 }
+
+	#-------------------------------------------------------------------------------
+	# Handles SNR-rebinned l.c. separately because their dT is correctly defined
+	#
+	if(substr('$tbin',0,2) == 'mi') { 
+	    set newbin_whipple = dt_whipple 
+	}
+	if(substr('$tbin',0,2) == 'sn') { 
+	    set newbin_whipple = dt_whipple 
+	}
+	#-------------------------------------------------------------------------------
+
+	set newt1_whipple  = newt_whipple - newbin_whipple/2.
+	set newt2_whipple  = newt_whipple + newbin_whipple/2.
+	help newt1_whipple
+
+	stats rate_whipple mean_whipple sigma_whipple kurt_whipple
+	echo "---------------------------------------------------------------"
+	echo " <rate_whipple> [plain]    = " $(sprintf('%7.3f',$mean_whipple)) "+/-" $(sprintf('%7.3f',$sigma_whipple))
+	
+	stats2 rate_whipple weight_whipple mean_whipple sigma_whipple kurt_whipple
+	echo "---------------------------------------------------------------"
+	echo " <rate_whipple> [weighted] = " $(sprintf('%7.3f',$mean_whipple)) "+/-" $(sprintf('%7.3f',$sigma_whipple))
+	echo "---------------------------------------------------------------"
+	define width_whipple ($sigma_whipple)
+
+	set cvrfr_whipple      = 0*rate_whipple + 1
+	set dt_true_whipple    = 0*newt_whipple + 1
+	set counts_whipple     = rate_whipple*dt_true_whipple
+	set err_counts_whipple = rate_whipple*dt_true_whipple
+
+	unset time_whipple
+
+	define whattodo ? {*                     Rename vectors [y/n] : }
+	if(substr('$whattodo',0,1) == 'y') {
+	  echo " "
+	  echo "*                   The re-binning is : " $tbin
+	  define name "w"$tbin
+	  define name ?   {* Suffix name for vectors to become *_name : }
+	  foreach 3 { newt newt1 newt2 newbin dt_true counts err_counts rate err_rate cvrfr nrebin weight }{
+	     set $3_$name = $3_whipple
+	     delete $3_whipple
+	  }
+	} 
+
+#---------------------------------------------------------------------------
+# read_whipple_01: uses 256s/reb/rbr time bins.
+read_whipple_01
+	
+	read_whipple_01new
+
+#---------------------------------------------------------------------------
+# read_hegra_01ps : uses data grabbed from Horns and Aharonian papers PS file.
+read_hegra_01ps
+
+	define ext ? < What 2001 data [sin/reb/flare2/flare2Dex] : >
+
+	if( substr('$ext',0,1) == 's' ) {
+	    data lc_hegra_2001ps_single_with_dT.dat 
+	    read { time_hegra 1 rate_hegra 4 }
+	    set newbin_hegra = time_hegra*0 + 1
+	    define hegrabin (896.8)
+	}
+	if( substr('$ext',0,1) == 'r' ) {
+	    data lc_hegra_2001ps_rebinned_with_dT.dat 
+	    read { time_hegra 1 rate_hegra 4 newbin_hegra 5 }
+	    define hegrabin (1800)
+	    # in the input file the column read as 'newbin_hegra'
+	    # is 1 or 2, meaning how many original ~900s bins
+	    # were summed for each given newbin.
+	    # So, hegrabin has to be kept at the intrinsic value.
+	    define hegrabin (896.8)
+	}
+	if( substr('$ext',0,1) == 'f' ) {
+	    data lc_hegra_2001ps_flare2Dex_with_dT.dat 
+	    data lc_hegra_2001ps_flare2_with_dT.dat 
+	    read { time_hegra 1 rate_hegra 4 err_rate_hegra 5 }
+	    set newbin_hegra = time_hegra*0 + 1
+	    define hegrabin (863.1)
+	}
+	
+	define fcrabref ? <*     Crab Reference Flux [c.g.s. units] : >
+	if( $fcrabref < 1e-6 ) { define fcrabref ($fcrabref/1e-11) }
+	define crabref $fcrabref
+	set rate_hegra     = rate_hegra/$crabref
+	set err_rate_hegra = err_rate_hegra/$crabref
+
+	if( substr('$ext',0,1) == 's' || substr('$ext',0,1) == 'r' ) {
+	   echo "-------------------------------------------------------------------------"
+	   echo " DATA are taken from the PostScript file of the Horns paper (0209454)"
+	   echo " The data are supposed to be the flux/<flux>, but oddly enough their "
+	   echo " average is not 1...."
+	   echo " The macro forces the average to be =1 and then rescales all rates to "
+	   echo " a user-defined average rage."
+	   echo " Errors are assigned \"by hand\", equal to 20% of the rate."
+	   echo " "
+	   echo " Times are in TJD : 51986.95501 is the first time."
+	   echo " The macro rescales the times to 51987.00 in order to"
+	   echo "   have data format homogeneous with the rxte/pca data."
+	   echo " "
+	   echo " Array names are: *_hegra "
+	   echo "-------------------------------------------------------------------------"
+	   #stats rate_hegra mean_hegra sigma_hegra kurt_hegra
+	   #echo " <rate_hegra> = " $mean_hegra "+/-" $sigma_hegra 
+	   #set  rate_hegra = rate_hegra/$mean_hegra
+
+	   #define avescale ? < Average rate to rescale the data : >
+	   #set rate_hegra = rate_hegra*$avescale
+	   #set err_rate_hegra = 0.2*rate_hegra
+	
+	}
+	if( substr('$ext',0,1) == 'f' ) {
+	   echo "-------------------------------------------------------------------------"
+	   echo " DATA are taken from the PostScript file of the Aharonian paper."
+	   echo " The data are in 1e-11 flux units."
+	   echo " "
+	   echo " Times are in TJD : 51990.935003 is the first time."
+	   echo " The macro rescales the times to 51987.00 in order to"
+	   echo "   have data format homogeneous with the rxte/pca data."
+	   echo " "
+	   echo " Array names are: *_hegra"
+	   echo "-------------------------------------------------------------------------"
+	}
+
+	do 1=0,$(dimen(rate_hegra)-1) {
+	    if( err_rate_hegra[$1] <=0 ) { set err_rate_hegra[$1] = abs(rate_hegra[$1]) }
+	    # if( rate_hegra[$1] <=0 ) { 
+	    #    set rate_hegra[$1] = rate_hegra[$1] + err_rate_hegra_u[$1]
+	    #    set err_rate_hegra_d[$1] = err_rate_hegra_d[$1] + err_rate_hegra_u[$1]
+	    #    set err_rate_hegra_u[$1] = 0.0
+	    # }
+	}
+	set newt_hegra   = (time_hegra - 51987.00)*86400
+	set newbin_hegra = newbin_hegra*$hegrabin
+	set newt1_hegra  = newt_hegra - 0.5*newbin_hegra
+	set newt2_hegra  = newt_hegra + 0.5*newbin_hegra
+
+	stats rate_hegra mean_hegra sigma_hegra kurt_hegra
+	define width_hegra ($sigma_hegra)
+
+        echo "-----------------------------------------------------------------"
+        echo "* <rate_hegra> = " $(sprintf('%7.3f',$mean_hegra)) "+/-" $(sprintf('%7.3f',$width_hegra))
+        echo "-----------------------------------------------------------------"
+
+	set cvrfr_hegra   = 0*rate_hegra + 1
+	set dt_true_hegra = 0*newt_hegra + 1
+	set counts_hegra  = rate_hegra*dt_true_hegra
+	set err_counts_hegra  = rate_hegra*dt_true_hegra
+
+	unset time_hegra 
+	define whattodo ? {*                     Rename vectors [y/n] : }
+	if(substr('$whattodo',0,1) == 'y') {
+	  echo " "
+	  echo "*                   The re-binning is : " $tbin
+	  define name ?   {* Suffix name for vectors to become *_name : }
+	  foreach 3 { newt newt1 newt2 newbin dt_true counts err_counts rate err_rate cvrfr }{
+	     set $3_$name = $3_hegra
+	  }
+	} 
+
+#---------------------------------------------------------------------------
+# read_hegra_01full: reads OFFICIAL -long format- data from Dieter Horns 
+#                  : NOTE: something is WRONG with this macro... it does not read
+#                          anything other the the 'single' case.
+read_hegra_01full
+
+	define ext ? < What 2001 data [sin] : >
+
+	if( substr('$ext',0,1) == 's' ) {
+	    data lc_HEGRA_2001_alldata_single.dat 
+	    read { newt_hegra 1 newt1_hegra 2 newt2_hegra 3 newbin_hegra 5 rate_hegra 8 err_rate_hegra 9 }
+	    read { flux_hegra 6 err_flux_hegra  7 sigma_hegra    10 } 
+	    read { hr_hegra  11 err_hr_hegra_u 12 err_hr_hegra_d 13 }
+	    set rate_hegra     = rate_hegra*60.0
+	    set err_rate_hegra = err_rate_hegra*60.0
+	}
+
+	if( substr('$ext',0,1) == 's' || substr('$ext',0,1) == 'r' ) {
+	   echo "-------------------------------------------------------------------------"
+	   echo " DATA are the OFFICIAL release from Dieter Horns (May 2003)."
+	   echo " "
+	   echo " Rates are converted from c/s to c/min."
+	   echo " "
+	   echo " Times are in TJD : "$(newt_hegra[0])" (51983.972998) is the mid-time of the first bin."
+	   echo " The macro rescales the times to 51987.00 in order to"
+	   echo "   have data format homogeneous with the rxte/pca data."
+	   echo " "
+	   echo " Array names are: *_hegra"
+	   echo "-------------------------------------------------------------------------"
+
+	}
+
+	do 1=0,$(dimen(rate_hegra)-1) {
+	    if( err_rate_hegra[$1] <=0 ) { set err_rate_hegra[$1] = abs(rate_hegra[$1]) }
+	    # if( rate_hegra[$1] <=0 ) { 
+	    #    set rate_hegra[$1] = rate_hegra[$1] + err_rate_hegra_u[$1]
+	    #    set err_rate_hegra_d[$1] = err_rate_hegra_d[$1] + err_rate_hegra_u[$1]
+	    #    set err_rate_hegra_u[$1] = 0.0
+	    # }
+	}
+	set newt_hegra   = (newt_hegra  - 51987.00)*86400.0
+	set newt1_hegra  = (newt1_hegra - 51987.00)*86400.0
+	set newt2_hegra  = (newt2_hegra - 51987.00)*86400.0
+
+	stats rate_hegra mean_hegra sigma_hegra kurt_hegra
+	define width_hegra ($sigma_hegra)
+
+        echo "-----------------------------------------------------------------"
+        echo "* Average cts/min =" $(sprintf('%7.3f',$mean_hegra)) "+/-" $(sprintf('%7.3f',$width_hegra))
+        echo "-----------------------------------------------------------------"
+
+	set cvrfr_hegra      = 0*rate_hegra + 1
+	set dt_true_hegra    = newbin_hegra
+	set counts_hegra     = rate_hegra*dt_true_hegra
+	set err_counts_hegra = err_rate_hegra*dt_true_hegra
+
+	unset time_hegra 
+	define whattodo ? {*                     Rename vectors [y/n] : }
+	if(substr('$whattodo',0,1) == 'y') {
+	  echo " "
+	  echo "*           The loaded light curve is : " $ext
+	  define name ?   {* Suffix name for vectors to become *_name : }
+	  foreach 3 { newt newt1 newt2 newbin dt_true counts err_counts rate err_rate cvrfr }{
+	     set $3_$name = $3_hegra
+	  }
+	  foreach 3 { flux err_flux sigma hr }{
+	     set $3_$name = $3_hegra
+	  }
+	} 
+
+##---------------------------------------------------------------------------
+## read_hegra_01new: reads reformatted/rebinned OFFICIAL data from Dieter Horns 
+read_hegra_01new
+
+	echo " "
+        echo "NOTE: preferred HEGRA dataset is 'freb2'" 
+	echo "NOTE: Crab flux is 1.76e-11 c.g.s."
+	echo " "
+	define ext ? <* What 2001 data [freb1/freb2/reb1/reb2] : >
+
+	define 1 $ext
+	data "/home/gfossati/Science/Mkn421/2001/Temporal/"lc_HEGRA_2001_$1_with_dT.dat
+
+	read < time_hegra 1 dt_hegra 3 rate_hegra 4 err_rate_hegra 5 nrebin_hegra 6 >
+	set weight_hegra = nrebin_hegra
+
+	if( substr('$ext',0,1) == 'f' ) {
+	   define fcrabref ? <*     Crab Reference Flux [c.g.s. units] : >
+	   if( $fcrabref < 1e-6 ) { define fcrabref ($fcrabref/1e-11) }
+	   define crabref $fcrabref
+	} else {
+	   define rcrabref ? <*          Crab Reference Flux [cts/min] : >
+	   define crabref $rcrabref
+	}
+	set rate_hegra     = rate_hegra/$crabref
+	set err_rate_hegra = err_rate_hegra/$crabref
+	##set rate_hegra     = rate_hegra*60.0
+	##set err_rate_hegra = err_rate_hegra*60.0
+	
+	if( substr('$ext',0,1) == 's' || substr('$ext',0,1) == 'r' || substr('$ext',0,1) == 'f' ) {
+	   echo "+-------------------------------------------------------------------------"
+	   echo "| DATA are the from the OFFICIAL release from Dieter Horns (May 2003)."
+	   echo "| They may be rebinned by N or S/N. "
+	   echo "| "
+	   if( substr('$ext',0,1) == 'f' ) {
+	       echo "| Fluxes have been converted to CRAB units, using F_crab="$fcrabref
+	   } else {
+	       echo "| Fluxes have been converted to CRAB units, using F_crab="$fcrabref" c/m"
+	   }
+	   echo "| "
+	   echo "| The macro rescales the times to 51987.00 in order to"
+	   echo "|   have data format homogeneous with the rxte/pca data."
+	   echo "| "
+	   echo "| Array names are: *_hegra"
+	   echo "+-------------------------------------------------------------------------"
+
+	}
+
+	do 1=0,$(dimen(rate_hegra)-1) {
+	    if( err_rate_hegra[$1] <=0 ) { set err_rate_hegra[$1] = abs(rate_hegra[$1]) }
+	    # if( rate_hegra[$1] <=0 ) { 
+	    #    set rate_hegra[$1] = rate_hegra[$1] + err_rate_hegra_u[$1]
+	    #    set err_rate_hegra_d[$1] = err_rate_hegra_d[$1] + err_rate_hegra_u[$1]
+	    #    set err_rate_hegra_u[$1] = 0.0
+	    # }
+	}
+
+	set newt_hegra   = (time_hegra - 51987.00)*86400.0
+	set newbin_hegra = dt_hegra 
+	set newt1_hegra  = newt_hegra - newbin_hegra/2.
+	set newt2_hegra  = newt_hegra + newbin_hegra/2.
+
+	stats rate_hegra mean_hegra sigma_hegra kurt_hegra
+	define width_hegra ($sigma_hegra)
+
+        echo "*       Average Flux[Crab] =" $(sprintf('%7.3f',$mean_hegra)) "+/-" $(sprintf('%7.3f',$width_hegra))
+        echo "-------------------------------------------------------------------------"
+	set cvrfr_hegra      = 0*rate_hegra + 1
+	set dt_true_hegra    = newbin_hegra
+	set counts_hegra     = rate_hegra*dt_true_hegra
+	set err_counts_hegra = err_rate_hegra*dt_true_hegra
+
+	unset time_hegra 
+	define whattodo ? {*                     Rename vectors [y/n] : }
+	if(substr('$whattodo',0,1) == 'y') {
+	  echo "*    REMEMBER... The loaded light curve is : " $ext
+	  define name "h"$ext
+	  define name ?   {* Suffix name for vectors to become *_name : }
+	  foreach 3 { newt newt1 newt2 newbin dt_true counts err_counts rate err_rate cvrfr nrebin weight }{
+	     echo $3
+	     set $3_$name = $3_hegra
+	  }
+	  #foreach 3 { flux err_flux sigma hr }{
+	  #   set $3_$name = $3_hegra
+	  #}
+	} 
+
+#---------------------------------------------------------------------------
+# read_hegra_01: reads reformatted/rebinned OFFICIAL data from Dieter Horns 
+read_hegra_01
+
+ 	read_hegra_01new
+
+#---------------------------------------------------------------------------
+# combine_tev_01 : combines Whipple and HEGRA data for March 2001.
+#                  NOTE: Requires to have read Whipple and HEGRA data separately.
+#                  NOTE: preferred HEGRA dataset is 'freb2'
+combine_tev_01
+
+	define wsfx ?        <*                         Whipple arrays suffix : >
+	define hsfx ?        <*                         HEGRA   arrays suffix : >
+	define rescaleavrg ? <*            Rescale HEGRA data to Whipple [y/n]: >
+	define LOGorLIN    ? <* Rescale the LOG or LIN distributions [log/lin]: >
+	define 8 $wsfx
+	define 9 $hsfx
+
+	echo "-----------------------------------------------------------------"
+	if( substr('$LOGorLIN',1,1) == 'i' ) {
+	   #--- LINEAR ---#
+	   set rateW   = rate_$8    if( rate_$8 > 0 )
+	   set weightW = weight_$8  if( rate_$8 > 0 )
+	   set rateH   = rate_$9    if( rate_$9 > 0 )
+	   set weightH = weight$9   if( rate_$9 > 0 )
+   	   # stats rateW mean_$8 sigma_$8 kurt_$8
+   	   # stats rateH         mean_$9 sigma_$9 kurt_$9
+   	   stats2 rateW weightW mean_$8 sigma_$8 kurt_$8
+   	   stats2 rateH weightH mean_$9 sigma_$9 kurt_$9
+      	   echo " <rate_whipple>_w = " $mean_$8 "+/-" $sigma_$8
+   	   echo " <rate_hegra>     = " $mean_$9 "+/-" $sigma_$9
+	} else {
+	   #--- LOGARITHMIC ---#
+	   set rateW   = rate_$8    if( rate_$8 > 0 )
+	   set weightW = weight_$8  if( rate_$8 > 0 )
+	   set rateH   = rate_$9    if( rate_$9 > 0 )
+	   set weightH = weight_$9  if( rate_$9 > 0 )
+	   set rateW = lg(rateW)  
+	   set rateH = lg(rateH) 
+   	   # stats rateW mean_$8 sigma_$8 kurt_$8
+   	   # stats rateH         mean_$9 sigma_$9 kurt_$9
+   	   stats2 rateW weightW mean_$8 sigma_$8 kurt_$8
+   	   stats2 rateH weightH mean_$9 sigma_$9 kurt_$9
+      	   echo " <lg(rate_whipple)>_w = " $mean_$8 "+/-" $sigma_$8
+   	   echo " <lg(rate_hegra)>     = " $mean_$9 "+/-" $sigma_$9
+	}
+
+	if( substr('$rescaleavrg',0,1) == 'y' ) {
+	   ###set rate_hresc = ($sigma_$8/$sigma_$9)*(rate_$9 - $mean_$9 + $sigma_$9/$sigma_$8*$mean_$8)
+
+	   set rate_hresc     = ($sigma_$8/$sigma_$9)*(rateH - $mean_$9 + $sigma_$9/$sigma_$8*$mean_$8)
+	   ## set err_rate_hrec  = ($sigma_$8/$sigma_$9)*err_rateH
+	   if( substr('$LOGorLIN',1,1) == 'o' ) {
+   	      # stats rate_hresc mean_hresc sigma_hresc kurt_hresc
+   	      stats2 rate_hresc weightH mean_hresc sigma_hresc kurt_hresc
+	      echo " "
+	      echo " Preliminary check of rescaling for the LOG case.... "
+   	      echo " <lg(rate_hRESC)>   = " $mean_hresc "+/-" $sigma_hresc
+	      set rate_hresc = 10.**rate_hresc
+	   }
+	   set err_rate_hresc = (err_rate_$9/rate_$9)*rate_hresc
+	} else {
+	   set rate_hresc     = rate_$9
+	   set err_rate_hresc = err_rate_$9
+	}
+
+	foreach 1 < newt newt1 newt2 newbin cvrfr dt_true counts err_counts > {
+	    set $1_hresc = $1_$hsfx
+	}
+   	stats  rate_hresc         mean_hresc sigma_hresc kurt_hresc
+   	stats2 rate_hresc weightH mean_hresc sigma_hresc kurt_hresc
+	echo "-----------------------------------------------------------------"
+	echo " Checking rescaling .... "
+   	echo " <rate_hRESC>   = " $mean_hresc "+/-" $sigma_hresc
+
+	set flag_$wsfx = newt_$wsfx*0  + 1 
+	set flag_hresc = newt_$hsfx*0  + 2
+	foreach 1 < newt newt1 newt2 newbin rate err_rate \
+	              cvrfr dt_true counts err_counts flag > {
+	    set $1_tev01 = $1_$wsfx concat $1_hresc
+	}
+	set sortref local
+	set sortref = newt_tev01
+	sort < newt_tev01 newt1_tev01 newt2_tev01 newbin_tev01 \
+	       rate_tev01 err_rate_tev01 cvrfr_tev01 >
+	sort < sortref dt_true_tev01 counts_tev01 err_counts_tev01 flag_tev01  > 
+
+	echo "-----------------------------------------------------------------------------"
+	echo " Created light curve arrays with extension tev01. "
+	echo " HEGRA input data have been rescaled and they are stored in arrays *_hresc"
+	echo "   They can be renamed using 'mvlc', e.g. mvlc hresc hfreb2 "
+	echo "-----------------------------------------------------------------------------"
+	
+#---------------------------------------------------------------------------
+# x_and_tev  : Rebins a light curve over the same binning of a reference dataset
+#            : USED to rebin X-ray l.c. to TeV l.c.
+x_and_tev
+	
+	define errflag "spread"
+	define ext1    ? <            Suffix of Reference Light Curve : >
+	define ext2    ? <      Suffix of to-be-Rebinned  Light Curve : >
+	define tshift  ? < Time shift to be applied to 2nd dataset [s]: >
+	define errflag ? <     Use "spread" or "prop" error for error : >
+	define 1 $ext1
+	define 2 $ext2
+
+	if( substr('$ext1',0,1) == 'h' ) { define l1 "h" }
+	if( substr('$ext1',0,1) == 'w' ) { define l1 "w" }
+	if( substr('$ext1',0,1) == 't' && strlen('$ext1') > 3 ) { define l1 "t" }
+	if( substr('$ext2',0,1) == 'p' ) { define l2 "p" }
+	if( substr('$ext2',0,1) == 'h' ) { define l2 "h" }
+	define labelhelper "$!l1""$!l2"
+
+	foreach 3 < newt1 newt2 newt newbin rate err_rate > { 
+	     set $3_ref = $3_$1
+	     set $3_t   = $3_$2
+	}
+	set xtev_match_$2 = rate_$2*0
+
+	foreach 3 < newt1 newt2 newt > { 
+	     set $3_t = $3_t + $tshift
+	}
+	
+	set vr     = < -1 >
+	set ver    = < -1 >
+	set vn     = < -1 >
+	set vrmin  = < -1 >
+	set vrmax  = < -1 >
+	set idxvec = < -1 >
+	
+	define j0  0
+	define lj  0
+	define checkn 0
+
+	#-------------------------------------------------
+	do i=0,$(dimen(newt_ref)-1) {
+	   define nj  0
+	   define r   0
+	   define r2  0
+	   define er2 0
+	   define rmin  1e6
+	   define rmax -1e6
+
+	   do j=$j0,$(dimen(newt_t)-1) {
+	      if( newt_t[$j] > newt1_ref[$i] && newt_t[$j] <= newt2_ref[$i] ) {
+		 set idxvec = idxvec concat < $j >
+	         define r   $($r   + rate_t[$j]        )
+	         define r2  $($r2  + rate_t[$j]**2.    )
+	         define er2 $($er2 + err_rate_t[$j]**2.)
+		 define nj  $($nj  + 1 )
+		 define lj  $j
+		 if( rate_t[$j] < $rmin ) { define rmin $(rate_t[$j]) }
+		 if( rate_t[$j] > $rmax ) { define rmax $(rate_t[$j]) }
+
+		 set xtev_match_$2[$j] = 1
+	      } 
+	   }
+	   set idxvec = idxvec concat < -1 >
+	   define newj0 $lj
+	   # echo [$i] j0  lj  nj  dj :  $(sprintf('%4d',$j0)) $(sprintf('%4d',$lj)) $(sprintf('%4d',$nj)) $(sprintf('%4d',$($lj-$j0+1))) \
+	   #           $(sprintf('%9.1f',$(newt_t[$lj]))) : $(sprintf('%9.1f',$(newt1_ref[$i]))) - $(sprintf('%9.1f',$(newt2_ref[$i]))) 
+	   define j0 $($lj+1)
+	   define checkn $($checkn + $nj)
+
+	   set vn    = vn    concat < $nj >
+	   if( $nj > 0 ) {
+	      if( substr('$errflag',0,1) == 's' ) {
+	         define err (sqrt(abs( ($r/$nj)**2. - $r2/$nj )))
+	      }
+	      if( substr('$errflag',0,1) == 'p' ) {
+	         define err (sqrt($er2)/$nj)
+	      }
+	      set vr    = vr    concat < $($r/$nj) >
+	      set ver   = ver   concat < $err >
+	      set vrmin = vrmin concat < $rmin >
+   	      set vrmax = vrmax concat < $rmax >
+	   } else {
+	      set vr    = vr    concat < 0.01   >
+	      set ver   = ver   concat < 0.0001 >
+	      set vrmin = vrmin concat < 0.01 >
+   	      set vrmax = vrmax concat < 0.01 >
+	   }
+	}
+	#-------------------------------------------------
+	echo " Time shift applied = " $tshift
+	echo " control number of contributions: " $checkn
+
+	set idxvec2 = idxvec if(idxvec >=0 )
+	set vrmin   = vrmin  if(vr     >=0 )
+	set vrmax   = vrmax  if(vr     >=0 )
+	set vn      = vn     if(vr     >=0 )
+	set vr      = vr     if(vr     >=0 )
+	set ver     = ver    if(ver    >=0 )
+
+	set xtt   = newt_$1
+	set xtt1  = newt1_$1
+	set xtt2  = newt2_$1
+	set dtt   = newbin_$1
+	set rt    = rate_$1
+	set ert   = err_rate_$1
+	set rx    = vr
+	set erx   = ver
+	set nx    = vn
+	set rxmin = vrmin
+	set rxmax = vrmax
+
+	echo "--------------------------------------------------------"
+	echo " Created arrays : "
+	echo "   => xtt rt ert "
+	echo "   =>     rx erx "
+	echo "   =>             nx rxmin rxmax "
+	echo "--------------------------------------------------------"
+	define dum "n"
+	define dum "$!1_$!2"
+	define dum ? < Rename arrays [if yes, give suffix]: >
+	if( substr('$dum',0,1) == 'n' && strlen('$dum') == 1 ) { 
+	   echo ">>> Leaving arrays on standard names"
+	} else {
+	   echo ">>> Renaming arrays to *_"$dum
+	   foreach 1 < xtt xtt1 xtt2 dtt rt ert rx erx nx rxmin rxmax > {
+	      set  $1_$dum = $1
+	   }
+	   define labelhelper_$dum "$!labelhelper"
+	}
+
+	echo "--------------------------------------------------------"
+	echo " New arrays are:"
+	echo "  + xtt    : time tag"
+	echo "  + dtt    : time bin duration (from ref. light curve) "
+	echo "  + rt/ert : TeV rate and error (ref. light curve)"
+	echo "  + rx/erx : x-ray rate and error (reb. light curve)"
+	echo "  + nx     : \# of x-ray bins in a given TeV bin "
+	echo "  + rxmin  : min. x-ray rate in a given TeV bin"
+	echo "  + rxmax  : max. x-ray rate in a given TeV bin"
+	echo "--------------------------------------------------------"
+
+	unset vr
+	unset ver
+	unset vrmin
+	unset vrmax
+
+#---------------------------------------------------------------------------
+# print_x_and_tev  [<Suffix of arrays to be written>]
+print_x_and_tev 01
+
+        if(!$?1) { 
+           define 1 ? <* Suffix of arrays to be written : >
+        }
+	define outaux $1
+
+	foreach _temp_ < outfilename veclist fmt > {
+	   define $_temp_ local
+	} 
+	define outfilename SAVE_x_and_tev_$1.dat
+
+	define veclist " xtt_$1 xtt1_$1 xtt2_$1 dtt_$1 rt_$1 ert_$1  rx_$1 erx_$1 nx_$1 rxmin_$1 rxmax_$1 "
+	define fmt  " %10.2f %10.2f %10.2f  %7.1f  %9.4f %9.4f   %9.4f %9.4f  %4d  %9.4f    %9.4f\n"
+
+	define print_noheader 1
+	write   "/tmp/SMdum" "gugug"
+	write   $outfilename "# INPUT : $!1"
+	write   $outfilename "# LabelHelper : "$labelhelper_$1
+	write   $outfilename "#   xtt         xtt1       xtt2       dtt        rt       ert          rx       erx      nx      rxmin       rxmax"
+	write   $outfilename "# "
+	print + $outfilename '$!fmt' < $veclist >
+	define print_noheader 0
+
+##-------------------------------------------------------------------------------
+TEST_shaded_boxes 01
+
+	#--- how to overlay the rebinned x-ray to a light curve plot ---#
+
+	if( $?1 ) { 
+	   define xx $1 
+	} else {
+	   define xx "tev01r2_pca_5_23_32"
+	   define xx "tev01r2_5_23"
+	}
+
+	# points  xtt_$xx (lg(rx_$xx))
+	# error_x xtt_$xx (lg(rx_$xx)) (0.5*dtt_$xx)
+	# logerr  xtt_$xx (lg(rx_$xx)) erx_$xx
+	#--- OR ---#
+	set leftx  = xtt_$xx - 0.5*dtt_$xx
+	set rightx = xtt_$xx + 0.5*dtt_$xx
+	set lowy   = (lg(rx_$xx - erx_$xx))
+	set highy  = (lg(rx_$xx + erx_$xx))
+	ctype 5 
+	do i=0,dimen(xtt_$xx)-1 {
+	   relocate $(leftx[$i])  $(lowy[$i])
+	   draw     $(rightx[$i]) $(lowy[$i])
+	   draw     $(rightx[$i]) $(highy[$i])
+	   draw     $(leftx[$i])  $(highy[$i])
+	   draw     $(leftx[$i])  $(lowy[$i])
+	}
+	ctype 2
+
+#---------------------------------------------------------------------------
+# load_x_and_tev  [[<Partial Name of File to be read>]
+load_x_and_tev 01 
+
+        if(!$?1) { 
+           define 1 ? <* Partial Name of File to be read : >
+        }
+	define readaux $1
+
+	data SAVE_x_and_tev_$1.dat
+	define labelhelper_$1 read 2 3
+	echo $labelhelper_$1
+	#read < xtt_$1 1 dtt_$1 2 rt_$1 3 ert_$1 4 rx_$1 5 erx_$1 6 nx_$1 7 rxmin_$1 8 rxmax_$1 9 >
+	read < xtt_$1 1 xtt1_$1 2 xtt2_$1 3 dtt_$1 4 >
+	read < rt_$1 5 ert_$1 6 rx_$1 7 erx_$1 8 nx_$1 9 rxmin_$1 10 rxmax_$1 11 >
+
+	echo ">>>     Loaded arrays named : $!1 "
+	define whattodo ? {*      Rename vectors [y/n] : }
+	if(substr('$whattodo',0,1) == 'y') {
+	  echo " "
+	  define name local 
+	  define name ?   {* Suffix name for vectors to become *_name : }
+	  foreach 3 < xtt  dtt  rt  ert   rx  erx  nx  rxmin  rxmax  > {
+	     set $3_$name = $3_$1
+	     delete $3_$1
+	  }
+	  define labelhelper_$name $labelhelper_$1
+	} 
+
+#---------------------------------------------------------------------------
+# OLDplot_x_and_tev : plots X vs. TeV rates, with filter on time interval.
+#                : Needs to have x_and_tev run before.
+#                : OBSOLETE! OBSOLETE! OBSOLETE! OBSOLETE! OBSOLETE! 
+OLDplot_x_and_tev 02
+
+	if(!$?1) { 
+	   define xtt1 ? < * Start Time [ks] : >
+	   define xtt2 ? < *  Stop Time [ks] : >
+	} else {
+	   define xtt1 $1
+	   define xtt2 $2
+	}
+
+	if( abs($xtt1) < 2000 ) { define xtt1 $($xtt1*1000) }
+	if( abs($xtt2) < 2000 ) { define xtt2 $($xtt2*1000) }
+
+	set _rx  = rx   if( xtt > $xtt1 && xtt <= $xtt2  && rx > 0.1) 
+	set _erx = erx  if( xtt > $xtt1 && xtt <= $xtt2  && rx > 0.1) 
+	set _rt  = rt   if( xtt > $xtt1 && xtt <= $xtt2  && rx > 0.1) 
+	set _ert = ert  if( xtt > $xtt1 && xtt <= $xtt2  && rx > 0.1) 
+
+	ctype 2
+	ltype 0 
+	lweight 3
+	expand 1.5
+	ticksize -1 0 -1 0
+	range 1.5 1.5
+	limits $(lg(9)) $(lg(280)) (lg(_rt))
+	box
+	xlabel RXTE/PCA rate [cts/s/PCU]
+	ylabel Whipple rate [Crab units]
+
+	set _x    =  lg(_rx)
+	set _ex_u =  lg(1 + _erx/_rx)
+	set _ex_d = -lg(1 - _erx/_rx)
+	set _y    =  lg(_rt)
+	set _ey_u =  lg(1 + _ert/_rt)
+	set _ey_d = -lg(1 - _ert/_rt)
+
+	echo "  [1] B/W dots  "
+	echo "  [2] color dots"
+	define bw ? < * B/W or color : >
+
+	if( $bw == 1 ) { plot_verynice }
+	if( $bw == 2 ) { 
+	     define _pty ? < * Ptype Color-OUT Color-IN [# # #]: >
+	     mypoints $_pty _x _y _ey_u _ey_d 1.2 
+	}
+	range 0 0 
+
+#---------------------------------------------------------------------------
+# plot_x_and_tev_all  [<T_start>] [<T_stop>]
+#           : plots X vs. TeV rates, with filter on time interval.
+#           : Needs to have x_and_tev run before.
+#           : It uses variable $labelhelper from x_and_tev to define X-label.
+plot_x_and_tev_all 02
+
+	define dum ? < Use named arrays [if yes, give suffix]: >
+	if( substr('$dum',0,1) == 'n' && strlen('$dum') == 1 ) {
+	   echo ">>> Using standard names."
+	} else {
+	   echo ">>> Using renamed arrays : *_"$dum
+	   foreach 1 < xtt rt ert rx erx nx > {
+	      set  $1 = $1_$dum
+	   }
+	   define labelhelper $labelhelper_$dum
+	}
+
+	if(!$?1) {
+	   define xtt1 ? < * Start Time [ks]: >
+	   define xtt2 ? < *  Stop Time [ks]: >
+	} else {
+	   define xtt1 $1
+	   define xtt2 $2
+	}
+
+	if( abs($xtt1) < 2000 ) { define xtt1 $($xtt1*1000) }
+	if( abs($xtt2) < 2000 ) { define xtt2 $($xtt2*1000) }
+
+	foreach var < rx erx rt ert xtt > {
+	    set _$var local
+	}
+	set _rx  = rx   if( xtt > $xtt1 && xtt <= $xtt2  && rx > 0.1) 
+	set _erx = erx  if( xtt > $xtt1 && xtt <= $xtt2  && rx > 0.1) 
+	set _rt  = rt   if( xtt > $xtt1 && xtt <= $xtt2  && rx > 0.1) 
+	set _ert = ert  if( xtt > $xtt1 && xtt <= $xtt2  && rx > 0.1) 
+	set _xtt = xtt  if( xtt > $xtt1 && xtt <= $xtt2  && rx > 0.1) 
+
+	set dumx local
+	set dumy local
+	set dumx = (_rx - _erx) CONCAT (_rx + _erx)
+	set dumy = (_rt - _ert) CONCAT (_rt + _ert)
+
+	ctype 2
+	ltype 0 
+	lweight 3
+	expand 1.5
+	ticksize -1 0 -1 0
+	# range 1.5 1.5
+	# range 1.7 1.7
+	# limits (lg(dumx)) (lg(dumy))
+
+	define axes_range (1.2)
+	set testx = lg(dumx)
+	vecminmax testx xa xb
+	define xmin $(0.5*($xa+$xb) - 0.5*$axes_range ) 
+	define xmax $(0.5*($xa+$xb) + 0.5*$axes_range ) 
+	set testy = lg(dumy)
+	vecminmax testy ya yb
+	define ymin $(0.5*($ya+$yb) - 0.5*$axes_range ) 
+	define ymax $(0.5*($ya+$yb) + 0.5*$axes_range ) 
+	limits $xmin $xmax $ymin $ymax
+
+	box
+
+	define l1 (substr('$labelhelper',0,1))
+	define l2 (substr('$labelhelper',1,1))
+	if( substr('$l1',0,1) == 'h' ) { ylabel HEGRA Flux [Crab units]   }
+	if( substr('$l1',0,1) == 'w' ) { ylabel Whipple Flux [Crab units] }
+	if( substr('$l1',0,1) == 't' ) { ylabel TeV Flux [Crab units]     } 
+	if( substr('$l2',0,1) == 'p' ) { xlabel RXTE/PCA rate [cts/s/PCU] }
+	if( substr('$l2',0,1) == 'h' ) { xlabel RXTE/HEXTE rate [cts/s]   }
+
+	foreach var < x ex_d ex_u y_ey_u ey_d > {
+	    set _$var local
+	}
+	set _x    =  lg(_rx)
+	set _ex_u =  lg(1 + _erx/_rx)
+	set _ex_d = -lg(1 - _erx/_rx)
+	set _y    =  lg(_rt)
+	set _ey_u =  lg(1 + _ert/_rt)
+	set _ey_d = -lg(1 - _ert/_rt)
+
+	# set _t1 = <   0 100 150 250 350 450 500 >*1e3
+	# set _t2 = < 100 150 250 350 450 500 600 >*1e3
+	set _t0 = <   0   1   2   3   4   5   6 >*86400
+	set _t1 = _t0 - 12e3
+	set _t2 = _t0 + 50e3
+	set _cc = <   3   4   5   6   7   8   1 >
+	if( substr('$l1',0,1) == 'h' ) {
+	   echo " Got it!... these are HEGRA data "
+	   # set _t1 = _t1 - 40e3
+	   # set _t2 = _t2 - 40e3
+	}
+	if( substr('$l1',0,1) == 't' ) { 
+	    ###&& strlen('$ext1') > 3 ) 
+	   echo " Got it!... these are combined data "
+	   # set _t1 = _t1 - 40e3
+	}
+
+	do 3=0,dimen(_cc)-1 {
+	    define verbose 0
+	    echo $(_t1[$3]) $(_t2[$3])
+	    set _x    =  lg(_rx)           if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+	    set _ex_u =  lg(1 + _erx/_rx)  if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+	    set _ex_d = -lg(1 - _erx/_rx)  if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+	    set _y    =  lg(_rt)           if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+	    set _ey_u =  lg(1 + _ert/_rt)  if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+	    set _ey_d = -lg(1 - _ert/_rt)  if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+
+	    set err__x_u = _ex_u
+	    set err__x_d = _ex_d
+	    set err__y_u = _ey_u
+	    set err__y_d = _ey_d
+	    if( dimen(_x) > 0 ) {
+	       # mypoints 4 2 $(_cc[$3]) _x _y _ey_u _ey_d 1.2 
+	       ltype 2 ctype 2 connect _x _y  ltype 0
+	       errorbar _x _y _ex_u 1
+	       errorbar _x _y _ex_d 3
+	       mypoints2 4 2 $(_cc[$3]) _x _y 1.2 
+	    } 
+	    define verbose 1
+	}
+
+	define _rat local
+	ltype 2
+	foreach a < 26.56 45 63.43 > {
+	    grelocate 0.025 0.6 gdraw_angle $a 0.25
+	    define _rat $(tand($a))
+	    putlabel 9 $(sprintf('%3.1f',float($_rat)))
+	}
+	ltype 0
+
+	# echo   [1] B/W dots
+	# echo   [2] color dots
+	# define bw ? < B/W or color : >
+
+	# if( $bw == 1 ) { plot_verynice }
+	# if( $bw == 2 ) { 
+	#      define _pty ? < Ptype Color-OUT Color-IN : >
+	#      mypoints $_pty _x _y _ey_u _ey_d 1.2 
+	# }
+
+	define title ? < top label : >
+	echo $title
+	relocate ( $gx1 $($gy2+500) )
+	putlabel 6 $title
+
+	define fittev ? < Fit Slope [y/n] : >
+	if( substr('$fittev',0,1) == 'y') {
+	  fit_tev
+	}
+	range 0 0 
+
+#---------------------------------------------------------------------------
+# plot_x_and_tev : alias for the real program: plot_x_and_tev_nights 
+plot_x_and_tev 
+	
+	plot_x_and_tev_nights
+
+#---------------------------------------------------------------------------
+# plot_x_and_tev_nights 
+#           : plots X vs. TeV rates, by taking directly night's string.
+#           : Needs to have x_and_tev run before.
+#           : It uses variable $labelhelper from x_and_tev to define X-label.
+plot_x_and_tev_nights 
+
+	reset_graph
+
+	define dum ? < * Use named arrays [if yes, give suffix]: >
+	if( substr('$dum',0,1) == 'n' && strlen('$dum') == 1 ) { 
+	   echo ">>> Using standard names. "
+	} else {
+	   echo ">>> Using renamed arrays : *_"$dum
+	   foreach 1 < xtt rt ert rx erx nx > {
+	      set  $1 = $1_$dum
+	   }
+	   define labelhelper $labelhelper_$dum
+	}
+	set _t0 = <   0   1   2   3   4   5   6 >*86400
+	set _t1 = _t0 - 12e3
+	set _t2 = _t0 + 50e3
+	set _cc = <   3   4   5   6   7   8   1 >
+
+        define nights ?  { *                    Which Nights [1-7] : }
+        define length $(strlen('$nights'))
+	define title "days "
+
+	foreach 3 < rx erx rt ert xtt > {
+	    local set _$3= < -1e6 >
+	    set _$3_ local
+	}
+
+        do i=1,$length {
+           define 2 $(substr('$nights',$($i-1),1))
+	   if( $i < $length ) { 
+	      define title "$!title"$2"+"
+	   } else {
+	      define title "$!title"$2
+	   }
+	   define 2 ($2-1)
+	   set _rx_  = rx   if( xtt > _t1[$2] && xtt <= _t2[$2]  && rx > 0.1) 
+	   set _erx_ = erx  if( xtt > _t1[$2] && xtt <= _t2[$2]  && rx > 0.1) 
+	   set _rt_  = rt   if( xtt > _t1[$2] && xtt <= _t2[$2]  && rx > 0.1) 
+	   set _ert_ = ert  if( xtt > _t1[$2] && xtt <= _t2[$2]  && rx > 0.1) 
+	   set _xtt_ = xtt  if( xtt > _t1[$2] && xtt <= _t2[$2]  && rx > 0.1) 
+	   foreach 3 < rx erx rt ert xtt > {
+	      set _$3 = _$3 concat _$3_
+	   }
+        }
+
+	foreach 3 < rx erx rt ert xtt > {
+	    set _$3 = _$3 if( _$3 > -1e6 )
+	}
+
+	set dumx local
+	set dumy local
+	set lowy = _rt - _ert   if( _rt/_ert > 1.5 )
+	set dumx = (_rx - _erx) CONCAT (_rx + _erx)
+	# set dumy = (_rt - _ert) CONCAT (_rt + _ert)
+	set dumy = lowy CONCAT (_rt + _ert)
+	# print < dumx dumy _rt _ert >
+	set dumx = _rx
+	set dumy = _rt
+
+	ctype 2
+	ltype 0 
+	lweight 3
+	expand 1.5
+	ticksize -1 5 -1 5
+	# range 1.7 1.7
+	# range 1   1  
+	# range 1.5 1.5
+	# range 2   2  
+	# range 1.1 1.1
+
+	define axes_range $(lg(30.0))
+
+	define fraclow (0.55)
+        if( substr('$nights',0,1) == '2' ) {  define fraclow 0.60 } 
+
+	set testx = lg(dumx)
+	vecminmax testx xa xb
+	define xmin $(0.5*($xa+$xb) - $fraclow*$axes_range ) 
+	define xmax $(0.5*($xa+$xb) + (1-$fraclow)*$axes_range ) 
+	set testy = lg(dumy)
+	vecminmax testy ya yb
+	define ymin $(0.5*($ya+$yb) - $fraclow*$axes_range ) 
+	define ymax $(0.5*($ya+$yb) + (1-$fraclow)*$axes_range ) 
+	# limits 0.990236 2.46736 -0.595887 0.881234
+	limits $xmin $xmax $ymin $ymax
+
+	box
+
+	define l1 (substr('$labelhelper',0,1))
+	define l2 (substr('$labelhelper',1,1))
+	if( substr('$l1',0,1) == 'h' ) { ylabel HEGRA Flux [Crab units]   }
+	if( substr('$l1',0,1) == 'w' ) { ylabel Whipple Flux [Crab units] }
+	if( substr('$l1',0,1) == 't' ) { ylabel TeV Flux [Crab units] } 
+	if( substr('$l2',0,1) == 'p' ) { xlabel RXTE/PCA rate [cts/s/PCU] }
+	if( substr('$l2',0,1) == 'h' ) { xlabel RXTE/HEXTE rate [cts/s]   }
+
+	foreach var < x ex_d ex_u y_ey_u ey_d > {
+	    set _$var local
+	}
+	set _x    =  lg(_rx)
+	set _ex_u =  lg(1 + _erx/_rx)
+	set _ex_d = -lg(1 - _erx/_rx)
+	set _y    =  lg(_rt)
+	set _ey_u =  lg(1 + _ert/_rt)
+	set _ey_d = -lg(1 - _ert/_rt)
+
+	if( substr('$l1',0,1) == 'h' ) { 
+	   echo " Got it!... these are HEGRA data "
+	}
+	if( substr('$l1',0,1) == 't' ) { 
+	   echo " Got it!... these are combined data "
+	}
+
+	echo "----------------------------------------------------"
+	echo "   [0]    no points   "
+	echo "   [1]    B/W dots    "
+	echo "   [2]    color dots  "
+	echo "   [real] color dots using number as EXPAND factor "
+	define bw ? < *     B/W or color [1/2]: >
+	do 3=0,dimen(_cc)-1 {
+	    define verbose 0
+	    echo $(_t1[$3]) $(_t2[$3])
+	    set _x    =  lg(_rx)           if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+	    set _ex_u =  lg(1 + _erx/_rx)  if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+	    set _ex_d = -lg(1 - _erx/_rx)  if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+	    set _y    =  lg(_rt)           if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+	    set _ey_u =  lg(1 + _ert/_rt)  if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+	    set _ey_d = -lg(1 - _ert/_rt)  if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+
+	    set err__x_u = _ex_u
+	    set err__x_d = _ex_d
+	    set err__y_u = _ey_u
+	    set err__y_d = _ey_d
+	    if( $bw > 0 ) { 
+	       if( dimen(_x) > 0 ) {
+	          # mypoints 4 2 $(_cc[$3]) _x _y _ey_u _ey_d 1.2 
+	          ltype 2 
+		  ctype 2 
+		  ctype grey70
+		  connect  _x _y  
+		  ctype 2
+		  ltype 0
+	          errorbar _x _y _ex_u 1
+	          errorbar _x _y _ex_d 3
+	          if( $bw == 1 )             { plot_verynice 0.7 }
+	          if( $bw == 2 )             { mypoints2 4 2 $(_cc[$3]) _x _y 1.2 } 
+	          if( $bw != 1 && $bw != 2 ) { mypoints2 4 2 $(_cc[$3]) _x _y $bw } 
+	       } 
+	    }
+	    define verbose 1
+	}
+
+	define _rat local
+	ltype 2
+	foreach a < 26.56 45 63.43 > {
+	    grelocate 0.025 0.6 gdraw_angle $a 0.25
+	    define _rat $(tand($a))
+	    putlabel 9 $(sprintf('%3.1f',float($_rat)))
+	}
+	ltype 0
+
+	# echo   [1] B/W dots
+	# echo   [2] color dots
+	# define bw ? < B/W or color : >
+
+	# if( $bw == 1 ) { plot_verynice }
+	# if( $bw == 2 ) { 
+	#      define _pty ? < Ptype Color-OUT Color-IN : >
+	#      mypoints $_pty _x _y _ey_u _ey_d 1.2 
+	# }
+
+	define title ? < top label : >
+	echo $title
+	relocate ( $gx1 $($gy2+500) )
+	putlabel 6 $title
+
+	relocate ( $($gx2+500) $gy2 ) 
+	angle 270
+	putlabel 6 Axes Range: \times $(sprintf('%2.0f',$(10.0**$axes_range)))
+	angle 0
+
+	define fittev ? < Fit Slope [y/n] : >
+	if( substr('$fittev',0,1) == 'y') {
+	  fit_tev
+	}
+	range 0 0 
+
+#---------------------------------------------------------------------------
+# plot_xHR_and_tev_nights : plots X vs. TeV rates, with filter on time interval.
+#                    : Needs to have x_and_tev run before.
+#                    : It uses variable ext2 from x_and_tev to define X-label.
+plot_xHR_and_tev_nights 01
+
+	define xhr1 ? < Name of first  X-ray band/TeV cc : >
+	define xhr2 ? < Name of second X-ray band/TeV cc : >
+
+	set xtt = xtt_$xhr1
+	set rt  =  rt_$xhr1
+	set ert = ert_$xhr1
+	set rx  = rx_$xhr1/rx_$xhr2
+	set nx  = nx_$xhr1
+	set frx = rx_$xhr1  ## ad-hoc to plot hardness ratio
+	local set aux1=erx_$xhr1/rx_$xhr1
+	local set aux2=erx_$xhr2/rx_$xhr2
+	set erx = rx*sqrt(aux1**2.+aux2**2.)/sqrt(2)
+
+	set _t0 = <   0   1   2   3   4   5   6 >*86400
+	set _t1 = _t0 - 12e3
+	set _t2 = _t0 + 50e3
+	set _cc = <   3   4   5   6   7   8   1 >
+
+        define nights ?  { Which laps [1-7] ? }
+        define length $(strlen('$nights'))
+	define title "days "
+
+	foreach 3 < rx erx rt ert xtt > {
+	    local set _$3= < -1000 >
+	    set _$3_ local
+	}
+
+        do i=1,$length {
+           define 2 $(substr('$nights',$($i-1),1))
+	   if( $i < $length ) { 
+	      define title "$!title"$2"+"
+	   } else {
+	      define title "$!title"$2
+	   }
+	   define 2 ($2-1)
+	   set _rx_  = rx   if( xtt > _t1[$2] && xtt <= _t2[$2]  && frx > 0.1) 
+	   set _erx_ = erx  if( xtt > _t1[$2] && xtt <= _t2[$2]  && frx > 0.1) 
+	   set _rt_  = rt   if( xtt > _t1[$2] && xtt <= _t2[$2]  && frx > 0.1) 
+	   set _ert_ = ert  if( xtt > _t1[$2] && xtt <= _t2[$2]  && frx > 0.1) 
+	   set _xtt_ = xtt  if( xtt > _t1[$2] && xtt <= _t2[$2]  && frx > 0.1) 
+	   foreach 3 < rx erx rt ert xtt > {
+	      set _$3 = _$3 concat _$3_
+	   }
+        }
+
+	foreach 3 < rx erx rt ert xtt > {
+	    set _$3 = _$3 if( _$3 > -999 )
+	}
+
+	set dumx local
+	set dumy local
+	set dumx = (_rx - _erx) CONCAT (_rx + _erx)
+	set dumy = (_rt - _ert) CONCAT (_rt + _ert)
+	help dumx
+
+	ctype 2
+	ltype 0 
+	lweight 3
+	expand 1.5
+	ticksize 0 0 -1 0
+	# range 1.7 1.7
+	# range 1   1  
+	# range 1.5 1.5
+	range 0 1.7
+	limits dumx (lg(dumy))
+	box
+	# if( substr('$ext2',0,1) == 'p' ) { xlabel RXTE/PCA rate [cts/s/PCU] }
+	# if( substr('$ext2',0,1) == 'h' ) { xlabel RXTE/HEXTE rate [cts/s]   }
+	# if( substr('$ext1',0,1) == 'h' ) { ylabel HEGRA Flux [Crab units]   }
+	# if( substr('$ext1',0,1) == 'w' ) { ylabel Whipple Flux [Crab units] }
+	# if( substr('$ext1',0,1) == 't' && strlen('$ext1') > 3 ) { ylabel TeV Flux [Crab units] } 
+	ylabel Whipple Flux [Crab units] 
+	xlabel RXTE/PCA 9-15/2-4 Hardness Ratio
+
+	foreach var < x ex_d ex_u y_ey_u ey_d > {
+	    set _$var local
+	}
+	set _x    =  _rx
+	set _ex_u =  _erx
+	set _ex_d =  _erx
+	set _y    =  lg(_rt)
+	set _ey_u =  lg(1 + _ert/_rt)
+	set _ey_d = -lg(1 - _ert/_rt)
+
+	if( substr('$ext1',0,1) == 'h' ) { 
+	   echo " Got it!... these are HEGRA data "
+	}
+	if( substr('$ext1',0,1) == 't' && strlen('$ext1') > 3 ) { 
+	   echo " Got it!... these are combined data "
+	}
+
+	echo "  [1] B/W dots    "
+	echo "  [2] color dots  "
+	define bw ? < B/W or color [1/2]: >
+	do 3=0,dimen(_cc)-1 {
+	    define verbose 0
+	    echo $(_t1[$3]) $(_t2[$3])
+	    set _x    =  _rx               if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+	    set _ex_u =  _erx              if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+	    set _ex_d =  _erx              if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+	    set _y    =  lg(_rt)           if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+	    set _ey_u =  lg(1 + _ert/_rt)  if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+	    set _ey_d = -lg(1 - _ert/_rt)  if( _xtt > _t1[$3] && _xtt <= _t2[$3] )
+
+	    set err__x_u = _ex_u
+	    set err__x_d = _ex_d
+	    set err__y_u = _ey_u
+	    set err__y_d = _ey_d
+	    if( dimen(_x) > 0 ) {
+	       # mypoints 4 2 $(_cc[$3]) _x _y _ey_u _ey_d 1.2 
+	       ltype 2 ctype $(_cc[$3]) connect _x _y  ltype 0
+	       errorbar _x _y _ex_u 1
+	       errorbar _x _y _ex_d 3
+	       if( $bw == 1 ) { plot_verynice 0.7 }
+	       if( $bw == 2 ) { mypoints2 4 2 $(_cc[$3]) _x _y 1.2 } 
+	    } 
+	    define verbose 1
+	}
+
+	#define _rat local
+	#ltype 2
+	#foreach a < 26.56 45 63.43 > {
+	#    grelocate 0.025 0.6 gdraw_angle $a 0.25
+	#    define _rat $(tand($a))
+	#    putlabel 9 $(sprintf('%3.1f',float($_rat)))
+	#}
+	#ltype 0
+
+	define title ? < top label : >
+	echo $title
+	relocate ( $gx1 $($gy2+500) )
+	putlabel 6 $title
+
+	# define fittev ? < Fit Slope [y/n] : >
+	# if( substr('$fittev',0,1) == 'y') {
+	#   fit_tev
+	# }
+	range 0 0 
+
+#---------------------------------------------------------------------------
+# fit_tev
+fit_tev
+
+	echo " "
+	echo "----------- Give X-ray flux limits ----------"
+	define x1 ?   {                      F_1 : }
+	define x2 ?   {                      F_2 : }
+	# define x0 ? { F_ref : }
+	echo " Color for fit..."
+	define cfit ? {  ...[negative=No overlay]: }
+
+	define lg_x1 $(lg($x1))
+	define lg_x2 $(lg($x2))
+	# define lg_x0 $(lg($x0))
+
+	set _x    =  lg(_rx)
+	set _ex_u =  lg(1 + _erx/_rx)
+	set _ex_d = -lg(1 - _erx/_rx)
+	set _y    =  lg(_rt)
+	set _ey_u =  lg(1 + _ert/_rt)
+	set _ey_d = -lg(1 - _ert/_rt)
+
+	set data_x = _x    if( _x >= $lg_x1 && _x <= $lg_x2 )
+	set data_y = _y    if( _x >= $lg_x1 && _x <= $lg_x2 )
+	set data_w = _ey_u if( _x >= $lg_x1 && _x <= $lg_x2 )
+	set data_w = 1/data_w**2.
+
+	echo "---------------------------------------------"
+	vecminmax data_x _a _b 
+	define lg_x0 $( 0.5*($_a+$_b) )
+	define x0    $( 10.**$lg_x0   )
+	echo "* Data Range: "$(sprintf('%5.2f',$(10.**$_a))) "-" $(sprintf('%5.2f',$(10.**$_b))) 
+	echo "* Data Log midpoint: "$(sprintf('%5.2f',$x0)) 
+	# define lg_x0 $(lg($x0))
+
+	set lg_xf=$lg_x1,$lg_x2,0.05
+
+	set lg_xf  = lg_xf  - $lg_x0
+	set data_x = data_x - $lg_x0 
+
+	define fit_x0 $lg_x0
+
+	#-----------------------------------------------------------
+	#   PLAIN FIT 
+	lsq  data_x data_y lg_xf yf rms
+
+	echo "---------------------------------------------"
+	echo "* PLAIN fit "
+	echo "* Slope        : "$(sprintf('%8.5f',$a)) "+/-" $(sprintf('%8.5f',$sig_a))
+	echo "* F_tev[@ F_x="$(sprintf('%5.2f',$x0))"] : "$(sprintf('%8.5f',$b)) "+/-" $(sprintf('%8.5f',$sig_b))
+	echo "---------------------------------------------"
+
+	if( $cfit > 0 ) {
+	  ctype $cfit
+	  ptype 4 0 
+	  connect (lg_xf + $lg_x0) yf
+	  points  (lg_xf + $lg_x0) yf
+	}
+	relocate ( $gx2 $($gy2+500) )
+	putlabel 4 \beta=$(sprintf('%4.2f',$a))\pm $(sprintf('%4.2f',$sig_a))
+
+	draw_fork $_a $_b $lg_x0 $b $sig_b $a $sig_a
+
+	#-----------------------------------------------------------
+	#   WEIGHTED FIT 
+	wlsq  data_x data_y data_w lg_xf yf rms
+
+	echo "---------------------------------------------"
+	echo "* WEIGHTED fit "
+	echo "* Slope        : "$(sprintf('%8.5f',$a)) "+/-" $(sprintf('%8.5f',$sig_a))
+	echo "* F_tev[@ F_x="$(sprintf('%5.2f',$x0))"] : "$(sprintf('%8.5f',$b)) "+/-" $(sprintf('%8.5f',$sig_b))
+	echo "---------------------------------------------"
+	echo ">>> Used "$(dimen(data_x))" data points"
+	echo "---------------------------------------------"
+
+	ptype 4 3 
+	if( $cfit > 0 ) {
+	  ctype $cfit
+	  ptype 4 0 
+	  connect (lg_xf + $lg_x0) yf
+	  points  (lg_xf + $lg_x0) yf
+	}
+	relocate ( $gx2 $($gy2-800) )
+	putlabel 4 \beta_w=$(sprintf('%4.2f',$a))\pm $(sprintf('%4.2f',$sig_a))
+
+	# draw_fork $_a $_b $lg_x0 $b $sig_b $a $sig_a
+	#-----------------------------------------------------------
+
+	set fitx = data_x
+	set fity = data_y 
+	set fitw = 1/sqrt(data_w)
+	define fit_x0 $lg_x0
+
+	ctype 2
+
+#------------------------------------------------------------------------------
+# draw_fork  lg_x1 lg_x2 lg_x0 b sb a sa
+draw_fork 7
+
+	define y1 $($b-2*$sig_b)
+	define y2 $($b+2*$sig_b)
+	define a1 $($a-2*$sig_a)
+	define a2 $($a+2*$sig_a)
+	echo $a1 $a2
+
+	ctype 3
+	relocate $3 $y2
+	draw     $2 $($y2 + $a2*($2-$3))
+	draw     $2 $($y1 + $a1*($2-$3))
+	draw     $3 $y1
+	draw     $1 $($y1 + $a2*($1-$3))
+	draw     $1 $($y2 + $a1*($1-$3))
+	draw     $3 $y2
+	ctype 2 
+	
+#---------------------------------------------------------------------------
+# check_coverage_nights 
+check_coverage_nights 
+
+	define dum ? < * Use named arrays [if yes, give suffix]: >
+	if( substr('$dum',0,1) == 'n' && strlen('$dum') == 1 ) { 
+	   echo ">>> Using standard names. "
+	} else {
+	   echo ">>> Using renamed arrays : *_"$dum
+	   foreach 1 < xtt dtt rt rx nx > {
+	      set  $1 = $1_$dum
+	   }
+	}
+	set _t0 = <   0   1   2   3   4   5   6 >*86400
+	set _t1 = _t0 - 12e3
+	set _t2 = _t0 + 50e3
+
+        define nights ?  { *                    Which Nights [1-7] : }
+        define length $(strlen('$nights'))
+
+	foreach 3 < xtt1 xtt dtt rt rx nx > {
+	    #local set _$3= < -1e6 >
+	    set _$3= < -1e6 >
+	    set _$3_ local
+	}
+
+        do i=1,$length {
+           define 2 $(substr('$nights',$($i-1),1))
+	   define 2 ($2-1)
+	   set _xtt1_ = xtt  if( xtt > _t1[$2] && xtt <= _t2[$2] )
+	   set _dtt_  = dtt  if( xtt > _t1[$2] && xtt <= _t2[$2] )
+	   set _xtt_  = xtt  if( xtt > _t1[$2] && xtt <= _t2[$2]  && rx > 0.01 ) 
+	   set _rt_   = rt   if( xtt > _t1[$2] && xtt <= _t2[$2]  && rx > 0.01 ) 
+	   set _rx_   = rx   if( xtt > _t1[$2] && xtt <= _t2[$2]  && rx > 0.01 ) 
+	   set _nx_   = nx   if( xtt > _t1[$2] && xtt <= _t2[$2]  && rx > 0.01 ) 
+	   foreach 3 < xtt1 xtt dtt rt rx nx > {
+	      set _$3 = _$3 concat _$3_
+	   }
+        }
+	foreach 3 < xtt1 xtt dtt rt rx nx > {
+	    set _$3 = _$3 if( _$3 > -1e6 )
+	}
+
+	# define basedt_t ? < Base interval duration for TeV   l.c. [s] : >
+	define basedt_x ? < Base interval duration for X-ray l.c. [s] : >
+
+	define ntevbin local
+	define nxbin   local
+	define pct     local
+	define ntevbin $(dimen(_xtt1))
+	define nxbin   $(dimen(_xtt))
+	define pct     $(sprintf('%4.1f',$(100.0001*$(dimen(_xtt))/$(dimen(_xtt1)))))
+
+	#define detailed_tev_fake $($ntevbin*$basedt_t)
+	define detailed_tev $(sum(_dtt))
+	define nxsum $(sum(_nx))
+	define detailed_x   $($nxsum*$basedt_x)
+	define detailed_pct $(sprintf('%4.1f',$(100.*$detailed_x/$detailed_tev)))
+
+	define tevhrs $(int($detailed_tev/3600))
+	define tevmin $(int(($detailed_tev%3600)/60))
+
+	echo "--------------------------------------------------------"
+	echo " Xray/TeV coverage for Nights :" $nights
+	echo "   TeV       data bins : " $ntevbin
+	echo "   TeV+X-ray data bins : " $nxbin "==> " $pct "%"
+	echo "   N_x = " $nxsum
+	echo " Detailed check: "
+	echo "   TeV   Time : " $detailed_tev "   ["$(sprintf('%2d',$tevhrs))":"$(sprintf('%02d',$tevmin))"]"
+	echo "   X-ray Time : " $detailed_x  "==> " $detailed_pct "%"
+	echo "--------------------------------------------------------"
+
+#---------------------------------------------------------------------------
+# NOPE.read_whipple_spec: uses TeV spectra from Krennrich.
+NOPE.read_whipple_spec
+
+	data "/home/gfossati/Science/Mkn421/2001/Whipple/whipple_spectra_all_krennrich.dat"
+        read < escale 1 >
+        #set sortref = < -1 >
+        do 1=1,10 {
+           read < f_$1 $(2*$1)  err_f_$1 $(2*$1+1) >
+
+	   #  set conv             = 4.1356e-31*(1.6022*escale_$9)*(2.418e26*escale_$9)
+           #  set f_$9_$1          = f_$9_$1*1e-7*conv
+           #  set err_f_$9_$1      = err_f_$9_$1*1e-7*conv
+
+           set f_$1     = f_$1*1e-11*escale
+           set err_f_$1 = err_f_$1*1e-11*escale
+           set e_$1     = escale     if( f_$1 > 1e-19 )
+           set err_f_$1 = err_f_$1   if( f_$1 > 1e-19 )
+           set f_$1     = f_$1       if( f_$1 > 1e-19 )
+           #set sortref  = sortref CONCAT < $(sum(f_$1/1e-10)) >
+        }
+
+#---------------------------------------------------------------------------
+# read_hegra_spec: uses TeV spectra grabbed from Horns and Aharonian papers PS file.
+read_hegra_spec
+
+	data "/home/gfossati/Science/Mkn421/2001/HEGRA/hegra_specs_51189.dat"
+	lines 8 14 
+	read < e_51189a 1 f_51189a 2 e_f_51189a_u 3 e_f_51189a_d 4 >
+	lines 16 22
+	read < e_51189b 1 f_51189b 2 e_f_51189b_u 3 e_f_51189b_d 4 >
+
+	data "/home/gfossati/Science/Mkn421/2001/HEGRA/hegra_specs_51190.dat"
+	lines 8 14 
+	read < e_51190a 1 f_51190a 2 e_f_51190a_u 3 e_f_51190a_d 4 >
+	lines 16 22
+	read < e_51190b 1 f_51190b 2 e_f_51190b_u 3 e_f_51190b_d 4 >
+
+	foreach 1 < 89a 89b 90a 90b > { 
+	    set lg_e_511$1       = lg(e_511$1)
+	    set lg_nu_511$1      = lg(e_511$1) + 26.383
+	    set lg_nfn_511$1     = lg(f_511$1)   #+ lg_nu_511$1
+	    set e_lg_nfn_511$1_u = lg(f_511$1+e_f_511$1_u)-lg(f_511$1)
+	    set e_lg_nfn_511$1_d = lg(f_511$1)-lg(f_511$1-e_f_511$1_d)
+	}
+
+	foreach 1 < 89a 89b 90a 90b > { 
+	   set d_lg_e_511$1 = 0.065
+        }
+
+	echo "-------------------------------------------------"
+	echo "  Arrays are  (##### is 51189 or 51190): "
+	echo "    lg_nu_#####"
+	echo "    lg_nfn_#####    e_lg_nfn_#####_u   e_lg_nfn_#####_d"
+	echo " "
+	echo "  Arrays marked 'a'  are low-state/pre-flare"
+	echo "  Arrays marked 'b'  are high-state/flare"
+	echo "-------------------------------------------------"
+
+#---------------------------------------------------------------------------
+# plot_whipple_sed_points  [<sequence code> (1 - 10)]
+#           : uses Krennrich TeV spectra.
+#             NEEDS 'read_whipple_spectra_2redux' (in read_krennrich.sm)
+plot_whipple_sed_points 01
+	
+	echo " * Entering 'plot_whipple_sed_points' "
+ 
+        if(!$(is_macro(read_whipple_spectra_2redux))) {
+           echo "WARNING: this macro REQUIRES 'read_whipple_spectra_2redux' included in read_krennrich.sm"
+           return
+        }
+
+	define case local
+	if(!$?1) {
+	   define case ? < Which Whipple March 19 (Krennrich) spectrum [1-10]:>
+	   define 1 $case
+	}
+	define case $1
+
+	set lge   = lg(e_k_$1) + 26.384
+        set lgf   = lg(f_k_$1)
+        set err_f = err_f_k_$1
+
+	ptype 4 3 
+
+	if( $flag_bw == 0 ) { ctype 5 }
+	if( $flag_bw == 1 ) { ctype 2 }
+	cpoints  lge lgf 
+        logerr   lge lgf err_f
+	errorbar lge lgf lg_e_err_d_k_$1 3
+	errorbar lge lgf lg_e_err_u_k_$1 1
+	ctype 2 
+	ltype 0 
+
+#---------------------------------------------------------------------------
+# plot_hegra_spec [<TJD code> (e.g. 90a)]
+#           : uses TeV spectra grabbed from Horns and Aharonian papers PS file.
+plot_hegra_spec 01
+
+        if(!$(is_vector(lg_nu_51189a))) {
+           echo "WARNING: this macro REQUIRES to have loaded the HEGRA 2001 spectra 'read_hegra_spec'"
+           return
+        }
+
+	define case local
+	if(!$?1) {
+	   define case ? < Which HEGRA spectrum [89a 89b 90a 90b]:>
+	   define 1 $case
+	}
+	define case $1
+
+	if( substr('$1',0,3) == '89a' ) { ctype 5 }
+	if( substr('$1',0,3) == '89b' ) { ctype 5 }
+	if( substr('$1',0,3) == '90a' ) { ctype 5 }
+	if( substr('$1',0,3) == '90b' ) { ctype 5 }
+
+	if( $flag_bw == 0 ) { ctype 5 }
+	if( $flag_bw == 1 ) { ctype 2 }
+	set lg_e_511$1 = lg_nu_511$1 - 26.384
+	ptype 4 3 
+	# cpoints 2 lg_nu_511$1 lg_nfn_511$1
+	cpoints   lg_nu_511$1 lg_nfn_511$1
+	errorbar  lg_nu_511$1 lg_nfn_511$1 e_lg_nfn_511$1_u 2 
+	errorbar  lg_nu_511$1 lg_nfn_511$1 e_lg_nfn_511$1_d 4 
+	errorbar  lg_nu_511$1 lg_nfn_511$1 d_lg_e_511$1 1 
+	errorbar  lg_nu_511$1 lg_nfn_511$1 d_lg_e_511$1 3 
+	cpoints   lg_e_511$1 lg_nfn_511$1
+	errorbar  lg_e_511$1 lg_nfn_511$1 e_lg_nfn_511$1_u 2 
+	errorbar  lg_e_511$1 lg_nfn_511$1 e_lg_nfn_511$1_d 4 
+	errorbar  lg_e_511$1 lg_nfn_511$1 d_lg_e_511$1 1 
+	errorbar  lg_e_511$1 lg_nfn_511$1 d_lg_e_511$1 3 
+	ctype 2 
+	ltype 0 
+
+#------------------------------------------------------------------------------
+# rate_histogram
+rate_histogram 01
+
+	if(!$?1) { 
+	    define sfx ? <                        Array suffix : >
+	} else {
+	    define $sfx 1
+	}
+
+	define logORlin ? < Log or Lin flux histogram [log/lin] : >
+
+	define 1 $sfx
+	define hstep ? <                      Histogram step : >
+
+	set xlgf = -2-0.5*$hstep,100+0.5*$hstep,$hstep
+	set lgf local
+	set histof local
+	if( substr('$logORlin',1,1) == 'i' ) {
+	    set yf = rate_$1
+	} else {
+	    set yf = lg(rate_$1)
+	}
+	set histof = histogram(yf:xlgf)
+
+	define cc ?  < Ctype : >
+	define ll ?  < Ltype : >
+	define sh ?  < Shift : >
+	ctype $cc 
+	ltype $ll
+	histogram (xlgf+$sh) histof
+	ctype 2 
+	ltype 0
+
+#------------------------------------------------------------------------------
+# rebin_fixed_dt
+#    Uses standard 'dtlc'-type light curves (newt_ rate_ err_rate_)
+rebin_fixed_dt
+
+	foreach local_var < t1 t2 xt1 xt2 newbin tforce w_or_p r_mean r_sigma r_kurt t_exp > {
+	   define $local_var local
+	}
+	foreach local_vec < temp_x_1 temp_x_2 temp_x temp etemp wtemp temp_dt > {
+	   # set $local_vec local
+	}
+
+	echo "------------------------------------------------------------"
+	define suffix_log ?  < *       Suffix of vectors to be loaded : >
+
+	#---------------------------------------------------------------------
+	vecminmax newt_$suffix_log t1 t2 
+	echo " * Data begin at t = "$t1
+	echo " * Data end   at t = "$t2
+
+	define tforce (0)
+	echo "------------------------------------------------------------"
+	define t1 ?          < *                       New Start Time : >
+	define t2 ?          < *                       New Stop Time  : >
+	define newbin ?      < *         New binning interval (in ks) : >
+	define tforce ?      < *  Time forced at new bin boundary (s) : >
+	echo "------------------------------------------------------------"
+	if( abs($t1)     < 2000 ) { define t1     $($t1*1000) }
+	if( abs($t2)     < 2000 ) { define t2     $($t2*1000) }
+	if( abs($newbin) <  100 ) { define newbin $($newbin*1000) }
+	define xt1  $t1
+	define xt2  $t2
+	#---------------------------------------------------------------------
+	set temp_x_1 = $tforce,$t1-$newbin,-$newbin
+	set temp_x_2 = $tforce+$newbin,$t2+$newbin,$newbin
+	set temp_x_1 = reverse(temp_x_1)
+	set temp_x   = temp_x_1 CONCAT temp_x_2 
+	set temp_x_1 = temp_x
+	set temp_x_2 = temp_x + $newbin
+	set temp_x   = (temp_x_1 + temp_x_2)/2.
+
+	set dimen(temp_y)     = dimen(temp_x)
+	set dimen(temp_var_y) = dimen(temp_x)
+	set dimen(temp_err_y) = dimen(temp_x)
+	set dimen(temp_n)     = dimen(temp_x)
+	set dimen(temp_dt)    = dimen(temp_x)
+
+	define w_or_p ?      < *    Weighted or Plain averaging [w|p] : >
+
+	do 9=0,dimen(temp_x)-1 {
+	    define xt1 $(temp_x_1[$9])
+	    define xt2 $(temp_x_2[$9])
+	    set temp   = rate_$suffix_log       if( newt_$suffix_log > $xt1 && newt_$suffix_log <= $xt2 )
+	    set etemp  = err_rate_$suffix_log   if( newt_$suffix_log > $xt1 && newt_$suffix_log <= $xt2 )
+	    set temp_t = newbin_$suffix_log     if( newt_$suffix_log > $xt1 && newt_$suffix_log <= $xt2 )
+
+	    if( dimen(temp) > 0 ) { 
+               if( substr('$w_or_p',0,1) == 'w' ) {
+                   set wtemp = 1/(etemp**2.0)
+	       } else {
+                   set wtemp = temp*0 + 1
+	       }
+	       stats2 temp wtemp r_mean r_sigma r_kurt
+	       set temp_y[$9]     = $r_mean  
+	       set temp_var_y[$9] = $r_sigma  
+	       set temp_err_y[$9] = sqrt(sum(etemp**2))/dimen(temp)
+	       set temp_n[$9]     = $(dimen(temp))
+	       set temp_dt[$9]    = $(sum(temp_t))
+
+	    } else {
+	       set temp_y[$9]     = 1e-20
+	       set temp_var_y[$9] = 1e-20
+	       set temp_err_y[$9] = 1e-20
+	       set temp_n[$9]     = 0
+	       set temp_dt[$9]    = 0
+	    }
+	}
+
+	set temp_dx = temp_x*0 + 0.5*$newbin
+
+        define dumreb "n"
+        define dumreb ? < Rename arrays [if yes, provide suffix] : >
+        if( substr('$dumreb',0,1) == 'n' && strlen('$dumreb') == 1 ) {
+           echo ">>> Leaving arrays on standard names"
+        } else {
+           echo ">>> Renaming arrays to *_"$dumreb"_x|dx|y|var_y|err_y|n"
+           define 1 $dumreb
+           foreach 2 < x dx y var_y err_y n dt > {
+              # set  rebin_$1_$2 = temp_$2   if( temp_y > 1e-19 )
+              set  rebin_$1_$2 = temp_$2   
+           }
+        }
+
+
+# rename_rebin_to_dtlc  <codename for rebinned l.c.> <var|err>
+rename_rebin_to_dtlc 2 
+
+	set newt_$1       = rebin_$1_x
+	set newt1_$1      = rebin_$1_x - rebin_$1_dx
+	set newt2_$1      = rebin_$1_x + rebin_$1_dx
+	set newbin_$1     = rebin_$1_dx
+	set rate_$1       = rebin_$1_y
+	set err_rate_$1   = rebin_$1_$2_y
+	set dt_true_$1    = rebin_$1_dt
+	set cvrfr_$1      = rebin_$1_dt/rebin_$1_dx
+
+	set counts_$1     = rebin_$1_y*newbin_$1
+	set err_counts_$1 = rebin_$1_$2_y*newbin_$1
+
+	# foreach 3 < newt newt1 newt2 newbin dt_true counts err_counts rate err_rate cvrfr > {
+	#   set tmp_$3 = $3_$suffix_log  
+	#}
+
+#------------------------------------------------------------------------------
+# mix_xg <XRAY rebinned l.c. codename> <GAMMA rebinned l.c. codename> <var|err>
+#    creates xtt/rx/erx/rt/ert arrays from rebin_* light curves, just out of rebin_fixed_dt
+mix_xg 3 
+
+        define dum ? < Suffix of new combined light curves : >
+	define 9 $dum
+
+	set xtt_$9 = rebin_$1_x        if( rebin_$1_y > 1e-19 && rebin_$2_y > 1e-19 )
+	set nx_$9  = rebin_$1_y*0 + 1  if( rebin_$1_y > 1e-19 && rebin_$2_y > 1e-19 )
+
+	set rx_$9  = rebin_$1_y        if( rebin_$1_y > 1e-19 && rebin_$2_y > 1e-19 )
+	set erx_$9 = rebin_$1_$3_y     if( rebin_$1_y > 1e-19 && rebin_$2_y > 1e-19 )
+
+	set rt_$9  = rebin_$2_y        if( rebin_$1_y > 1e-19 && rebin_$2_y > 1e-19 )
+	set ert_$9 = rebin_$2_$3_y     if( rebin_$1_y > 1e-19 && rebin_$2_y > 1e-19 )
+
+	define labelhelper_$9 "tp"
+
+#------------------------------------------------------------------------------

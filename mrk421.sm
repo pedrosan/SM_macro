@@ -1,0 +1,1859 @@
+#---------------------------------------------------------------------------
+# plot_nfn_2001 [ <flux/lum> <R> <lh> <bfield> <gmin> <gmax> <slope> <delta> ]
+#
+# Plots three boxes, with full SED, and zoom-in on X-ray and TeV regions.
+#
+# USAGE:
+#    > plot_nfn_2001 <flux/lum> z=0.031 r=20 lh=1e-4 b=0.02 g1=10  g2=3e6  s=2  d=10
+# OR
+#    > plot_nfn_2001 <flux/lum> z=0.031 <model SED ID>  [as in: output_ID.dat]
+#         
+plot_nfn_2001 09
+
+	define flag_bw (1)
+	# define flag_bw (0)
+
+	#-----------------------------------------------------------
+        if(!$(is_macro(tau_stecker_array))) {
+           echo "WARNING: this macro REQUIRES 'tau_stecker_array' included in stecker.sm"
+           return
+        }
+	#-----------------------------------------------------------
+
+	define mygx1  5000
+	define mygx2 29500 
+	define mygy1  5000
+	define mygy2 29500 
+	define mysep   400
+
+	if( !$?1 || !$?2 || !$?3 ) {
+           echo " plot_nfn_2001: "
+	   echo " "
+           echo " USAGE: "
+           echo "    > plot_nfn_2001 <flux/lum> z=0.031 r=20 lh=1e-4 b=0.02 g1=10  g2=3e6  s=2  d=10"
+           echo " OR"
+           echo "    > plot_nfn_2001 <flux/lum> z=0.031 <model SED ID>  [as in: output_ID.dat]"
+	   echo "                    ^^^^^^^^^^ ^^^^^^^ ^^^^^^^^^^^^^^"
+	   return
+	}
+	if( $?1 && substr('$1',0,2) == '-h' ) {
+           echo " plot_nfn_2001: "
+	   echo " "
+           echo " USAGE: "
+           echo "    > nfn_2001 <flux/lum> z=0.031 r=20 lh=1e-4 b=0.02 g1=10  g2=3e6  s=2  d=10"
+           echo " OR"
+           echo "    > nfn_2001 <flux/lum> z=0.031 <model SED ID>  [as in: output_ID.dat]"
+	   echo "               ^^^^^^^^^^ ^^^^^^^ ^^^^^^^^^^^^^^"
+	   return
+	}
+
+	if(!$(is_macro(lumdist))) {
+	    echo "WARNING: this macro REQUIRES 'lumdist' included in astro_tools.sm"
+	    return
+	}
+
+	if($?4) {
+	   read_grid_sed $3 $4 $5 $6 $7 $8 $9
+	} else {
+	   read_grid_sed $3 
+	}
+	parsing $2
+
+
+	echo "+------------------------------------"
+	echo "| 2000 reference "
+	echo "|   old "
+	echo "+------------------------------------"
+	echo "| Whipple March 19 options :"
+	echo "|   pre-flare  :  wa1   wb1   (K2+006 | K3+007)"
+	echo "|   flare-rise :  wc1   wc2   (K5+008 | K6+008)"
+	echo "|   flare-peak :  wd1   wd2   (K8+009 | K9+009)"
+	echo "|"
+	echo "|   pre-flare  :  newa1       (K2+003n)"
+	echo "|   flare-rise :  newc1 newc2 (K5 | K6 +004n)"
+	echo "|   flare-peak :  newd1       (K8+005n)"
+	echo "|   flare-post :  newd2 newd3 (K9+006n | K10+007n)"
+	echo "|"
+	echo "| HEGRA options :"
+	echo "|   89a 89b 90a 90b (x-ray: 046, 048, 060, 062)"
+	define case ? <+ Which GOOD SED day :>
+
+	#---------------------------------
+	define pltype (substr('$1',0,1))
+
+	if( '$pltype' == 'l' ) {
+	   define ymin  41
+	   define ymax  48
+	   define ystr "log(\\nu L_\\nu)"
+	   define ydumcut 30
+	}
+	if( '$pltype' == 'f' ) {
+	   # define xmin_all  13.5
+	   define xmin_all   8.5
+	   define xmax_all  29.0
+	   define ymin_all -13.99
+	   define ymax_all  -8.5
+	   #
+	   define xmin_x    17.41
+	   define xmax_x    18.91
+	   define ymin_x   -10.2
+	   define ymax_x    -8.71
+	   #
+	   define xmin_g    25.01
+	   define xmax_g    28.51
+	   define ymin_g   -12.0
+	   define ymax_g    -8.5
+
+	   #--- new (same size boxes) ---
+	   define xmin_x    17.0
+	   define xmax_x    19.2
+	   define ymin_x   -11.2
+	   define ymax_x    -9.0
+	   #
+	   define xmin_g    25.51
+	   define xmax_g    27.71
+	   define ymin_g   -11.2
+	   define ymax_g    -9.0
+
+	   define ystr "log(\\nu F_\\nu) [erg cm^{-2} s^{-1}]"
+	   # calls lumdist... which has to be loaded already
+	   # lumdist 70.0 0.0 $z
+	   systemcall cosmo_calculator.py $z | egrep -v Age >!  /tmp/lumdist
+	   data "/tmp/lumdist"
+	   define lumdist read 1 3 
+
+	   echo "  > dL            = "$(10.**$lumdist)" cm"
+	   echo "  > 4 pi dL^2     = "$(4.*3.1415*10.**(2.*$lumdist))" cm^2"
+	   echo "  > lg(4 pi dL^2) = "$(lg(4.*3.1415) + 2.*$lumdist)" cm^2"
+	   set x = x - lg(1+$z)
+	   set y = y - lg(4.*$pi) - 2.*$lumdist
+	   define ydumcut -13 
+	}
+
+	echo "-----------------------------"
+	echo " What IR bkg absorption :"
+	echo " [0] none"
+	echo " [1] Stecker 1999, low IIRF"
+	echo " [2] Stecker 1999, high IIRF"
+	echo " [3] de Jager & Stecker 2002, baseline model"
+	echo " [4] de Jager & Stecker 2002, fast-evolution model"
+
+	define what_debra_abs ? < Pick one : >
+
+	#set myeV= x - 14.384
+	local set myTeV= x - 26.384
+	if( $what_debra_abs == 0 ) { 
+	  # set abs_frac = 1 + 0*lg_xc
+	  set abs_frac = 1 + 0*x
+	} else {
+	  if( $what_debra_abs == 1 ) { 
+	     echo "Computing DEBRA absorption...: Stecker 1999, low IIRF"
+	     tau_stecker_array 1 $z myTeV
+	  }
+	  if( $what_debra_abs == 2 ) { 
+	     echo "Computing DEBRA absorption...: Stecker 1999, high IIRF"
+	     tau_stecker_array 2 $z myTeV
+	  }
+	  if( $what_debra_abs == 3 ) { 
+	     echo "Computing DEBRA absorption...: de Jager & Stecker 2002, baseline model"
+	     tau_stecker_array 3 $z myTeV
+	  }
+	  if( $what_debra_abs == 4 ) { 
+	     echo "Computing DEBRA absorption...: de Jager & Stecker 2002, fast-evolution model"
+	     tau_stecker_array 4 $z myTeV
+	  }
+	}
+
+	define sed_cty ? < Model SED Color : >
+	define sed_lweight 5
+
+	reset_graph
+	expand 1.1
+
+	########################################
+	#   Full SED panel
+	########################################
+	# window -2 -2 1:2 2
+	location $mygx1 $mygx2 $( 0.5*($mygy1+$mygy2) + 0.5*$mysep ) $mygy2
+
+	limits $xmin_all $xmax_all $ymin_all $ymax_all
+	ticksize 0.5 2 0 0 
+	ticksize 0.5 2 -1 0 
+	box 0 2 1 2
+	# ylabel $ystr
+
+	ltype 1 
+	lweight 1.5
+	ctype grey60
+	draw_box $xmin_x $ymin_x $xmax_x $ymax_x
+	draw_box $xmin_g $ymin_g $xmax_g $ymax_g
+	ctype 2 
+	lweight 3 
+	ltype 0 
+
+	#---------------------------------------
+	# Plots energy bands for X-ray and TeV
+        ltype 4 
+	if( $flag_bw == 0 ) { ctype 4 }
+	if( $flag_bw == 1 ) { ctype grey70 }
+	if( $flag_bw == 1 ) { ctype 1 } ## FUDGE
+	set tmp_nu_kev = < 3 0.4e9 >
+	set tmp_nu = lg(tmp_nu_kev) + 17.384
+	foreach nu tmp_nu {
+           relocate $nu -20   
+           draw     $nu  50
+	}
+	ctype 2 
+	ltype 0 
+	#---------------------------------------
+
+	#---------------------------------------
+	# Plots archival NED data
+	plot_ned_data
+
+	#---------------------------------------
+	# Plots JB mw data
+	plot_jb_mw_data
+
+	#---------------------------------------
+	# Plots GF mw data
+	plot_gf_mw_data 8
+
+	#---------------------------------------
+	# Plots SED model given on command line.
+	# GF: 2007.11.09 added fudge factor for B&W figures
+	#
+	lweight $sed_lweight
+	ctype $sed_cty
+	if ($sed_cty == 3 ) { ltype 0 }
+	if ($sed_cty != 3 ) { ltype 3 }
+	connect x (y + lg(abs_frac))
+	ctype 2
+	lweight 3
+
+	#---------------------------------------
+	# Plots X-ray and TeV data
+	plot_sed_data $case
+	
+	########################################
+	#   X SED panel
+	########################################
+	#window -2 -2 1 1
+	location $mygx1 $( 0.5*($mygx1+$mygx2)-0.5*$mysep ) $mygy1 $( 0.5*($mygy1+$mygy2)-0.5*$mysep ) 
+
+	limits $($xmin_x - 17.384) $($xmax_x - 17.384) $ymin_x $ymax_x
+	ticksize -1 0 -1 0 
+	# box 3 3 0 3
+	box 1 2 0 0
+
+	limits $xmin_x $xmax_x $ymin_x $ymax_x
+	ticksize 0 0 0 0 
+	box 3 3 3 3
+	expand 1.25
+	xlabel Energy [keV]
+	expand 1.1
+
+	#---------------------------------------
+	# Plots energy bands for X-ray and TeV
+        ltype 4 
+	if( $flag_bw == 0 ) { ctype 4 }
+	if( $flag_bw == 1 ) { ctype grey70 }
+	if( $flag_bw == 1 ) { ctype 1 } ## FUDGE
+	set tmp_nu = lg(tmp_nu_kev) + 17.384
+	foreach nu tmp_nu {
+           relocate $nu -20   
+           draw     $nu  50
+	}
+	ctype 2 
+	ltype 0 
+	#---------------------------------------
+
+	#---------------------------------------
+	# Plots MW data
+	plot_ned_data
+	plot_jb_mw_data
+	plot_gf_mw_data 
+
+	#---------------------------------------
+	# Plots model SED
+	lweight $sed_lweight
+	ctype $sed_cty
+	if ($sed_cty == 3 ) { ltype 0 }
+	if ($sed_cty != 3 ) { ltype 3 }
+	connect x (y + lg(abs_frac))
+	ctype 2
+	lweight 3
+	
+	##ctype $sed_cty
+	##connect x (y + lg(abs_frac))
+	##ctype 2
+
+	#---------------------------------------
+	# Plots X-ray and TeV data
+	plot_sed_data $case
+
+	########################################
+	#   Gamma SED panel
+	########################################
+	# window -2 -2 2 1
+	location $( 0.5*($mygx1+$mygx2)+0.5*$mysep ) $mygx2 $mygy1 $( 0.5*($mygy1+$mygy2)-0.5*$mysep ) 
+
+	limits $($xmin_g - 26.384) $($xmax_g - 26.384) $ymin_g $ymax_g
+	ticksize -1 0 -1 0 
+	# box 3 3 0 3
+	box 1 0 0 2
+
+	limits $xmin_g $xmax_g $ymin_g $ymax_g
+	ticksize 0 0 0 0 
+	box 3 3 3 3
+	expand 1.25
+	xlabel Energy [TeV]
+	expand 1.1
+
+	#---------------------------------------
+	# Plots energy bands for X-ray and TeV
+        ltype 4 
+	if( $flag_bw == 0 ) { ctype 4 }
+	if( $flag_bw == 1 ) { ctype grey70 }
+	if( $flag_bw == 1 ) { ctype 1 } ## FUDGE
+	set tmp_nu = lg(tmp_nu_kev) + 17.384
+	foreach nu tmp_nu {
+           relocate $nu -20   
+           draw     $nu  50
+	}
+	ctype 2
+	ltype 0 
+	#---------------------------------------
+
+	#---------------------------------------
+	# Plots MW data
+	plot_ned_data
+	plot_jb_mw_data
+	plot_gf_mw_data
+
+	#---------------------------------------
+	# Plots model SED
+	#
+	lweight $sed_lweight
+	ctype $sed_cty
+	if ($sed_cty == 3 ) { ltype 0 }
+	if ($sed_cty != 3 ) { ltype 3 }
+	connect x (y + lg(abs_frac))
+	ctype 2
+	lweight 3
+
+	##ctype $sed_cty
+	##connect x (y + lg(abs_frac))
+	##ctype 2
+
+	#---------------------------------------
+	# Plots X-ray and TeV data
+	plot_sed_data $case
+
+	expand 1.5
+	expand 1.25
+
+	#----------------------------
+	# New section to find peaks
+	#
+	foreach 9 < x1 x2 y0 y1 y2 dx dy dyb testder > { set $9 local }
+	set x1=pop(-1,x)
+	set x2=pop(1,x)
+	set y0=y+lg(abs_frac)
+	set y1=pop(-1,y0)
+	set y2=pop(1,y0)
+	set dx=x2-x1
+	set dy=y2-y1
+	set der=dy/dx
+	set dyb=dy
+	shift dyb 1
+	set testder=dy*dyb
+	set xp = x2   if( testder <  0 && der <=0 )
+	set yp = y2   if( testder <  0 && der <=0 )
+	set xpn = 10**(xp - 17.384)
+	if( dimen(xp) == 2 ) {
+	   echo " ** Alright, here are the peaks : "
+	   echo "  "
+	   define popn  $(sprintf('%8.4f',$(10.**xp[0]/2.418e17)))
+	   define popf1 $(sprintf('%8.3f',$(yp[0])))
+	   define popf2 $(sprintf('%9.3e',$(10.0**yp[0])))
+	   define popl1 $(sprintf('%8.3f',$($popf1+54.337)))
+	   echo "      $!popn keV   $!popf1  $!popf2   $!popl1"
+	   define popn  $(sprintf('%8.4f',$(10.**xp[1]/2.418e26)))
+	   define popf1 $(sprintf('%8.3f',$(yp[1])))
+	   define popf2 $(sprintf('%9.3e',$(10.0**yp[1])))
+	   define popl1 $(sprintf('%8.3f',$($popf1+54.337)))
+	   echo "      $!popn TeV   $!popf1  $!popf2   $!popl1"
+	   echo "  "
+	} else {
+	   echo " ** WARNING: found more than two possible maxima ... "
+	   print '    %8.5f   %9.5f\n' < xp yp >
+	}
+	foreach 9 < x1 x2 y0 y1 y2 dx dy dyb testder > { delete $9 }
+	
+	#----------------------------
+	# labels
+	# window 1 1 1 1 
+	# location $($mygx1+500) $mygx2 $mygy1 $mygy2 
+
+	# relocate ( $( 0.5*($mygx1+$mygx2) )  $( $mygy1 - 2250 ) )
+	relocate ( $( 0.5*($mygx1+$mygx2) )  $( $mygy2 + 2000 ) )
+	putlabel 5 log(\\nu) [Hz]
+
+	relocate ( $( $mygx1 - 3500 ) $( 0.5*($mygy1+$mygy2) )  )
+	angle 90
+	putlabel 5 $ystr
+	angle 0
+
+	relocate ( 1000 1000 ) 
+	expand 1.01
+	putlabel 6 "model="$3" / data="$case" / IRabs="$what_debra_abs
+	expand 1.5
+	#
+	#___ actual data plot section ends here ___
+
+	return
+	
+#---------------------------------------------------------------------------
+# plot_nfn_2001_xg [ <flux/lum> <R> <lh> <bfield> <gmin> <gmax> <slope> <delta> ]
+#
+# Plots two boxes and zoom-in on X-ray and TeV regions (with/without model SED)
+#
+# USAGE:
+#    > plot_nfn_2001_xg <flux/lum> z=0.031 r=20 lh=1e-4 b=0.02 g1=10  g2=3e6  s=2  d=10
+# OR
+#    > plot_nfn_2001_xg <flux/lum> z=0.031 <model SED ID>  [as in: output_ID.dat]
+#         
+plot_nfn_2001_xg 09
+
+	#-----------------------------------------------------------
+        if(!$(is_macro(tau_stecker_array))) {
+           echo "WARNING: this macro REQUIRES 'tau_stecker_array' included in stecker.sm"
+           return
+        }
+        if(!$(is_macro(read_grid_sed))) {
+           echo "WARNING: this macro REQUIRES 'read_grid_sed' included in ssc.sm"
+           return
+        }
+	#-----------------------------------------------------------
+
+	define mygx1  5000
+	define mygx2 29500 
+	define mygy1  5000
+	# define mygy2 29500 
+	define mysep   400
+
+	define dgy   $( 0.5*($mygx2-$mygx1-$mysep) )
+	define mygy2 $($mygy1 + $dgy)
+
+	if( !$?1 || !$?2 || !$?3 ) {
+           echo " plot_nfn_2001: "
+	   echo " "
+           echo " USAGE: "
+           echo "    > plot_nfn_2001_xg <flux/lum> z=0.031 r=20 lh=1e-4 b=0.02 g1=10  g2=3e6  s=2  d=10"
+           echo " OR"
+           echo "    > plot_nfn_2001_xg <flux/lum> z=0.031 <model SED ID>  [as in: output_ID.dat]"
+	   echo "                       ^^^^^^^^^^ ^^^^^^^ ^^^^^^^^^^^^^^"
+	   return
+	}
+	if( $?1 && substr('$1',0,2) == '-h' ) {
+           echo " plot_nfn_2001: "
+	   echo " "
+           echo " USAGE: "
+           echo "    > plot_nfn_2001_xg <flux/lum> z=0.031 r=20 lh=1e-4 b=0.02 g1=10  g2=3e6  s=2  d=10"
+           echo " OR"
+           echo "    > plot_nfn_2001_xg <flux/lum> z=0.031 <model SED ID>  [as in: output_ID.dat]"
+	   echo "                       ^^^^^^^^^^ ^^^^^^^ ^^^^^^^^^^^^^^"
+	   return
+	}
+
+	if(!$(is_macro(lumdist))) {
+	    echo "WARNING: this macro REQUIRES 'lumdist' included in astro_tools.sm"
+	    return
+	}
+
+	if($?4) {
+	   read_grid_sed $3 $4 $5 $6 $7 $8 $9
+	} else {
+	   read_grid_sed $3 
+	}
+	parsing $2
+
+	echo "+------------------------------------"
+	echo "| 2000 reference "
+	echo "|   old "
+	echo "+------------------------------------"
+	echo "| Whipple March 19 options :"
+	echo "|   pre-flare  :  wa1   wb1   (K2+006 | K3+007)"
+	echo "|   flare-rise :  wc1   wc2   (K5+008 | K6+008)"
+	echo "|   flare-peak :  wd1   wd2   (K8+009 | K9+009)"
+	echo "|"
+	echo "|   pre-flare  :  newa1       (K2+003n)"
+	echo "|   flare-rise :  newc1 newc2 (K5 | K6 +004n)"
+	echo "|   flare-peak :  newd1       (K8+005n)"
+	echo "|   flare-post :  newd2 newd3 (K9+006n | K10+007n)"
+	echo "|"
+	echo "| HEGRA options :"
+	echo "|   89a 89b 90a 90b (x-ray: 046, 048, 060, 062)"
+	define case ? <+ Which GOOD SED day :>
+
+	#---------------------------------
+	define pltype (substr('$1',0,1))
+
+	if( '$pltype' == 'l' ) {
+	   define ymin  41
+	   define ymax  48
+	   define ystr "log(\\nu L_\\nu)"
+	   define ydumcut 30
+	}
+	if( '$pltype' == 'f' ) {
+	   # define xmin_all  13.5
+	   define xmin_all   8.5
+	   define xmax_all  29.0
+	   define ymin_all -13.99
+	   define ymax_all  -8.5
+	   #
+	   define xmin_x    17.41
+	   define xmax_x    18.91
+	   define ymin_x   -10.2
+	   define ymax_x    -8.71
+	   #
+	   define xmin_g    25.01
+	   define xmax_g    28.51
+	   define ymin_g   -12.0
+	   define ymax_g    -8.5
+
+	   #--- new (same size boxes) ---
+	   define xmin_x    17.0
+	   define xmax_x    19.2
+	   define ymin_x   -11.2
+	   define ymax_x    -9.0
+	   #
+	   define xmin_g    25.51
+	   define xmax_g    27.71
+	   define ymin_g   -11.2
+	   define ymax_g    -9.0
+
+	   define ystr "log(\\nu F_\\nu) [erg cm^{-2} s^{-1}]"
+
+	   # calls lumdist... which has to be loaded already
+	   # lumdist 70.0 0.0 $z
+	   systemcall cosmo_calculator.py $z | egrep -v Age >!  /tmp/lumdist
+	   data "/tmp/lumdist"
+	   define lumdist read 1 3 
+
+	   echo "  > dL            = "$(10.**$lumdist)" cm"
+	   echo "  > 4 pi dL^2     = "$(4.*3.1415*10.**(2.*$lumdist))" cm^2"
+	   echo "  > lg(4 pi dL^2) = "$(lg(4.*3.1415) + 2.*$lumdist)" cm^2"
+	   set x = x - lg(1+$z)
+	   set y = y - lg(4.*$pi) - 2.*$lumdist
+	   define ydumcut -13 
+	}
+
+	echo "-----------------------------"
+	echo " What IR bkg absorption :"
+	echo " [0] none"
+	echo " [1] Stecker 1999, low IIRF"
+	echo " [2] Stecker 1999, high IIRF"
+	echo " [3] de Jager & Stecker 2002, baseline model"
+	echo " [4] de Jager & Stecker 2002, fast-evolution model"
+
+	define what_debra_abs ? < Pick one : >
+
+	#set myeV= x - 14.384
+	local set myTeV= x - 26.384
+	if( $what_debra_abs == 0 ) { 
+	  # set abs_frac = 1 + 0*lg_xc
+	  set abs_frac = 1 + 0*x
+	} else {
+	  if( $what_debra_abs == 1 ) { 
+	     echo "Computing DEBRA absorption...: Stecker 1999, low IIRF"
+	     tau_stecker_array 1 $z myTeV
+	  }
+	  if( $what_debra_abs == 2 ) { 
+	     echo "Computing DEBRA absorption...: Stecker 1999, high IIRF"
+	     tau_stecker_array 2 $z myTeV
+	  }
+	  if( $what_debra_abs == 3 ) { 
+	     echo "Computing DEBRA absorption...: de Jager & Stecker 2002, baseline model"
+	     tau_stecker_array 3 $z myTeV
+	  }
+	  if( $what_debra_abs == 4 ) { 
+	     echo "Computing DEBRA absorption...: de Jager & Stecker 2002, fast-evolution model"
+	     tau_stecker_array 4 $z myTeV
+	  }
+	}
+
+	if( substr('$3',0,3) != 'non' ) { 
+	   define sed_cty ? < Color : >
+	}
+
+	reset_graph
+	expand 1.1
+
+	define skip 1 
+	# define skip 0
+	if( $skip ) { 
+	   echo " Skipping plot of full SED "
+	} else {
+	########################################
+	# full SED
+	########################################
+	# window -2 -2 1:2 2
+	location $mygx1 $mygx2 $( 0.5*($mygy1+$mygy2) + 0.5*$mysep ) $mygy2
+
+	limits $xmin_all $xmax_all $ymin_all $ymax_all
+	ticksize 0.5 2 0 0 
+	ticksize 0.5 2 -1 0 
+	box 0 2 1 2
+	# ylabel $ystr
+
+	ltype 1 
+	lweight 1.5
+	ctype grey60
+	draw_box $xmin_x $ymin_x $xmax_x $ymax_x
+	draw_box $xmin_g $ymin_g $xmax_g $ymax_g
+	ctype 2 
+	lweight 3 
+	ltype 0 
+
+	#---------------------------------------
+	# Plots energy bands for X-ray and TeV
+        ltype 2 ctype 4
+	set tmp_nu_kev = < 3 0.4e9 >
+	set tmp_nu = lg(tmp_nu_kev) + 17.384
+	foreach nu tmp_nu {
+           relocate $nu -20   
+           draw     $nu  50
+	}
+	ctype 3 ltype 0 
+	#---------------------------------------
+
+	#---------------------------------------
+	# Plots archival NED data
+	plot_ned_data
+
+	#---------------------------------------
+	# Plots JB mw data
+	plot_jb_mw_data
+
+	#---------------------------------------
+	# Plots GF mw data
+	plot_gf_mw_data 8
+
+	#---------------------------------------
+	# Plots SED model given on command line.
+	ctype $sed_cty
+	connect x (y + lg(abs_frac))
+	ctype 2
+
+	#---------------------------------------
+	# Plots X-ray and TeV data
+	plot_sed_data $case
+	}
+	# end of if( $skip )
+	
+	########################################
+	# X SED
+	########################################
+	# location $mygx1 $( 0.5*($mygx1+$mygx2)-0.5*$mysep ) $mygy1 $( 0.5*($mygy1+$mygy2)-0.5*$mysep ) 
+	location $mygx1 $( 0.5*($mygx1+$mygx2)-0.5*$mysep ) $mygy1 $mygy2
+
+	limits $($xmin_x - 17.384) $($xmax_x - 17.384) $ymin_x $ymax_x
+	ticksize -1 0 -1 0 
+	# box 3 3 0 3
+	box 1 2 0 0
+
+	limits $xmin_x $xmax_x $ymin_x $ymax_x
+	ticksize 0 0 0 0 
+	box 3 3 3 3
+	expand 1.25
+	xlabel Energy [keV]
+	expand 1.1
+
+	#---------------------------------------
+	# Plots energy bands for X-ray and TeV
+        ltype 2 ctype 4
+	set tmp_nu = lg(tmp_nu_kev) + 17.384
+	foreach nu tmp_nu {
+           relocate $nu -20   
+           draw     $nu  50
+	}
+	ctype 3 ltype 0 
+	#---------------------------------------
+
+	if( substr('$3',0,3) != 'non' ) { 
+	   ctype $sed_cty
+	   connect x (y + lg(abs_frac))
+	   ctype 2
+	}
+
+	plot_ned_data
+	plot_jb_mw_data
+	plot_gf_mw_data
+	plot_sed_data $case
+
+	########################################
+	# gamma SED
+	########################################
+	# window -2 -2 2 1
+	# location $( 0.5*($mygx1+$mygx2)+0.5*$mysep ) $mygx2 $mygy1 $( 0.5*($mygy1+$mygy2)-0.5*$mysep ) 
+	location $( 0.5*($mygx1+$mygx2)+0.5*$mysep ) $mygx2 $mygy1 $mygy2
+
+	limits $($xmin_g - 26.384) $($xmax_g - 26.384) $ymin_g $ymax_g
+	ticksize -1 0 -1 0 
+	# box 3 3 0 3
+	box 1 0 0 2
+
+	limits $xmin_g $xmax_g $ymin_g $ymax_g
+	ticksize 0 0 0 0 
+	box 3 3 3 3
+	expand 1.25
+	xlabel Energy [TeV]
+	expand 1.1
+
+	#---------------------------------------
+	# Plots energy bands for X-ray and TeV
+        ltype 2 ctype 4
+	set tmp_nu = lg(tmp_nu_kev) + 17.384
+	foreach nu tmp_nu {
+           relocate $nu -20   
+           draw     $nu  50
+	}
+	ctype 3 ltype 0 
+	#---------------------------------------
+
+	if( substr('$3',0,3) != 'non' ) { 
+	   ctype $sed_cty
+	   connect x (y + lg(abs_frac))
+	   ctype 2
+	}
+
+	plot_ned_data
+	plot_jb_mw_data
+	plot_gf_mw_data
+	plot_sed_data $case
+
+	expand 1.5
+	expand 1.25
+
+	#----------------------------
+	# labels
+	# window 1 1 1 1 
+	# location $($mygx1+500) $mygx2 $mygy1 $mygy2 
+
+	# relocate ( $( 0.5*($mygx1+$mygx2) )  $( $mygy1 - 2250 ) )
+	# relocate ( $( 0.5*($mygx1+$mygx2) )  $( $mygy2 + 2000 ) )
+	# putlabel 5 log(\\nu) [Hz]
+
+	relocate ( $( $mygx1 - 3500 ) $( 0.5*($mygy1+$mygy2) )  )
+	angle 90
+	putlabel 5 $ystr
+	angle 0
+
+	relocate ( 1000 1000 ) 
+	expand 1.01
+	putlabel 6 "model="$3" / data="$case" / IRabs="$what_debra_abs
+	expand 1.5
+	#
+	#___ actual data plot section ends here ___
+
+	return
+	
+#-------------------------------------------------------------------------------
+# read_ned_data
+read_ned_data
+
+	set in_nu_ned local
+	set in_flux_ned local
+	data "/home/gfossati/Science/Mkn421/2001/Whipple/more_data/mrk421_ned.dat"
+	read < in_nu_ned 2 in_flux_ned 3 >
+
+	set nu_ned   = in_nu_ned     if( in_flux_ned > 0 )
+	set flux_ned = in_flux_ned   if( in_flux_ned > 0 )
+
+	set lg_nu_ned  = lg(nu_ned)
+	set lg_f_ned   = lg(flux_ned) - 23 
+	set lg_nfn_ned = lg_f_ned + lg_nu_ned
+
+#-------------------------------------------------------------------------------
+# read_optical_48in
+#
+read_optical_48in
+
+	define OPTDATADIR "/home/gfossati/Science/Mkn421/2001/Other"
+        data "$!OPTDATADIR/mag_fmt.dat"
+        read < tjd_mag_all 1 mag_all 2 >
+
+        data "$!OPTDATADIR/mag_clean_fmt.dat"
+        read < tjd_mag_clean 1 mag_clean 2 >
+
+        # data "$!OPTDATADIR/flux_fmt.dat"
+        #read < tjd_flux 1 flux 2 eflux 3 >
+
+	set dmag = mag_all - mag_clean
+
+	set mag_gal = -2.5*lg(10.**(-0.4*mag_all) - 10.**(-0.4*mag_clean))
+
+	set flux = 10.**(-0.4*(mag_clean-13))
+	set eflux = 0.05*flux
+
+	set time_sec = (tjd_mag_clean - 51987.0)*86400.
+
+        set tjd   = tjd_mag_clean
+        set tbin  = tjd*0 + 60.0
+        set tjd1  = tjd 
+        set tjd2  = tjd
+        shift tjd2 -1
+        set dtjd=tjd2-tjd1
+        set dt_sec=dtjd*86400.
+
+        set tjd1  = tjd - 0.5*tbin/86400.
+        set tjd2  = tjd + 0.5*tbin/86400.
+
+	#set _dt = dt_sec if(dt_sec > 0 )
+	#vecminmax _dt dt_min dt_max
+	#echo " dt : $!dt_min - $!dt_max "
+
+        # print '    %11.5f    %11.5f    %11.5f  %8.5f  %10.2f   %6.3f  %6.3f\n'  < tjd tjd1 tjd2 dtjd dt_sec f ef >
+        # print optical_relative.dat '    %11.5f    %11.5f    %11.5f  %8.5f  %10.2f   %6.3f  %6.3f\n'  < tjd tjd1 tjd2 dtjd dt_sec f ef >
+        
+	#-----------------------------------------------------------
+	# Reading rebinned light curves
+	#-----------------------------------------------------------
+        data "$!OPTDATADIR/qqqq4.dat"
+        read < tjd_n4 1 dt_sec_n4 3 f_n4 4 ef_n4 5 >
+	set mag_n4 = 13.0 - 2.5*lg(f_n4)
+        
+	set newt_opt_n4  = (tjd_n4 - 51987.0)*86400.0 
+	set newt1_opt_n4 = (tjd_n4 - 51987.0)*86400.0 - dt_sec_n4/2.
+	set newt2_opt_n4 = (tjd_n4 - 51987.0)*86400.0 + dt_sec_n4/2.
+	set newbin_opt_n4= dt_sec_n4
+	set rate_opt_n4  = f_n4
+	set err_rate_opt_n4 = ef_n4
+	set cvrfr_opt_n4 = 0*f_n4 + 1.
+
+        data "$!OPTDATADIR/qqqq8.dat"
+        read < tjd_n8 1 dt_sec_n8 3 f_n8 4 ef_n8 5 >
+	set mag_n8 = 13.0 - 2.5*lg(f_n8)
+
+	# optical flux in mJy
+	# 21.9 is the flux in the V band for m=13
+	set flux_n8  = f_n8*21.9 
+	set eflux_n8 = 0.05*flux_n8
+
+	set newt_optf_n8     = (tjd_n8 - 51987.0)*86400.0 
+	set newt1_optf_n8    = (tjd_n8 - 51987.0)*86400.0 - dt_sec_n8/2.
+	set newt2_optf_n8    = (tjd_n8 - 51987.0)*86400.0 + dt_sec_n8/2.
+	set newbin_optf_n8   = dt_sec_n8
+	set rate_optf_n8     = flux_n8
+	set err_rate_optf_n8 = eflux_n8
+	set cvrfr_optf_n8    = 0*f_n8 + 1.
+
+	set newt_optm_n8     = (tjd_n8 - 51987.0)*86400.0 
+	set newt1_optm_n8    = (tjd_n8 - 51987.0)*86400.0 - dt_sec_n8/2.
+	set newt2_optm_n8    = (tjd_n8 - 51987.0)*86400.0 + dt_sec_n8/2.
+	set newbin_optm_n8   = dt_sec_n8
+	set rate_optm_n8     = mag_n8
+	set err_rate_optm_n8 = 0*mag_n8 + 0.05
+	set cvrfr_optm_n8    = 0*f_n8 + 1.
+
+	echo "=================================================="
+	echo "  set of arrays with names: "
+	echo "    + optf_n8 : flux in mJy "
+	echo "    + optm_n8 : magnitude "
+	echo "=================================================="
+
+#------------------------------------------------------------------------------
+# plot_sed_data  [<TJD day code>]
+#               : plots xsed and tev spectrum for selected 03/2001 days
+plot_sed_data 01
+
+	#----------------------------------------------
+	if(!$(is_macro(plot_hegra_spec))) {
+	    echo "WARNING: this macro REQUIRES tev_data.sm"
+	    return
+	}
+	if(!$(is_macro(xsed_for_sed))) {
+	    echo "WARNING: this macro REQUIRES spectra_2000.sm"
+	    echo  ... and then use load_spectra_sax_xte to read the x-ray spectra
+	    return
+	}
+	if(!$(is_vector(kev_060_2001))) {
+	    echo "WARNING: this macro REQUIRES using load_spectra_sax_xte to read the data"
+	    return
+	}
+	if(!$(is_vector(lg_nu_51190a))) {
+	    echo "WARNING: this macro REQUIRES using read_hegra_spec to read the data"
+	    return
+	}
+	#----------------------------------------------
+
+	if(!$?1) {
+	   echo "------------------------------------"
+	   echo " 2000 reference "
+	   echo "   old "
+	   echo "------------------------------------"
+	   echo " Whipple March 19 options :"
+	   echo "   pre-flare  :  wa1 wb1 "
+	   echo "   flare-rise :  wc1 wc2 "
+	   echo "   flare-peak :  wd1 wd2 "
+	   echo " HEGRA options :"
+	   echo "   89a 89b 90a 90b "
+	   define case ? < Which GOOD sed day :>
+	   define 1 $case
+	}
+	define case $1
+
+	# The numbers passed as argument to plot_whipple_sed_points refer to the sequence of Krennrich spectra
+	# 
+	if( substr('$case',0,3) == 'sax' ) { define xorbit "2000 070"  define plt_cmd " " }
+	if( substr('$case',0,3) == 'wa1' ) { define xorbit "2001 006"  define plt_cmd "plot_whipple_sed_points  2" }
+	if( substr('$case',0,3) == 'wb1' ) { define xorbit "2001 007"  define plt_cmd "plot_whipple_sed_points  3" }
+	if( substr('$case',0,3) == 'wc1' ) { define xorbit "2001 008"  define plt_cmd "plot_whipple_sed_points  5" }
+	if( substr('$case',0,3) == 'wc2' ) { define xorbit "2001 008"  define plt_cmd "plot_whipple_sed_points  6" }
+	if( substr('$case',0,3) == 'wd1' ) { define xorbit "2001 009"  define plt_cmd "plot_whipple_sed_points  8" }
+	if( substr('$case',0,3) == 'wd2' ) { define xorbit "2001 009"  define plt_cmd "plot_whipple_sed_points  9" }
+
+	if( substr('$case',0,3) == 'new' ) { 
+	   if( substr('$case',2,3) == 'wa1' ) { define xorbit "2001tev 003"  define plt_cmd "plot_whipple_sed_points  2" }
+	   if( substr('$case',2,3) == 'wb1' ) { define xorbit "2001tev 003"  define plt_cmd "plot_whipple_sed_points  3" }
+	   if( substr('$case',2,3) == 'wc1' ) { define xorbit "2001tev 004"  define plt_cmd "plot_whipple_sed_points  5" }
+	   if( substr('$case',2,3) == 'wc2' ) { define xorbit "2001tev 004"  define plt_cmd "plot_whipple_sed_points  6" }
+	   if( substr('$case',2,3) == 'wd1' ) { define xorbit "2001tev 005"  define plt_cmd "plot_whipple_sed_points  8" }
+	   if( substr('$case',2,3) == 'wd2' ) { define xorbit "2001tev 006"  define plt_cmd "plot_whipple_sed_points  9" }
+	   if( substr('$case',2,3) == 'wd3' ) { define xorbit "2001tev 007"  define plt_cmd "plot_whipple_sed_points 10" }
+	}
+
+	if( substr('$case',0,3) == '89a' ) { define xorbit "2001 046"  define plt_cmd "plot_hegra_spec $!case" }
+	if( substr('$case',0,3) == '89b' ) { define xorbit "2001 048"  define plt_cmd "plot_hegra_spec $!case" }
+	if( substr('$case',0,3) == '90a' ) { define xorbit "2001 060"  define plt_cmd "plot_hegra_spec $!case" }
+	if( substr('$case',0,3) == '90b' ) { define xorbit "2001 062"  define plt_cmd "plot_hegra_spec $!case" }
+
+	$plt_cmd 
+	xsed_for_sed $xorbit plain
+
+#-------------------------------------------------------------------------------
+# plot_ned_data (uses: grey55)
+plot_ned_data
+
+	read_ned_data
+
+	ptype 4 3 
+	#ctype grey80 
+	#ctype grey55 
+	ctype grey80
+	points lg_nu_ned lg_nfn_ned
+	ctype 2 
+
+#-------------------------------------------------------------------------------
+# plot_jb_mw_data : 
+#                 mw       data are "grey80" (was "grey55")
+#                 Zweerink data are "orange/grey66"
+#                 Macomb   data are "maroon/grey47"
+plot_jb_mw_data
+
+	read_jb_mw_data
+
+	ptype 4 0
+	ptype 4 3
+	ctype grey80
+
+        foreach 9 < radq   radha  radhb \
+                    mmq    mmha  \
+##                  irasa  irasb \
+                    irq    irha  \
+                    opta   optb  > {
+           set nfn_$9 = lg(f$9)
+           points n_$9 nfn_$9 
+           logerr n_$9 nfn_$9 e_$9
+        }
+
+        foreach 9 < iue94_q  iue94_h \
+                    euveASS euve94_h euve95_h > {
+           set nfn_$9 = lg(f_$9)
+           points n_$9 nfn_$9 
+           logerr n_$9 nfn_$9 e_$9
+        }
+        
+	# removed asca95
+	# moved xte96_bowtie to 1996 section
+        foreach 9 < asca93 asca94 xte96 > {
+	   set nfn_$9 = lg(f_$9)
+	   ltype 1 
+           connect n_$9 nfn_$9 
+	   ltype 0
+           points  n_$9 nfn_$9 
+	   logerr  n_$9 nfn_$9 e_$9
+        }
+        
+	# removed comptel
+        foreach 9 < osse > {
+	   set nfn_$9 = lg(f_$9) 
+           # connect n_$9 nfn_$9 
+	   ptype $upper_short
+           points n_$9 nfn_$9 
+	   ptype 4 0 
+           points n_$9 nfn_$9 
+        }
+	# removed egret_hb
+        foreach 9 < egret_q egret94_h > {
+	   set nfn_$9 = lg(f_$9) 
+           connect n_$9 nfn_$9 
+           points  n_$9 nfn_$9 
+	   logerr  n_$9 nfn_$9 e_$9
+        }
+        
+	# moved w96_h to separate 1996 section
+        foreach 9 < w94_h w95_h w94w95 > {
+	   set nfn_$9 = lg(f_$9) 
+           points n_$9 nfn_$9 
+	   logerr n_$9 nfn_$9 e_$9
+        }
+        
+        # these are read from file and are several-points spectra
+        foreach 9 < xha xq x95 > {
+	   # set nfn$9 = lg(f$9) 
+           # points n$9 nfn$9 
+        }
+
+	#-------------------------------------------------
+	# 1996 simultaneous data
+	if( $flag_bw == 0 ) { ctype orange }
+	if( $flag_bw == 1 ) { ctype grey66 }
+        foreach 9 < xte96_bowtie w96_h > {
+           set nfn_$9 = lg(f_$9)
+	   if( substr('$9',0,2) == 'xt' || substr('$9',0,2) == 'w9' ) { connect n_$9 nfn_$9 } 
+           points n_$9 nfn_$9 
+           logerr n_$9 nfn_$9 e_$9
+        }
+	errorbar n_w96_h (lg(f_w96_h)) en_w96_h_u 1 
+	errorbar n_w96_h (lg(f_w96_h)) en_w96_h_d 3 
+	#-------------------------------------------------
+        
+	#-------------------------------------------------
+	# Macomb simultaneous data
+	if( $flag_bw == 0 ) { ctype maroon }
+	if( $flag_bw == 1 ) { ctype grey40 }
+	ptype 4 3 
+        foreach 9 < radha mmha irha iue94_h asca94 egret94_h w94_h > {
+           set nfn_$9 = lg(f_$9)
+	   if( substr('$9',0,2) == 'as' || substr('$9',0,2) == 'eg' ) { connect n_$9 nfn_$9 } 
+           points n_$9 nfn_$9 
+           logerr n_$9 nfn_$9 e_$9
+        }
+	#-------------------------------------------------
+        
+	ctype 2
+        
+#-------------------------------------------------------------------------------
+# plot_gf_mw_data <thinning step>
+#                 SAX          data are "grey55"
+#                 optical 2001 data are "blue/black"
+#                 Macomb   data are "maroon/grey47"
+plot_gf_mw_data 01
+
+	read_gf_mw_data
+
+	if($?1) { 
+	   define thinningstep $1
+	} else {
+	   define thinningstep (3)
+	}
+
+	ptype 4 0
+	ptype 4 3
+
+	if( $flag_bw == 0 ) { ctype 5 }
+	if( $flag_bw == 1 ) { ctype 2 }
+        foreach 9 < opt48in >  {
+           set  nfn_$9 = f_$9
+           points n_$9 nfn_$9 
+           logerr n_$9 nfn_$9 e_$9
+        }
+
+	#ctype grey55
+	#ctype darkgreen
+	#ctype mediumseagreen
+	#ctype limegreen
+	#ctype grey39
+	ctype grey55
+	ctype grey66
+	# data stored in */Whipple/more_data/sax_98_and_00.dat
+        foreach 9 < sax98l sax98h sax00vh > {
+	   # set nfn_$9 = lg(f_$9) 
+	   set n_tmp   = mythin(n_$9,$thinningstep)
+	   set nfn_tmp = mythin(nfn_$9,$thinningstep)
+	   set e_tmp   = mythin(e_$9,$thinningstep)
+	   ltype 1 
+           connect n_tmp nfn_tmp 
+	   ltype 0
+           # points n_$9 nfn_$9 
+	   # logerr n_$9 nfn_$9 e_$9
+           points n_tmp nfn_tmp 
+	   logerr n_tmp nfn_tmp e_tmp
+        }
+        
+	#ctype mediumseagreen
+	#ctype mediumaquamarine
+	#ctype aquamarine
+	if( $flag_bw == 0 ) { ctype skyblue2}
+	if( $flag_bw == 1 ) { ctype grey8 }
+	# data stored in */Whipple/more_data/sax_98_and_00.dat
+        foreach 9 < xte01l xte01vh1 xte01vh2 > {
+	   set n_tmp   = mythin(n_$9,$thinningstep)
+	   set nfn_tmp = mythin(nfn_$9,$thinningstep)
+	   set e_tmp   = mythin(e_$9,$thinningstep)
+	   ltype 1 
+           connect n_tmp nfn_tmp 
+	   ltype 0
+           points n_tmp nfn_tmp 
+	   logerr n_tmp nfn_tmp e_tmp
+
+           # connect n_$9 nfn_$9 
+	   # logerr n_$9 nfn_$9 e_$9
+        }
+        
+#-------------------------------------------------------------------------------
+# read_jb_mw_data
+read_jb_mw_data
+
+	define doasca (0)
+
+        #-------------------------------------------------------------------------------
+        # from file: mrk421_march19.kumac
+        # READ Commands:
+        # vec/read nsync,fsync m4synch.dat
+        # vec/read nssc,fssc m4ic.dat
+        # vec/read nxq,fxq,exq asca_sparse_may93.dat
+        # vec/read nxha,fxha,exha asca_sparse_may94.dat
+        # vec/read nx95,fx95 asca_april95_raw.dat
+        # * vec/read nxha,fxha,exha asca_may94.dat
+        # vec/read je,jf,jem,jep,jfm,jfp jeff_convert.dat
+        # vec/read energy,elow,ehigh,flux,fluxerr rebillot_spectrum_perrun.dat
+        # * vec/read nw96,fw96,fwm96,fwp96 whipple_may7_raw.dat
+        # vec/read nw96b,fw96b,fwm96b,fwp96b whipple_may15_raw.dat
+        # vec/read nw98,fw98,fwm98,fwp98 whipple_april98_raw.dat
+        # vec/read nh98,fh98,fhm98 hegra_april98.dat
+        #
+        #  +  nsync,fsync                     m4synch.dat
+        #  +  nssc,fssc                       m4ic.dat
+        #  +  nxq,fxq,exq                     asca_sparse_may93.dat
+        #  +  nxha,fxha,exha                  asca_sparse_may94.dat
+        #  +  nx95,fx95                       asca_april95_raw.dat
+        #  + (nxha,fxha,exha                  asca_may94.dat)
+        #  +  je,jf,jem,jep,jfm,jfp           jeff_convert.dat
+        #  +  energy,elow,ehigh,flux,fluxerr  rebillot_spectrum_perrun.dat
+        #  + (nw96,fw96,fwm96,fwp96           whipple_may7_raw.dat)
+        #  +  nw96b,fw96b,fwm96b,fwp96b       whipple_may15_raw.dat
+        #  +  nw98,fw98,fwm98,fwp98           whipple_april98_raw.dat
+        #  +  nh98,fh98,fhm98                 hegra_april98.dat
+        #-------------------------------------------------------------------------------
+
+        #===========================================================
+        # Data from Macomb, 1995
+        #
+        # Michigan: April 10,11,12 1994 (quiescent)
+        # (radio)
+        # (erg cm^-2 s^-1)
+        #
+        set n_radq = < 9.68 9.90 10.16 > 
+        set f_radq = < 3.7e-14 5.04e-14 8.85e-14 > 
+        set e_radq = < 0.34e-14 0.80e-14 0.15e-14 > 
+        set nradq = < 9.68 9.90 10.16 > 
+        set fradq = < 3.7e-14 5.04e-14 8.85e-14 > 
+        set eradq = < 0.34e-14 0.80e-14 0.15e-14 > 
+	foreach 6 < n f e > {
+	   set $6_radq = $6radq
+	}
+        
+        #---------------------------------------
+        # Michigan: May 10,19,14 1994 (high-a)
+        # (radio)
+        # (erg cm^-2 s^-1)
+        #
+        set nradha = < 9.68     9.90     10.16 >
+        set fradha = < 3.55e-14 4.05e-14 7.54e-14 >
+        set eradha = < 0.05e-14 0.48e-14 0.29e-14 >
+	foreach 6 < n f e > {
+	   set $6_radha = $6radha
+	}
+        
+        #---------------------------------------
+        # Michigan: May 20,16, April 29 1995 (high-b)
+        # (radio)
+        # (erg cm^-2 s^-1)
+        #
+        set nradhb = < 9.68      9.90     10.16 >
+        set fradhb = < 3.02e-14  5.36e-14 8.41e-14 >
+        set eradhb = < 0.096e-14 0.32e-14 0.29e-14 >
+	foreach 6 < n f e > {
+	   set $6_radhb = $6radhb
+	}
+        
+        #---------------------------------------
+        # JCMT: April 11,1994 (quiescent)
+        # (mm)
+        #
+        set nmmq = < 11.18   11.36    11.44 >
+        set fmmq = < 4.2e-13 5.08e-13 6.28e-13 >
+        set emmq = < 0.9e-13 0.69e-13 0.82e-13 >
+	foreach 6 < n f e > {
+	   set $6_mmq = $6mmq
+	}
+        
+        #---------------------------------------
+        # JCMT: May 15,1994 (high-a)
+        # (mm)
+        #
+        set nmmha = < 11.18    11.36    11.44 >
+        set fmmha = < 3.75e-13 5.54e-13 8.19e-13 >
+        set emmha = < 0.0      0.0e-13  2.46e-13 >
+	foreach 6 < n f e > {
+	   set $6_mmha = $6mmha
+	}
+        
+        #---------------------------------------
+        # IRAS: (state a)
+        #
+        set nirasa = < 13.398   13.079   12.477 >
+        set firasa = < 3.22e-11 2.11e-11 2.16e-11 >
+        set eirasa = < 0.85e-11 0.41e-11 0.33e-11 >
+	foreach 6 < n f e > {
+	   set $6_irasa = $6irasa
+	}
+        
+        #---------------------------------------
+        # IRAS: (state b)
+        #
+        set nirasb = < 13.398   13.079   12.699    12.477 >
+        set firasb = < 2.25e-11 1.14e-11 0.905e-11 1.08e-11 >
+        set eirasb = < 0.38e-11 0.23e-11 0.110e-11 0.20e-11 >
+	foreach 6 < n f e > {
+	   set $6_irasb = $6irasb
+	}
+        
+        #---------------------------------------
+        # UKIRT: May 10, 1994 (quiescent)
+        # (IR)
+        #
+        set nirq = < 14.14    14.26    14.39 >
+        set firq = < 5.13e-11 6.73e-11 7.78e-11 >
+        set eirq = < 0.92e-11 1.42e-11 0.80e-11 >
+	foreach 6 < n f e > {
+	   set $6_irq = $6irq
+	}
+        
+        #---------------------------------------
+        # UKIRT: May 17, 1994 (high-a)
+        # (IR)
+        #
+        set nirha = < 14.14    14.26    14.39 >
+        set firha = < 4.22e-11 5.54e-11 4.27e-11 >
+        set eirha = < 0.8e-11  1.05e-11 1.24e-11 >
+	foreach 6 < n f e > {
+	   set $6_irha = $6irha
+	}
+        
+        #---------------------------------------
+        # IR-Opt: March 1977, Cruz-Gonzalez and Huchra, 1984
+        #
+        set nopta = < 14.91     14.84     14.74    14.63    14.38    14.26     14.13     13.92     13.46 >
+        set fopta = < 0.816e-10 0.950e-10 1.08e-10 1.18e-10 1.11e-10 0.995e-10 0.721e-10 0.358e-10 0.0755e-10 >
+        set eopta = < 1.e-12    1.e-12    1.e-12   1.e-12   1.e-12   1.e-12    1.e-12    1.e-12    1.e-12 >
+	foreach 6 < n f e > {
+	   set $6_opta = $6opta
+	}
+        
+        #---------------------------------------
+        # IR-Opt: Feb,March 1984, Makino et al. 1984, Mt. Lemon+UKIRT+NASA IR
+        #
+        set noptb = < 14.91    14.84    14.74    14.63    14.52    14.38    14.26    14.13    13.94    13.89    13.80    13.46 >
+        set foptb = < 5.40e-11 5.24e-11 5.01e-11 4.76e-11 4.08e-11 3.81e-11 3.69e-11 3.06e-11 2.48e-11 2.18e-11 2.08e-11 1.45e-11 >
+        set eoptb = <  1.e-13  1.e-13   1.e-13   1.e-13   1.e-13   1.e-13   1.e-13   1.e-13   1.e-13   1.e-13   1.e-13   1.e-13  >
+	foreach 6 < n f e > {
+	   set $6_optb = $6optb
+	}
+        
+        #---------------------------------------
+        # IUE: April 11, 1994 (quiescent)
+        # (UV)
+        #
+        set nuvq = < 15.36  >
+        set fuvq = < 8.97e-11 >
+        set euvq = < 0.52e-11 >
+	foreach 6 < n f e > {
+	   set $6_iue94_q = $6uvq
+	}
+        
+        #---------------------------------------
+        # IUE: May 15, 1994 (high)
+        # (UV)
+        #
+        set nuvha = < 15.36  >
+        set fuvha = < 8.97e-11 >
+        set euvha = < 0.52e-11 >
+	foreach 6 < n f e > {
+	   set $6_iue94_h = $6uvha
+	}
+        
+        #---------------------------------------
+        # EUVE: All sky survey (November 1992) 
+        #
+        set neuvq = < 16.61 >
+        set feuvq = < 3.19e-11 >
+        set eeuvq = < 0.58e-11 >
+	foreach 6 < n f e > {
+	   set $6_euveASS = $6euvq
+	}
+        
+        #---------------------------------------
+        # EUVE: April, 1995 (high-b)
+        #
+        set neuvb = < 16.57 >
+        set feuvb = < 2.8e-10 >
+        set eeuvb = < 0.082e-10 >  # ???
+	foreach 6 < n f e > {
+	   set $6_euve95_h = $6euvb
+	}
+        
+        #---------------------------------------
+        # EUVE: April 2-12, 1994 (high-c) 
+        #
+        set neuvc = < 16.57 >
+        set feuvc = < 1.1e-10 >
+        set eeuvc = < 0.01e-10 > # ??? 
+	foreach 6 < n f e > {
+	   set $6_euve94_h = $6euvc
+	}
+        
+	############################################################
+	###  X-ray bands
+	############################################################
+        #---------------------------------------
+        # ASCA: May, 1993 (quiescent) From corrected Macomb et al. 1995
+        #
+        set nmxq = < 17.23     17.73     18.38    >
+        set fmxq = < 5.74e-11  2.84e-11  5.13e-12 >
+        set emxq = < 1.00e-11  0.49e-11  0.90e-12 >
+	foreach 6 < n f e > {
+	   set $6_asca93 = $6mxq
+	}
+        
+        #---------------------------------------
+        # ASCA: May, 1994 (high-a) From corrected Macomb et al. 1995
+        #
+        set nmxha = < 17.23     17.60     18.38    >
+        set fmxha = < 1.93e-10  2.09e-10  1.06e-10 >
+        set emxha = < 0.39e-10  0.43e-10  0.33e-10 >
+	foreach 6 < n f e > {
+	   set $6_asca94 = $6mxha
+	}
+        
+        #---------------------------------------
+        # ASCA: April, 1995 (high-b)
+        #
+        # I think that I made a mistake here originally.
+        # I plotted the integral power between 2 and 10 at the median energy
+        # i.e. 1.8 at 3.64keV, but this value is really appropriate at 2keV.
+        # Now I first convert the integral power and spectral index to a diff.
+        # spectrum dN/dE=N E^-2.5, solving for N by 
+        # erg cm^-2 s^-1 = integral(N E E^-2.5) etc.
+        #
+        set nxhb = < 17.945 >
+        set fxhb = < 1.21e-10 >
+        set exhb = < 0.29e-10 >
+	foreach 6 < n f e > {
+	   set $6_asca95 = $6xhb
+	}
+        
+	if( $doasca ) {
+           #===========================================================
+           # "real" spectra, multiple data points
+           #---------------------------------------
+           # ASCA: May, 1993 (quiescent)
+           #  asca_sparse_may93.dat
+           #
+           data "/home/gfossati/Science/Mkn421/2001/Whipple/more_data/asca_sparse_may93.dat"
+           read < nxq 1 fxq 2 exq 3 >
+           # set nxq=10.0**(nxq)
+           
+           #---------------------------------------
+           # ASCA: May, 1994 (high-a)
+           #  asca_sparse_may94.dat
+           #
+           data "/home/gfossati/Science/Mkn421/2001/Whipple/more_data/asca_sparse_may94.dat"
+           read < nxha 1 fxha 2 exha 3 >
+           # set nxha=10.0**(nxha)
+           
+           #---------------------------------------
+           # ASCA: April 1995, From Takahashi et al. 1999
+           #  asca_april95_raw.dat
+           #
+           # set ex95(21) R 0.0
+           data "/home/gfossati/Science/Mkn421/2001/Whipple/more_data/asca_april95_raw.dat"
+           read < nx95 1 fx95 2 > 
+           set nx95 =  -9.0 + (nx95 - 396.0)*0.005788
+           set fx95 = -10.0 + (fx95 - 598.0)*0.003909
+           set nx95 = 2.41797e26 * 10.0**(nx95)
+           set fx95 =  10.0**(fx95)
+
+           # set nxha(195) R
+           # set fxha(195) R
+           # set exha(195) R
+           # vec/read nxha,fxha,exha asca_may94.dat
+        }
+        
+        #===========================================================
+        # XTE: May 1996 big flare - highest x-ray point which came before flare
+        #
+        # Initially MS gave me 5.8x10^-10 
+        set nxhc = < 17.97   >
+        set fxhc = < 3.7e-10 >
+        set exhc = < 0.0e-10 >
+        foreach 6 < n f e > {
+           set $6_xte96 = $6xhc
+        }
+       
+        # XTE: May 1996 big flare - MS says the index is 2.3+-0.5
+        # between 2 and 10 keV - calculate the "bow-tie" region
+        #
+        set nxspec = < 17.68    18.38    18.38    17.68    17.68    17.68    18.38 >
+        set fxspec = < 4.45e-10 2.54e-10 2.79e-10 4.18e-10 4.45e-10 4.31e-10 2.66e-10 >
+        # fake error on flux because it was not given...
+        set exspec = fxspec/50.
+        foreach 6 < n f e > {
+           set $6_xte96_bowtie = $6xspec
+        }
+      
+	############################################################
+	###  Gamma ray bands
+	############################################################
+        # OSSE:
+        #
+        set n_osse = < 19.30   19.79   > # 20.22
+        set f_osse = < 9.9e-12 3.2e-11 > # 2.0e-10
+        set e_osse = < 0.0     0.0     > # 0.0 
+      
+        #---------------------------------------
+        # COMPTEL: 1998 
+        #
+        set ncomp  = < 81.0 83.0 86.3 90.0 >
+        set fcomp  = < 92.5 90.0 87.0 90.0 >
+        set fucomp = < 92.5 90.0 90.5 93.0 >
+        set ecomp  = < 0.0  0.0  0.0  0.0  >
+        # set xecomp = < 0.0 >
+        set ncomp  = 10.0**( 11.0 + 0.13850*(ncomp-14.0))
+        set fcomp  = 10.0**(-13.0 + 0.04838*(fcomp-20.0))
+        set fucomp = 10.0**(-13.0 + 0.04838*(fucomp-20.0))
+        set ecomp  = fucomp-fcomp
+	set ncomp = lg(ncomp)
+	foreach 6 < n f e > {
+	   set $6_comptel = $6comp
+	}
+      
+        #---------------------------------------
+        # EGRET: June 1991 - April 1994 (quiescent)
+        #
+        set ngq = < 22.08    22.42    22.90    23.48    24.16    >
+        set fgq = < 2.07e-11 1.64e-11 2.97e-11 2.64e-11 7.06e-11 >
+        set egq = < 0.89e-11 0.41e-11 0.52e-11 0.69e-11 3.63e-11 >
+	foreach 6 < n f e > {
+	   set $6_egret_q = $6gq
+	}
+     
+        #---------------------------------------
+        # EGRET: May 10 - 17 (high-a)
+        #
+        # set ngha = < 22.20     22.68     23.20     24.12  > # As in table not figure
+        set ngha = < 22.20     22.68     23.20     23.9     > # As in figure not table
+        set fgha = < 4.75e-11  3.27e-11  6.36e-11  2.24e-10 >
+        set egha = < 0.0       0.0       2.48e-11  1.37e-10 >
+	foreach 6 < n f e > {
+	   set $6_egret_ha  = $6gha
+	   set $6_egret94_h = $6gha
+	}
+        
+        #---------------------------------------
+        # EGRET: May 10 - 17 (high-b)
+        #
+        set nghb = < 23.24   >
+        set fghb = < 2.8e-11 >
+        set eghb = < 0.0     >
+	foreach 6 < n f e > {
+	   set $6_egret_hb = $6ghb
+	}
+        
+        #---------------------------------------
+        # Whipple: 1994 May 15 (high-a)
+        #
+        set nwha = < 25.974    >
+        set fwha = < 13.8e-11 >
+        set ewha = < 1.67e-11  >
+	foreach 6 < n f e > {
+	   set $6_w94_h = $6wha
+	}
+        
+        #---------------------------------------
+        # Whipple: 1995 April 26 (high-b)
+        #
+        set nwhb = < 25.898    >
+        set fwhb = < 7.71e-11  >
+        set ewhb = < 0.474e-11 >
+	foreach 6 < n f e > {
+	   set $6_w95_h = $6whb
+	}
+        
+        #---------------------------------------
+        # Whipple: 1994/1995 average
+        #
+        set nwqb = < 25.885   >
+        set fwqb = < 3.13e-11 >
+        set ewqb = < 0.14e-11 >
+	foreach 6 < n f e > {
+	   set $6_w94w95 = $6wqb
+	}
+      
+        #---------------------------------------
+        # Whipple: May 1996 ``big flare'' spectrum
+        #  jeff_convert.dat
+        #
+        data "/home/gfossati/Science/Mkn421/2001/Whipple/more_data/jeff_convert_formatted.dat"
+        read < je 1 jf 2 jem 3 jep 4 jfm 5 jfp 6 > 
+        set nwhc  = 26.38 + lg(je)
+        set npwhc = lg(je+jep) - lg(je)
+        set nmwhc = lg(je) - lg(je-jem)
+        set fwhc  = 1.602e-4*je*je*jf
+        set fpwhc = 1.602e-4*je*je*jfp
+        set fmwhc = 1.602e-4*je*je*jfm
+	set ewhc  = 0.5*(fpwhc+fmwhc)
+        # set nwhc  = 10.0**(nwhc)
+        # set npwhc = 10.0**(npwhc)
+        # set nmwhc = 10.0**(nmwhc)
+	foreach 6 < n f e > {
+	   set $6_w96_h = $6whc
+	}
+	set en_w96_h_u = npwhc
+	set en_w96_h_d = nmwhc
+        
+#-------------------------------------------------------------------------------
+# read_gf_mw_data
+read_gf_mw_data
+
+        #---------------------------------------
+        # Optical 48" for March 2001
+        #
+        set n_opt48in = <  14.73      14.73 > 
+        set f_opt48in = < -10.02      -9.82 >
+        set e_opt48in = <   1.45e-11   1.45e-11 >
+        
+        #---------------------------------------
+        # BeppoSAX 1998 and 2000 sample spectra
+        #
+        data "/home/gfossati/Science/Mkn421/2001/Whipple/more_data/sax_98_and_00.dat"
+        read < nsax 1 nfn_sax98l 2 nfn_sax98h 3 nfn_sax00vh 4 > 
+	set n_sax98l  = nsax
+	set n_sax98h  = nsax
+	set n_sax00vh = nsax
+	foreach 6 < 98l 98h 00vh > { 
+	   set n_sax$6 = nsax
+	   set e_sax$6 = nfn_sax$6*0 + 1e-14
+	}
+
+        #---------------------------------------
+        # RXTE 2001 high state spectra
+        #
+        data "/home/gfossati/Science/Mkn421/2001/Whipple/more_data/rxte_01_low_and_high.dat"
+        read < nxte 1 nfn_xte01l 2 nfn_xte01vh1 3 nfn_xte01vh2 4 > 
+	set n_xte01l   = nxte
+	set n_xte01vh1 = nxte
+	set n_xte01vh2 = nxte
+	foreach 6 < 01l 01vh1 01vh2 > { 
+	   set n_xte$6 = nxte
+	   set e_xte$6 = nfn_xte$6*0 + 1e-14
+	}
+
+#---------------------------------------
+# jb_whipple_data_2001
+jb_whipple_data_2001
+
+        #===========================================================
+        # Whipple March 19 2001
+        # Rebillot Analysis
+        #  rebillot_spectrum_perrun.dat
+        # In TeV, photons/m^2/s/TeV
+        #
+        data rebillot_spectrum_perrun.dat
+        read < energy 1 elow 2 ehigh 3 flux 4 fluxerr 5 > 
+        set fw  = (flux)    * energy**2.0 * 1.6037e-04
+        set ew  = (fluxerr) * energy**2.0 * 1.6037e-04 
+        set fwp = (flux + fluxerr) * energy**2.0 * 1.6037e-04
+        set fwm = (flux - fluxerr) * energy**2.0 * 1.6037e-04
+        set nw  = energy * 2.41797e26
+        set nwp = energy + ehigh
+        set nwm = energy - elow
+        set nwp=nwp * 2.41797e26
+        set nwm=nwm * 2.41797e26
+
+        #---------------------------------------
+        # Whipple March 19 2001
+        #
+        # In TeV, photons/m^2/s/TeV
+        #
+        set energy = < 0.383     0.562    0.824     1.774 >
+        set flux   = < 6.14e-06  1.10e-06 5.88e-07  4.65e-08 >
+        set errory = < 1.44e-06  5.55e-07 2.06e-07  3.72e-08 >
+        
+        set ew01a = (errory) * energy**2.0 * 1.6037e-04 
+        set fw01a = (flux)   * energy**2.0 * 1.6037e-04
+        set nw01a = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 b
+        #
+        # In TeV, photons/m^2/s/TeV
+        #
+        set energy = < 0.383     0.562    0.824         1.774      2.612    >
+        set flux   = < 5.88e-06  1.21e-06 1.45e-06     1.72e-07    5.21e-08 >
+        set errory = < 2.22e-06  8.85e-07 3.67e-07     6.75e-08    2.90e-08 >
+        
+        set fw01b = (flux)   * energy**2.0 * 1.6037e-04
+        set ew01b = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01b = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 c
+        #
+        # In TeV, photons/m^2/s/TeV
+        #
+        set energy = <  0.383     0.562      0.824     1.211    1.774      2.612    >
+        set flux   = < 6.08e-06   3.22e-06   9.69e-07  5.00e-07 8.58e-08   1.26e-07 >
+        set errory = < 2.45e-06   1.02e-06   3.53e-07  1.67e-07 6.22e-08   3.72e-08 >
+        
+        set fw01c = (flux) * energy**2.0 * 1.6037e-04
+        set ew01c = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01c = energy * 2.41797e26
+       
+        #---------------------------------------
+        # Whipple March 19 2001 d
+        #
+        # In TeV, photons/m^2/s/TeV
+        #
+        set energy = < 0.383     0.562      0.824     1.211     1.774      2.612     3.828    > 
+        set flux   = < 5.88e-06  3.30e-06   1.11e-06   6.35e-07  2.04e-07  1.04e-07  2.70e-08 > 
+        set errory = < 2.39e-06  9.41e-07   3.49e-07   1.64e-07  6.11e-08  3.94e-08  1.26e-08 > 
+      
+        set fw01d = (flux) * energy**2.0 * 1.6037e-04
+        set ew01d = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01d = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 e
+        #
+        # In TeV, photons/m^2/s/TeV
+        # set 2a: (run number 17431   corresponds to  6.85 h )
+        #
+        set energy = <  0.383     0.562     0.824      1.211     1.774    2.606      3.828    5.623    > 
+        set flux   = <  6.47e-06 5.15e-06  1.21e-06   8.08e-07  2.89e-07  1.04e-07   4.95e-08 6.51e-09 > 
+        set errory = < 2.43e-06  1.01e-06  3.53e-07   1.75e-07   6.86e-08 3.94e-08   1.62e-08 4.56e-09 > 
+        
+        set fw01e = (flux)   * energy**2.0 * 1.6037e-04
+        set ew01e = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01e = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 f
+        #
+        # In TeV, photons/m^2/s/TeV
+        # set 2b:  (run number 17432   corresponds to 7.35 h  )
+        #
+        set energy = < 0.383     0.562     0.824      1.211     1.774    2.606      3.828 >
+        set flux   = < 9.41e-06  4.02e-06 2.18e-06  1.17e-06   2.04e-07  1.71e-07   3.15e-08 >
+        set errory = < 2.59e-06  1.05e-06 4.08e-07  2.02e-07   7.18e-08  4.17e-08   1.75e-08 >
+        
+        set fw01f = (flux)   * energy**2.0 * 1.6037e-04
+        set ew01f = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01f = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 g
+        #
+        # In TeV, photons/m^2/s/TeV
+        # set 3: (run number 17433   corresponds to   7.8 h )
+        #
+        set energy = < 0.383     0.562     0.824      1.211     1.774    2.606     3.828    5.623     8.260 > 
+        set flux   = < 2.41e-05 8.68e-06   3.56e-06   1.17e-06  3.65e-07 1.93e-07 5.85e-08  2.61e-08  5.35e-09 > 
+        set errory = < 2.92e-06 1.17e-06  4.57e-07    2.10e-07  8.15e-08  4.31e-08 2.07e-08 9.12e-09 3.93e-09 > 
+        
+        set fw01g = (flux)   * energy**2.0 * 1.6037e-04
+        set ew01g = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01g = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 h
+        #
+        # In TeV, photons/m^2/s/TeV
+        # set 4: (run number  17434    corresponds to   8.3 h    )
+        #
+        set energy = < 0.383     0.562     0.824      1.211     1.774    2.606     3.828     5.623     8.260 >
+        set flux   = < 2.59e-05  1.05e-05  3.87e-06  1.02e-06   6.54e-07 2.23e-07  7.64e-08  1.63e-08  8.92e-09 >
+        set errory = < 2.98e-06  1.24e-06  4.67e-07  2.02e-07   9.86e-08 4.61e-08  2.25e-08  7.17e-09  4.64e-09 >
+        
+        set fw01h = (flux)   * energy**2.0 * 1.6037e-04
+        set ew01h = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01h = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 i
+        #
+        # In TeV, photons/m^2/s/TeV
+        # set 5a:  (run number  17435    corresponds to  8.8 h )
+        #
+        set energy = <  0.383     0.562     0.824      1.211     1.774      2.606    3.828     5.623 >
+        set flux   = < 2.24e-05  9.49e-06  2.70e-06    1.19e-06  5.15e-07  2.31e-07  3.15e-08  2.93e-08 >
+        set errory = < 3.12e-06  1.25e-06   4.81e-07    2.19e-07  9.86e-08  5.28e-08 1.98e-08  1.17e-08 >
+
+        set fw01i = (flux)   * energy**2.0 * 1.6037e-04
+        set ew01i = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01i = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 j
+        #
+        # In TeV, photons/m^2/s/TeV
+        # set 5b:   (run number  17436   corresponds to  9.3 h  )
+        #
+        set energy = <  0.383     0.562     0.824      1.211     1.774      2.606      3.828 > 
+        set flux   = < 1.94e-05  5.79e-06  1.49e-06    4.62e-07  1.39e-07   1.26e-07   2.25e-08 > 
+        set errory = < 3.06e-06  1.15e-06  4.29e-07   1.89e-07  7.93e-08   4.24e-08    1.75e-08 > 
+        
+        set fw01j = (flux)   * energy**2.0 * 1.6037e-04
+        set ew01j = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01j = energy * 2.41797e26
+        
+        #---------------------------------------
+        # Whipple March 19 2001 
+        #
+        # In TeV, photons/m^2/s/TeV
+        # set 5a:  (run number  17435    corresponds to  8.8 h )
+        #
+        set energy = <  0.383     0.562     0.824      1.211     1.774      2.606    3.828     5.623 >
+        set flux   = < 2.24e-05  9.49e-06  2.70e-06    1.19e-06  5.15e-07  2.31e-07  3.15e-08  2.93e-08 >
+        set errory = < 3.12e-06  1.25e-06   4.81e-07    2.19e-07  9.86e-08  5.28e-08 1.98e-08  1.17e-08 >
+        
+        set fw01i = (flux)   * energy**2.0 * 1.6037e-04
+        set ew01i = (errory) * energy**2.0 * 1.6037e-04 
+        set nw01i = energy * 2.41797e26
+        
+#---------------------------------------
+# jb_whipple_1996_1998
+jb_whipple_1996_1998
+
+        #===========================================================
+        # * Whipple: May 7 1996, From Krennrich et al. 1999 (ICRC)
+        # *   whipple_may7_raw.dat
+        # * 
+        # set nw96(10) R
+        # set nwp96(10) R 0.0
+        # set nwm96(10) R 0.0
+        # set fw96(10) R
+        # set fwp96(10) R
+        # set fwm96(10) R
+        # set ew96(10) R 
+        # vec/read nw96,fw96,fwm96,fwp96 whipple_may7_raw.dat
+        # sigma nw96=(nw96-323.0)/50.0
+        # sigma nw96=10.0**(nw96)
+        # sigma fw96=-13.0+(fw96-480.0)/14.0
+        # sigma fw96=10**(fw96) * nw96**2.0 * 1.6037
+        # sigma fwp96=-13.0+(fwp96-480.0)/14.0
+        # sigma fwp96=10**(fwp96) * nw96**2.0 * 1.6037
+        # sigma fwm96=-13.0+(fwm96-480.0)/14.0
+        # sigma fwm96=10**(fwm96) * nw96**2.0 * 1.6037
+        # sigma fwp96=fwp96-fw96
+        # sigma fwm96=fw96-fwm96
+        # sigma nw96=nw96 * 2.41797e26
+        #
+        #---------------------------------------
+        # Whipple: May 7 1996, From Krennrich et al. 1999 (ICRC)
+        #  whipple_may15_raw.dat
+        #
+        data whipple_may15_raw.dat
+        read < nw96b 1 fw96b 2 fwm96b 3 fwp96b 4 >
+        set nw96b  = (nw96b-323.0)/50.0
+        set nw96b  =  10.0**(nw96b)
+        set fw96b  = -13.0+(fw96b-378.0)/14.0
+        set fw96b  =  10**(fw96b) * nw96b**2.0 * 1.6037
+        set fwp96b = -13.0+(fwp96b-378.0)/14.0
+        set fwp96b =  10**(fwp96b) * nw96b**2.0 * 1.6037
+        set wm96b  = -13.0+(fwm96b-378.0)/14.0
+        set fwm96b =  10**(fwm96b) * nw96b**2.0 * 1.6037
+        set fwp96b = fwp96b - fw96b
+        set fwm96b = fw96b  - fwm96b
+        set nw96b  = nw96b * 2.41797e26
+       
+        #---------------------------------------
+        # Whipple: April 21 1998, From Krennrich et al. 1999 (ICRC)
+        #  whipple_april98_raw.dat
+        # 
+        data whipple_april98_raw.dat
+        read < nw98 1 fw98 2 fwm98 3 fwp98 4 >
+        set nw98  = (nw98-323.0)/50.0
+        set nw98  =  10.0**(nw98)
+        set fw98  = -13.0+(fw98-275.0)/14.0
+        set fw98  =  10**(fw98) * nw98**2.0 * 1.6037
+        set fwp98 = -13.0+(fwp98-275.0)/14.0
+        set fwp98 =  10**(fwp98) * nw98**2.0 * 1.6037
+        set fwm98 = -13.0+(fwm98-275.0)/14.0
+        set fwm98 =  10**(fwm98) * nw98**2.0 * 1.6037
+        set fwp98 = fwp98 - fw98
+        set fwm98 = fw98  - fwm98
+        set nw98  = nw98*2.41797e26
+        
+        #===========================================================
+        # * Whipple: March 19 2001
+        # *
+        # set nwma(4) R 0.0
+        # set fwma(4) R 0.0
+        # set ewma(4) R 0.0
+        # set fpwma(4) R 0.0
+        # set fmwma(4) R 0.0
+        # set npwma(4) R 0.0
+        # set nmwma(4) R 0.0
+        # set flux(4) R 0.0
+        # set energy(4) R 0.0
+        # set errory(4) R 0.0
+        # vector/input flux      6.14e-06  1.10e-06 5.88e-07      4.65e-08
+        # vector/input energy    0.383     0.562    0.824         1.774
+        # vector/input errory    1.44e-06  5.55e-07 2.06e-07      3.72e-08
+        # sigma nwma = 26.38 + log10(energy)
+        # * sigma npwma = log10(je+jep) - log10(je)
+        # * sigma nmwma = log10(je) - log10(je-jem)
+        # sigma fwma = 1.602e-4*energy*energy*flux
+        # sigma fpwma = 1.602e-4*energy*energy*(flux+errory)
+        # sigma fmwma = 1.602e-4*energy*energy*(flux-errory)
+        # sigma nwma = 10.0**(nwhc)
+        # sigma npwma = 10.0**(npwhc)
+        # sigma nmwma = 10.0**(nmwhc)
+        #
+        #===========================================================
+        # HEGRA: April 1998, From Aharonian et al. 1999, A&A, 350, 757
+        #  hegra_april98.dat
+        # 
+        data hegra_april98.dat
+        read < nh98 1 fh98 2 fhm98 3 >
+        set fh98  = (fh98)  * nh98**2.0 * 1.6037
+        set fhm98 = (fhm98) * nh98**2.0 * 1.6037
+        set nh98  = nh98 * 2.41797e26
+        
+        #---------------------------------------
+        # HEGRA: 1994/1995 average
+        #
+        set nhegra = < 26.383 > 
+        set fhegra = < 3.32e-11 > 
+        set ehegra = < 0.83e-11 > 
+        
+##------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#  REMEMBER: 
+#    * Load macro file "ssc.sm"
+#------------------------------------------------------------------------------

@@ -1,0 +1,1385 @@
+#------------------------------------------------------------------------------
+# cpoints 23  [<ltype>] <x> <y>
+cpoints 23
+
+	if($?3 == 0) { 
+	   echo " third input not defined "
+	   define 3 $2 
+	   define 2 $1 
+	   define 1 2
+	}
+	ltype $1
+	connect $2 $3
+	ltype 0 
+	points $2 $3
+
+#------------------------------------------------------------------------------
+# read_data [<whatdata>]
+read_data 01
+
+	if($?1) {
+	   define whatdata $1
+	} else {
+	   define whatdata ? < What data [wu/rice/ayr, or YYYYMMDD] : >
+	}
+
+	if(substr('$whatdata',0,2) == 'wu') {
+	    data wu_length.dat
+	    read < ll 1 >
+	    set laplist = < 1 2 3 4 5 6 >
+	    set shortlaplist = < 2 3 4 5 6 >
+	    data wu_list.txt 
+	} 
+        if(substr('$whatdata',0,2) == 'ay') {
+               data ayr_length.dat
+               data ayr_length_revised.dat
+               read < ll 1 >
+               set laplist = < 1 2 3 4 5 6 7 8 >
+               set shortlaplist = < 2 3 4 5 6 7 8 >
+               data ayr_list.txt 
+        }
+        if(substr('$whatdata',0,2) != 'wu' && substr('$whatdata',0,2) != 'ay') {
+               data rice_length.dat
+               read < ll 1 >
+               set laplist = 1,11,1
+               set shortlaplist = 2,11,1
+               data rice_list.txt 
+        } 
+
+	define tot_length $(sum(ll))
+	echo  Total Length Run = $tot_length [$($tot_length/1609)]
+
+	read < dates  1.s >
+	read < fdates 1 >
+	if( strlen('$whatdata') > 3) {
+	   set dates  = dates  if(fdates > 20030600)
+	   set fdates = fdates if(fdates > 20030600)
+	}
+	if( substr('$whatdata',0,1) == '2' ) {
+	   set dates  = dates  if(fdates > $whatdata )
+	   set fdates = fdates if(fdates > $whatdata )
+	}
+
+	define nd $(dimen(dates))
+
+	foreach 1 < Ttrue Tchill Theat \
+	            Rhum RunTime TrueRunTime \
+		    avrgBeat maxBeat > { 
+	   set dimen($1) = $nd
+	}
+	do 9=1,11 { 
+	   set dimen(all_lap$1) = $nd
+	}
+	set counter=1,$nd
+
+	#--- reads auxiliary data ---
+	define i 0
+	foreach 1 dates {
+
+	   if(substr('$whatdata',0,2) == 'wu') {
+	      data "wu_$!1.dat"
+	   } 
+	   if(substr('$whatdata',0,2) == 'ay') {
+	      data "ayr_$1.dat"
+	   }
+           if(substr('$whatdata',0,2) != 'wu' && substr('$whatdata',0,2) != 'ay') {
+	      data "rice_$!1.dat"
+	   }
+	   define t1   read 3 2
+	   define t2   read 3 3
+	   define t3   read 3 4
+	   define rh   read 4 2 
+	   define rtm  read 5 2 
+	   define rts  read 5 3 
+	   define trtm read 5 5 
+	   define trts read 5 6 
+	   define ahb  read 6 2 
+	   define mhb  read 7 2 
+
+	   set Ttrue[$i]   = $t1
+	   set Tchill[$i]  = $t2
+	   set Theat[$i]   = $t3
+	   set Rhum[$i]    = $rh
+	   set RunTime[$i] = $rtm + $rts/60.0
+	   set TrueRunTime[$i] = $trtm + $trts/60.0
+	   set avrgBeat[$i]= $ahb
+	   set maxBeat[$i] = $mhb
+
+	   define i $($i+1)
+	}
+
+	#--- reads times ---
+	define i 0
+	foreach 1 dates {
+
+	   if(substr('$whatdata',0,2) == 'wu') {
+	      data "wu_$1.dat"
+	   } 
+	   if(substr('$whatdata',0,2) == 'ay') {
+	      data "ayr_$1.dat"
+	   }
+           if(substr('$whatdata',0,2) != 'wu' && substr('$whatdata',0,2) != 'ay') {
+	      data "rice_$1.dat"
+	   }
+	   foreach 2 laplist {
+	      define nline $(8+$2)
+	      define lm read $nline 2 
+	      define ls read $nline 3 
+	      ## if( $2 == 1 ) { echo $i $lm $ls }
+	      set all_lap$2[$i] = $lm + $ls/60.0
+	   }
+	   define i $($i+1)
+	}
+
+	##do 1=0,$(dimen(dates)-1) {
+	do 1=1,dimen(dates) {
+	   set split_t_$1 = < $(all_lap1[$1-1]) >
+	   foreach 2 shortlaplist {
+	       set split_t_$1 = split_t_$1 concat < $(all_lap$2[$1-1]) >
+	   }
+	   set progr_$1 = cumulate(split_t_$1)
+	}
+
+	#--- define speeds ---
+	foreach 2 laplist {
+	   set speed_ms_$2  = $(ll[$($2-1)])/all_lap$2
+	   set time_km_$2   = 1000/speed_ms_$2
+	   set time_mile_$2 = 1609/speed_ms_$2
+	}
+
+	## do 1=0,$(dimen(dates)-1) {
+	do 1=1,dimen(dates) {
+	   set split_speed_ms_$1  = ll/split_t_$1
+	   set split_time_km_$1   = 1000/split_speed_ms_$1
+	   set split_time_mile_$1 = 1609/split_speed_ms_$1
+	}
+	#---------------------
+
+
+	echo "-------------------------------------------"
+	echo " Arrays:"
+	echo "  all_lap"$i", i=1,n     : time for segments "$i" of all events"
+	echo "  time_km_"$i"           : time for 1km for segments "$i" of all events"
+	echo "  time_mile_"$i"         : time for 1km for segments "$i" of all events"
+	echo "  RunTime              : Total Runtime of all events"
+	echo "  split_t_\#\#           : split times for event \#"
+	echo "  split_time_km_\#\#     : split times for 1km for event \#"
+	echo "  split_time_mile_\#\#   : split times for 1mile for event \#"
+	echo "  progr_\#\#             : cumulative time for event \#"
+	echo "-------------------------------------------"
+	echo "  Ttrue Tchill Theat : temperatures"
+	echo "  avrgBeat maxBeat   : heart beat"
+	echo "  Rhum               : Relative humidity"
+	echo "-------------------------------------------"
+
+	set runtime = RunTime
+	set trueruntime = TrueRunTime
+
+#-----------------------------------------------------------------------------
+# plot [<segments-string>]
+plot 01
+
+	if($?1) {
+	   define which $1
+	} else {
+           define which ?  { Which laps [1-6-8-11] ? }
+	}
+
+        define length $(strlen('$which'))
+        ##echo $length
+
+        set ptime = all_lap1*0
+        define btime 0
+	define llsegm 0
+
+        if( $length == 1 ) {
+
+           set ptime = all_lap$which
+	   set dum   = all_lap$which
+	   sort < dum > 
+           define btime $(dum[0])
+	   define llsegm $(ll[$($which-1)])
+
+        } else {
+           do i=1,$length {
+              define 2 $(substr('$which',$($i-1),1))
+              ##echo $2
+              set ptime = ptime + all_lap$2
+	      set dum = all_lap$2
+	      sort < dum > 
+	      define btime  $($btime + dum[0])
+	      define llsegm $($llsegm + ll[$($2-1)] )
+           }
+        }
+
+	set order=1,$nd
+	set order=order-1
+
+	set dumptime = ptime
+
+	sort < dumptime order >
+
+	set dimen(str_best) = $nd.s
+	do 1=0,$($nd-1) {
+	  set str_best[$1] = '      '
+	}
+	help str_best
+
+	if( $nd >=  1 ) { set str_best[$(order[0])] = '* 1    - ' }
+	if( $nd >=  2 ) { set str_best[$(order[1])] = '* 2    - ' }
+	if( $nd >=  3 ) { set str_best[$(order[2])] = '* 3    - ' }
+	if( $nd >=  4 ) { set str_best[$(order[3])] = '* 4    - ' }
+	if( $nd >=  5 ) { set str_best[$(order[4])] = '* 5    - ' }
+	if( $nd >=  6 ) { set str_best[$(order[5])] = '-    6 - ' }
+	if( $nd >=  7 ) { set str_best[$(order[6])] = '-    7 - ' }
+	if( $nd >=  8 ) { set str_best[$(order[7])] = '-    8 - ' }
+	if( $nd >=  9 ) { set str_best[$(order[8])] = '-    9 - ' }
+	if( $nd >= 10 ) { set str_best[$(order[9])] = '-   10 - ' }
+
+	#----------------------------------
+	set dimen(detail_rank) = $nd.s
+	do 1=0,$($nd-1) {
+	   set detail_rank[$1] = ' '
+	}
+	set idx=1,$nd
+	set idx=idx-1
+
+        if( $length == 1 ) {
+	   set dum   = all_lap$which
+	   set dumr  = idx
+	   sort < dum idx > 
+
+           define rtime $(dum[0])
+        } else {
+           do i=1,$length {
+              define 2 $(substr('$which',$($i-1),1))
+	      set dum = all_lap$2
+	      sort < dum > 
+	      define rtime  $($btime + dum[0])
+           }
+        }
+	#----------------------------------
+
+	set speed_ms  = $llsegm/ptime
+	set time_km   = 1000/speed_ms
+	set time_mile = 1609/speed_ms
+
+	#----------------------------------
+
+	set ptime_m = int(ptime)
+	set ptime_s = (ptime - int(ptime))*60.0
+	define btime_m  $(int($btime))
+	define btime_s  $(sprintf('%04.1f',$(($btime - int($btime))*60.0)))
+
+	set btime   = < $btime >
+	set btime_m = < $btime_m >
+	set btime_s = < $btime_s >
+
+	define print_noheader 1
+	echo ----------------------------
+	print ' %2d  %8s  %6.3f  %02d %04.1f  %8s\n' < counter dates ptime ptime_m ptime_s str_best >
+	echo ----------------------------
+	print '              %6.3f  %02d %05.2f     \n' < btime btime_m btime_s >
+	echo ----------------------------
+	define print_noheader 0
+	echo data stored in arrays: ptime ptime_m ptime_s
+	echo ----------------------------
+
+#------------------------------------------------------------------------------
+# axis_seconds
+axis_seconds
+
+	define gscale $( ($gy2-$gy1)/($fy2-$fy1) )
+	echo $gscale
+	define a1 $(int( 60*(1-(int($fy1)+1-$fy1)) ))
+	define a2 60
+	define alen $(int($gscale*($a2-$a1)/60))
+	echo $a1 $a2 $alen
+
+	define ax $gy1
+	define ay $gx1
+
+	angle 90
+	ctype 5 axis $a1 $a2 5 15 $ax $ay $alen 0 1
+
+#------------------------------------------------------------------------------
+# detrend  <x-array> <y-array>
+detrend 2
+	
+	set x = $1	
+	set y = $2	
+
+	vecminmax x x1 x2
+	define xmed $( ($x1+$x2)/2. )
+	echo $x1 $x2 $xmed
+
+	set x  = x - $xmed
+	set xx = x
+	lsq x y xx yy
+
+	ltype 1
+	ctype 3 
+	connect (xx + $xmed)  yy
+	ltype 0 
+	ctype 0
+
+	# do a non-weighted least squares fit to a set of vectors
+	# syntax: lsq x y [ x2 y2 [rms]] Fit line y2=$a*x2+$b to x y
+	# Optionally, calculate rms residual as $rms, in which case
+	# $sig_a, $sig_b, and $CHI2 are also calculated.
+		
+#------------------------------------------------------------------------------
+# plot_new  [<segments-string>]
+plot_new 01
+
+	if($?1) {
+	   define which $1
+	} else {
+           define which ?  { Which laps [1-6-8] ? }
+	}
+
+	set timeax = counter 
+        define whattime ?  < Time Axis: counter[1] or dates[2] : >
+
+	if( $whattime == 1 ) { set timeax = counter }
+	if( $whattime == 2 ) { set timeax = fdates - fdates[0] + 1 }
+
+        define length $(strlen('$which'))
+
+        set ptime = all_lap1*0
+        set best  = all_lap1*0
+        if( $length == 1 ) {
+	   set best$which = all_lap1*0
+	} else {
+           do i=1,$length {
+              define 2 $(substr('$which',$($i-1),1))
+              set best$2 = all_lap1*0
+           }
+	}
+
+        define btime 0
+	define llsegm 0
+
+	#---------------------------------------------------------------
+	# adds the segments and computes the sum-of-the-best-split-times
+	#
+        if( $length == 1 ) {
+           set ptime = all_lap$which
+	   set dum   = all_lap$which
+	   sort < dum > 
+           define btime $(dum[0])
+	   define llsegm $(ll[$($which-1)])
+        } else {
+           do i=1,$length {
+              define 2 $(substr('$which',$($i-1),1))
+              set ptime = ptime + all_lap$2
+	      set dum = all_lap$2
+	      sort < dum > 
+	      define btime  $($btime + dum[0])
+	      define llsegm $($llsegm + ll[$($2-1)] )
+           }
+        }
+	#----------------------------------
+	set speed_ms  = $llsegm/ptime
+	set time_km   = 1000/speed_ms
+	set time_mile = 1609/speed_ms
+
+	#----------------------------------
+
+	#---------------------------------------------------------------
+	# prepares the string array marking the best performances.
+	#
+	set order=1,$nd
+	set order=order-1
+
+	set dumptime = ptime
+
+	sort < dumptime order >
+
+	set dimen(str_best) = $nd.s
+	do 1=0,$($nd-1) {
+	  set str_best[$1] = '        '
+	}
+	help str_best
+	
+	if( $nd >=  1 ) { set str_best[$(order[0])]  = '* 1     - ' }
+	if( $nd >=  2 ) { set str_best[$(order[1])]  = '* 2     - ' }
+	if( $nd >=  3 ) { set str_best[$(order[2])]  = '* 3     - ' }
+	if( $nd >=  4 ) { set str_best[$(order[3])]  = '* 4     - ' }
+	if( $nd >=  5 ) { set str_best[$(order[4])]  = '* 5     - ' }
+	if( $nd >=  6 ) { set str_best[$(order[5])]  = '-   6   - ' }
+	if( $nd >=  7 ) { set str_best[$(order[6])]  = '-   7   - ' }
+	if( $nd >=  8 ) { set str_best[$(order[7])]  = '-   8   - ' }
+	if( $nd >=  9 ) { set str_best[$(order[8])]  = '-   9   - ' }
+	if( $nd >= 10 ) { set str_best[$(order[9])]  = '-  10   - ' }
+	if( $nd >= 11 ) { set str_best[$(order[10])] = '-    11 - ' }
+	if( $nd >= 12 ) { set str_best[$(order[11])] = '-    12 - ' }
+	if( $nd >= 13 ) { set str_best[$(order[12])] = '-    13 - ' }
+	if( $nd >= 14 ) { set str_best[$(order[13])] = '-    14 - ' }
+	if( $nd >= 15 ) { set str_best[$(order[14])] = '-    15 - ' }
+
+	#---------------------------------------------------------------
+	# prepares the "running" best time for the sum of the given segments
+	#
+        if( $length == 1 ) {
+	   set dum   = all_lap$which
+	   do j=1,$(dimen(dum)) {
+	      set temp = dum    if( counter <= $j )
+	      sort < temp >
+	      set best$which[$($j-1)] = $(temp[0])
+	   }
+	   set best = best$which
+        } else {
+           do i=1,$length {
+              define 2 $(substr('$which',$($i-1),1))
+	      set dum = all_lap$2
+	      do j=1,$(dimen(dum)) {
+	         set temp = dum    if( counter <= $j )
+	         sort < temp >
+		 ## echo $i $j $(temp[0])
+	         set best$2[$($j-1)] = $(temp[0])
+	      }
+	      set best = best + best$2
+           }
+        }
+
+	#---------------------------------------------------------------
+	# running avrg
+	#
+	run_avrg counter ptime
+
+	#---------------------------------------------------------------
+	# boh?
+	#
+	set dimen(detail_rank) = $nd.s
+	do 1=0,$($nd-1) {
+	   set detail_rank[$1] = ' '
+	}
+	set idx=1,$nd
+	set idx=idx-1
+
+        if( $length == 1 ) {
+	   set dum   = all_lap$which
+	   set dumr  = idx
+	   sort < dum idx > 
+           define rtime $(dum[0])
+        } else {
+           do i=1,$length {
+              define 2 $(substr('$which',$($i-1),1))
+	      set dum = all_lap$2
+	      sort < dum > 
+	      define rtime  $($btime + dum[0])
+           }
+        }
+	#----------------------------------
+
+	set ptime_m = int(ptime)
+	set ptime_s = (ptime - int(ptime))*60.0
+	define btime_m  $(int($btime))
+	define btime_s  $(sprintf('%04.1f',$(($btime - int($btime))*60.0)))
+
+	set btime   = < $btime >
+	set btime_m = < $btime_m >
+	set btime_s = < $btime_s >
+
+	define print_noheader 1
+	echo "----------------------------------------------------------------"
+	print ' %2d  %8s  %6.3f  %02d %04.1f  %10s || %3d    %3d  %3d\n' < counter dates ptime ptime_m ptime_s str_best avrgBeat Theat Rhum>
+	echo "----------------------------------------------------------------"
+	print '               %6.3f  %02d %04.1f            || Beat  Theat  Rhum' < btime btime_m btime_s >
+	echo " Length : "$llsegm "m   / "$(sprintf('%5.3f',$($llsegm/1609)))" miles"
+	echo "----------------------------------------------------------------"
+	define print_noheader 0
+	echo "data stored in arrays: ptime ptime_m ptime_s"
+	echo "----------------------------------------------------------------"
+
+	erase
+	#---------------------
+	set ratiobest      = 60*(best-ptime)
+	set short_best     = best    if( counter > $nn )
+	set short_ptime    = ptime   if( counter > $nn )
+	set ratioavrg      = 60*(runavrg-short_ptime)
+	set diff_best_avrg = 60*(runavrg-short_best)
+	set dumlim = ratiobest concat ratioavrg
+	set dumlim = abs(dumlim)
+	vecminmax dumlim a b
+	define b $($b*1.2)
+	#---------------------
+	ptype 20 3
+	lweight 3 
+	window 1 -4 1 4
+	#limits counter -$b $b
+	limits timeax -$b $b
+	ctype 2 
+	expand 1.1
+	if( $whattime == 1 ) { ticksize 1 5 0 0 }
+	if( $whattime == 2 ) { ticksize 0 0 0 0 }
+	box 0 2 1 0
+
+	expand 1.2
+	ctype 2 
+	ltype 1
+	relocate -2 0 
+	#draw $(dimen(counter)+3) 0
+	draw $(timeax[$(dimen(timeax)-1)]+3) 0
+	ctype 3
+	#cpoints 1 counter ratiobest
+	cpoints 1 timeax ratiobest
+	ctype 4
+	#cpoints 1 runcounter ratioavrg
+	cpoints 1 runtimeax ratioavrg
+	ctype 5
+	#cpoints 1 runcounter diff_best_avrg
+	cpoints 1 runtimeax diff_best_avrg
+	ctype 2
+	#---------------------
+
+	#---------------------
+	set dum    = ptime 
+	set dumlim = ptime concat best
+
+	define whatplot "n"
+	define whatplot ? < Normalize plot [y/N] : >
+	if( substr('$whatplot',0,1) == 'y' ) {
+	   stats dum mean sig kurt
+	   set dum     = dum/$mean
+	   set dumlim  = dumlim/$mean
+	   set best    = best/$mean
+	   set runavrg = runavrg/$mean
+	}
+	#---------------------
+	window 1 -4 1 1:3
+	expand 1.5
+	limits timeax dumlim
+	if( $whattime == 1 ) { ticksize 1 5 0.05 0.5 }
+	if( $whattime == 2 ) { ticksize 0 0 0.05 0.5 }
+	if( $whattime == 1 && substr('$whatplot',0,1) == 'y' ) { ticksize 1 5 0.01 0.05 limits timeax 0.87 1.12 ylabel Time/<Time> }
+	if( $whattime == 2 && substr('$whatplot',0,1) == 'y' ) { ticksize 0 0 0.05 0.1  ylabel Time [min]}
+	box 
+	if( substr('$whatplot',0,1) == 'y' ) {
+	   define tstr   $(sprintf('%.2f',$mean))
+	   define tstr05 $(sprintf('%.2f',$($mean*60/20)))
+	   relocate ( $gx1  $($gy1 - 2500) )
+	   putlabel 6 "<Time>=" $tstr
+	   relocate ( $gx1  $($gy1 - 3500) )
+	   putlabel 6 "5% <Time>=" $tstr05 "sec."
+	}
+
+	expand 2.0
+	ctype 2 
+	cpoints 1 timeax dum 
+
+	expand 0.9
+	ctype 3
+	cpoints 1 timeax best
+
+	ctype 4
+	cpoints 1 runtimeax runavrg
+
+	ctype 7
+	ltype 1
+	foreach 9 < 5 10 15 > {
+	   #define 9 $($9-1) 
+	   relocate $(timeax[0])                  $(dum[$(order[$9-1])]) 
+	   draw     $(timeax[$(dimen(timeax)-1)]) $(dum[$(order[$9-1])]) 
+	}
+	ltype 0 
+	foreach 9 < 5 10 15 > {
+	   relocate $(timeax[0])                  $(dum[$(order[$9-1])]) 
+	   expand 1 putlabel 4 $9
+	   relocate $(timeax[$(order[$9-1])])       $(dum[$(order[$9-1])])  
+	   angle 45 
+	   ptype 4 1 
+	   expand 2 dot 
+	   angle 0
+	}
+	ctype 2
+
+#------------------------------------------------------------------------------
+# plot_xnew  [<segments series, e.g. : 1 2 3 4 5 10 11 >]
+plot_xnew 101
+
+	if($?1) {
+	   define which $1
+	} else {
+           define which ?  { Which laps [1-6-8] ? }
+	}
+
+	set timeax = counter 
+        define whattime ?  < Time Axis: counter[1] or dates[2] : >
+
+	if( $whattime == 1 ) { set timeax = counter }
+	if( $whattime == 2 ) { set timeax = fdates - fdates[0] + 1 }
+
+        # define length $(strlen('$which'))
+
+	set laps_vec = < $which > 
+	define nlaps $(dimen(laps_vec))
+
+        set ptime = all_lap1*0
+        set best  = all_lap1*0
+        if( $nlaps == 1 ) {
+	   define 9 $(laps_vec[0])
+	   set best_$9 = all_lap1*0
+	} else {
+           do i=1,$nlaps {
+	      define 9 $(laps_vec[$i])
+              set best_$9 = all_lap1*0
+           }
+	}
+
+        define btime 0
+	define llsegm 0
+
+	#---------------------------------------------------------------
+	# adds the segments and computes the sum-of-the-best-split-times
+	#
+        if( $nlaps == 1 ) {
+	   define 9 $(laps_vec[0])
+           set ptime = all_lap_$9
+	   set dum   = all_lap_$9
+	   sort < dum > 
+           define btime $(dum[0])
+	   define llsegm $(ll[$($9-1)])
+        } else {
+           do i=1,$nlaps {
+              define 2 $(laps_vec[$i])
+              set ptime = ptime + all_lap_$2
+	      set dum = all_lap_$2
+	      sort < dum > 
+	      define btime  $($btime + dum[0])
+	      define llsegm $($llsegm + ll[$($2-1)] )
+           }
+        }
+	#----------------------------------
+	set speed_ms  = $llsegm/ptime
+	set time_km   = 1000/speed_ms
+	set time_mile = 1609/speed_ms
+
+	#----------------------------------
+
+	#---------------------------------------------------------------
+	# prepares the string array marking the best performances.
+	#
+	set order=1,$nd
+	set order=order-1
+
+	set dumptime = ptime
+
+	sort < dumptime order >
+
+	set dimen(str_best) = $nd.s
+	do 1=0,$($nd-1) {
+	  set str_best[$1] = '        '
+	}
+	help str_best
+	
+	if( $nd >=  1 ) { set str_best[$(order[0])]  = '* 1     - ' }
+	if( $nd >=  2 ) { set str_best[$(order[1])]  = '* 2     - ' }
+	if( $nd >=  3 ) { set str_best[$(order[2])]  = '* 3     - ' }
+	if( $nd >=  4 ) { set str_best[$(order[3])]  = '* 4     - ' }
+	if( $nd >=  5 ) { set str_best[$(order[4])]  = '* 5     - ' }
+	if( $nd >=  6 ) { set str_best[$(order[5])]  = '-   6   - ' }
+	if( $nd >=  7 ) { set str_best[$(order[6])]  = '-   7   - ' }
+	if( $nd >=  8 ) { set str_best[$(order[7])]  = '-   8   - ' }
+	if( $nd >=  9 ) { set str_best[$(order[8])]  = '-   9   - ' }
+	if( $nd >= 10 ) { set str_best[$(order[9])]  = '-  10   - ' }
+	if( $nd >= 11 ) { set str_best[$(order[10])] = '-    11 - ' }
+	if( $nd >= 12 ) { set str_best[$(order[11])] = '-    12 - ' }
+	if( $nd >= 13 ) { set str_best[$(order[12])] = '-    13 - ' }
+	if( $nd >= 14 ) { set str_best[$(order[13])] = '-    14 - ' }
+	if( $nd >= 15 ) { set str_best[$(order[14])] = '-    15 - ' }
+
+	#---------------------------------------------------------------
+	# prepares the "running" best time for the sum of the given segments
+	#
+        if( $nlaps == 1 ) {
+	   define 9 $(laps_vec[0])
+	   set dum   = all_lap_$9
+	   do j=1,$(dimen(dum)) {
+	      set temp = dum    if( counter <= $j )
+	      sort < temp >
+	      set best_$9[$($j-1)] = $(temp[0])
+	   }
+	   set best = best_$9
+        } else {
+           do i=1,$nlaps {
+              define 2 $(laps_vec[$i])
+	      set dum = all_lap_$2
+	      do j=1,$(dimen(dum)) {
+	         set temp = dum    if( counter <= $j )
+	         sort < temp >
+	         set best_$2[$($j-1)] = $(temp[0])
+	      }
+	      set best = best + best_$2
+           }
+        }
+
+	#---------------------------------------------------------------
+	# running avrg
+	#
+	run_avrg counter ptime
+
+	#---------------------------------------------------------------
+	# boh?
+	#
+	set dimen(detail_rank) = $nd.s
+	do 1=0,$($nd-1) {
+	   set detail_rank[$1] = ' '
+	}
+	set idx=1,$nd
+	set idx=idx-1
+
+        if( $nlaps == 1 ) {
+	   define 9 $(laps_vec[0])
+	   set dum   = all_lap_$9
+	   set dumr  = idx
+	   sort < dum idx > 
+           define rtime $(dum[0])
+        } else {
+           do i=1,$nlaps {
+              define 2 $(laps_vec[$i])
+	      set dum = all_lap_$2
+	      sort < dum > 
+	      define rtime  $($btime + dum[0])
+           }
+        }
+	#----------------------------------
+
+	set ptime_m = int(ptime)
+	set ptime_s = (ptime - int(ptime))*60.0
+	define btime_m  $(int($btime))
+	define btime_s  $(sprintf('%04.1f',$(($btime - int($btime))*60.0)))
+
+	set btime   = < $btime >
+	set btime_m = < $btime_m >
+	set btime_s = < $btime_s >
+
+	define print_noheader 1
+	echo "----------------------------------------------------------------"
+	print ' %2d  %8s  %6.3f  %02d %04.1f  %10s || %3d    %3d  %3d\n' < counter dates ptime ptime_m ptime_s str_best avrgBeat Theat Rhum>
+	echo "----------------------------------------------------------------"
+	print '               %6.3f  %02d %04.1f            || Beat  Theat  Rhum' < btime btime_m btime_s >
+	echo " Length : "$llsegm "m   / "$(sprintf('%5.3f',$($llsegm/1609)))" miles"
+	echo "----------------------------------------------------------------"
+	define print_noheader 0
+	echo "data stored in arrays: ptime ptime_m ptime_s"
+	echo "----------------------------------------------------------------"
+
+	erase
+	#---------------------
+	set ratiobest      = 60*(best-ptime)
+	set short_best     = best    if( counter > $nn )
+	set short_ptime    = ptime   if( counter > $nn )
+	set ratioavrg      = 60*(runavrg-short_ptime)
+	set diff_best_avrg = 60*(runavrg-short_best)
+	set dumlim = ratiobest concat ratioavrg
+	set dumlim = abs(dumlim)
+	vecminmax dumlim a b
+	define b $($b*1.2)
+	#---------------------
+	ptype 20 3
+	lweight 3 
+	window 1 -4 1 4
+	#limits counter -$b $b
+	limits timeax -$b $b
+	ctype 2 
+	expand 1.1
+	if( $whattime == 1 ) { ticksize 1 5 0 0 }
+	if( $whattime == 2 ) { ticksize 0 0 0 0 }
+	box 0 2 1 0
+
+	expand 1.2
+	ctype 2 
+	ltype 1
+	relocate -2 0 
+	#draw $(dimen(counter)+3) 0
+	draw $(timeax[$(dimen(timeax)-1)]+3) 0
+	ctype 3
+	#cpoints 1 counter ratiobest
+	cpoints 1 timeax ratiobest
+	ctype 4
+	#cpoints 1 runcounter ratioavrg
+	cpoints 1 runtimeax ratioavrg
+	ctype 5
+	#cpoints 1 runcounter diff_best_avrg
+	cpoints 1 runtimeax diff_best_avrg
+	ctype 2
+	#---------------------
+
+	#---------------------
+	set dum    = ptime 
+	set dumlim = ptime concat best
+
+	define whatplot "n"
+	define whatplot ? < Normalize plot [y/N] : >
+	if( substr('$whatplot',0,1) == 'y' ) {
+	   stats dum mean sig kurt
+	   set dum     = dum/$mean
+	   set dumlim  = dumlim/$mean
+	   set best    = best/$mean
+	   set runavrg = runavrg/$mean
+	}
+	#---------------------
+	window 1 -4 1 1:3
+	expand 1.5
+	limits timeax dumlim
+	if( $whattime == 1 ) { ticksize 1 5 0.05 0.5 }
+	if( $whattime == 2 ) { ticksize 0 0 0.05 0.5 }
+	if( $whattime == 1 && substr('$whatplot',0,1) == 'y' ) { ticksize 1 5 0.01 0.05 limits timeax 0.87 1.12 ylabel Time/<Time> }
+	if( $whattime == 2 && substr('$whatplot',0,1) == 'y' ) { ticksize 0 0 0.05 0.1  ylabel Time [min]}
+	box 
+	if( substr('$whatplot',0,1) == 'y' ) {
+	   define tstr   $(sprintf('%.2f',$mean))
+	   define tstr05 $(sprintf('%.2f',$($mean*60/20)))
+	   relocate ( $gx1  $($gy1 - 2500) )
+	   putlabel 6 "<Time>=" $tstr
+	   relocate ( $gx1  $($gy1 - 3500) )
+	   putlabel 6 "5% <Time>=" $tstr05 "sec."
+	}
+
+	expand 2.0
+	ctype 2 
+	cpoints 1 timeax dum 
+
+	expand 0.9
+	ctype 3
+	cpoints 1 timeax best
+
+	ctype 4
+	cpoints 1 runtimeax runavrg
+
+	ctype 7
+	ltype 1
+	foreach 9 < 5 10 15 > {
+	   #define 9 $($9-1) 
+	   relocate $(timeax[0])                  $(dum[$(order[$9-1])]) 
+	   draw     $(timeax[$(dimen(timeax)-1)]) $(dum[$(order[$9-1])]) 
+	}
+	ltype 0 
+	foreach 9 < 5 10 15 > {
+	   relocate $(timeax[0])                  $(dum[$(order[$9-1])]) 
+	   expand 1 putlabel 4 $9
+	   relocate $(timeax[$(order[$9-1])])       $(dum[$(order[$9-1])])  
+	   angle 45 
+	   ptype 4 1 
+	   expand 2 dot 
+	   angle 0
+	}
+	ctype 2
+
+#------------------------------------------------------------------------------
+# plot_times  [<segments-string>]
+plot_times 01
+
+	location 6000 29000 5500 31000
+	if($?1) {
+	   define which $1
+	} else {
+           define which ?  { Which laps [1-6-8] ? }
+	}
+
+	set timeax = counter 
+        define whattime ?  { Time Axis: counter[1] or dates[2] : }
+
+	if( $whattime == 1 ) { set timeax = counter }
+	if( $whattime == 2 ) { set timeax = fdates - fdates[0] + 1 }
+
+        define length $(strlen('$which'))
+
+        set ptime = all_lap1*0
+        set best  = all_lap1*0
+        if( $length == 1 ) {
+	   set best$which = all_lap1*0
+	} else {
+           do i=1,$length {
+              define 2 $(substr('$which',$($i-1),1))
+              set best$2 = all_lap1*0
+           }
+	}
+
+        define btime 0
+	define llsegm 0
+
+	#---------------------------------------------------------------
+	# adds the segments and computes the sum-of-the-best-split-times
+	#
+        if( $length == 1 ) {
+           set ptime = all_lap$which
+	   set dum   = all_lap$which
+	   sort < dum > 
+           define btime $(dum[0])
+	   define llsegm $(ll[$($which-1)])
+        } else {
+           do i=1,$length {
+              define 2 $(substr('$which',$($i-1),1))
+              set ptime = ptime + all_lap$2
+	      set dum = all_lap$2
+	      sort < dum > 
+	      define btime  $($btime + dum[0])
+	      define llsegm $($llsegm + ll[$($2-1)] )
+           }
+        }
+	#----------------------------------
+	set speed_ms  = $llsegm/ptime
+	set time_km   = 1000/speed_ms
+	set time_mile = 1609/speed_ms
+
+	#----------------------------------
+
+	#---------------------------------------------------------------
+	# prepares the string array marking the best performances.
+	#
+	set order=1,$nd
+	set order=order-1
+
+	set dumptime = ptime
+
+	sort < dumptime order >
+
+	set dimen(str_best) = $nd.s
+	do 1=0,$($nd-1) {
+	  set str_best[$1] = '      '
+	}
+	help str_best
+	
+	if( $nd >=  1 ) { set str_best[$(order[0])] = '* 1    - ' }
+	if( $nd >=  2 ) { set str_best[$(order[1])] = '* 2    - ' }
+	if( $nd >=  3 ) { set str_best[$(order[2])] = '* 3    - ' }
+	if( $nd >=  4 ) { set str_best[$(order[3])] = '* 4    - ' }
+	if( $nd >=  5 ) { set str_best[$(order[4])] = '* 5    - ' }
+	if( $nd >=  6 ) { set str_best[$(order[5])] = '-    6 - ' }
+	if( $nd >=  7 ) { set str_best[$(order[6])] = '-    7 - ' }
+	if( $nd >=  8 ) { set str_best[$(order[7])] = '-    8 - ' }
+	if( $nd >=  9 ) { set str_best[$(order[8])] = '-    9 - ' }
+	if( $nd >= 10 ) { set str_best[$(order[9])] = '-   10 - ' }
+
+	#---------------------------------------------------------------
+	# prepares the "running" best time for the sum of the given segments
+	#
+        if( $length == 1 ) {
+	   set dum   = all_lap$which
+	   do j=1,$(dimen(dum)) {
+	      set temp = dum    if( counter <= $j )
+	      sort < temp >
+	      set best$which[$($j-1)] = $(temp[0])
+	   }
+	   set best = best$which
+        } else {
+           do i=1,$length {
+              define 2 $(substr('$which',$($i-1),1))
+	      set dum = all_lap$2
+	      do j=1,$(dimen(dum)) {
+	         set temp = dum    if( counter <= $j )
+	         sort < temp >
+		 ## echo $i $j $(temp[0])
+	         set best$2[$($j-1)] = $(temp[0])
+	      }
+	      set best = best + best$2
+           }
+        }
+
+	#---------------------------------------------------------------
+	# running avrg
+	#
+	run_avrg counter time_mile
+
+	#---------------------------------------------------------------
+
+	set ptime_m = int(ptime)
+	set ptime_s = (ptime - int(ptime))*60.0
+	define btime_m  $(int($btime))
+	define btime_s  $(sprintf('%04.1f',$(($btime - int($btime))*60.0)))
+
+	set btime   = < $btime >
+	set btime_m = < $btime_m >
+	set btime_s = < $btime_s >
+
+	define print_noheader 1
+	echo "----------------------------"
+	print ' %2d  %8s  %02d %04.1f   %5.3f  %5.3f    %8s\n' < counter dates ptime_m ptime_s time_mile time_km str_best >
+	echo "----------------------------"
+	print '               %6.3f  %02d %04.1f     ' < btime btime_m btime_s >
+	echo " Length : "$llsegm "m   / "$(sprintf('%5.3f',$($llsegm/1609)))" miles"
+	echo "----------------------------"
+	define print_noheader 0
+	echo data stored in arrays: ptime ptime_m ptime_s
+	echo "----------------------------"
+
+	erase
+	#---------------------
+	ptype 20 3
+	lweight 3 
+	ctype 2
+	#---------------------
+
+	#---------------------
+	set dum=time_mile
+	set dumlim = time_mile
+	#---------------------
+	window 1 -4 1 1:3
+	expand 1.25
+	#limits counter dumlim
+	if( $whattime == 1 ) { ticksize 1 5 0.05 0.25 }
+	if( $whattime == 2 ) { ticksize 0 0 0.05 0.25 }
+	limits timeax (dumlim/1.609)
+	box 3 3 3 2
+	limits timeax dumlim
+	box 1 2 0 3
+	ylabel pace [min/mile]
+
+	expand 2.0
+	ctype 2 
+	#cpoints 1 counter dum 
+	cpoints 1 timeax dum 
+
+	expand 0.9
+	ctype 4
+	#cpoints 1 runcounter runavrg
+	cpoints 1 runtimeax runavrg
+	ctype 2
+	ltype 0
+
+
+#------------------------------------------------------------------------------
+# concat_all_data 
+concat_all_data 
+
+	foreach vec < speed_ms ptime time_km time_mile > {
+	   delete $vec
+	}
+	#
+	# MASTER LOOP
+	# 
+	foreach 1 < wu new > {
+
+	   echo " "
+	   echo "-------------------------------"
+	   echo " Doing: " $1 
+
+	   read_data $1
+
+	   echo " " 
+	   echo " Choosing segments for " $1
+
+           define which ?  { Which laps [1-6-8] ? }
+
+           define length $(strlen('$which'))
+
+           set ptime = all_lap1*0
+
+   	   define llsegm 0
+
+	   #---------------------------------------------------------------
+	   # adds the segments and computes the sum-of-the-best-split-times
+	   #
+           if( $length == 1 ) {
+              set ptime = all_lap$which
+	      define llsegm $(ll[$($which-1)])
+           } else {
+              do i=1,$length {
+                 define 2 $(substr('$which',$($i-1),1))
+                 set ptime = ptime + all_lap$2
+	         define llsegm $($llsegm + ll[$($2-1)] )
+              }
+           }
+	   set speed_ms_$1  = $llsegm/ptime
+	   set time_km_$1   = 1000/speed_ms_$1
+	   set time_mile_$1 = 1609/speed_ms_$1
+	   foreach 5 < avrgBeat maxBeat Ttrue Tchill Theat Rhum > {
+	      set $5_$1 = $5
+	   }
+	}
+
+	set speed_ms  = speed_ms_wu  CONCAT speed_ms_new
+	set time_km   = time_km_wu   CONCAT time_km_new
+	set time_mile = time_mile_wu CONCAT time_mile_new
+	set counter=1,dimen(time_km)
+	set timeax = counter 
+
+	foreach 5 < avrgBeat maxBeat Ttrue Tchill Theat Rhum > {
+	   set $5_all = $5_wu CONCAT $5_new
+	}
+
+	#---------------------------------------------------------------
+	# running avrg
+	#
+	echo " "
+	echo "-------------------------------"
+	run_avrg counter time_mile
+
+	erase
+	#---------------------
+	ptype 20 3
+	lweight 3 
+	ctype 2
+	#---------------------
+
+	#---------------------
+	set dum    = time_mile
+	set dumlim = time_mile
+	#---------------------
+	window 1 -4 1 1:3
+	expand 1.5
+	#limits counter dumlim
+	limits timeax dumlim
+	if( $whattime == 1 ) { ticksize 1 5 0.05 0.25 }
+	if( $whattime == 2 ) { ticksize 0 0 0.05 0.25 }
+	box 
+
+	expand 2.0
+	ctype 2 
+	#cpoints 1 counter dum 
+	cpoints 1 timeax dum 
+
+	expand 0.9
+	ctype 4
+	#cpoints 1 runcounter runavrg
+	cpoints 1 runtimeax runavrg
+	ctype 2
+	ltype 0
+
+
+
+#------------------------------------------------------------------------------
+# plot_param  [<segments-string>]
+plot_param 01
+
+	if($?1) {
+	   define what $1
+	} else {
+           define what ?  { Which parameter : }
+	}
+
+	set timeax = counter 
+        define whattime ?  { Time Axis: counter[1] or dates[2] : }
+
+	if( $whattime == 1 ) { set timeax = counter }
+	if( $whattime == 2 ) { set timeax = fdates - fdates[0] + 1 }
+
+        define length $(strlen('$which'))
+
+	#---------------------------------------------------------------
+	# running avrg
+	#
+	run_avrg counter $what
+
+	#---------------------------------------------------------------
+
+	define print_noheader 1
+	echo ----------------------------
+	print ' %2d  %8s  %f\n' < counter dates $!what >
+	echo ----------------------------
+	define print_noheader 0
+
+	#---------------------
+	ptype 20 3
+	lweight 3 
+	ctype 2
+	#---------------------
+
+	#---------------------
+	set dumlim = $what
+	#---------------------
+	window 1 -4 1 1:3
+	expand 1.5
+	limits timeax dumlim
+	if( $whattime == 1 ) { ticksize 1 5 0 0 }
+	if( $whattime == 2 ) { ticksize 0 0 0 0 }
+	box 
+
+	expand 2.0
+	ctype 2 
+	#cpoints 1 counter dum 
+	cpoints 1 timeax $what
+
+	expand 0.9
+	ctype 4
+	#cpoints 1 runcounter runavrg
+	cpoints 1 runtimeax runavrg
+	ctype 2
+	ltype 0
+
+#------------------------------------------------------------------------------
+# plot_split [<color>] <run #>
+plot_split 02
+
+	if($?2) {
+	   define color $1
+	   define which $2
+	} else {
+           define color 5
+	   if($?1) {
+	      define which $1
+	   } else {
+              define which ?  { Which event : }
+   	   }
+	}
+
+
+	set lapscounter=1,dimen(split_time_mile_1),1
+	expand 1.5
+	ctype 2
+	lweight 3 
+	ltype 0 
+
+	limits lapscounter split_time_mile_$which
+	limits lapscounter 6.6 9.0
+	ticksize 1 1 0 0
+	box
+
+	ctype $color
+	cpoints 1 lapscounter split_time_mile_$which
+
+
+#------------------------------------------------------------------------------
+# plot_param_nope
+plot_param_nope 02
+
+	if($?2) {
+	   define color $1
+	   define which $2
+	} else {
+           define color 5
+	   if($?1) {
+	      define which $1
+	   } else {
+              define which ?  { Which event : }
+   	   }
+	}
+
+
+	set lapscounter=1,dimen(split_time_mile_0),1
+	expand 1.5
+	ctype 2
+	lweight 3 
+	ltype 0 
+
+	limits lapscounter split_time_mile_$which
+	limits lapscounter 6.6 9.0
+	ticksize 1 1 0 0
+	box
+
+	ctype $color
+	cpoints 1 lapscounter split_time_mile_$which
+
+
+#------------------------------------------------------------------------------
+# run_avgr <x> <y>
+run_avrg 2
+
+	set x = $1	
+	set y = $2	
+
+	define nn ? < How many steps : >
+	
+	set dimen(runavrg)   = $(dimen(x) - $nn)
+	set dimen(runtimeax) = $(dimen(x) - $nn)
+	if( $whattime == 1 ) { 
+	    set runcounter = $nn+1,$(dimen(x))
+	} 
+	set runtimeax = runcounter
+	if( $whattime == 2 ) { 
+	    do 3=0,(dimen(x)-$nn-1) {
+	       set runtimeax[$3] = fdates[$($nn+$3)] - fdates[0] + 1
+	    }
+	} 
+
+	define i 0
+	do 3=0,$(dimen(x)-$nn-1) {
+	   define temp 0
+	   do 4=$3,$($3+$nn-1) {
+	       define temp $( $temp + y[$4] )
+	   }
+	   set runavrg[$i] = $temp/$nn
+	   define i $($i+1)
+	}
+
+#------------------------------------------------------------------------------
+# weight
+weight
+
+	reset_graph
+	location 5500 28000 8000 30000
+
+	data weight.txt
+	read < yy 1 mm 2 dd 3 hh 4 ww_lb 5 >
+
+	do 9=0,dimen(mm)-1{
+	   if( mm[$9] == 11 ) { set dd[$9] = $(dd[$9]) + 31 } 
+	   if( mm[$9] == 12 ) { set dd[$9] = $(dd[$9]) + 31 + 30 } 
+	   if( mm[$9] ==  1 && yy[$9] == 2009 ) { set dd[$9] = $(dd[$9]) + 31 + 30 + 31 } 
+	}
+
+	set xx = (dd - 1) + hh/24.
+	set ww_kg = ww_lb*0.454
+
+	define ww_lb_1 (155)
+	define ww_lb_2 (170)
+
+	#---------------------------------------
+	ticksize 2 10 1 2 
+	limits xx $ww_lb_1 $ww_lb_2
+	ltype 1 ctype 4 grid 1 2 ltype 0 ctype 2
+	box 1 2 0 3 
+	xlabel days [from Oct 1, 2008]
+	ylabel weight [lb]
+
+	ptype 4 3 
+	ctype 5 
+	points xx ww_lb
+
+	#---------------------------------------
+	ctype 2 
+	ticksize 1 1 0.2 1 
+	limits xx $(0.454*$ww_lb_1) $(0.454*$ww_lb_2)
+	box 3 3 3 2
+	relocate ( $($gx2 + 3000)  $(0.5*($gy1+$gy2)) )
+	angle 270
+	putlabel 5 weight [kg]
+	angle 0
+
+#------------------------------------------------------------------------------
+# weight_folded
+weight_folded
+
+	reset_graph
+	location 5500 28000 8000 30000
+
+	data weight.txt
+	read < yy 1 mm 2 dd 3 hh 4 ww_lb 5 >
+
+	do 9=0,dimen(mm)-1{
+	   if( mm[$9] == 11 ) { set dd[$9] = $(dd[$9]) + 31 } 
+	   if( mm[$9] == 12 ) { set dd[$9] = $(dd[$9]) + 31 + 30 } 
+	}
+
+	set xx = (dd - 1) + hh/24.
+	set ww_kg = ww_lb*0.454
+
+	define ww_lb_1 (155)
+	define ww_lb_2 (170)
+
+	#---------------------------------------
+	ticksize 1 5 1 2 
+	limits 6.5 25.0 $ww_lb_1 $ww_lb_2
+	ltype 1 ctype 4 grid 1 2 ltype 0 ctype 2
+	box 1 2 0 3 
+	xlabel hours
+	ylabel weight [lb]
+
+	ptype 4 3 
+	ctype 5 
+	points hh ww_lb
+
+	#---------------------------------------
+	ctype 2 
+	ticksize 1 1 0.2 1 
+	limits xx $(0.454*$ww_lb_1) $(0.454*$ww_lb_2)
+	box 3 3 3 2
+	relocate ( $($gx2 + 3000)  $(0.5*($gy1+$gy2)) )
+	angle 270
+	putlabel 5 weight [kg]
+	angle 0
+
+#------------------------------------------------------------------------------

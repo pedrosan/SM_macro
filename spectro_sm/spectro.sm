@@ -1,0 +1,1695 @@
+if (!$?highlight_bad) {define highlight_bad 0} #Plot bad pixels in yellow. 
+
+if (!$?onepanel) {define onepanel 0} #Don't show plot in only one panel
+
+if(!($?putlabel)){
+define putlabel 1 # by default, write labels on plot
+}
+if(!($?targetinfo)){
+define targetinfo 1 # by default, write out target information also
+}
+if(!($?spinfo)){
+define spinfo 1 # by default, write out spectro-1d outputs also
+}
+
+if(!($?objinfo)){
+define objinfo 1 # by default, write out some PHOTO outputs from spDiag files
+}
+
+if(!($?tsObjinfo)){
+define tsObjinfo 1 # by default, read the plate tsObj file
+}
+if(!($?noerase)){
+define noerase 0 # by default, erase old spectra before plotting new one
+}
+if(!($?rdspeclis)){
+define rdspeclis 1 # by default, read the list of spectra
+}
+if(!($?wrtzwarn)){
+define wrtzwarn 1 # by default, write out the warning flag information
+}
+if(!($?plot_err)){
+define plot_err 1 # by default, plot error array
+}
+if(!($?idl)){
+define idl 0 # by default, use Chicago-1d outputs 
+}
+if(!($?comment_file)) {
+define comment_file comment_file}
+
+if (!$?noplot) {
+  define noplot 0}
+
+#By default, use the first MJD available for a given plate.
+if(!($?mjd_index)) {
+define mjd_index 1}
+
+define SPECDIR :  #The Chicago data directory
+define DIAGDIR :
+define SPECTRO_DATA : #The IDL spectro directory
+define IDLSPEC2D_DIR :
+define TEMPLATEDIR ('$!IDLSPEC2D_DIR/templates')
+define TSOBJDIR :
+
+v 0  #Cut down on amount of extraneous material to the screen. 
+
+macro indicate_z 1 {#indicate_z z
+  #Indicate the estimated redshift with vertical lines for
+  #expected emission and absorption lines. 
+  #Also show three extra panels with zoom-ins
+  #These are the starting and ending relevant rest wavelengths
+  define start1 3650
+  define end1 4200
+  define start2 4800
+  define end2 5200
+  define start3 6400
+  define end3 6800
+  if ($1 > 0.35) {
+  define start1 2700
+  define end1 2900
+  define start2 3650
+  define end2 4200
+  define start3 4800
+  define end3 5200}
+  if ($1 > 1) {
+  define start3 2700
+  define end3 2900
+  define start2 2250
+  define end2 2450
+  define start1 1800
+  define end1 2000}
+  if ($1 > 2.3) {
+  define start2 1500
+  define end2 1700
+  define start1 1100
+  define end1 1300
+  define start3 1800
+  define end3 2000}
+  nwindow 3 2 4
+  set ftemp = (abs(wavelength-5577) < 10)?(0.5):f3
+  set f1 = ftemp if (wavelength >= ($start1*(1+$1)) && wavelength < ($end1*(1+$1)))
+  limits $($start1*(1+$1)) $($end1*(1+$1)) f1
+  histogram wavelength f3
+  box 1 0
+  nwindow 3 2 5
+  set f1 = ftemp if (wavelength >= ($start2*(1+$1)) && wavelength < ($end2*(1+$1)))
+  limits $($start2*(1+$1)) $($end2*(1+$1)) f1
+  histogram wavelength f3
+  box 1 0
+  nwindow 3 2 6
+  set f1 = ftemp if (wavelength >= ($start3*(1+$1)) && wavelength < ($end3*(1+$1)))
+  limits $($start3*(1+$1)) $($end3*(1+$1)) f1
+  histogram wavelength f3
+  box 1 0
+# Indicate position of found emlines 
+  ctype green
+  foreach window (1 2 3 4) {
+  if ($window == 1) {nwindow 1 2 1 limits $xlow $xhigh 0 1}
+  if ($window == 2) {nwindow 3 2 4 limits $($start1*(1+$1)) $($end1*(1+$1)) 0 1}
+  if ($window == 3) {nwindow 3 2 5 limits $($start2*(1+$1)) $($end2*(1+$1)) 0 1}
+  if ($window == 4) {nwindow 3 2 6 limits $($start3*(1+$1)) $($end3*(1+$1)) 0 1}
+  ltype 0
+   if (is_vector(emlines)) {
+   do i = 0, (dimen(emlines)-1) {
+   define temp (emlines[$i])
+    relocate $temp 0.9
+    draw $temp 1.0}}
+    ctype default
+  do i = 0, (dimen(emlinelist)-1) {
+  define temp (emlinelist[$i]*(1+$1)) 
+    relocate $temp 1
+    ltype 2
+    draw $temp 0
+  }
+  do i = 0, (dimen(abslist)-1) {
+  define temp (abslist[$i]*(1+$1)) 
+    relocate $temp 1
+    ltype 1
+    draw $temp 0
+  }}
+ltype 0
+}
+
+#This routine determines the MJD values for a given plate. It works by
+#creating a temporary file on disk with all spectra of a given plate
+#and fiber number, and reads the MJD numbers from that.
+macro find_mjd 3 {#find_mjd <plate> <fiber> mjd_list
+
+#Define the current directory, as we'll need to come back here.  Note
+#that this won't work, if you've done a chdir within SM itself. 
+#(which is what this gets) 
+define PWD :
+
+!test -s "$!datadir"
+if ($exit_status != 0) {
+  echo Plate directory not on disk
+  define file_exists 0
+  return
+}
+
+cd $datadir
+define random_number (100*random(1))
+if ($idl) {
+!ls "spPlate-$!(sprintf('%04d',$!1))-*.fits" > /tmp/sdssfiles$!random_number"".lis
+} else {
+!ls "spSpec-*-$!(sprintf('%04d',$!1))-$!(sprintf('%03d',$!2)).fit" > /tmp/sdssfiles$!random_number"".lis}
+!test -s /tmp/sdssfiles$!random_number"".lis
+if ($exit_status != 0) {
+   echo Data file not on disk
+   define file_exists 0
+   return
+   }
+cd $PWD
+DATA "/tmp/sdssfiles$!random_number"".lis"
+read {filename 1.s}
+#We need to read the part of the file name that has the MJD.  For
+#this, we have to know how many characters $datadir has. 
+define mjd_start 7
+if ($idl) {define mjd_start 13}
+set $3 = atof(substr(filename,$mjd_start,5))
+!\rm /tmp/sdssfiles$!random_number"".lis
+}
+
+macro plotone 13 {#A synonym for onedout
+if ($?3) {onedout $1 $2 $3} else {onedout $1 $2}
+}
+# onedout is the workhorse macro
+macro onedout 13 {# onedout plate fiber [z]
+ctype default
+define file_exists 1
+define fiber (sprintf('%03d',$2))
+
+  define mjd delete # so that we can check if it is defined for this fiber
+if (!$idl) {define datadir "$!SPECDIR/$!1"}
+if ($idl) {define datadir "$!SPECTRO_DATA/$!(sprintf('%04d',$!1))"}
+
+define pplate (sprintf('%04d',$1))
+#At the moment, this will only read the first MJD of a given plate.
+#We have to think about the best way to indicate which MJD to use, 
+#if there is more than one of them.
+if (!$?set_mjd) {
+find_mjd $1 $2 mjd
+define mjd (mjd[$mjd_index-1])} else {
+define mjd $set_mjd}
+
+ltype 0
+if($?noerase){
+	if(!$noerase){
+	erase
+}
+}
+set class_name = {unknown star gal qso hiz\_qso sky late\_star}
+set status_name = {Not\_measured failed Inconsistent Xcorr\_emline \
+Xcorr\_hic Xcorr\_loc Emline\_Xcorr Emline\_hic Emline\_loc \
+manual\_hic manual\_loc}
+#Now read in the merged file
+set emlinelist = {1033.8 1215.67 1240.149 1399.8 1549.053 1640.4 \
+1908.734 2326.0 2798.745 3727.08 4341.68 4862.68 4960.3 5008.24 6549.86 \
+6564.61 6585.27 6718.29 6732.67} 
+set abslist = {3934.777 3969.591 4102.89 4227 4308 5175 5895 8542}
+  foreach q (z z_err warning class) {define $q delete}
+  foreach q (wavelength flux emlines) {delete $q}
+  #This queries whether the file exists:
+  if ($idl) {
+    !test -r "$!datadir/spPlate-$!pplate-$!mjd.fits"
+  } else {
+  if ($?mjd) {!test -r "$!datadir/spSpec-$!mjd-$!pplate-$!fiber.fit"}else {!test -r "$!datadir/spSpec-$!pplate-$!fiber.fit"}}
+  
+  if ($exit_status != 0) {
+     relocate 0.5 0.5
+     expand 2
+     putlabel 5 No spectrum available, File is unreadable
+     expand 1.0
+     define file_exists 0
+     return
+  } 
+
+  if ($idl) {
+    !test -s "$!datadir/spPlate-$!pplate-$!mjd.fits"
+  } else {  if ($?mjd) {!test -s "$!datadir/spSpec-$!mjd-$!pplate-$!fiber.fit"} else {!test -s "$!datadir/spSpec-$!pplate-$!fiber.fit"}}
+  if ($exit_status != 0) {
+     relocate 0.5 0.5
+     expand 2
+     putlabel 5 No spectrum available, File has 0 size
+     expand 1.0
+     define file_exists 0
+     return
+  }
+    
+if ($idl) {
+   specmerge_idl $pplate $fiber wavelength flux err z z_err mask
+  } else {
+  if ($?mjd){specmerge_image "$!datadir/spSpec-$!mjd-$!pplate-$!fiber.fit"  wavelength flux err  z  z_err emlines mask} else {specmerge_image  "$!datadir/spSpec-$!
+pplate-$!fiber.fit" wavelength flux err  z z_err  emlines mask} 
+}
+  if ($?3) {
+   if ($3 > -1) {define z ($3)}}
+  smooth flux f10 10
+  set zero = 0
+  #Get rid of worst sky residual. 
+  set f10 = f10 if (abs(wavelength-5577) > 10 && wavelength > 3800)
+  set f10 = f10 concat zero  #So that the zero also gets plotted
+  smooth flux f3 3
+  if (!$?smooth_length) {define smooth_length 5}
+  smooth flux f5 $smooth_length
+  if (!$noplot) {#Suppress plotting of figure
+  define y_gutter 0.4
+  define x_gutter 0.2
+  limits 3600 9400 f10
+  if (!$?lower_limit) {define low $fy1} else {define low $lower_limit}
+  if (!$?upper_limit) {define high $fy2} else {define high $upper_limit}
+  if (!$?xlower_limit) {define xlow $fx1} else {define xlow $xlower_limit}
+  if (!$?xupper_limit) {define xhigh $fx2} else {define xhigh $xupper_limit}
+  limits $xlow $xhigh $low $high
+  if ($onepanel) {box 1 2 3 0
+  } else {
+    nwindow 1 2 1
+    box 1 2 3 0}
+  #Put a label across the top at the rest wavelength
+  limits $($xlow/(1+$z)) $($xhigh/(1+$z)) $low $high
+  box 3 3 1 3
+  limits $xlow $xhigh $low $high
+  histogram wavelength f5
+  #Erase masked pixels
+  if ($highlight_bad) { 
+  set bad = (is_set(mask,$SP_BRIGHTSKY) || err == 0)
+  ctype white
+  histogram wavelength f5 if (bad)
+  ctype yellow
+  histogram wavelength f5 if (bad)
+  ctype default}
+  if ($plot_err) {
+    ctype red
+    histogram wavelength err
+    ctype default
+  }
+  if (!$onepanel) {indicate_z $z
+  nwindow 1 2 1}
+  if ($putlabel) {
+  toplabel Plate $pplate, Fiber $fiber
+  ltype 0
+  limits 0 1 0 1
+  relocate 0.1 0.85
+  label z=$(sprintf('%1.4f',$z))\pm$(sprintf('%1.4f',$z_err))
+#,  z_{em}=$(sprintf('%1.4f',$zem))\pm$(sprintf('%1.4f',$zem_err))
+  relocate 0.9 0.15
+  if ($idl) {
+  putlabel 4 $class $subclass \chi^2;dof = $(sprintf('%5.2f',$chi2));$dof
+  } else {
+  putlabel 4 $(status_name[$status]) $(class_name[$class])}}
+#Set limits back to their default:
+ limits $xlow $xhigh $low $high
+ } #End of plotting
+#Now, we output some relevant information for this object, if
+#   requested
+
+# If using IDL spectro-1d outputs, do not read extra files, as
+# all this info. should be contained in IDL output files itself.
+
+  if($?DIAGDIR){
+
+  define diagfile_exists 1
+#Find the diag file for this plate.
+  define diagfile ('spDiag1d-$!mjd-$!pplate.par')
+
+  !test -s '$!DIAGDIR/$!diagfile'
+  if($exit_status != 0){
+#We'll try an alternative format:
+      define diagfile ('spDiag1d1-$!mjd-$!pplate.par')
+      !test -s '$!DIAGDIR/$!diagfile'
+     if ($exit_status != 0) {
+      echo WARNING: Diag file for plate $!1 is not available
+      define diagfile_exists 0
+      return
+  }}
+
+  if($?targetinfo){
+	if($targetinfo){
+	rd_spDiag1d "$!DIAGDIR/$!diagfile" $fiber
+  	targinfo}
+  }
+  if($?spinfo){
+	if($spinfo){
+	rd_spDiag1d "$!DIAGDIR/$!diagfile" $fiber
+  	sp1dinfo $pplate $fiber}
+  }
+  if($?objinfo){
+	if($objinfo){
+	 rd_spDiag1d "$!DIAGDIR/$!diagfile" $fiber
+  	specphotoinfo $pplate $fiber}
+  }}
+
+  if($?TSOBJDIR && $?tsObjinfo){
+	if($tsObjinfo){
+	rd_tsObj $pplate $fiber
+	}
+}
+
+  if (!$idl && $wrtzwarn){
+    if ($?warning) {
+      set warnflag_names = {OK NO_SPECTRUM NO_BLUE NO_RED NOT_GAL NOT_QSO \
+		   NOT_STAR EM_ABS_INC AB_INC EM_INC HIZ LO_CONF}
+	do i = 0, (dimen(warnflag_names)-1) {
+      if (is_set($warning,$i)) {print '$(warnflag_names[$i]) ' {}}}
+		 if ($warning != 0) {echo}
+   }
+}
+	
+}# end of onedout
+
+#Read Chicago-1d spectro output files. 
+
+macro specmerge_image 8 {#Read final 1-D spectra output from spectroscopic pipeline 
+            #specmerge <file> wavelength counts err z z_err emlines mask
+#Also defined are Z_CONF, Z_STATUS, SPEC_CLN, Z_WARNIN, obj_ra, and
+#obj_dec. 
+  #First read in the spectrum itself
+  echo Reading spectrum $1
+  delete $3  #In case it has already been defined
+  define file_type fits
+  define table_type bintable
+  image $1
+  foreach q (Z Z_ERR Z_CONF Z_WARNIN Z_STATUS SPEC_CLN NAXIS1 COEFF0 COEFF1) {
+	  define $q delete}
+  define Z image
+  define Z_ERR image
+  define Z_CONF image
+  define Z_STATUS image
+  define Z_WARNIN image
+  define SPEC_CLN image
+  define NAXIS1 image
+  define COEFF0 image
+  define COEFF1 image
+  define VERS_1D image
+  define SPEC2D_V image
+  define RAOBJ image
+  define DECOBJ image
+  define obj_ra $RAOBJ
+  define obj_dec $DECOBJ
+  echo Spectro 2d version $SPEC2D_V
+  echo Spectro 1d version $VERS_1D
+  define $5 ($Z)
+  define $6 ($Z_ERR)
+  define status ($Z_STATUS)
+  if ($?Z_WARNIN) {define warning $Z_WARNIN}
+  define class ($SPEC_CLN)
+  set _i = 0, $($NAXIS1 - 1) 
+  set $2 = $COEFF0 + $COEFF1*_i
+  set $2 = 10.**($2)
+  set $3 = image[_i,0]
+  set $4 = image[_i,2]
+  set $8 = image[_i,3]
+  #Next, read in list of emission lines
+  table 1 $1
+  define NAXIS2 image
+  if ($NAXIS2 == 0) {
+   delete $7} else {
+   read table 'byname' {wave}
+   set $7 = wave}
+}
+
+macro specmerge_idl 8 {#specmerge_idl plate fiber wavelength flux err z z_err mask
+#This macro reads files in the idl output format.  
+#Auxiliary quantities include obj_ra, obj_dec, chi2, dof, class,
+# status, ltemplate, and eigenfit. 
+
+  echo Reading plate $1, fiber $2, mjd $mjd in the idl output format.  
+  delete $4
+  define file_type fits
+  define table_type bintable
+
+  define fiber_number local
+  define counter local
+  define counter 0
+  define filename "$!datadir/spPlate-$!(sprintf('%04d',$!1))-$!mjd.fits"
+  image 0 "$!filename"[*:$($2-1),$($2-1)]
+  define NAXIS1 image
+  define COEFF0 image
+  define COEFF1 image
+  define VERS2D image
+  echo IDL 2d version $VERS2D
+  set _i local
+  set _i = 0, $($NAXIS1 - 1) 
+  set $3 = $COEFF0 + $COEFF1*_i
+  set $3 = 10.**($3)  #Wavelength scale
+  set wavelength_scale = $3
+  set $4 = image[*,0]
+
+  #Read in error array.  It is stored as the inverse square error;
+  #We transform back to the error itself. 
+  image 1 "$!filename"[*:$($2-1),$($2-1)] #Error array
+  set $5 = image[*,0]
+  set $5 = ($5 == 0)?(1e5):($5)
+  set $5 = ($5 == 1e5)?(0):(1/sqrt($5))
+
+  image 3 "$!filename"[*:$($2-1),$($2-1)] #mask array
+  set $8 = image[*,0]
+
+  #Read in redshift, classification, and template information. 
+  define filename "$!datadir/spZbest-$!(sprintf('%04d',$!1))-$!mjd.fits"
+  table 1 "$!filename"
+  lines $2 $2
+  read table {PLUG_RA PLUG_DEC}
+  define obj_ra (PLUG_RA[0])
+  define obj_dec (PLUG_DEC[0])
+  read table {CLASS[0-6] SUBCLASS[0-7] Z Z_ERR RCHI2 DOF TFILE[0-21] TCOLUMN[0-9] NPOLY THETA[0-9]}
+  define $6 (Z[0])
+  define $7 (Z_ERR[0])
+  define chi2 (RCHI2[0])
+  define dof (DOF[0])
+  define class (CLASS0[0])
+  define status ($chi2)
+  define ll local
+
+  #The class, subclass, and tfiles are strings, one letter each, which
+  #need to be combined into something readable. 
+  do ll = 1, 6 {define class ('$class' + '$!(CLASS$!ll[0])')}
+  define subclass (SUBCLASS0[0])
+  do ll = 1, 7 {define subclass ('$subclass' + '$!(SUBCLASS$!ll[0])')}
+  #The input template file
+  define tfile (TFILE0[0])
+  do ll = 1, 21 {define tfile ('$tfile' + '$!(TFILE$!ll[0])')}
+  #Trim off any trailing spaces. 
+  define end_of_string (INDEX('$tfile',' '))
+  if ($end_of_string>0) {define tfile (substr('$tfile',0,$end_of_string))}
+  if ($end_of_string != 0) {
+  #Read the template file; where the templates live. 
+  image "$!TEMPLATEDIR/$!tfile"
+  define NAXIS1 image
+  define NAXIS2 image
+  if (!$?NAXIS2) {define NAXIS2 1}
+  define COEFF0 image
+  define COEFF1 image
+  set _i = 0, $($NAXIS1 - 1) 
+  #The template wavelength scale
+  set ltemplate = $COEFF0 + $COEFF1*_i
+  set ltemplate = 10.**(ltemplate)  #Wavelength scale
+  set ltemplate = ltemplate*(1+$(Z[0]))
+  define _j local
+  #The best-fit spectrum is the sum of scaled templates and polynomials.
+  #For stars, it is not a linear combination, but just a single
+  #template, indicated as such in the first TCOLUMN entry. 
+  set eigenfit = 0
+  if ('$class' == 'STAR   ') {
+       set eigenfit = $(THETA0[0])*image[_i,$(TCOLUMN0[0])]
+  } else {
+  do _j = 0, $($NAXIS2 - 1) { 
+    set eigenfit = \
+($(TCOLUMN$_j[0])==-1)?(eigenfit):(eigenfit+$(THETA$_j[0])*image[_i,$_j])
+  }}
+  set _i = _i/$NAXIS1
+  define offset $NAXIS2
+  if ('$class' == 'STAR   ') {define offset 1}
+  if ($(NPOLY[0]) > 0) {
+    do _j = 0, $(NPOLY[0]-1) {
+      set eigenfit = eigenfit+$(THETA$($_j+$offset)[0])*(_i**$_j)
+  }}}}
+
+macro interactive 2 {#Same as plotspec
+plotspec $1 $2}
+
+#Routine that allows one to interact with a spectrum
+macro plotspec 2 {#
+   define lower_limit delete
+   define upper_limit delete
+   define xlower_limit delete
+   define xupper_limit delete
+   onedout $1 $2
+   if (!$?z) {define z -999}
+   while {1} {
+   define comment "No_Comment"
+   define comment ?
+     define first_char (substr('$comment',0,1))
+     define first_chars (substr('$comment',0,2))  #First two characters
+     
+     if ('$first_char' == 'h' || '$first_char' == 'H' || '$first_char' == '?') { #help
+       echo h or H or ? -- Help
+       echo a or A (expression) - Do arithmetic to screen
+       echo z or Z <redshift> - Plot with different redshift
+       echo b or B <+/- number> - Move forward or backwards <number> fibers
+       echo l or L <value> - Change lower y limit to <value>
+       echo u or U <value> - Change upper y limit to <value>
+       echo xl or XL <value> - Change lower x limit to <value> 
+       echo xu or XU <value> - Change upper x limit to <value> 
+       echo r or R - Restore plot to default
+       echo s or S <value> - Change smoothing to <value> pixels (default is 5)
+       echo f or F <value> - Change fiber number to <value> (plate stays the same)
+       echo m or M - Show mask array
+       echo m or M <value> - Return meaning of mask array at wavelength indicated 
+       echo y or Y - Toggle the highlighting of bad pixels
+       echo p - Put up cursor
+       echo t or T - Show Idl best-fit template
+       echo d or D - Show difference between template and spectrum
+       echo n or N or return - No comment; continue to next fiber
+       echo e or E - Nothing to comment file; continue to next fiber
+       echo c or C <comment> - Write comment to file; continue to next fiber
+       echo q or Q - Exit loop
+       }
+
+     if ('$first_char' == 'a' || '$first_char' == 'A') {#Do an arithmetic calculation
+        define expression (substr('$comment',2,0))
+	calc $expression}
+     if ('$first_char' == 'e' || '$first_char' == 'E') { #Nothing to comment file
+       break}
+     if ('$first_char' == 'y' || '$first_char' == 'Y') { #Toggle highlight_bad variable 
+        define highlight_bad (!$highlight_bad)
+	onedout $1 $2}
+     if ('$first_char' == 'm' || '$first_char' == 'M') { #Show mask array
+       define wavelength (atof(substr('$comment',2,0)))
+       if ($wavelength) { #That is, if it is non-zero
+         #Find nearest pixel
+         set ltemp = abs(wavelength - $wavelength)
+	 set mtemp = mask
+	 sort {ltemp mtemp}
+	 echo mask is $(mtemp[0]) at wavelength $wavelength
+	 return_spflag $(mtemp[0])
+       } else {
+       ctype blue
+       limits $fx1 $fx2 mask
+       histogram wavelength mask
+       ctype default}}
+     if ('$first_char' == 'n' || '$first_char' == 'N') { #No comment
+	if ($idl) {
+	  write +"$!comment_file" $1 $2 $(sprintf(' %2.5f',$z)) $status $class $subclass $comment
+	} else {
+	  write +"$!comment_file" $1 $2 $(sprintf(' %2.5f',$z)) $status $class $comment
+	}
+     break}
+     if ('$first_char' == 'z' || '$first_char' == 'Z') { #Change redshift
+       define redshift (substr('$comment',2,0))
+       onedout $1 $2 $redshift
+     }
+     if ('$first_char' == 't' || '$first_char' == 'T') { #Show idl template file
+       ctype blue
+       connect ltemplate eigenfit}
+     if ('$first_char' == 'd' || '$first_char' == 'D') {
+#       set diff local
+#       set eigentemp local
+       spline ltemplate eigenfit wavelength eigentemp
+       smooth eigentemp eigensmooth 5
+       set diff = flux - eigensmooth
+       ctype green
+       histogram wavelength diff}
+
+     if ('$first_char' == 's' || '$first_char' == 'S') { #Change smoothing
+       define smooth_length (substr('$comment',2,0))
+       onedout $1 $2 
+       define smooth_length delete
+     }
+     if ('$first_char' == 'f' || '$first_char' == 'F') { #Change fiber number
+       define fiber_number (substr('$comment',2,0))
+       define lower_limit delete
+       define upper_limit delete
+       define xlower_limit delete
+       define xupper_limit delete       
+       onedout $1 $fiber_number 
+       define fiber_number delete
+     }
+     if ('$first_chars' == 'xl' || '$first_chars' == 'XL') { #Change x lower limit
+        define xlower_limit (substr('$comment',3,0))
+	onedout $1 $2}
+
+     if ('$first_chars' == 'xu' || '$first_chars' == 'XU') { #Change x upper limit
+        define xupper_limit (substr('$comment',3,0))
+	onedout $1 $2}
+
+     if ('$first_char' == 'l' || '$first_char' == 'L') { #Change lower limit
+        define lower_limit (substr('$comment',2,0))
+	onedout $1 $2}
+
+     if ('$first_char' == 'u' || '$first_char' == 'U') { #Change upper limit
+        define upper_limit (substr('$comment',2,0))
+	onedout $1 $2}
+
+     if ('$first_char' == 'r' || '$first_char' == 'R') { #restore limits 
+         define lower_limit delete
+	 define upper_limit delete
+        define xlower_limit delete
+        define xupper_limit delete       
+	 onedout $1 $2}
+
+     if ('$first_char' == 'p' || '$first_char' == 'P') { #Put up cursor ('pointer') 
+         cursor}
+
+     if ('$first_char' == 'b' || '$first_char' == 'B') { #skip spectra 
+        define jump local
+        define jump (substr('$comment',2,0))
+        define j ($j + $jump - 1)
+	break
+     }
+     if ('$first_char' == 'q' || '$first_char' == 'Q') {#Quit
+       define j $end_fiber
+       break}
+     if ('$first_char' == 'c' || '$first_char' == 'C') { #Write comment
+        define comment (substr('$comment',2,0))
+	if ($idl) {
+	  write +"$!comment_file" $1 $2 $(sprintf(' %2.5f',$z)) $status $class $subclass $comment
+	} else {
+	  write +"$!comment_file" $1 $2 $(sprintf(' %2.5f',$z)) $status $class $comment
+	}
+	break
+     }
+     }
+   define lower_limit delete
+   define upper_limit delete
+   define xlower_limit delete
+   define xupper_limit delete
+}
+
+macro look 13 {#look <plate number start_fiber end_fiber>
+foreach var (plate comment seq start_fiber) {define $var local}
+define plate $1
+define comment delete
+define seq $1
+define start_fiber 1
+define end_fiber 640
+define comment_file "$!1.comments"
+if ($?2) {define start_fiber $2 define end_fiber $3}
+define j ($start_fiber)
+while {$j < $end_fiber+1} {
+  plotspec $plate $j
+  define j ($j + 1)
+}}
+
+macro looklist 13{ # look at a list of spectra, plate id and fibers are
+	       #1st and 2 columns, looklist filename startrow endrow
+	       define start local
+	       set plt local
+	       set fibr local
+
+!test -s "$!1"
+if ($exit_status != 0) {
+   echo WARNING: "$!1" file does not exist
+   return
+}
+	     DATA "$!1"
+	     define comment_file "$!1.comments"
+	     read {plt 1 fibr 2}
+	     if (!$?2) {define start 0} else {define start ($2-1)}
+	     if (!$?3) {define end_fiber (dimen(plt)-1)} else {define end_fiber ($3-1)}
+	     define j ($start)
+	     while {$j < $end_fiber + 1} {
+	        plotspec $(plt[$j]) $(fibr[$j])
+		define j ($j + 1)
+	     }
+      
+}
+
+macro rd_spDiag1d 12 {# rd_spDiag1d spDiag1d_filename [fibernumber]
+# IF FIBERNUMBER IS GIVEN, GET THE PARAMETERS OF ONLY THAT FIBER, ELSE
+# GET ALL 640 FIBERS
+###########################################################################
+# This macro reads in the spDiag1d*.par files from Chicago outputs. 
+# if you give it a plate number it will search the default dir,
+# if you give it a filename and path it will just read that
+# It will read the following for max 640 "fiberred" objects :
+#   object parameters (It will trim the list to 640 fiber "OBJECTS")
+#	fiberId
+#	objId (run rerun column frame id)
+#	primTarget
+#	secTarget
+#	xFocal, yFocal
+#	ra (deg)
+#	dec (deg)
+#	skyRes[3]
+#	griFibre[3] = gfib rfib ifib
+# 	griFlux[3] = gflux rflux iflux
+# 	deriv2;
+# 	mean;
+# 	contChi2;
+# 	blueSlope;
+# 	redSlope;
+# 	spec_class [SPEC_UNKNOWN, SPEC_STAR, SPEC_GALAXY, SPEC_QSO, 
+#		    SPEC_HIZ_QSO, SPEC_SKY]
+#	zStat [NOT_MEASURED, FAILED,INCONSISTENT, XCORR_EMLINE, XCORR_HIC,
+#	       XCORR_LOC, EMLINE_XCORR, EMLINE_HIC, EMLINE_LOC, MANUAL_HIC,
+#	       MANUAL_LOC]
+# 	zFinal;
+# 	zErrFinal;
+# 	zConfFinal;
+# 	zXcorr;
+# 	zErrXcorr;
+# 	Zconfxcorr;
+# 	zEmz;
+# 	zErrEmz;
+# 	zConfEmz;
+#	templateId;
+#	nEmline;
+###########################################################################
+
+!test -s "$!1"
+if ($exit_status != 0) {
+   echo WARNING: rd_spDiag1d> "$!1" file does not exist
+   return
+}
+
+DATA $1
+# read all lines, and clean up later.  We figure out how many lines
+# are correctly read; if the number is zero, we try reading in a
+# different format (there are at least three floating around...)
+
+#SM can't read in an arbitrarily long string; the following is too
+#long.  
+#read ! '%*s %d { %d %d %d %d %d} %d %d %g %g \
+#%g %g { %g %g %g} { %g %g %g %g %g} { %g %g %g} \
+#{ %g %g %g} \
+#%g %g %g %g %g %s %s %e %e \
+#%e %e %e %e %e %e %e \
+#%n' \
+#%d %d %d %s %n'\
+#{fiberId run rerun column field id primTarget secTarget xFocal yFocal \
+#ra dec skyRes0 skyRes1 skyRes2 ufib gfib rfib ifib zfib gflux rflux iflux \
+#gSN rSN iSN \
+#deriv2 mean contChi2 blueSlope redSlope spec_class zStat zFinal zErrFinal \
+#zConfFinal zXcorr zErrXcorr zConfXcorr zEmz zErrEmz zConfEmz \
+#templateId nEmline zWarning galClass \
+#ok_entries}
+#set ok_entries = ok_entries if (ok_entries==46)  #If the reading
+						   #above went well
+
+#Here is the trimmed-down version:
+read ! '%*s %d { %d %d %d %d %d} %d %d %g %g \
+%g %g { %g %g %g} { %g %g %g %g %g} { %g %g %g} \
+{ %g %g %g} \
+%g %g %g %g %g %s %s %e %e \
+%e %e %e %e %e %e %e \
+%n' \
+{fiberId run rerun column field id primTarget secTarget xFocal yFocal \
+ra dec skyRes0 skyRes1 skyRes2 ufib gfib rfib ifib zfib gflux rflux iflux \
+gSN rSN iSN \
+deriv2 mean contChi2 blueSlope redSlope spec_class zStat zFinal zErrFinal \
+zConfFinal zXcorr zErrXcorr zConfXcorr zEmz zErrEmz zConfEmz \
+ok_entries}
+set ok_entries = ok_entries if (ok_entries==42)  #If the reading
+						   #above went well
+if (dimen(ok_entries) < 10) {
+#Try again, different format
+read ! '%*s %d { %d %d %d %d %d} %d %d %g %g \
+%g %g { %g %g %g} { %g %g %g} { %g %g %g} \
+%g %g %g %g %g %s %s %e %e \
+%e %e %e %e %e %e %e \
+%d %d %n'\
+{fiberId run rerun column field id primTarget secTarget xFocal yFocal \
+ra dec skyRes0 skyRes1 skyRes2 gfib rfib ifib gflux rflux iflux \
+deriv2 mean contChi2 blueSlope redSlope spec_class zStat zFinal zErrFinal \
+zConfFinal zXcorr zErrXcorr zConfXcorr zEmz zErrEmz zConfEmz \
+templateId nEmline ok_entries}
+
+set ok_entries = ok_entries if (ok_entries==39)  #If the reading
+						   #above went well
+if (dimen(ok_entries) < 10) {
+#A last try
+read ! '%*s %d { %d %d %d %d %d} %d %d %g %g \
+%g %g { %g %g %g} { %g %g %g} { %g %g %g} \
+{ %g %g %g} \
+%g %g %g %g %g %s %s %e %e \
+%e %e %e %e %e %e %e \
+%d %d %n'\
+{fiberId run rerun column field id primTarget secTarget xFocal yFocal \
+ra dec skyRes0 skyRes1 skyRes2 gfib rfib ifib gflux rflux iflux \
+gSN rSN iSN \
+deriv2 mean contChi2 blueSlope redSlope spec_class zStat zFinal zErrFinal \
+zConfFinal zXcorr zErrXcorr zConfXcorr zEmz zErrEmz zConfEmz \
+templateId nEmline ok_entries}
+
+set ok_entries = ok_entries if (ok_entries==42)  #If the reading
+						   #above went well
+if (dimen(ok_entries) < 10) {
+echo Format of spDiag file not recognized
+return
+}}}
+# spDiag file is not in a  good format. so clean up, by keeping only
+# those lines whose fiber numbers make sense
+if($?2) {
+	set keepline = (fiberId==$2)} else {
+	set keepline = ((fiberId>0) && (fiberId<641))
+	}
+foreach q {fiberId run rerun column field id primTarget secTarget xFocal yFocal \
+ra dec skyRes0 skyRes1 skyRes2 gfib rfib ifib gflux rflux iflux \
+gSN rSN iSN \
+deriv2 mean contChi2 blueSlope redSlope spec_class zStat zFinal zErrFinal \
+zConfFinal zXcorr zErrXcorr zConfXcorr zEmz zErrEmz zConfEmz }{
+	   set $q = $q if(keepline)
+}
+unset keepline
+}
+
+macro targinfo 0{# targinfo, Return Primary or secondary
+	         #	       target info
+      if($?(primTarget[0])) {return_target $(primTarget[0])}
+      if($?(secTarget[0])) {return_sectarget $(secTarget[0])}
+            
+      }
+macro return_target 1{ #This routine translates an SDSS primTarget flag into
+                #English. 
+                set flag_names = {QSO_HIZ QSO_CAP QSO_SKIRT \
+                QSO_FIRST_CAP QSO_FIRST_SKIRT GALAXY_RED GALAXY \
+                GALAXY_BIG GALAXY_BRIGHT_CORE ROSAT_A ROSAT_B ROSAT_C \
+                ROSAT_D STBHB STCARBON STBROWN_DWARF STSUB_DWARF \
+                STCATY_VAR STRED_DWARF STWHITE_DWARF SERENDIP_BLUE \
+                SERENDIP_FIRST SERENDIP_RED SERENDIP_DISTANT \
+                SERENDIP_MANUAL QSO_FAINT GALAXY_REDII ROSAT_E STAR_PN \
+		QSO_REJECT}
+		print 'PrimTarget> ' {}
+                do i = 0, $(dimen(flag_names) - 1) {
+                 if (is_set($1,$i)) {print ' $(flag_names[$i]) ' {}}
+}
+		print '\n' {}
+}
+macro return_sectarget 1{ #This routine translates an SDSS secTarget flag into
+                #English. 
+                set secflag_names = {LIGHT_TRAP REDDEN_STD TEST_TARGET \
+				 QA_TARGET SKY SPECTROPHOTO_STD \
+				 GUIDE_STAR  BUNDLE_HOLE QUALITY_HOLE \
+				 HOT_STD }
+		print 'SecTarget> ' {}
+                do i = 0, $(dimen(secflag_names) - 1){
+                 if (is_set($1,$i)) {print ' $(secflag_names[$i]) ' {}}
+}
+		print '\n' {}
+}
+
+macro return_spflag 1 {#Translates a spectral mask bit into English
+
+      set spflag_names = {NOPLUG BADTRACE BADFLAT BADARC \
+		       MANYBADCOLUMNS MANYREJECTED LARGESHIFT \
+		       ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' \
+		       NEARBADPIXEL LOWFLAT FULLREJECT PARTIALREJECT \
+		       SCATTEREDLIGHT CROSSTALK NOSKY BRIGHTSKY NODATA \
+		       COMBINEREJ}
+                do i = 0, $(dimen(spflag_names) - 1){
+                 if (is_set($1,$i)) {print ' $(spflag_names[$i]) ' {}}
+}
+		print '\n' {}}
+
+macro sp1dinfo 2{# sp1dinfo plate fiber
+      define  print_noheader 1 # we don't want any header lines
+      print 'Spectro1d> %12s %12s ' {spec_class zStat}
+}
+macro specphotoinfo 2{# photoinfo plate fiber
+      define  print_noheader 1 # we don't want any header lines
+      print 'SpecPhoto>  %4d %2d %2d %4d %4d %5.2f %5.2f %5.2f\n' {run rerun column field id gfib rfib ifib}
+                  
+}
+macro spectra_list 1 {#Makes a master file of all spectra.
+                      #Input is a list of all spDiag files. 
+	echo Remove spectra.lis?
+!rm -i spectra.lis
+define print_noheader 1
+
+DATA "$!1"
+read {filename 1.s}
+#The spec list has two different formats.  We can tell which is which
+#by looking at the length of the string. 
+set mjd = (strlen(filename) == 23)?(substr(filename,9,5)):(substr(filename,10,5))
+set plate = (strlen(filename) == 23)?(substr(filename,15,4)):(substr(filename,16,4))
+do i = 0, (dimen(filename)-1) {
+rd_spDiag1d "$!DIAGDIR/$(filename[$i])"
+set _mjd = $(mjd[$i]) + 0*zFinal
+set _plate = $(plate[$i]) + 0*zFinal
+print +spectra.lis '%g %g %g %g %g %g %g %g %g %g %f %f %s %s %f\n' \
+  {_mjd _plate fiberId run rerun column field id primTarget secTarget \
+  ra dec spec_class zStat zFinal} 
+}
+}
+
+macro read_spec 0 {#Reads in parameters for the master spectral list.
+define SPECTRA_LIS : 
+
+!test -s "$!SPECTRA_LIS"
+if ($exit_status != 0) {
+   echo WARNING: read_spec> "$!SPECTRA_LIS" file does not exist
+   return
+}
+
+DATA "$!SPECTRA_LIS"
+read '%d %d %d %d %d %d %d %d %d %d %f %f %s %s %f\n' \
+  {_mjd _plate fiberId run rerun column field id primTarget secTarget \
+  ra dec spec_class zStat zFinal} }
+
+macro find_spec 13 {#find_spec ra dec [minsep] (in arcsec)
+		  #Looks in master file of spectra, and finds object
+		  #closest to position given. 
+		  # if rdspeclis is 1 (default), we will read the
+		  # spectra list file
+if ($?3) {
+define minsep (($3/3600)**2)
+} else {
+define minsep ((1/3600)**2)
+}
+#if($?rdspeclis){
+#	if($rdspeclis){
+	read_spec
+#}
+#}
+# This uses the small angle approximation. 
+# note that the cosd($2)**2 term should actually be cosd(dec)cosd($2)
+#
+set distance = (cosd($2)*(ra - $1))**2 + (dec - $2)**2
+set temp = distance
+sort {distance _mjd _plate fiberId run rerun column field id primTarget} 
+sort {temp secTarget ra dec spec_class zStat zFinal}
+#Find those objects which match
+foreach vec (_mjd _plate fiberId run rerun column field id primTarget \
+	    secTarget ra dec spec_class zStat zFinal distance) {
+  set $vec = $vec if (distance < $minsep)}
+if (dimen(distance) == 0) {
+echo No spectrum at this position} else {
+echo $(dimen(distance)) matches:
+print '%g %g %g \n' {_mjd _plate fiberId}
+echo Here is the spectrum of the first of these:
+plotspec $(_plate[0]) $(fiberId[0])
+echo PHOTO id is $(run[0])/$(rerun[0])/$(column[0])/$(field[0])/$(id[0])
+echo Targetted as:
+return_target $(primTarget[0])
+}
+}
+macro find_speclist 15 {#find_speclist infile colRA colDec outfile [minsep] (in arcsec)
+		  #Looks in master file of spectra, and finds object
+		  #closest to position given,
+		  #infile = file with a list of RA and DEC, in columns
+		  # colRA and colDec respectively, output is in
+		  # outfile and outfile.nospec
+		  # [minsep] = 1 arcsec
+# If minsep is given, use it, else, minsep = 1 arcsec,
+if ($?5) {
+define minsepsec $5
+} else {
+define minsepsec 1
+}
+# convert it intodegrees
+define minsep (($minsepsec/3600)**2)
+# read the master file containing all spectra
+read_spec
+# now, read RA and DEC from the infile
+
+!test -s "$!1"
+if ($exit_status != 0) {
+   echo WARNING: find_speclist> "$!1" file does not exist
+   return
+}
+
+DATA "$!1"
+read inra $2
+read indec $3
+define match 0
+define nonmatch 0
+do i=0,(dimen(inra)-1){
+   define t1 ($i+1)
+set distance = (cosd($(indec[$i]))*(ra - $(inra[$i])))**2 + (dec -$(indec[$i]))**2
+set _temp = distance if(distance < $minsep)
+if (dimen(_temp) == 0) {
+   define nonmatch ($nonmatch+1)
+   write  +"$!4.nospec" $t1 $(inra[$i]) $(indec[$i]) 
+} else {
+define match ($match+1)
+#Find those objects which match
+foreach q (_mjd _plate fiberId run rerun column field id primTarget \
+	    secTarget ra dec spec_class zStat zFinal distance) {
+  set t$q = $q if (distance < $minsep)}
+# get the closest match
+sort {tdistance  t_mjd t_plate tfiberId trun trerun tcolumn tid tprimTarget }
+sort {_temp tsecTarget tra tdec tspec_class tzStat tzFinal}
+write  +"$!4" $t1 $(inra[$i]) $(indec[$i]) $(tra[0]) $(tdec[0]) \
+$(t_plate[0]) $(tfiberId[0]) $(trun[0]) $(trerun[0]) $(tcolumn[0]) \
+$(tfield[0]) $(tid[0]) $(tprimTarget[0]) $(tsecTarget[0]) $(tspec_class[0]) \
+$(tzStat[0]) $(tzFinal[0]) 
+}
+unset distance
+unset _temp
+}
+echo $(dimen(inra)) coordinates in file $1
+echo $match coordinates have spectra within $minsepsec arcsec
+echo $nonmatch coordinates do not have spectra within $minsepsec arcsec
+}
+
+macro output_target 2 {#output_target <choice> <criterion>
+		       #Makes a file (choice 1), or plots (choice 2) of
+		       #all objects which satisfy criterion given
+read_spec
+#We define subcategories of just about everything interesting
+set qso_first = (is_set(primTarget,$TARGET_QSO_FIRST_CAP) || \
+	   is_set(primTarget,$TARGET_QSO_FIRST_SKIRT))
+set qso_optical = (is_set(primTarget,$TARGET_QSO_HIZ) || \
+	   is_set(primTarget,$TARGET_QSO_CAP) || \
+	   is_set(primTarget,$TARGET_QSO_SKIRT))
+set qso_faint = is_set(primTarget,$TARGET_QSO_FAINT)
+set qso_reject = is_set(primTarget,$TARGET_QSO_REJECT)
+set qso_aux = (qso_faint || qso_reject)
+set qso = (qso_first || qso_optical)
+set qso_all = (qso || qso_aux)
+set brg = (is_set(primTarget,$TARGET_GALAXY_RED) || \
+	   is_set(primTarget,$TARGET_GALAXY_REDII))
+set main_gal = (is_set(primTarget,$TARGET_GALAXY) || \
+	   is_set(primTarget,$TARGET_GALAXY_BIG) || \
+	   is_set(primTarget,$TARGET_GALAXY_BRIGHT_CORE))
+set gal = (brg || main_gal)
+set rosat = (is_set(primTarget,$TARGET_ROSAT_A) || \
+	     is_set(primTarget,$TARGET_ROSAT_B) || \
+	     is_set(primTarget,$TARGET_ROSAT_C) || \
+	     is_set(primTarget,$TARGET_ROSAT_D) || \
+	     is_set(primTarget,$TARGET_ROSAT_E))
+set star = (is_set(primTarget,$TARGET_STBHB) || \
+	    is_set(primTarget,$TARGET_STCARBON) || \
+	    is_set(primTarget,$TARGET_STBROWN_DWARF) || \
+	    is_set(primTarget,$TARGET_STSUB_DWARF) || \
+	    is_set(primTarget,$TARGET_STCATY_VAR) || \
+	    is_set(primTarget,$TARGET_STRED_DWARF) || \
+	    is_set(primTarget,$TARGET_STAR_PN))
+set serendip = (is_set(primTarget,$TARGET_SERENDIP_BLUE) || \
+	        is_set(primTarget,$TARGET_SERENDIP_FIRST) || \
+		is_set(primTarget,$TARGET_SERENDIP_RED) || \
+		is_set(primTarget,$TARGET_SERENDIP_DISTANT) || \
+		is_set(primTarget,$TARGET_SERENDIP_MANUAL))
+set standard_star = (is_set(secTarget,$TTARGET_REDDEN_STD) || \
+		is_set(secTarget,$TTARGET_SPECTROPHOTO_STD) || \
+		is_set(secTarget,$TTARGET_HOT_STD))
+set first = qso_first || is_set(primTarget,$TARGET_SERENDIP_FIRST)
+define selection_criterion "$2"
+set selection = $selection_criterion
+foreach vec (_mjd _plate fiberId run rerun column field id primTarget secTarget \
+  ra dec spec_class zStat zFinal) {
+  set $vec = $vec if (selection)}
+if ($1 == 1) {print outfile '%g %g %g %g %g %g %g %g %g %g %f %f %s %s %f\n' \
+  {_mjd _plate fiberId run rerun column field id primTarget secTarget \
+  ra dec spec_class zStat zFinal}
+} else {
+set _fiber = fiberId #Rename, to avoid collisions later. 
+define end_fiber (dimen(_mjd) - 1) 
+define j 0
+while {$j < $end_fiber+1} {
+  plotspec $(_plate[$j]) $(_fiber[$j])
+  define j ($j+1)
+}}}
+
+
+macro rd_tsObj 13{ # rd_tsObj plate fiber [filename]
+		   # Read a plate tsObj file
+		   # Since tsObj file is not fiber-ordered, pick out
+		   # the closest object.
+		   # if [filename] is given, parameters are appended
+		   # to it
+		   #Note that this requires that specmerge has already
+		   #been run, so that the RA and DEC of the object in
+		   #question have been determined. 
+	
+
+define minsepsec 1
+# convert it intodegrees
+define minsep (($minsepsec/3600)**2)
+
+# query if the tsObj file exists and has a non-zero size
+
+    define tsobjfile ('tsObj-$!(sprintf('%04d',$!1)).fit')
+    !test -s "$!TSOBJDIR/$!tsobjfile"
+    if ($exit_status != 0){	
+        #Try another format of the name
+        define tsobjfile ('tsObj5-$!(sprintf('%04d',$!1)).fit')
+        !test -s "$!TSOBJDIR/$!tsobjfile"
+	if ($exit_status != 0){	
+        echo tsObj file "$!TSOBJDIR/$!tsobjfile" does not exist on disk
+	return
+    }}
+
+      # query if the file is readable
+
+    !test -r "$!TSOBJDIR/$!tsobjfile"
+    if($exit_status != 0){	
+        echo tsObj file "$!TSOBJDIR/$!tsobjfile"  is not readable
+	return
+    }
+
+      table 1 "$!TSOBJDIR/$!tsobjfile"
+
+      read table {run camCol rerun field id parent \
+      objc_type objc_flags objc_flags2 \
+      objc_rowc objc_colc ra dec flags[0-4] flags2[0-4] \
+      petroCounts[0-4] petroCountsErr[0-4] \
+      psfCounts[0-4] psfCountsErr[0-4] \
+      fiberCounts[0-4] fiberCountsErr[0-4] \
+      petroRad[0-4] petroR50[0-4] petroR90[0-4] \
+      reddening[0-4] counts_model[0-4] counts_modelErr[0-4] \
+      primTarget secTarget \
+      type[0-4] star_L[0-4] exp_L[0-4] deV_L[0-4] r_exp[0-4] r_deV[0-4] \
+      status lambda eta}
+
+      foreach c {0 1 2 3 4}{
+	           foreach q {psf petro fiber}{
+			   set "$!q"Mag$c = "$!q"Counts$c
+			   set "$!q"MagErr$c = "$!q"CountsErr$c
+			   unset "$!q"Counts$c
+			   unset "$!q"CountsErr$c
+			   }
+			      set modelMag$c = counts_model$c
+			   set modelMagErr$c = counts_modelErr$c
+			   unset counts_model$c
+		           unset counts_modelErr$c
+		   }
+
+# Find the object in tsObj file, closest to the input coordinates
+# This uses the small angle approximation. 
+# note that the cosd($2)**2 term should actually be cosd(dec)cosd($2)
+#
+set distance = (cosd($obj_dec)*(ra - $obj_ra))**2 + (dec - $obj_dec)**2
+
+set indx = 0,(dimen(id)-1)
+if($(dimen(indx)) != 640){
+    echo WARNING> tsObj file $tsobjfile has $(dimen(indx)) objects.
+}
+
+sort {distance indx}
+define indx (indx[0])
+
+	   foreach q {run camCol rerun field id parent \
+	   objc_type objc_flags objc_flags2 \
+	   objc_rowc objc_colc ra dec primTarget secTarget \
+	   status lambda eta}{
+		  set $q = $q[$indx]
+	   }
+
+	   foreach q {flags flags2 petroRad petroR50 petroR90 \
+		   reddening type star_L exp_L deV_L r_exp r_deV \
+		   psfMag petroMag fiberMag modelMag \
+		   psfMagErr petroMagErr fiberMagErr modelMagErr }{
+		   foreach c {0 1 2 3 4}{
+			   set "$!q"$c = "$!q"$c[$indx]
+		   }
+		 }
+		
+	   define print_noheader 1
+	   set pt = 0*id+$1
+	   set f = 0*id+$2
+
+		if ($?3) {
+print +$3 '%4g %4g %4g %2g %2g %4g %4g %4.5f %4.5f %5.2f %5.2f %5.2f %5.2f \
+%5.2f %4.3f %4.3f %4.3f %4.3f %4.3f %g %g\n' \
+{pt f run rerun camCol field id ra dec psfMag0 psfMag1 psfMag2  \
+psfMag3 psfMag4 reddening0 reddening1 reddening2 reddening3 reddening4 \
+primTarget secTarget}
+		} else {
+print 'TSOBJ> %g %4g %4g %2g %2g %4g %4g %4.5f %4.5f %5.2f %5.2f %5.2f %5.2f \
+%5.2f %4.3f %4.3f %4.3f %4.3f %4.3f %g %g\n' \
+{pt f run rerun camCol field id ra dec psfMag0 psfMag1 psfMag2  \
+psfMag3 psfMag4 reddening0 reddening1 reddening2 reddening3 \
+reddening4 primTarget secTarget }
+
+	   undef indx
+	   unset pt
+	   unset f
+}
+}
+
+macro nwindow 3 {#nwindow nx ny n 
+          #Puts up a window on an array of nx, ny, in the nth place
+  define _y (abs($2) - int(($3 - 1)/abs($1)))
+  define _x ($3 - abs($1)*int(($3 - 1)/abs($1)))
+  window $1 $2 $_x $_y
+  define _x delete
+  define _y delete
+}
+
+# A bunch of different window sizes/shapes, xterm_l and xterm_b are
+# good choices for viewing spectra
+
+macro xterm 0 {## xterm window, in convenient location
+		device x11 -bg white -geometry 650x525+450+325
+}
+
+macro xterm_b 0 {#A really big one
+		device x11 -bg white -geometry 1200x800
+}
+
+macro xterm_l 0 {## xterm window, same dimensions as landscape postscript
+		device x11 -bg white -geometry 971x725+300+230
+}
+
+macro xterm_p 0 {## xterm window, same dimensions as portrait postscript
+		device x11 -bg white -geometry 725x971+500+30 
+}
+
+macro xterm_h 0 {## xterm window, square
+                ## shrunk down for home
+		device x11 -bg white -geometry 500x500+450+30 
+}
+
+macro xterm_s 0 {## square xterm window
+		device x11 -bg white -geometry 800x800+325+50
+}
+
+macro xterm_ss	0 {## small square xterm window
+		device x11 -bg white -geometry 525x525+525+50
+}
+
+macro define_flags 0 {#Define bitmask flags
+
+
+#Flags for primary target
+define TARGET_QSO_HIZ         0 
+define TARGET_QSO_CAP         1 
+define TARGET_QSO_SKIRT       2 
+define TARGET_QSO_FIRST_CAP   3 
+define TARGET_QSO_FIRST_SKIRT 4
+define TARGET_QSO_FAINT	      25
+define TARGET_GALAXY_RED      5 
+define TARGET_GALAXY          6 
+define TARGET_GALAXY_BIG      7 
+define TARGET_GALAXY_BRIGHT_CORE 8
+define TARGET_ROSAT_A          9
+define TARGET_ROSAT_B          10
+define TARGET_ROSAT_C          11
+define TARGET_ROSAT_D          12
+define TARGET_STBHB          13
+define TARGET_STCARBON       14
+define TARGET_STBROWN_DWARF  15
+define TARGET_STSUB_DWARF    16
+define TARGET_STCATY_VAR     17
+define TARGET_STRED_DWARF    18
+define TARGET_STWHITE_DWARF  19
+define TARGET_SERENDIP_BLUE  20  
+define TARGET_SERENDIP_FIRST 21  
+define TARGET_SERENDIP_RED   22  
+define TARGET_SERENDIP_DISTANT 23
+define TARGET_SERENDIP_MANUAL  24
+define TARGET_GALAXY_REDII    26
+define TARGET_ROSAT_E         27
+define TARGET_STAR_PN         28
+define TARGET_QSO_REJECT      29
+
+#Flags for secondary target
+define TTARGET_LIGHT_TRAP     0  
+define TTARGET_REDDEN_STD     1  
+define TTARGET_TEST_TARGET    2  
+define TTARGET_QA_TARGET      3  
+define TTARGET_SKY            4  
+define TTARGET_SPECTROPHOTO_STD 5
+define TTARGET_GUIDE_STAR       6
+define TTARGET_BUNDLE_HOLE      7
+define TTARGET_QUALITY_HOLE     8
+define TTARGET_HOT_STD          9
+
+#Photo's flags
+define OBJ1_CANONICAL_CENTER 0
+define OBJ1_BRIGHT 1
+define OBJ1_EDGE 2
+define OBJ1_BLENDED 3
+define OBJ1_CHILD 4
+define OBJ1_PEAKCENTER 5
+define OBJ1_NODEBLEND 6
+define OBJ1_NOPROFILE 7
+define OBJ1_NOPETRO 8
+define OBJ1_MANYPETRO 9
+define OBJ1_NOPETRO_BIG 10
+define OBJ1_DEBLEND_TOO_MANY_PEAKS 11
+define OBJ1_CR 12
+define OBJ1_MANYR50 13
+define OBJ1_MANYR90 14
+define OBJ1_BAD_RADIAL 15
+define OBJ1_INCOMPLETE_PROFILE 16
+define OBJ1_INTERP 17
+define OBJ1_SATUR 18
+define OBJ1_NOTCHECKED 19
+define OBJ1_SUBTRACTED 20
+define OBJ1_NOSTOKES 21
+define OBJ1_BADSKY 22
+define OBJ1_PETROFAINT 23
+define OBJ1_TOO_LARGE 24
+define OBJ1_DEBLENDED_AS_PSF 25
+define OBJ1_DEBLEND_PRUNED 26
+define OBJ1_ELLIPFAINT 27
+define OBJ1_BINNED1 28
+define OBJ1_BINNED2 29
+define OBJ1_BINNED4 30
+define OBJ1_MOVED 31
+define OBJ1_DETECTED 32
+define OBJ2_DEBLENDED_AS_MOVING 0
+define OBJ2_NODEBLEND_MOVING 1
+define OBJ2_TOO_FEW_DETECTIONS 2
+define OBJ2_BAD_MOVING_FIT 3
+define OBJ2_STATIONARY 4
+define OBJ2_PEAKS_TOO_CLOSE 5
+define OBJ2_MEDIAN_CENTRE 6
+define OBJ2_LOCAL_EDGE 7
+define OBJ2_BAD_COUNTS_ERROR 8
+define OBJ2_BAD_MOVING_FIT_CHILD 9
+define OBJ2_DEBLEND_UNASSIGNED_FLUX 10
+define OBJ2_SATUR_CENTER 11
+define OBJ2_INTERP_CENTER 12
+define OBJ2_DEBLENDED_AT_EDGE 13
+define OBJ2_DEBLEND_NOPEAK 14
+define OBJ2_PSF_FLUX_INTERP 15
+
+
+#Flags for object status
+define  AR_OBJECT_STATUS_SET          0
+define  AR_OBJECT_STATUS_GOOD         1
+define  AR_OBJECT_STATUS_DUPLICATE    2 
+define  AR_OBJECT_STATUS_OK_RUN       4 
+define  AR_OBJECT_STATUS_RESOLVED     5 
+define  AR_OBJECT_STATUS_PSEGMENT     6 
+define  AR_OBJECT_STATUS_FIRST_FIELD  8
+define  AR_OBJECT_STATUS_OK_SCANLINE  9
+define  AR_OBJECT_STATUS_OK_STRIPE   10
+define  AR_OBJECT_STATUS_SECONDARY   12
+define  AR_OBJECT_STATUS_PRIMARY     13
+define  AR_OBJECT_STATUS_TARGET      14
+
+#Flags for object type
+define TYPE_UNK 0
+define TYPE_CR 1
+define TYPE_DEFECT 2
+define TYPE_GALAXY 3
+define TYPE_GHOST 4
+define TYPE_KNOWNOBJ 5
+define TYPE_STAR 6
+define TYPE_TRAIL 7
+define TYPE_SKY 8
+
+#Flags for spectral mask
+define SP_NOPLUG          0   #Fiber not listed in plugmap file
+define SP_BADTRACE        1   #Bad trace from routine TRACE320CRUDE
+define SP_BADFLAT         2   #Low counts in fiberflat
+define SP_BADARC          3   #Bad arc solution
+define SP_MANYBADCOLUMNS  4   #>10% pixels are bad columns
+define SP_MANYREJECTED    5   #>10% pixels are rejected in extraction
+define SP_LARGESHIFT      6   #Large spatial shift between flat and object pos'n
+define SP_NEARBADPIXEL   16   #Bad pixel within 3 pixels of trace
+define SP_LOWFLAT        17   #Flat field less than 0.5
+define SP_FULLREJECT     18   #Pixel fully rejected in extraction (INVVAR=0)
+define SP_PARTIALREJECT  19   #Some pixels rejected in extraction
+define SP_SCATTEREDLIGHT 20   #Scattered light significant
+define SP_CROSSTALK      21   #Cross-talk significant
+define SP_NOSKY          22   #Sky level unknown at this wavelength (INVVAR=0)
+define SP_BRIGHTSKY      23   #Sky level > flux + 10*(flux error)
+define SP_NODATA         24   #No data available in combine B-spline (INVVAR=0)
+define SP_COMBINEREJ     25   #Rejected in combine B-spline
+
+}
+
+#This routine calculates the structure function of spectral residuals. 
+macro structure 2 {#structure <plate> <fiber>
+if (!$?set_mjd) {
+find_mjd $1 $2 mjd
+define mjd (mjd[$mjd_index-1])} else {
+define mjd $set_mjd}
+define fiber $2
+define idl 1
+define datadir "$!SPECTRO_DATA/$!(sprintf('%04d',$pplate))"
+   specmerge_idl $pplate $fiber wavelength flux err z z_err mask
+smooth flux f10 10
+smooth flux f5 5
+window 1 1 1 1
+if ('$class' == 'UNKNOWN') {#No template available; fit cubic
+set x = (wavelength - $(wavelength[0]))/($(wavelength[$(dimen(wavelength)-1)]))
+set one = 1 + 0*x
+set x2 = x*x
+set x3 = x*x*x
+set vec = {one x x2 x3}
+linfit vec flux a var_a
+set model = a[0]*one + a[1]*x + a[2]*x2 + a[3]*x3 
+} else {#If model is available, spline it:
+spline ltemplate eigenfit wavelength model}
+set resid = (flux - model)/model
+set resid = (err == 0 || err > 2*model)?(0):resid
+set fracerr = (err == 0 || err > 2*model)?(0):err/model
+set linwav = 3750, 9222, 1.0001
+spline wavelength fracerr linwav fracerr1
+#Put on a linear scale.  Yes, I know I'm splining twice...
+spline wavelength resid linwav linres
+fft 1 linres (0*linres) fft_real fft_imag
+set power = fft_real**2 + fft_imag**2
+fft -1 power (0*power) xi_real xi_imag
+set x_axis = 0, (dimen(linwav)-1)
+#set structure = 2*(rms(linres)**2 - xi_real)
+#set xi_real = xi_real/(rms(linres)**2)
+nwindow 1 2 2
+ltype 0
+set temp = xi_real if (x_axis > 10 && x_axis < 1000)
+limits -30 1000 temp
+ltype 1
+if ($plot) {
+erase
+relocate -100 0
+draw 5000 0
+ltype 0
+box
+histogram x_axis xi_real 
+limits 0 1 0 1
+relocate 0.1 0.9
+label \xi(0) - <\epsilon^2> = $(sprintf('%1.5f',xi_real[0])) - $(sprintf('%1.5f',(rms(fracerr1)**2))) \
+= $(sprintf('%1.5f',(xi_real[0] - rms(fracerr1)**2)))
+xlabel Lag (\AA)
+ylabel \xi
+}
+set temp1 = xi_real if (abs(x_axis - 50) < 5)
+set temp2 = xi_real if (abs(x_axis - 100) < 5)
+write +$pplate.xi $fiber $(sprintf('%1.5f',xi_real[0])) $(sprintf('%1.5f',(rms(fracerr1)**2))) \
+$(sprintf('%1.5f',ave(temp1))) $(sprintf('%1.5f',ave(temp2))) $class
+if ($plot) {
+nwindow 1 2 1
+limits wavelength f10
+histogram wavelength f5
+ctype red
+histogram wavelength model
+ctype black
+xlabel Wavelength (\AA)
+ylabel f_\lambda 
+box
+toplabel Plate $pplate, fiber $fiber 
+define comment ?}
+}
+
+define_flags #Read in flag definitions. 
+
+
+#Routine for comparing Schlegel and Chicago classifications and z's.
+
+macro compare 2 {#Argument is plate number, mjd
+
+#Read Schlegel data
+
+  define mjd $2
+  define datadir "$!SPECTRO_DATA/$!(sprintf('%04d',$!1))"
+  define filename "$!datadir/spZbest-$!(sprintf('%04d',$!1))-$!mjd.fits"
+  !test -s $filename
+  if ($exit_status!=0) {
+    echo No IDL file for plate $1
+    return}
+  table 1 "$!filename"
+  read table {CLASS[0-6] SUBCLASS[0-7] Z Z_ERR RCHI2 DOF}
+  set z_idl=Z 
+  set zerr_idl=Z_ERR
+  set class_idl = CLASS0
+  define ll local
+
+  #The class, subclass, and tfiles are strings, one letter each, which
+  #need to be combined into something readable. 
+  do ll = 1, 6 {set class_idl = class_idl + CLASS$!ll}
+
+  set end_of_string =INDEX(class_idl,' ')
+  set class_idl =substr(class_idl,0,end_of_string)
+#Read Chicago data
+
+  rd_spDiag1d "/u/strauss/spectest/diag_dir/spDiag1d-$!mjd-0$!1.par"
+
+  set plate = (do(1,640)*0) + $1
+
+#Let's make sure that every object has a fiber.
+
+  if (dimen(fiberId) < 640) {
+    set fiber_index = 0, 639
+    set z_chicago = -999 + 0*fiber_index
+    set zerr_chicago = -999 + 0*fiber_index
+    set dimen(class_chicago) = 640.s
+    set z_chicago[fiberId-1] = zFinal
+    set zerr_chicago[fiberId-1] = zErrFinal
+    set class_chicago[fiberId-1] = spec_class
+  } else {
+  set zerr_chicago = zErrFinal
+  set class_chicago = spec_class
+  set z_chicago = zFinal}
+  set fiber_index = 1, 640
+
+#Make the Chicago class names on the same system as the IDL names. 
+
+set class_chicago = substr(class_chicago,5,0)
+
+set class_chicago = (class_chicago == 'STAR_LATE')?('STAR'):class_chicago
+
+set class_chicago = (class_chicago == 'HIZ_QSO')?('QSO'):class_chicago
+
+print +compare.dat {plate fiber_index z_chicago class_chicago z_idl class_idl}
+
+set diff = 3e5*abs(z_idl - z_chicago)
+
+set same_class = (class_chicago == class_idl || \
+	         (class_chicago == 'UNKNOWN' && class_idl == 'SKY'))
+
+set nsig = diff/sqrt(zerr_idl**2 + zerr_chicago**2)
+set nsig = (zerr_idl == -999)?(999):nsig
+set discrepancy = (diff > 1500 || (diff > 150 && class_idl != 'QSO')) && (nsig > 1.5)
+set discrepancy = discrepancy  || !same_class
+
+set discrepancy = discrepancy && !(class_idl == 'UNKNOWN' && z_chicago == -999)
+
+foreach vec (plate fiber_index z_chicago class_chicago z_idl class_idl diff) {
+set $vec = $vec if (discrepancy)}
+
+print +trouble  {plate fiber_index z_chicago class_chicago z_idl class_idl diff}
+}
+
+macro compare_all {
+define print_noheader 1
+!rm -i compare.dat trouble
+DATA new_diagfiles
+read {diagname 1.s}
+set mjd = atof(substr(diagname,9,5))
+set p = atof(substr(diagname,15,4))
+do ii = 0, (dimen(p)-1) {
+compare $(p[$ii]) $(mjd[$ii])
+if ($exit_status == 0) {echo Comparing plate $(p[$ii]), mjd $(mjd[$ii]), $(dimen(plate)) discrepant objects}}}
+
+macro eqw 18 {#Measures equivalent width of line
+	     #eqw <plate> <fiber> <wavelength>, or
+	     #eqw <plate> <fiber> <l1> <l2> <l3> <l4> <l5> <l6>
+	     #The first invocation goes into interactive mode:
+	     #Routine plots up (smoothed) spectrum of 200\AA
+	     #(parameter: $coverage) centered
+	     #on line requested, brings up cursor.  You mark 4
+	     #positions at which to specify the continuum.  A
+	     #2nd order continuum is fit.  You then mark two positions
+	     #marking the edges of the line.
+	     #The second invocation is non-interactive: the six wavelengths
+	     #are the four continuum points, and two edges of the
+	     #line. 
+	     #If you have spectra that are other than SDSS, 
+	     #read them in, defining arrays wavelength, flux, and err.
+	     #Then set <plate> and <fiber> to zero above.
+	     #Equivalent width and error are returned to file and
+	     #to screen.  Two errors are reported separately; that
+	     #due to pixel-to-pixel variations, and that due to 
+	     #continuum fit uncertainties. 
+if (!$?coverage) {
+   define coverage 200}
+
+define interactive 0
+if (!$?4) {define interactive 1}
+if ($1 == 0) {
+smooth flux f5 5
+} else {
+plotone $1 $2
+if (!$file_exists) {return}}
+window 1 1 1 1
+erase
+if ($interactive) {
+foreach vec (flux f5 err wavelength) {
+	set $vec = $vec if (abs(wavelength-$3)<$coverage/2)}
+} else {
+foreach vec (flux f5 err wavelength) {
+	set $vec = $vec if (wavelength > $3-30 && wavelength < $6+30)}
+}
+set temp = f5 concat 0
+limits wavelength temp
+box
+histogram wavelength f5
+ctype red
+histogram wavelength err
+ctype default
+if ($interactive) {
+echo Mark four cursor positions with 'm'; exit with 'q'
+cursor xpoint ypoint
+if (dimen(xpoint) < 4) {
+  echo Not enough continuum points marked
+  delete xpoint
+  delete ypoint
+  return 
+  }
+define x1 (xpoint[dimen(xpoint)-4])
+define x2 (xpoint[dimen(xpoint)-3])
+define x3 (xpoint[dimen(xpoint)-2])
+define x4 (xpoint[dimen(xpoint)-1])
+} else {  #If not interactive
+define x1 $3
+define x2 $4
+define x3 $5
+define x4 $6
+}
+
+set fitrange = ((wavelength>$x1&&wavelength<$x2) || \
+	        (wavelength>$x3&&wavelength<$x4)) && err != 0
+foreach vec (flux err wavelength) {
+	set t$vec = $vec if (fitrange)}
+define offset (0.5*($x4 + $x1))
+set x = twavelength - $offset #to get numbers close to unity
+set one = 0*x + 1
+set x2 = x**2
+set f = tflux
+set vec = {one x x2}
+linfit vec f a var_a
+#We will also need the covariance terms, which we tack onto the end. 
+set var_a = var_a concat (D2*EN_0[1]) concat (D2*EN_0[2]) concat (D2*EN_1[2])
+set fit_continuum = a[0] + a[1]*(wavelength-$offset) + a[2]*(wavelength-$offset)**2
+ctype blue
+connect wavelength fit_continuum
+set flux_diff = fit_continuum - flux 
+
+set wavelength_index = 0, (dimen(wavelength)-2)
+set wavelength_index = 0 concat wavelength_index 
+set wavelength_shift = wavelength[wavelength_index]
+set wavelength_interval = wavelength - wavelength_shift
+set flux_diff = flux_diff*wavelength_interval
+
+if ($interactive) {
+echo Mark edges of absorption line
+delete xpoint
+delete ypoint
+while {dimen(xpoint) < 2} {
+cursor xpoint ypoint
+}
+define x1 (xpoint[dimen(xpoint)-2])
+define x2 (xpoint[dimen(xpoint)-1])
+} else {
+define x1 $7
+define x2 $8}
+
+#Shade the region of the line.
+foreach vec (wavelength fit_continuum f5) {
+	set t$vec = $vec if (wavelength > $x1 && wavelength < $x2)}
+ctype magenta
+histshed twavelength tfit_continuum twavelength tf5 100
+ctype default
+#We need the error in the subtracted continuum, as integrated over the line.
+
+define x1p ($x1-$offset)
+define x2p ($x2-$offset)
+define diff1 ($x2p-$x1p)
+define diff2 ($x2p**2 - $x1p**2)
+define diff3 ($x2p**3 - $x1p**3)
+define cont_err (var_a[0]*$diff1**2 + var_a[1]*$diff2**2/4. + var_a[2]*$diff3**2/9. + \
+		 var_a[3]*$diff1*$diff2 + 2*var_a[4]*$diff1*$diff3/3. + \
+		 var_a[5]*$diff2*$diff3/3.)
+define cont_err (sqrt($cont_err))
+
+set inline = flux_diff if (wavelength > $x1 && wavelength < $x2)
+set inline_err = err*wavelength_interval if  (wavelength > $x1 && wavelength < $x2)
+
+define lineflux (sum(inline))
+define lineflux_err (sqrt(sum(inline_err**2)))
+
+define line_continuum (a[0] + a[1]*($3-$offset) + a[2]*($3-$offset)**2)
+define eqw ($lineflux/$line_continuum)
+define eqw_err ($lineflux_err/$line_continuum) #Ignores continuum error
+define cont_err ($cont_err/$line_continuum) #Estimate of continuum error on equivalent width
+echo Line flux is $(sprintf('%4.2f',$lineflux)) with a continuum of $(sprintf('%4.2f',$line_continuum))
+echo Equivalent width is $(sprintf('%4.2f',$eqw)) +/- $(sprintf('%4.2f',$eqw_err)) +/- $(sprintf('%4.2f',$cont_err)) A. 
+toplabel Plate $1, Fiber $2, \
+EW=$(sprintf('%4.2f',$eqw)) +/- $(sprintf('%4.2f',$eqw_err)) +/- $(sprintf('%4.2f',$cont_err)) A.
+
+if ($interactive) {
+ write +eqw_data $1 $2 $3  $(sprintf('%4.2f',$eqw)) $(sprintf('%4.2f',$eqw_err)) $(sprintf('%4.2f',$cont_err))
+delete xpoint
+delete ypoint
+} else {
+ write +eqw_data $1 $2 $(sprintf('%d',$(int(($7+$8)/2.)))) \
+ $(sprintf('%4.2f',$eqw)) $(sprintf('%4.2f',$eqw_err)) $(sprintf('%4.2f',$cont_err))
+}
+}

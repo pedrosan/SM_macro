@@ -1,0 +1,427 @@
+# tau_lin_linwfit
+tau_lin_linwfit
+
+	# define end " "
+	if($?suffix) { define end $suffix }
+	define end ? { Suffix of vectors ? }
+	define 1 $end
+
+	define t1 ? { Start Time : }
+	define t2 ? { End Time : }
+	define x0 (25e3)
+	define x0 ? { Reference Time : }
+
+	set aux_$1_x = newt_$1     if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+	set aux_$1_x = aux_$1_x - $x0
+	set aux_$1_y = rate_$1     if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+	set aux_$1_w = err_rate_$1 if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+	set aux_$1_w = 1/aux_$1_w/aux_$1_w
+
+	set xdum=$(aux_$1_x[0]),$(aux_$1_x[$(dimen(aux_$1_x)-1)]),2000
+
+	wlsq aux_$1_x aux_$1_y aux_$1_w xdum ydum rms
+
+	set t = newt_$1-$x0  if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+	set f = rate_$1      if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+	set e = err_rate_$1  if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+
+	set ff  = ($a*t + $b)
+	set chi = ((f - ff)/e)**2
+
+	print '      %6g  %.4f  %.4f  %.4f  %.4f \n' {aux_$!!1_x f e ff chi}
+	define CHI2 ( SUM(chi) )
+
+	define tau (-1/$a)
+	define sig_tau (abs($tau*$sig_a/$a))
+	echo -------------------------------
+	echo * tau = $tau +/- $sig_tau [sec]
+	echo -------------------------------
+	echo  a = $a +/- $sig_a
+	echo  b = $b +/- $sig_b
+	echo  rms   = $rms
+	echo  Chi^2 = $CHI2 /$($(dimen(aux_$1_x))-2) ($($CHI2/($(dimen(aux_$1_x))-2)))
+	echo -------------------------------
+
+	set xdum = xdum + $x0
+
+#---------------------------------------------------------------------------
+# tau_log_linfit
+tau_log_linfit
+
+	define end " "
+	if($?suffix) { define end $suffix }
+	define end ? { Suffix of vectors : }
+	define 1 $end
+
+	define x0 (25e3)
+	set aux_$1_x = newt_$1    if(newt_$1 > 2.5e4 && newt_$1 < 7.e4 && rate_$1 > 0 )
+	set aux_$1_x = aux_$1_x - $x0
+
+	set aux_$1_y = rate_$1    if(newt_$1 > 2.5e4 && newt_$1 < 7.e4 && rate_$1 > 0 )
+	set aux_$1_y = lg(aux_$1_y)
+
+        set v0 = 0*aux_$1_x + 1
+	set v1 = aux_$1_x 
+	set vv = { v0 v1 }
+
+	linfit vv aux_$1_y cx var_cx
+        set yy = v0*$(cx[0]) + v1*$(cx[1])
+
+	echo -------------------------------
+	echo * tau = $(-0.424/cx[1]) [sec]
+	echo -------------------------------
+
+	set xdum=$(aux_$1_x[0]),$(aux_$1_x[$(dimen(aux_$1_x)-1)]),2000
+	set ydum=$(cx[0]) + $(cx[1])*xdum
+
+	set xdum = xdum + $x0
+
+#---------------------------------------------------------------------------
+# tau_log_linwfit
+tau_log_linwfit
+
+	# define end " "
+	if($?suffix) { define end $suffix }
+	define end ? { Suffix of vectors ? }
+	define 1 $end
+
+	define t1 ?    { Start Time : }
+	define t2 ?    { End Time : }
+	define x0 (25e3)
+	define xs (10e3)
+	define x0 ?    { Reference Time : }
+	define xs ?    { Scale Time to rescale X values : }
+	define fbase ? { Flux Baseline Value : }
+
+	set aux_$1_x = newt_$1                 if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+	set aux_$1_x = (aux_$1_x - $x0)/$xs
+	set aux_$1_y = rate_$1                 if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+	set aux_$1_w = err_rate_$1             if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+
+	define logorlin ? { Use LOG or LIN errorbar for weight [1/2] or NO-weighting [0] ?} 
+	if($logorlin == 0) { 
+	    set aux_$1_w = 1.
+	}
+	if($logorlin == 1) { 
+	    set aux_$1_w = (lg(aux_$1_y+aux_$1_w) - lg(aux_$1_y-aux_$1_w))/2.
+	    set aux_$1_w = 1./aux_$1_w
+	}
+	if($logorlin == 2) { 
+	    set aux_$1_w = 1./aux_$1_w
+	}
+	set aux_$1_w = aux_$1_w*aux_$1_w
+
+	if($fbase != 0) { 
+	   set aux_$1_y = aux_$1_y - $fbase
+	}
+	set aux_$1_y = lg(aux_$1_y)
+
+	set xdum = $(aux_$1_x[0]),$(aux_$1_x[$(dimen(aux_$1_x)-1)]+5000/$xs),500/$xs
+
+	wlsq aux_$1_x aux_$1_y aux_$1_w xdum ydum rms
+	print {xdum ydum}
+
+	set tt= newt_$1              if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+	set t = (newt_$1 - $x0)/$xs  if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+	set f = rate_$1              if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+	set e = err_rate_$1          if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+
+	if($fbase != 0) {
+	   set f = f - $fbase
+	}
+
+	set ff     = 10**($a*t + $b)
+	set chi    = ((f - 10**($a*t + $b) )/e)**2
+	set chisig = sqrt(chi)
+
+	print '  %6g %6g %.4f  %.4f  %.4f  %8.4f  %4.1f\n' {tt t f e ff chi chisig}
+
+	define CHI2 ( SUM(((f - 10**($a*t + $b))/e)**2) )
+
+	define tau ((-0.424/$a)*$xs)
+	define sig_tau (abs($tau*$sig_a/$a))
+	echo -------------------------------
+	echo * tau = $tau +/- $sig_tau [sec]
+	echo -------------------------------
+	echo  a = $a +/- $sig_a
+	echo  b = $b +/- $sig_b
+	echo  rms   = $rms
+	echo  Chi^2 = $CHI2 /$($(dimen(aux_$1_x))-2) ($($CHI2/($(dimen(aux_$1_x))-2)))
+	echo -------------------------------
+
+	set xdum = xdum*$xs + $x0
+	if($fbase != 0) {
+	   set ydum = lg(10**ydum + $fbase)
+	}
+
+	define drawornot ? { Draw "fit"  [y/n] }
+
+	if(substr('$drawornot',0,1) == 'y') { 
+	    ctype 7 
+	    lweight 3
+	    ltype 0
+	    connect xdum ydum
+	    ltype 2
+	    relocate $t1 $(lg($fbase))
+	    draw     $t2 $(lg($fbase))
+	    lweight 2
+	    ctype 2 
+	    ltype 0 
+	}
+
+
+#---------------------------------------------------------------------------
+# tau_fit 	execute tau_log_linwfit
+tau_fit
+
+	tau_log_linwfit
+
+#---------------------------------------------------------------------------
+# tau_steppar
+tau_steppar
+
+	tau_log_linwfit 
+	# tau_lin_linwfit 
+
+	set xdum2 = xdum 
+	set xdum  = (xdum - $x0)/$xs
+
+	define nsig ? { How many sigma interval for steppar ? }
+	define tau1  ($tau - $nsig*$sig_tau)
+	define tau2  ($tau + $nsig*$sig_tau)
+	define b1    ($b - $nsig*$sig_b)
+	define b2    ($b + $nsig*$sig_b)
+
+	define tau1 ?     { Minimum value for tau : }
+	define tau2 ?     { Maximum value for tau : }
+	define taunstep ? { How many steps on tau (<15)}
+	define b1 ?       { Minimum value for b : }
+	define b2 ?       { Maximum value for b : }
+	define bnstep ?   { How many steps on b (<15)}
+
+	set tauvec = $tau1,$tau2,($tau2-$tau1)/$taunstep
+	set bvec   = $b1,$b2,($b2-$b1)/$bnstep
+        image ($(dimen(tauvec)),$(dimen(bvec))) $tau1 $tau2 $b1 $b2
+
+	define drawornot ? { Draw each single "fit"  [y/n] }
+
+	do i=0,$taunstep {
+	   set dimen(mchi_$i) = $($bnstep+1)
+	   do j=0,$bnstep {
+	      set ff  = 10**(-0.424*$xs*t/tauvec[$i] + bvec[$j]) 
+	      if(substr('$drawornot',0,1) == 'y') { 
+		 set ydum2 = 10**(-0.424*$xs*xdum/tauvec[$i] + bvec[$j]) + $fbase
+		 set ydum2 = lg(ydum2)
+		 connect xdum2 ydum2
+	      }
+	      set chi = ((f - ff)/e)**2
+	      define chi2 (sum(chi))
+	      set mchi_$i[$j]  = $chi2
+	      set image[$i,$j] = $chi2
+	   }
+	}
+
+	define 2 $(dimen(tauvec))   # which is == $taunstep+1
+	# define 3 < mchi_0>
+	# define 4 < %7.2f>
+	define v < mchi_0>
+	define f < %7.2f>
+
+	define checkprint ? { Print [y/n] ? }
+	if(substr('$checkprint',0,1) == 'y') { 
+	   if( $2 > 1 ) {
+	      do i=1,$($2-1) {
+		 ## define 3 <$3 mchi_$5>
+		 ## define 4 <$4 %7.2f>
+		 # echo dollaro_5 = $i
+		 # echo mchi_$i
+	         define v <$v mchi_$i>
+	         define f <$f %7.2f>
+	         # echo vecs: $v
+	         # echo form: $f
+		 # echo ---------------------------------------------------------------------------
+	      }
+   	   }
+	}
+	if(substr('$checkprint',0,1) == 'y') { 
+	    print '$f\n' { $!!v }
+	    ## print '$4\n' { $!!3 }
+	}
+
+        # plot_grey
+
+
+#---------------------------------------------------------------------------
+# plot_grey [<shade-colour>] [<contours-colour>]
+plot_grey  02
+
+        location 6500 31000 6500 31000
+
+        set gldum1 = {2.3 4.61 6.17 9.21}
+        set gldum2 = {0.001 0.005 0.01 0.1 0.25 0.5 0.9 0.95 0.99 }
+
+        echo * The pre-defined levels are at :
+        print '    %5.3f    %5.3f  \n ' { gldum1 gldum2 }
+
+        echo * Which set of levels do you prefer ? [0/1/2]
+        define change ? { Type '0' if you wish to change them ? [y/n] }
+        if($change == 0) {
+           define str_gl ? { New level vector  : }
+           set gldum = < $!str_gl >
+        } else { 
+           set gldum = gldum$change
+        }
+
+        set gl = $CHI2 + gldum
+
+        glevels gl
+        levels gl
+
+        ctype 2
+
+        define whatbox ? {Do you want to use the "boxing" limits ? [y/n] }
+
+        if(substr('$whatbox',0,1) == 'y') { 
+            # limits $a1 $a2 $b1 $b2 
+            limits $tau1 $tau2 $b1 $b2 
+            ticksize 0 0 0 0
+            expand 1.5
+            box 
+            define labelon ? {Do you want to put labels ? [y/n] }
+            if(substr('$labelon',0,1) == 'y') { 
+               define lab_x ? { X-label ? }
+               define lab_y ? { Y-label ? }
+               expand 2.5
+               xlabel $lab_x
+               ylabel $lab_y
+               expand 1.5
+            }
+        }
+
+        if(substr('$whatbox',0,1) == 'n') { 
+            define yourlim ? { Give me your limits x1 x2 y1 y2 in a row :}
+            limits $yourlim
+            ticksize 0 0 0 0
+            expand 1.5
+            box 
+            define labelon ? {Do you want to put labels ? [y/n] }
+            if(substr('$labelon',0,1) == 'y') { 
+               define lab_x ? { X-label ? }
+               define lab_y ? { Y-label ? }
+               expand 2.5
+               xlabel $lab_x
+               ylabel $lab_y
+               expand 1.5
+            }
+        }
+
+        if($?1) { 
+        if($1 != 0) { 
+           ctype $1 
+           greyscale 200 200 12
+        }
+        }
+        if($?2) { ctype $2 }
+        contour
+
+	# do k=0,$(dimen(avec)-1) {
+	#    set dum= 0*bvec + avec[$k]
+	do k=0,$(dimen(tauvec)-1) {
+	   set dum= 0*bvec + tauvec[$k]
+	   ctype 4
+	   ptype 4 1 
+	   angle 45
+	   points dum bvec
+	   angle 0
+	}
+	ctype 2
+	box
+
+	relocate $a $b
+	relocate $tau $b
+	ptype 4 1 
+	ctype 3 
+	angle 45
+	lweight 5
+	expand 3.5
+	dot
+	expand 1.5
+	lweight 2
+	angle 0
+	ctype 2 
+
+	ltype 2
+	relocate $($tau-$sig_tau) -10 
+	draw     $($tau-$sig_tau)  10
+	relocate $($tau+$sig_tau) -10 
+	draw     $($tau+$sig_tau)  10
+
+	relocate 0    $($b-$sig_b)
+	draw     1e6  $($b-$sig_b)
+	relocate 0    $($b+$sig_b)
+	draw     1e6  $($b+$sig_b)
+	ltype 0
+
+#---------------------------------------------------------------------------
+# tau_loglog_fit
+tau_loglog_fit
+
+	define end " "
+	define end ? { Suffix of vectors ? }
+	define 1 $end
+
+	define x0 (lg(3.e4))
+	set aux_$1_x = newt_$1    if(newt_$1 > 2.5e4 && newt_$1 < 7.e4 && rate_$1 > 0 )
+	set aux_$1_x = lg(aux_$1_x) - $x0
+
+	set aux_$1_y = rate_$1    if(newt_$1 > 2.5e4 && newt_$1 < 7.e4 && rate_$1 > 0 )
+	set aux_$1_y = lg(aux_$1_y)
+
+        set v0 = 0*aux_$1_x + 1
+	set v1 = aux_$1_x 
+	set vv = { v0 v1 }
+
+	linfit vv aux_$1_y cx var_cx
+        set yy = v0*$(cx[0]) + v1*$(cx[1])
+
+	echo -------------------------------
+	echo * alpha = $(cx[1]) 
+	echo -------------------------------
+
+	set xdum=$(aux_$1_x[0]),$(aux_$1_x[$(dimen(aux_$1_x)-1)]),0.02
+	set ydum=$(cx[0]) + $(cx[1])*xdum
+
+	set xdum = xdum + $x0
+
+#---------------------------------------------------------------------------
+# tau_realfit : do a weighted least squares fit to a set of vectors
+#               syntax: lsq x y w [ x2 y2 [rms]] Fit line y2=$a*x2+$b to x y
+#               with weights w.
+#               Optionally, calculate rms residual as $rms, in which case
+#               $sig_a, $sig_b, and $CHI2 are also calculated.
+#               see rxy to find product moment correlation coeff,
+#               and spear for Spearman's corr. coeff., and significance
+
+    set _s   = sum($3)      # sum of weights
+    set _sx  = sum($1*$3)   # weighted sum x
+    set _sy  = sum($2*$3)   # weighted sum y
+    set _x   = _sx / _s      set _y = _sy / _s
+    set _sxy = sum($3*($1-_x)*($2-_y)) # weighted sum xy
+    set _sxx = sum($3*($1-_x)**2) # weighted sum xx
+    define a ( _sxy /_sxx )
+    define b ( _y - $a * _x )
+    if($?4 && $?5) { set $5=$a*$4+$b }
+    if($?6) {
+       define chi2 ( sum($3*($2-$a*$1-$b)**2) )
+       define $6 ( sqrt($chi2/_s) )
+       if(dimen($1) > 2) { 
+          define sig_a ( sqrt($chi2/((dimen($1)-2)*_sxx)) )
+          define sig_b ( $sig_a*sqrt(_sxx/_s+_x*_x) )
+       } else { 
+          define sig_a 0
+          define sig_b 0
+       }
+    }
+    foreach v ( _s _sx _sy _sxy _sxx _x _y ) { delete $v }
+    
+#---------------------------------------------------------------------------

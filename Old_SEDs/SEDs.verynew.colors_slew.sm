@@ -1,0 +1,1712 @@
+#---------------------------------------------------------------------------
+# aiuto.colors
+aiuto.colors 
+
+  echo     -------------------------------------------------
+  echo     *  g_histo_z_all      [<color>]
+  echo     *  g_histo_flux_all   [<color>]
+  echo     *  g_histo_lum_all    [<color>]
+  echo     *  g_histo_nlum_all   [<color>]
+  echo     *  g_histo_12_all     [<color>]
+  echo     *  g_histo_12_ax_all  [<color>]
+  echo     *  g_histo_lum_sel    [<color>]
+  echo     -------------------------------------------------
+  echo     *  a12_lum
+  echo     *  a12_z
+  echo     *  a12_a34
+  echo     *  a12_ax
+  echo     *  a12_a34_ax
+  echo     -------------------------------------------------
+  echo     *  ro_ox
+  echo     *  ro_lum
+  echo     *  f1_f2
+  echo     *  l1_l2
+  echo     -------------------------------------------------
+
+##--------------------------------------------------------------------------
+## plot_histo_block 2 <howmany-samples> <color>
+plot_histo_block 2
+
+  echo * Howmany is : $1
+  define howmany $1
+  define color   $2
+
+  echo ...BLOCK has been called...
+
+  vecminmax  h_any_wp   dum_wp   max1
+  vecminmax  h_any_1jy  dum_1jy  max2
+  vecminmax  h_any_slew dum_slew max3
+  if($1 == 4) { vecminmax h_any_tot dum_tot max4 } ## else { define max4 $max3 }
+    
+  ## set dimen(maxs)= 4
+  set dimen(maxs)= 3
+  set maxs[0] = $max1 + 1
+  set maxs[1] = $max2 + 1
+  set maxs[2] = $max3 + 1
+  vecminmax maxs dum1 max_all
+ 
+  do 2=1,$howmany {
+     if($2 <= 3) { 
+       limits $xmin $xmax 0.01 $($max_all*1.1) 
+       if($max_all <  6){ ticksize $step $xtickbig 1 1 } 
+       if($max_all >  6){ ticksize $step $xtickbig 1 2 } 
+       if($max_all > 11){ ticksize $step $xtickbig 1 3 } 
+       if($max_all > 15){ ticksize $step $xtickbig 1 4 } 
+       if($max_all > 19){ ticksize $step $xtickbig 1 5 } 
+       if($max_all > 29){ ticksize $step $xtickbig 2 10 } 
+     }
+     if($2 == 4) { 
+       limits $xmin $xmax 0.01 $($max4*1.1)
+       if($max4 <  6){ ticksize $step $xtickbig 1 1 } 
+       if($max4 >  6){ ticksize $step $xtickbig 1 2 } 
+       if($max4 > 11){ ticksize $step $xtickbig 1 3 } 
+       if($max4 > 15){ ticksize $step $xtickbig 1 4 } 
+       if($max4 > 19){ ticksize $step $xtickbig 1 5 } 
+       if($max4 > 29){ ticksize $step $xtickbig 2 10 } 
+     }
+
+     if($2 == 1) { define 3 "wp" }
+     if($2 == 2) { define 3 "1jy" }
+     if($2 == 3) { define 3 "slew" }
+     if($2 == 4) { define 3 "tot" }
+     if($2 == 1) { define inlabel "FSRQ" }
+     if($2 == 2) { define inlabel "1 Jy" }
+     if($2 == 3) { define inlabel "Slew" }
+     if($2 == 4) { define inlabel "Total" }
+
+     window 1 -$howmany 1 $($howmany-$2+1)
+
+     expand 1.5
+     ctype 2
+     if($2 == $howmany) {
+        box 1 2 0 0
+        expand 2.0
+        xlabel $lab_x
+     } else {
+        box 0 2 0 0
+     }
+     expand 1.5
+
+     ltype 0
+     lweight 3
+     histogram xx h_any_$3
+     lweight 2
+     angle 40
+      # shade histogram 450 xx h_any_$3
+     angle 0
+
+     lweight 3
+     ctype $color
+      histogram xx h_g_$3
+      lweight 2
+      ltype 1
+      ltype 0
+       angle 150
+        shade histogram 75  xx h_g_$3
+       angle 0
+      ltype 0
+     ctype 2
+     lweight 3
+     histogram xx h_any_$3
+     lweight 2
+
+     relocate ( $($gx2-1000) $($gy2-1500) )
+     putlabel 4 $inlabel
+  }
+
+
+#---------------------------------------------------------------------------
+# g_histo_z_all   01  [<color>]
+g_histo_z_all     01
+   
+  location 5500 29000 4500 31500	
+  relocate (5500 32100)
+  if ($?1) { define color $1 } else { define color (2) }
+  ctype $color
+  putlabel 6 distinction according to \gamma-ray detection
+
+  define step ? {Give me the STEP for the REDSHIFT histogram...}
+
+  set xx = -2.0+$step/2.,6.0+$step/2.,$step
+
+  define xmin -0.1
+  define xmax  3.1
+  define lab_x <z>
+  define xtickbig 1
+
+  read_wp
+  set z_g = z     if(flagg > 1.5)
+  set h_any_wp = histogram(z:xx)
+  set h_g_wp   = histogram(z_g:xx)
+  read_1jy
+  set z_g = z     if(flagg > 1.5)
+  set h_any_1jy = histogram(z:xx)
+  set h_g_1jy   = histogram(z_g:xx)
+  read_slew
+  set z_g = z     if(flagg > 1.5)
+  set h_any_slew = histogram(z:xx)
+  set h_g_slew   = histogram(z_g:xx)
+
+  define howmany (3)
+
+  if(is_vector(tot_name) == 1 ) {
+     define go_fourth ? { Plot also total sample ? }
+     if(substr('$go_fourth',0,1) == 'y' ) {
+        set z_g = tot_z if(tot_flagg > 1.5)
+        set h_any_tot = histogram(tot_z:xx)
+        set h_g_tot   = histogram(z_g:xx)
+	define howmany (4)
+     }	
+  }
+
+  plot_histo_block $howmany $color
+
+##--------------------------------------------------------------------------
+# g_histo_flux_all 01  [<color>]
+g_histo_flux_all   01
+  
+  location 5500 29000 4500 31500	
+  relocate (5500 32100)
+  if ($?1) { define color $1 } else { define color (2) }
+  ctype $color
+  putlabel 6 distinction according to \gamma-ray detection
+
+  define band  ? {Select the band [radio/opt/x] }
+  define step  ? {Give me the STEP for the Flux histogram...}
+
+  if( '$band' == 'radio') {
+	define xmin -26.1 
+	define xmax -20.9
+	define lab_x <F_{\rm 5GHz}>
+  }
+  if( '$band' == 'opt'  ) {
+	define xmin -27.6
+	define xmax -23.9
+	define lab_x <F_{\rm 5500 \AA}>
+  }
+  if( '$band' == 'x'    ) {
+	define xmin -31.1
+	define xmax -25.9
+	define lab_x <F_{\rm 1keV}>
+  }
+  define xtickbig 1
+
+  set xx = -33.0+$step/2.,-18.0+$step/2.,$step
+
+  define 2 $band
+
+  read_wp
+  set lg_kf_$2_g = lg_kf_$2     if(flagg > 1.5)
+  set h_any_wp   = histogram(lg_kf_$2:xx)
+  set h_g_wp     = histogram(lg_kf_$2_g:xx)
+  read_1jy
+  set lg_kf_$2_g = lg_kf_$2     if(flagg > 1.5)
+  set h_any_1jy  = histogram(lg_kf_$2:xx)
+  set h_g_1jy    = histogram(lg_kf_$2_g:xx)
+  read_slew
+  set lg_kf_$2_g = lg_kf_$2     if(flagg > 1.5)
+  set h_any_slew = histogram(lg_kf_$2:xx)
+  set h_g_slew   = histogram(lg_kf_$2_g:xx)
+
+  define howmany (3)
+
+  if(is_vector(tot_name) == 1 ) {
+     define go_fourth ? { Plot also total sample ? }
+     if(substr('$go_fourth',0,1) == 'y' ) {
+        set lg_kf_$2_g = tot_lg_kf_$2 if(tot_flagg > 1.5)
+        set h_any_tot  = histogram(tot_lg_kf_$2:xx)
+        set h_g_tot    = histogram(lg_kf_$2_g:xx)
+	define howmany (4)
+     }	
+  }
+
+  plot_histo_block $howmany $color
+
+
+##--------------------------------------------------------------------------
+# g_histo_lum_all 01  [<color>]
+g_histo_lum_all   01
+  
+  location 5500 29000 4500 31500	
+  relocate (5500 32100)
+  if ($?1) { define color $1 } else { define color (2) }
+  ctype $color
+  putlabel 6 distinction according to \gamma-ray detection
+
+  define band  ? {Select the band [radio/mm/opt/x] }
+  define step  ? {Give me the STEP for the LUMINOSITY histogram...}
+
+  if( '$band' == 'radio') {
+	define xmin 29.5 
+	define xmax 37.5 
+	define lab_x <L_{\rm 5GHz}>
+  }
+  if( '$band' == 'mm'   ) {
+	define xmin 29.0 
+	define xmax 37.5 
+	define lab_x <L_{\rm 230GHz}>
+  }
+  if( '$band' == 'opt'  ) {
+	define xmin 28.5 
+	define xmax 34.1 
+	define lab_x <L_{\rm 5500 \AA}>
+  }
+  if( '$band' == 'x'    ) {
+	define xmin 24.5 
+	define xmax 31.1 
+	define lab_x <L_{\rm 1keV}>
+  }
+  define xtickbig 1
+
+  set xx = 22.0+$step/2.,43.0+$step/2.,$step
+
+  define 2 $band
+
+  read_wp
+  set l_$2_g = l_$2     if(flagg > 1.5)
+  set h_any_wp = histogram(l_$2:xx)
+  set h_g_wp   = histogram(l_$2_g:xx)
+  read_1jy
+  set l_$2_g = l_$2     if(flagg > 1.5)
+  set h_any_1jy = histogram(l_$2:xx)
+  set h_g_1jy   = histogram(l_$2_g:xx)
+  read_slew
+  set l_$2_g = l_$2     if(flagg > 1.5)
+  set h_any_slew = histogram(l_$2:xx)
+  set h_g_slew   = histogram(l_$2_g:xx)
+
+  define howmany (3)
+
+  if(is_vector(tot_name) == 1 ) {
+     define go_fourth ? { Plot also total sample ? }
+     if(substr('$go_fourth',0,1) == 'y' ) {
+        set l_$2_g = tot_l_$2 if(tot_flagg > 1.5)
+        set h_any_tot = histogram(tot_l_$2:xx)
+        set h_g_tot   = histogram(l_$2_g:xx)
+	define howmany (4)
+     }	
+  }
+
+  plot_histo_block $howmany $color
+
+
+##--------------------------------------------------------------------------
+# g_histo_nlum_all 01  [<color>]
+g_histo_nlum_all   01
+  
+  location 5500 29000 4500 31500	
+  relocate (5500 32100)
+  if ($?1) { define color $1 } else { define color (2) }
+  ctype $color
+  putlabel 6 distinction according to \gamma-ray detection
+
+  define band  ? {Select the band [radio/mm/opt/x] }
+  define step  ? {Give me the STEP for the LUMINOSITY histogram...}
+
+  if( '$band' == 'radio') {
+	define xmin 39.2
+	define xmax 47.2 
+	define lab_x {log(\\nu L_{\\nu})|_{\rm 5GHz} [erg/sec]}
+  }
+  if( '$band' == 'mm'   ) {
+	define xmin 40.6 
+	define xmax 48.9 
+	define lab_x <log(L_{\rm 230GHz})>
+  }
+  if( '$band' == 'opt'  ) {
+	define xmin 43.2 
+	define xmax 48.8 
+	define lab_x <L_{\rm 5500 \AA}>
+  }
+  if( '$band' == 'x'    ) {
+	define xmin 41.9 
+	define xmax 48.4 
+	define lab_x {log(\\nu L_{\\nu})|_{\rm 1keV} [erg/sec]}
+  }
+  define xtickbig 1
+
+  set xx = 31.0+$step/2.,51.0+$step/2.,$step
+
+  define 2 $band
+
+  read_wp
+  set nl_$2_g = nl_$2     if(flagg > 1.5)
+  set h_any_wp = histogram(nl_$2:xx)
+  set h_g_wp   = histogram(nl_$2_g:xx)
+  read_1jy
+  set nl_$2_g = nl_$2     if(flagg > 1.5)
+  set h_any_1jy = histogram(nl_$2:xx)
+  set h_g_1jy   = histogram(nl_$2_g:xx)
+  read_slew
+  set nl_$2_g = nl_$2     if(flagg > 1.5)
+  set h_any_slew = histogram(nl_$2:xx)
+  set h_g_slew   = histogram(nl_$2_g:xx)
+
+  define howmany (3)
+
+  if(is_vector(tot_name) == 1 ) {
+     define go_fourth ? { Plot also total sample ? }
+     if(substr('$go_fourth',0,1) == 'y' ) {
+        set nl_$2_g = tot_nl_$2 if(tot_flagg > 1.5)
+        set h_any_tot = histogram(tot_nl_$2:xx)
+        set h_g_tot   = histogram(nl_$2_g:xx)
+	define howmany (4)
+     }	
+  }
+
+  plot_histo_block $howmany $color
+
+
+##--------------------------------------------------------------------------
+# g_histo_12_all  01  [<color>]
+g_histo_12_all    01 
+  
+  location 5500 29000 5000 31500	
+  relocate (5500 32100)
+  if ($?1) { define color $1 } else { define color (2) }
+  ctype $color
+  putlabel 6 distinction according to \gamma-ray detection
+
+  define band1 ? {Select the first band [radio/mm/opt/x] }
+  define band2 ? {Select the second band [radio/mm/opt/x] }
+  define step  ? {Give me the STEP for the COLOR histogram...}
+
+  define 1 $band1
+  define 2 $band2
+
+  if('$band1' == 'radio' && '$band2' == 'x')   {
+     define xmin 0.3
+     define xmax 1.15
+     define lab_x <\alpha_{RX}>
+  }
+  if('$band1' == 'radio' && '$band2' == 'opt') {
+     define xmin 0.1 
+     define xmax 1.15
+     define lab_x <\alpha_{RO}>
+  }
+  if('$band1' == 'mm'    && '$band2' == 'opt') {
+     define xmin 0.09
+     define xmax 1.35
+     define lab_x <\alpha_{mmO}>
+  }
+  if('$band1' == 'mm'    && '$band2' == 'x'  ) {
+     define xmin 0.32
+     define xmax 1.35
+     define lab_x <\alpha_{mmX}>
+  }
+  if('$band1' == 'opt'   && '$band2' == 'x'  ) {
+     define xmin 0.45
+     define xmax 1.75
+     define lab_x <\alpha_{OX}>
+  }
+  define xtickbig 0.2
+
+  if( '$band1' == 'radio') { define nu1     9.698 }
+  if( '$band1' == 'mm'   ) { define nu1    11.361 }
+  if( '$band1' == 'opt'  ) { define nu1    14.736 }
+  if( '$band1' == 'x'    ) { define nu1    17.383 }
+  if( '$band2' == 'radio') { define nu2     9.698 }
+  if( '$band2' == 'mm'   ) { define nu2    11.361 }
+  if( '$band2' == 'opt'  ) { define nu2    14.736 }
+  if( '$band2' == 'x'    ) { define nu2    17.383 }
+
+  set xx = -8.0+$step/2.,8.0+$step/2.,$step
+
+  read_wp
+  set a12_wp   = (lg_kf_$1 - lg_kf_$2)/($nu2 - $nu1)
+  set a12_g_wp = a12_wp if(flagg > 1.5)
+  set h_any_wp = histogram(a12_wp:xx)
+  set h_g_wp   = histogram(a12_g_wp:xx)
+
+  read_1jy
+  set a12_1jy   = (lg_kf_$1 - lg_kf_$2)/($nu2 - $nu1)
+  set a12_g_1jy = a12_1jy if(flagg > 1.5)
+  set h_any_1jy = histogram(a12_1jy:xx)
+  set h_g_1jy   = histogram(a12_g_1jy:xx)
+
+  read_slew
+  set a12_slew   = (lg_kf_$1 - lg_kf_$2)/($nu2 - $nu1)
+  set a12_g_slew = a12_slew if(flagg > 1.5)
+  set h_any_slew = histogram(a12_slew:xx)
+  set h_g_slew   = histogram(a12_g_slew:xx)
+
+  define howmany (3)
+
+  if(is_vector(tot_name) == 1 ) {
+     define go_fourth ? { Plot also total sample ? }
+     if(substr('$go_fourth',0,1) == 'y' ) {
+	set a12_tot   = (tot_lg_kf_$1 - tot_lg_kf_$2)/($nu2 - $nu1)
+	set a12_g_tot = a12_tot if(tot_flagg > 1.5)
+	set h_any_tot = histogram(a12_tot:xx)
+	set h_g_tot   = histogram(a12_g_tot:xx)
+	define howmany (4)
+     }	
+  }
+
+  plot_histo_block $howmany $color
+
+
+##--------------------------------------------------------------------------
+# g_histo_12_ax_all  01  [<color>]
+g_histo_12_ax_all    01 
+  
+  location 5500 29000 5000 31500	
+  relocate (5500 32100)
+  if ($?1) { define color $1 } else { define color (2) }
+  ctype $color
+  putlabel 6 distinction according to \gamma-ray detection
+
+  echo --------------------------------------------------------
+  echo *
+  echo * These two next inputs are for the BB-index 
+  echo *       to be SUBTRACTED to X-ray spectral index
+  echo *
+  define band1 ? {Select the first band [radio/mm/opt/x] }
+  define band2 ? {Select the second band [radio/mm/opt/x] }
+  define step  ? {Give me the STEP for the COLOR histogram...}
+
+  define 1 $band1
+  define 2 $band2
+
+  if('$band1' == 'radio' && '$band2' == 'x')   {
+     define xmin -2.2
+     define xmax  1.55
+     define lab_x <\alpha_{RX}-\alpha_X>
+  }
+  if('$band1' == 'radio' && '$band2' == 'opt') {
+     define xmin -2.5
+     define xmax  1.5
+     define lab_x <\alpha_{RO}-\alpha_X>
+  }
+  if('$band1' == 'mm'    && '$band2' == 'opt') {
+     define xmin -2.5
+     define xmax  1.7
+     define lab_x <\alpha_{mmO}-\alpha_X>
+  }
+  if('$band1' == 'mm'    && '$band2' == 'x'  ) {
+     define xmin -2.2
+     define xmax  1.6
+     define lab_x <\alpha_{mmX}-\alpha_X>
+  }
+  if('$band1' == 'opt'   && '$band2' == 'x'  ) {
+     define xmin -1.75
+     define xmax  1.75
+     define lab_x <\alpha_{OX}-\alpha_X>
+  }
+  define xtickbig 1.0
+
+  if( '$band1' == 'radio') { define nu1     9.698 }
+  if( '$band1' == 'mm'   ) { define nu1    11.361 }
+  if( '$band1' == 'opt'  ) { define nu1    14.736 }
+  if( '$band1' == 'x'    ) { define nu1    17.383 }
+  if( '$band2' == 'radio') { define nu2     9.698 }
+  if( '$band2' == 'mm'   ) { define nu2    11.361 }
+  if( '$band2' == 'opt'  ) { define nu2    14.736 }
+  if( '$band2' == 'x'    ) { define nu2    17.383 }
+
+  set xx = -8.0+$step/2.,8.0+$step/2.,$step
+
+  read_wp
+  set a12_wp   = (lg_kf_$1 - lg_kf_$2)/($nu2 - $nu1)-ax
+  set a12_g_wp = a12_wp if(flagg > 1.5)
+  set h_any_wp = histogram(a12_wp:xx)
+  set h_g_wp   = histogram(a12_g_wp:xx)
+
+  read_1jy
+  set a12_1jy   = (lg_kf_$1 - lg_kf_$2)/($nu2 - $nu1)-ax
+  set a12_g_1jy = a12_1jy if(flagg > 1.5)
+  set h_any_1jy = histogram(a12_1jy:xx)
+  set h_g_1jy   = histogram(a12_g_1jy:xx)
+
+  read_slew
+  set a12_slew   = (lg_kf_$1 - lg_kf_$2)/($nu2 - $nu1)-ax
+  set a12_g_slew = a12_slew if(flagg > 1.5)
+  set h_any_slew = histogram(a12_slew:xx)
+  set h_g_slew   = histogram(a12_g_slew:xx)
+
+  define howmany (3)
+
+  if(is_vector(tot_name) == 1 ) {
+     define go_fourth ? { Plot also total sample ? }
+     if(substr('$go_fourth',0,1) == 'y' ) {
+        set a12_tot   = (tot_lg_kf_$1 - tot_lg_kf_$2)/($nu2 - $nu1)-tot_ax
+        set a12_g_tot = a12_tot if(tot_flagg > 1.5)
+        set h_any_tot = histogram(a12_tot:xx)
+        set h_g_tot   = histogram(a12_g_tot:xx)
+	define howmany (4)
+     }	
+  }
+
+  plot_histo_block $howmany $color
+
+##--------------------------------------------------------------------------
+# g_histo_lum_sel 01  [<color>]
+g_histo_lum_sel   01
+  
+  location 5500 29000 4500 31500	
+
+  define band  ? {Select the band [radio/mm/opt/x] }
+  define step  ? {Give me the STEP for the LUMINOSITY histogram...}
+
+  if( '$band' == 'radio') {
+	define xmin 29.5 
+	define xmax 37.5 
+	define lab_x <L_{\rm 5GHz}>
+  }
+  if( '$band' == 'mm'   ) {
+	define xmin 29.0 
+	define xmax 37.5 
+	define lab_x <L_{\rm 230GHz}>
+  }
+  if( '$band' == 'opt'  ) {
+	define xmin 28.5 
+	define xmax 34.1 
+	define lab_x <L_{\rm 5500 \AA}>
+  }
+  if( '$band' == 'x'    ) {
+	define xmin 24.5 
+	define xmax 31.1 
+	define lab_x <L_{\rm 1keV}>
+  }
+
+  set xx = 22.0+$step/2.,43.0+$step/2.,$step
+
+  echo ---------------------------------------------
+  if($?2 == 0) {
+  define band1  ? {Select the first band [radio/mm/opt/x] }
+  define band2  ? {Select the second band [radio/mm/opt/x] }
+  define 2 band1
+  define 3 band2
+  }
+  define oldband1 $2
+  define oldband2 $3
+
+  if('$band1' == 'radio' && '$band2' == 'x')   {define lab_sel <\alpha_{RX}>  }
+  if('$band1' == 'radio' && '$band2' == 'opt') {define lab_sel <\alpha_{RO}>  }
+  if('$band1' == 'mm'    && '$band2' == 'opt') {define lab_sel <\alpha_{mmO}> }
+  if('$band1' == 'mm'    && '$band2' == 'x'  ) {define lab_sel <\alpha_{mmX}> }
+  if('$band1' == 'opt'   && '$band2' == 'x'  ) {define lab_sel <\alpha_{OX}>  }
+
+  if( '$band1' == 'radio') { define nu1     9.698 }
+  if( '$band1' == 'mm'   ) { define nu1    11.361 }
+  if( '$band1' == 'opt'  ) { define nu1    14.736 }
+  if( '$band1' == 'x'    ) { define nu1    17.383 }
+  if( '$band2' == 'radio') { define nu2     9.698 }
+  if( '$band2' == 'mm'   ) { define nu2    11.361 }
+  if( '$band2' == 'opt'  ) { define nu2    14.736 }
+  if( '$band2' == 'x'    ) { define nu2    17.383 }
+
+  echo " " 
+  if($?4 == 0) {
+  define selmin ? { Minimum value of $!!lab_sel }
+  define selmax ? { Maximum value of $!!lab_sel }
+  define 4 selmin
+  define 5 selmax
+  }
+  define selmin $4
+  define selmax $5
+
+  relocate (5500 32100)
+  if ($?1) { define color $1 } else { define color (2) }
+  ctype $color
+  putlabel 6 distinction according to $lab_sel # [$selmin-$selmax]
+  define xtickbig 1
+
+  define 1 $band
+
+  read_wp
+  set a12_wp   = (lg_kf_$2 - lg_kf_$3)/($nu2 - $nu1)
+  set l_$1_g = l_$1   if( a12_wp > $selmin && a12_wp < $selmax )
+  set h_any_wp = histogram(l_$1:xx)
+  set h_g_wp   = histogram(l_$1_g:xx)
+
+  read_1jy
+  set a12_1jy   = (lg_kf_$2 - lg_kf_$3)/($nu2 - $nu1)
+  set l_$1_g = l_$1   if( a12_1jy > $selmin && a12_1jy < $selmax )
+  set h_any_1jy = histogram(l_$1:xx)
+  set h_g_1jy   = histogram(l_$1_g:xx)
+
+  read_slew
+  set a12_slew   = (lg_kf_$2 - lg_kf_$3)/($nu2 - $nu1)
+  set l_$1_g = l_$1   if( a12_slew > $selmin && a12_slew < $selmax )
+  set h_any_slew = histogram(l_$1:xx)
+  set h_g_slew   = histogram(l_$1_g:xx)
+
+  define howmany (3)
+
+  if(is_vector(tot_name) == 1 ) {
+     define go_fourth ? { Plot also total sample ? }
+     if(substr('$go_fourth',0,1) == 'y' ) {
+        set a12_tot   = (tot_lg_kf_$2 - tot_lg_kf_$3)/($nu2 - $nu1)
+        set l_$1_g = l_$1   if( a12_tot > $selmin && a12_tot < $selmax )
+        set h_any_tot = histogram(tot_l_$1:xx)
+        set h_g_tot   = histogram(tot_l_$1_g:xx)
+	define howmany (4)
+     }	
+  }
+
+  plot_histo_block $howmany $color
+
+##---------------------------------------------------------------------------
+## ro_ox
+ro_ox
+
+  location 6500 31000 5000 31000
+
+  expand 1.5
+  limits 0.41 1.59 0.11 1.14 
+  ticksize 0.05 0.2 0.05 0.2
+  box 
+  expand 2.0
+  xlabel \alpha_{OX}
+  ylabel \alpha_{RO}
+
+  ctype 5
+  read_wp
+  set a_ro = (lg_kf_radio - lg_kf_opt)/($nuopt - $nu5)
+  set a_ox = (lg_kf_opt - lg_kf_x)/($nux - $nuopt)
+  expand 3.5
+  ptype 4 0
+  points a_ox a_ro 
+  expand 2.5
+  ptype 4 3
+  points a_ox a_ro if(flagg > 1.5)
+
+  ctype 3
+  read_1jy
+  set a_ro = (lg_kf_radio - lg_kf_opt)/($nuopt - $nu5)
+  set a_ox = (lg_kf_opt - lg_kf_x)/($nux - $nuopt)
+  expand 3.5
+  ptype 12 0
+  points a_ox a_ro 
+  expand 2.5
+  ptype 12 3
+  points a_ox a_ro if(flagg > 1.5)
+
+  ctype 4
+  read_slew
+  set a_ro = (lg_kf_radio - lg_kf_opt)/($nuopt - $nu5)
+  set a_ox = (lg_kf_opt - lg_kf_x)/($nux - $nuopt)
+  expand 3.5
+  ptype 3 0
+  points a_ox a_ro 
+  expand 2.5
+  ptype 3 3
+  points a_ox a_ro if(flagg > 1.5)
+
+  topbox
+
+##---------------------------------------------------------------------------
+## ro_lum
+ro_lum
+
+  define band  ? {Select the band [radio/mm/opt/x] }
+  if( '$band' == 'radio') {limits 29.5 37.5 0.11 1.14 }
+  if( '$band' == 'mm'   ) {limits 29.0 37.5 0.11 1.14 }
+  if( '$band' == 'opt'  ) {limits 28.5 34.1 0.11 1.14 }
+  if( '$band' == 'x'    ) {limits 24.5 31.1 0.11 1.14 }
+  location 6500 31000 5000 31000
+
+  ctype 2
+  expand 1.5
+  ticksize 0.5 2.0 0.05 0.2
+  box 
+  expand 2.0
+  xlabel L_{$!band}
+  ylabel \alpha_{RO}
+
+  read_wp
+  set a_ro_wp = (lg_kf_radio - lg_kf_opt)/($nuopt - $nu5)
+  set l_wp = l_$!band
+  read_1jy
+  set a_ro_1jy = (lg_kf_radio - lg_kf_opt)/($nuopt - $nu5)
+  set l_1jy = l_$!band
+  read_slew
+  set a_ro_slew = (lg_kf_radio - lg_kf_opt)/($nuopt - $nu5)
+  set l_slew = l_$!band
+
+  ctype 5
+  expand 3.5
+  ptype 4 0
+  points l_wp a_ro_wp 
+  expand 2.0
+  ptype 4 3
+  read_wp
+  points l_wp a_ro_wp if(flagg > 1.5)
+
+  ctype 3
+  expand 3.5
+  ptype 12 0
+  points l_1jy a_ro_1jy 
+  expand 2.5
+  ptype 12 3
+  read_1jy 
+  points l_1jy a_ro_1jy if(flagg > 1.5)
+
+  ctype 4
+  expand 3.5
+  ptype 3 0
+  points l_slew  a_ro_slew 
+  expand 2.5
+  ptype 3 3
+  read_slew
+  points l_slew a_ro_slew  if(flagg > 1.5)
+
+  topbox
+
+#---------------------------------------------------------------------------
+# a12_lum
+a12_lum
+
+  define band  ? {Select the band for the LUMINOSITY [radio/mm/opt/x] }
+  echo  ----------------------------------------------------
+  define band1 ? {Select the first band [radio/mm/opt/x] }
+  define band2 ? {Select the second band [radio/mm/opt/x] }
+
+  if('$band1' == 'radio' && '$band2' == 'x')   {
+     define ymin 0.3
+     define ymax 1.15
+     define lab_y <\alpha_{RX}>
+  }
+  if('$band1' == 'radio' && '$band2' == 'opt') {
+     define ymin 0.1 
+     define ymax 1.15
+     define lab_y <\alpha_{RO}>
+  }
+  if('$band1' == 'mm'    && '$band2' == 'opt') {
+     define ymin 0.09
+     define ymax 1.35
+     define lab_y <\alpha_{mmO}>
+  }
+  if('$band1' == 'mm'    && '$band2' == 'x'  ) {
+     define ymin 0.32
+     define ymax 1.35
+     define lab_y <\alpha_{mmX}>
+  }
+  if('$band1' == 'opt'   && '$band2' == 'x'  ) {
+     define ymin 0.45
+     define ymax 1.75
+     define lab_y <\alpha_{OX}>
+  }
+  if( '$band' == 'radio') {limits 29.5 37.5 $ymin $ymax }
+  if( '$band' == 'mm'   ) {limits 29.0 37.5 $ymin $ymax }
+  if( '$band' == 'opt'  ) {limits 28.5 34.1 $ymin $ymax }
+  if( '$band' == 'x'    ) {limits 24.5 31.1 $ymin $ymax }
+  define xtickbig 0.2
+
+  if( '$band1' == 'radio') { define nu1     9.698 }
+  if( '$band1' == 'mm'   ) { define nu1    11.361 }
+  if( '$band1' == 'opt'  ) { define nu1    14.736 }
+  if( '$band1' == 'x'    ) { define nu1    17.383 }
+  if( '$band2' == 'radio') { define nu2     9.698 }
+  if( '$band2' == 'mm'   ) { define nu2    11.361 }
+  if( '$band2' == 'opt'  ) { define nu2    14.736 }
+  if( '$band2' == 'x'    ) { define nu2    17.383 }
+
+  location 6500 31000 5000 31000
+
+  ctype 2
+  expand 1.5
+  ticksize 0.5 2.0 0.05 0.2
+  box 
+  expand 2.0
+  xlabel L_{$!band}
+  ylabel $lab_y
+
+  read_wp
+  set a12_wp   = (lg_kf_$!band1 - lg_kf_$!band2)/($nu2 - $nu1)
+  set l_wp = l_$!band
+  read_1jy
+  set a12_1jy  = (lg_kf_$!band1 - lg_kf_$!band2)/($nu2 - $nu1)
+  set l_1jy = l_$!band
+  read_slew
+  set a12_slew = (lg_kf_$!band1 - lg_kf_$!band2)/($nu2 - $nu1)
+  set l_slew = l_$!band
+
+  ctype 5
+  expand 3.5
+  ptype 4 0
+  points l_wp a12_wp 
+  expand 2.0
+  ptype 4 3
+  read_wp
+  points l_wp a12_wp if(flagg > 1.5)
+
+  ctype 3
+  expand 3.5
+  ptype 12 0
+  points l_1jy a12_1jy 
+  expand 2.5
+  ptype 12 3
+  read_1jy 
+  points l_1jy a12_1jy if(flagg > 1.5)
+
+  ctype 4
+  expand 3.5
+  ptype 3 0
+  points l_slew  a12_slew 
+  expand 2.5
+  ptype 3 3
+  read_slew
+  points l_slew a12_slew  if(flagg > 1.5)
+
+  topbox
+
+##---------------------------------------------------------------------------
+# a12_z
+a12_z
+
+  define band1 ? {Select the first band [radio/mm/opt/x] }
+  define band2 ? {Select the second band [radio/mm/opt/x] }
+
+  if('$band1' == 'radio' && '$band2' == 'x')   {
+     define ymin 0.3
+     define ymax 1.15
+     define lab_y <\alpha_{RX}>
+  }
+  if('$band1' == 'radio' && '$band2' == 'opt') {
+     define ymin 0.1 
+     define ymax 1.15
+     define lab_y <\alpha_{RO}>
+  }
+  if('$band1' == 'mm'    && '$band2' == 'opt') {
+     define ymin 0.09
+     define ymax 1.35
+     define lab_y <\alpha_{mmO}>
+  }
+  if('$band1' == 'mm'    && '$band2' == 'x'  ) {
+     define ymin 0.32
+     define ymax 1.35
+     define lab_y <\alpha_{mmX}>
+  }
+  if('$band1' == 'opt'   && '$band2' == 'x'  ) {
+     define ymin 0.45
+     define ymax 1.75
+     define lab_y <\alpha_{OX}>
+  }
+  limits -0.1 3.1 $ymin $ymax
+  define xtickbig 0.2
+
+  if( '$band1' == 'radio') { define nu1     9.698 }
+  if( '$band1' == 'mm'   ) { define nu1    11.361 }
+  if( '$band1' == 'opt'  ) { define nu1    14.736 }
+  if( '$band1' == 'x'    ) { define nu1    17.383 }
+  if( '$band2' == 'radio') { define nu2     9.698 }
+  if( '$band2' == 'mm'   ) { define nu2    11.361 }
+  if( '$band2' == 'opt'  ) { define nu2    14.736 }
+  if( '$band2' == 'x'    ) { define nu2    17.383 }
+
+  location 6500 31000 5000 31000
+
+  ctype 2
+  expand 1.5
+  ticksize 0.1 0.5 0.05 0.2
+  box 
+  expand 2.0
+  xlabel {z}
+  ylabel $lab_y
+
+  read_wp
+  set a12_wp   = (lg_kf_$!band1 - lg_kf_$!band2)/($nu2 - $nu1)
+  set l_wp = l_$!band
+  set z_wp = z
+  read_1jy
+  set a12_1jy  = (lg_kf_$!band1 - lg_kf_$!band2)/($nu2 - $nu1)
+  set l_1jy = l_$!band
+  set z_1jy = z
+  read_slew
+  set a12_slew = (lg_kf_$!band1 - lg_kf_$!band2)/($nu2 - $nu1)
+  set l_slew = l_$!band
+  set z_slew = z
+
+  ctype 5
+  expand 3.5
+  ptype 4 0
+  points z_wp a12_wp 
+  expand 2.0
+  ptype 4 3
+  read_wp
+  points z_wp a12_wp if(flagg > 1.5)
+
+  ctype 3
+  expand 3.5
+  ptype 12 0
+  points z_1jy a12_1jy 
+  expand 2.5
+  ptype 12 3
+  read_1jy 
+  points z_1jy a12_1jy if(flagg > 1.5)
+
+  ctype 4
+  expand 3.5
+  ptype 3 0
+  points z_slew  a12_slew 
+  expand 2.5
+  ptype 3 3
+  read_slew
+  points z_slew a12_slew  if(flagg > 1.5)
+
+  topbox
+
+
+##---------------------------------------------------------------------------
+# a12_a34
+a12_a34
+
+  define band1 ? {Select the first band [radio/mm/opt/x] }
+  define band2 ? {Select the second band [radio/mm/opt/x] }
+
+  if('$band1' == 'radio' && '$band2' == 'x')   {
+     define xmin 0.3
+     define xmax 1.15
+     define lab_x <\alpha_{RX}>
+  }
+  if('$band1' == 'radio' && '$band2' == 'opt') {
+     define xmin 0.1 
+     define xmax 1.15
+     define lab_x <\alpha_{RO}>
+  }
+  if('$band1' == 'mm'    && '$band2' == 'opt') {
+     define xmin 0.09
+     define xmax 1.35
+     define lab_x <\alpha_{mmO}>
+  }
+  if('$band1' == 'mm'    && '$band2' == 'x'  ) {
+     define xmin 0.32
+     define xmax 1.35
+     define lab_x <\alpha_{mmX}>
+  }
+  if('$band1' == 'opt'   && '$band2' == 'x'  ) {
+     define xmin 0.45
+     define xmax 1.75
+     define lab_x <\alpha_{OX}>
+  }
+  limits -0.1 3.1 $xmin $xmax
+  define xtickbig 0.2
+
+  if( '$band1' == 'radio') { define nu1     9.698 }
+  if( '$band1' == 'mm'   ) { define nu1    11.361 }
+  if( '$band1' == 'opt'  ) { define nu1    14.736 }
+  if( '$band1' == 'x'    ) { define nu1    17.383 }
+  if( '$band2' == 'radio') { define nu2     9.698 }
+  if( '$band2' == 'mm'   ) { define nu2    11.361 }
+  if( '$band2' == 'opt'  ) { define nu2    14.736 }
+  if( '$band2' == 'x'    ) { define nu2    17.383 }
+
+  define band3 ? {Select the third band [radio/mm/opt/x] }
+  define band4 ? {Select the fourth band [radio/mm/opt/x] }
+
+  if('$band3' == 'radio' && '$band4' == 'x')   {
+     define ymin 0.3
+     define ymax 1.15
+     define lab_y <\alpha_{RX}>
+  }
+  if('$band3' == 'radio' && '$band4' == 'opt') {
+     define ymin 0.1 
+     define ymax 1.15
+     define lab_y <\alpha_{RO}>
+  }
+  if('$band3' == 'mm'    && '$band4' == 'opt') {
+     define ymin 0.09
+     define ymax 1.35
+     define lab_y <\alpha_{mmO}>
+  }
+  if('$band3' == 'mm'    && '$band4' == 'x'  ) {
+     define ymin 0.32
+     define ymax 1.35
+     define lab_y <\alpha_{mmX}>
+  }
+  if('$band3' == 'opt'   && '$band4' == 'x'  ) {
+     define ymin 0.45
+     define ymax 1.75
+     define lab_y <\alpha_{OX}>
+  }
+
+  limits $xmin $xmax $ymin $ymax
+  define xtickbig 0.2
+
+  if( '$band3' == 'radio') { define nu3     9.698 }
+  if( '$band3' == 'mm'   ) { define nu3    11.361 }
+  if( '$band3' == 'opt'  ) { define nu3    14.736 }
+  if( '$band3' == 'x'    ) { define nu3    17.383 }
+  if( '$band4' == 'radio') { define nu4     9.698 }
+  if( '$band4' == 'mm'   ) { define nu4    11.361 }
+  if( '$band4' == 'opt'  ) { define nu4    14.736 }
+  if( '$band4' == 'x'    ) { define nu4    17.383 }
+
+  location 6500 31000 5000 31000
+
+  lweight 2
+  ctype 2
+  expand 1.5
+  ticksize 0.05 0.2 0.05 0.2
+  box 
+  expand 2.0
+  xlabel $lab_x
+  ylabel $lab_y
+
+  define with_k ? {K-corrected ? [y/n]}
+
+  if(substr('$with_k',0,1) == 'y') { 
+     read_wp
+     set flagg_1  = flagg
+     set a12_wp   = (lg_kf_$!band1 - lg_kf_$!band2)/($nu2 - $nu1)
+     set a34_wp   = (lg_kf_$!band3 - lg_kf_$!band4)/($nu4 - $nu3)
+     read_1jy
+     set flagg_2  = flagg
+     set a12_1jy  = (lg_kf_$!band1 - lg_kf_$!band2)/($nu2 - $nu1)
+     set a34_1jy  = (lg_kf_$!band3 - lg_kf_$!band4)/($nu4 - $nu3)
+     read_slew
+     set flagg_3  = flagg
+     set a12_slew = (lg_kf_$!band1 - lg_kf_$!band2)/($nu2 - $nu1)
+     set a34_slew = (lg_kf_$!band3 - lg_kf_$!band4)/($nu4 - $nu3)
+  } else {
+     read_wp
+     set flagg_1  = flagg
+     set a12_wp   = (lg_f_$!band1 - lg_f_$!band2)/($nu2 - $nu1)
+     set a34_wp   = (lg_f_$!band3 - lg_f_$!band4)/($nu4 - $nu3)
+     read_1jy
+     set flagg_2  = flagg
+     set a12_1jy  = (lg_f_$!band1 - lg_f_$!band2)/($nu2 - $nu1)
+     set a34_1jy  = (lg_f_$!band3 - lg_f_$!band4)/($nu4 - $nu3)
+     read_slew
+     set flagg_3  = flagg
+     set a12_slew = (lg_f_$!band1 - lg_f_$!band2)/($nu2 - $nu1)
+     set a34_slew = (lg_f_$!band3 - lg_f_$!band4)/($nu4 - $nu3)
+  }
+
+  ctype 8
+  expand 3.5
+  ptype 4 3
+  points a12_wp a34_wp
+  ctype 3 
+  expand 3.5
+  ptype 4 0
+  points a12_wp a34_wp  
+  expand 2.0
+  ptype 4 3
+  points a12_wp a34_wp   if(flagg_1 > 1.5)
+
+  ctype 6
+  expand 3.1
+  ptype 20 3 
+  points a12_1jy a34_1jy 
+  ctype 5
+  expand 3.1
+  ptype 20 0
+  points a12_1jy a34_1jy    
+  expand 1.8
+  ptype 20 3
+  points a12_1jy a34_1jy   if(flagg_2 > 1.5)
+
+  ctype 4
+  expand 3.5
+  ptype 3 3
+  points a12_slew a34_slew
+  ctype 5
+  expand 3.5
+  ptype 3 0
+  points a12_slew a34_slew    
+  expand 1.5
+  ptype 3 3
+  points a12_slew a34_slew  if(flagg_3 > 1.5)
+
+  define ahead ? { Plot Sample Labels ? [y/n] }
+
+  if(substr('$ahead',0,1) == 'y') {
+     relocate ( $($gx1+2000) $($gy2-2000) )
+     expand 3.5 ctype 8 ptype 4 3 dot ctype 3 ptype 4 0 dot 
+     expand 2.0 putlabel 6   FSRQ
+
+     relocate ( $($gx1+2000) $($gy2-3500) )
+     expand 3.1 ctype 6 ptype 20 3 dot ctype 5 ptype 20 0 dot 
+     expand 2.0 putlabel 6   1Jy BLL
+
+     relocate ( $($gx1+2000) $($gy2-5000) )
+     expand 3.5 ctype 4 ptype 3 3 dot ctype 5 ptype 3 0 dot 
+     expand 2.0 putlabel 6   Slew BLL
+  }
+
+##---------------------------------------------------------------------------
+# a12_ax
+a12_ax
+
+  define band1 ? {Select the first band [radio/mm/opt/x] }
+  define band2 ? {Select the second band [radio/mm/opt/x] }
+
+  if('$band1' == 'radio' && '$band2' == 'x')   {
+     define ymin 0.3
+     define ymax 1.15
+     define lab_y <\alpha_{RX}>
+  }
+  if('$band1' == 'radio' && '$band2' == 'opt') {
+     define ymin 0.1 
+     define ymax 1.15
+     define lab_y <\alpha_{RO}>
+  }
+  if('$band1' == 'radio' && '$band2' == 'mm') {
+     define ymin -0.75
+     define ymax  0.85
+     define lab_x <\alpha_{Rmm}>
+  }
+  if('$band1' == 'mm'    && '$band2' == 'opt') {
+     define ymin 0.09
+     define ymax 1.35
+     define lab_y <\alpha_{mmO}>
+  }
+  if('$band1' == 'mm'    && '$band2' == 'x'  ) {
+     define ymin 0.32
+     define ymax 1.35
+     define lab_y <\alpha_{mmX}>
+  }
+  if('$band1' == 'opt'   && '$band2' == 'x'  ) {
+     define ymin 0.45
+     define ymax 1.75
+     define lab_y <\alpha_{OX}>
+  }
+  limits -0.1 3.1 $ymin $ymax
+  define xtickbig 0.2
+
+  if( '$band1' == 'radio') { define nu1     9.698 }
+  if( '$band1' == 'mm'   ) { define nu1    11.361 }
+  if( '$band1' == 'opt'  ) { define nu1    14.736 }
+  if( '$band1' == 'x'    ) { define nu1    17.383 }
+  if( '$band2' == 'radio') { define nu2     9.698 }
+  if( '$band2' == 'mm'   ) { define nu2    11.361 }
+  if( '$band2' == 'opt'  ) { define nu2    14.736 }
+  if( '$band2' == 'x'    ) { define nu2    17.383 }
+
+  location 6500 31000 5000 31000
+
+  ctype 2
+  expand 1.5
+  ticksize 0.1 0.5 0.05 0.2
+  box 
+  expand 2.0
+  xlabel \alpha_X
+  ylabel $lab_y
+
+  read_wp
+  set a12_wp   = (lg_kf_$!band1 - lg_kf_$!band2)/($nu2 - $nu1)
+  set ax_wp = ax
+  set err_ax_u_wp = err_ax_u
+  set err_ax_d_wp = err_ax_d
+  set flagx_wp = flagx
+  read_1jy
+  set a12_1jy  = (lg_kf_$!band1 - lg_kf_$!band2)/($nu2 - $nu1)
+  set ax_1jy = ax
+  set err_ax_u_1jy = err_ax_u
+  set err_ax_d_1jy = err_ax_d
+  set flagx_1jy = flagx
+  read_slew
+  set a12_slew = (lg_kf_$!band1 - lg_kf_$!band2)/($nu2 - $nu1)
+  set ax_slew = ax
+  set err_ax_u_slew = err_ax_u
+  set err_ax_d_slew = err_ax_d
+  set flagx_slew = flagx
+
+  ctype 5
+  expand 3.5
+  ptype 4 0
+  points   ax_wp a12_wp 
+  errorbar ax_wp a12_wp err_ax_u_wp 1
+  errorbar ax_wp a12_wp err_ax_d_wp 3
+  expand 2.0
+
+  ctype 3
+  expand 3.5
+  ptype 12 0
+  points   ax_1jy a12_1jy 
+  errorbar ax_1jy a12_1jy err_ax_u_1jy 1
+  errorbar ax_1jy a12_1jy err_ax_d_1jy 3
+  expand 2.5
+
+  ctype 4
+  expand 3.5
+  ptype 3 0
+  points   ax_slew  a12_slew 
+  errorbar ax_slew a12_slew err_ax_u_slew 1
+  errorbar ax_slew a12_slew err_ax_d_slew 3
+  expand 2.5
+
+  topbox
+
+##---------------------------------------------------------------------------
+# a12_a34_ax
+a12_a34_ax
+
+  echo --------------------------------------------------------
+  echo *
+  echo * The first two inputs are for the BB-index on abscissa
+  echo *
+  define band1 ? {Select the first band [radio/mm/opt/x] }
+  define band2 ? {Select the second band [radio/mm/opt/x] }
+
+  if('$band1' == 'radio' && '$band2' == 'x')   {
+     define xmin 0.3
+     define xmax 1.15
+     define lab_x <\alpha_{RX}>
+  }
+  if('$band1' == 'radio' && '$band2' == 'opt') {
+     define xmin 0.1 
+     define xmax 1.15
+     define lab_x <\alpha_{RO}>
+  }
+  if('$band1' == 'radio' && '$band2' == 'mm') {
+     define xmin -0.75
+     define xmax  0.85
+     define lab_x <\alpha_{Rmm}>
+  }
+  if('$band1' == 'mm'    && '$band2' == 'opt') {
+     define xmin 0.09
+     define xmax 1.35
+     define lab_x <\alpha_{mmO}>
+  }
+  if('$band1' == 'mm'    && '$band2' == 'x'  ) {
+     define xmin 0.32
+     define xmax 1.35
+     define lab_x <\alpha_{mmX}>
+  }
+  if('$band1' == 'opt'   && '$band2' == 'x'  ) {
+     define xmin 0.45
+     define xmax 1.75
+     define lab_x <\alpha_{OX}>
+  }
+  limits -0.1 3.1 $xmin $xmax
+  define xtickbig 0.2
+
+  if( '$band1' == 'radio') { define nu1     9.698 }
+  if( '$band1' == 'mm'   ) { define nu1    11.361 }
+  if( '$band1' == 'opt'  ) { define nu1    14.736 }
+  if( '$band1' == 'x'    ) { define nu1    17.383 }
+  if( '$band2' == 'radio') { define nu2     9.698 }
+  if( '$band2' == 'mm'   ) { define nu2    11.361 }
+  if( '$band2' == 'opt'  ) { define nu2    14.736 }
+  if( '$band2' == 'x'    ) { define nu2    17.383 }
+
+  echo --------------------------------------------------------
+  echo *
+  echo * These two next inputs are for the BB-index 
+  echo *       to be SUBTRACTED to X-ray spectral index
+  echo *         
+  define band3 ? {Select the third band [radio/mm/opt/x] }
+  define band4 ? {Select the fourth band [radio/mm/opt/x] }
+
+  if('$band3' == 'radio' && '$band4' == 'x')   {
+     define ymin 0.3
+     define ymax 1.15
+     define lab_y <\alpha_{RX}-\alpha_X>
+  }
+  if('$band3' == 'radio' && '$band4' == 'opt') {
+     define ymin 0.1 
+     define ymax 1.15
+     define lab_y <\alpha_{RO}-\alpha_X>
+  }
+  if('$band3' == 'mm'    && '$band4' == 'opt') {
+     define ymin 0.09
+     define ymax 1.35
+     define lab_y <\alpha_{mmO}-\alpha_X>
+  }
+  if('$band3' == 'mm'    && '$band4' == 'x'  ) {
+     define ymin 0.32
+     define ymax 1.35
+     define lab_y <\alpha_{mmX}-\alpha_X>
+  }
+  if('$band3' == 'opt'   && '$band4' == 'x'  ) {
+     define ymin 0.45
+     define ymax 1.75
+     define lab_y <\alpha_{OX}-\alpha_X>
+  }
+
+  # limits $xmin $xmax $ymin $ymax
+  limits $xmin $xmax -1.8 1.8
+  define xtickbig 0.2
+
+  if( '$band3' == 'radio') { define nu3     9.698 }
+  if( '$band3' == 'mm'   ) { define nu3    11.361 }
+  if( '$band3' == 'opt'  ) { define nu3    14.736 }
+  if( '$band3' == 'x'    ) { define nu3    17.383 }
+  if( '$band4' == 'radio') { define nu4     9.698 }
+  if( '$band4' == 'mm'   ) { define nu4    11.361 }
+  if( '$band4' == 'opt'  ) { define nu4    14.736 }
+  if( '$band4' == 'x'    ) { define nu4    17.383 }
+
+  location 6500 31000 5000 31000
+
+  ctype 2
+  expand 1.5
+  ticksize 0.05 0.2 0.1 0.5
+  box 
+  expand 2.0
+  xlabel $lab_x
+  ylabel $lab_y
+
+  read_wp
+  set a12_wp   = (lg_kf_$!band1 - lg_kf_$!band2)/($nu2 - $nu1)
+  set a34_wp   = (lg_kf_$!band3 - lg_kf_$!band4)/($nu4 - $nu3)
+  set ax_wp = ax
+  set err_ax_u_wp = err_ax_u
+  set err_ax_d_wp = err_ax_d
+  set flagx_wp = flagx
+  set diff_wp = a34_wp - ax_wp
+  read_1jy
+  set a12_1jy  = (lg_kf_$!band1 - lg_kf_$!band2)/($nu2 - $nu1)
+  set a34_1jy  = (lg_kf_$!band3 - lg_kf_$!band4)/($nu4 - $nu3)
+  set ax_1jy = ax
+  set err_ax_u_1jy = err_ax_u
+  set err_ax_d_1jy = err_ax_d
+  set flagx_1jy = flagx
+  set diff_1jy = a34_1jy - ax_1jy
+  read_slew
+  set a12_slew = (lg_kf_$!band1 - lg_kf_$!band2)/($nu2 - $nu1)
+  set a34_slew = (lg_kf_$!band3 - lg_kf_$!band4)/($nu4 - $nu3)
+  set ax_slew = ax
+  set err_ax_u_slew = err_ax_u
+  set err_ax_d_slew = err_ax_d
+  set flagx_slew = flagx
+  set diff_slew = a34_slew - ax_slew
+
+  ctype 5
+  expand 3.5
+  ptype 4 0
+  points a12_wp diff_wp if(flagx_wp > 0)
+  expand 2.0
+  ptype 4 3
+  read_wp
+  points a12_wp diff_wp if(flagg > 1.5)
+
+  ctype 3
+  expand 3.5
+  ptype 12 0
+  points a12_1jy diff_1jy if(flagx_1jy > 0)
+  expand 2.5
+  ptype 12 3
+  read_1jy 
+  points a12_1jy diff_1jy if(flagg > 1.5)
+
+  ctype 4
+  expand 3.5
+  ptype 3 0
+  points a12_slew diff_slew if(flagx_slew > 0)
+  expand 2.5
+  ptype 3 3
+  read_slew
+  points a12_slew diff_slew if(flagg > 1.5)
+
+  topbox
+
+##-----------------------------------------------------------------------------
+topbox
+
+  ctype 2
+  location 6500 31000 31000 32500
+  box 3 3 3 3
+
+  expand 3.5
+  ptype 4 0
+  ctype 6
+  relocate (7500 31600)
+  dot 
+  ctype 2
+  expand 1.5
+  relocate (8200 31600)
+  putlabel 6 FSRQ
+
+  expand 3.5
+  ctype 3
+  ptype 12 0
+  relocate (15500 31600)
+  dot 
+  ctype 2
+  expand 1.5
+  relocate (16200 31600)
+  putlabel 6 1Jy
+
+  expand 3.5
+  ctype 4
+  ptype 3 0
+  relocate (23500 31600)
+  dot 
+  ctype 2
+  expand 1.5
+  relocate (24200 31600)
+  putlabel 6 Slew
+
+#---------------------------------------------------------------------------
+# f1_f2
+f1_f2
+
+  define band1 ? {Select the first band [radio/mm/opt/x/g] }
+  define band2 ? {Select the second band [radio/mm/opt/x/g] }
+
+  if('$band1' == 'radio') {
+     define xmin 0.3
+     define xmax 1.15
+     define const1 (23.)
+     define lab_x <F_{5GHz} [Jy]>
+  }
+  if('$band1' == 'mm'  ) {
+     define xmin 0.09
+     define xmax 1.35
+     define const1 (23.)
+     define lab_x <F_{230GHz}>
+  }
+  if('$band1' == 'opt' ) {
+     define xmin 0.45
+     define xmax 1.75
+     define const1 (26.)
+     define lab_x <F_{5500\rm \AA}>
+  }
+  if('$band1' == 'x' ) {
+     define xmin 0.45
+     define xmax 1.75
+     define const1 (29.)
+     define lab_x <F_{1keV} [\mu Jy]>
+  }
+  if('$band1' == 'g' ) {
+     define xmin 0.45
+     define xmax 1.75
+     define const1 (32.)
+     define lab_x <F_{100MeV}>
+  }
+  if('$band2' == 'radio') {
+     define ymin 0.3
+     define ymax 1.15
+     define const2 (23.)
+     define lab_y <F_{5GHz} [Jy]>
+  }
+  if('$band2' == 'mm'  ) {
+     define ymin 0.09
+     define ymax 1.35
+     define const2 (23.)
+     define lab_y <F_{230GHz}>
+  }
+  if('$band2' == 'opt' ) {
+     define ymin 0.45
+     define ymax 1.75
+     define const2 (26.)
+     define lab_y <F_{5500\rm \AA}>
+  }
+  if('$band2' == 'x' ) {
+     define ymin 0.45
+     define ymax 1.75
+     define const2 (29.)
+     define lab_y <F_{1keV} [\mu Jy]>
+  }
+  if('$band2' == 'g' ) {
+     define ymin 0.45
+     define ymax 1.75
+     define const2 (32.)
+     define lab_y <F_{100MeV}>
+  }
+
+  limits $xmin $xmax $ymin $ymax
+  limits -3.2 2 -2.7 2.5
+  define xtickbig 0.2
+
+  location 6500 31000 5000 31000
+
+  ctype 2
+  expand 1.5
+  ticksize 0.05 0.2 0.05 0.2
+  ticksize  -1 0 -1 0
+  box 
+  expand 2.0
+  xlabel $lab_x
+  ylabel $lab_y
+
+  read_wp
+  set flagg_wp = flagg
+  set f1_wp   = lg_kf_$!band1 + $const1 
+  set f2_wp   = lg_kf_$!band2 + $const2 
+  read_1jy
+  set flagg_1jy = flagg
+  set f1_1jy   = lg_kf_$!band1 + $const1 
+  set f2_1jy   = lg_kf_$!band2 + $const2 
+  read_slew
+  set flagg_slew = flagg
+  set f1_slew   = lg_kf_$!band1 + $const1 
+  set f2_slew   = lg_kf_$!band2 + $const2 
+
+  ctype 8
+  expand 3.5
+  ptype 4 3
+  points f1_wp f2_wp
+  ctype 3 
+  expand 3.5
+  ptype 4 0
+  points f1_wp f2_wp  
+  expand 2.0
+  ptype 4 3
+  points f1_wp f2_wp   if(flagg_1 > 1.5)
+
+  ctype 6
+  expand 3.1
+  ptype 20 3 
+  points f1_1jy f2_1jy 
+  ctype 5
+  expand 3.1
+  ptype 20 0
+  points f1_1jy f2_1jy    
+  expand 1.8
+  ptype 20 3
+  points f1_1jy f2_1jy   if(flagg_2 > 1.5)
+
+  ctype 4
+  expand 3.5
+  ptype 3 3
+  points f1_slew f2_slew
+  ctype 5
+  expand 3.5
+  ptype 3 0
+  points f1_slew f2_slew    
+  expand 1.5
+  ptype 3 3
+  points f1_slew f2_slew    if(flagg_3 > 1.5)
+
+  define ahead ? { Plot Sample Labels ? [y/n] }
+  if(substr('$ahead',0,1) == 'y') {
+  relocate ( $($gx1+2000) $($gy2-2000) )
+  expand 3.5 ctype 8 ptype 4 3 dot ctype 3 ptype 4 0 dot 
+  expand 1.5 putlabel 6   FSRQ
+
+  relocate ( $($gx1+2000) $($gy2-3500) )
+  expand 3.1 ctype 6 ptype 20 3 dot ctype 5 ptype 20 0 dot 
+  expand 1.5 putlabel 6   1Jy BLL
+
+  relocate ( $($gx1+2000) $($gy2-5000) )
+  expand 3.5 ctype 4 ptype 3 3 dot ctype 5 ptype 3 0 dot 
+  expand 1.5 putlabel 6   Slew BLL
+  }
+
+#---------------------------------------------------------------------------
+# l1_l2
+l1_l2
+
+  define band1 ? {Select the first band [radio/mm/opt/x] }
+  define band2 ? {Select the second band [radio/mm/opt/x] }
+
+  if('$band1' == 'radio') {
+     define xmin 29.5 
+     define xmax 37.5
+     define lab_x <L_{5GHz}>
+  }
+  if('$band1' == 'mm'  ) {
+     define xmin 29.0
+     define xmax 37.5
+     define lab_x <L_{230GHz}>
+  }
+  if('$band1' == 'opt' ) {
+     define xmin 28.5 
+     define xmax 34.1
+     define lab_x <L_{5500\rm \AA}>
+  }
+  if('$band1' == 'x' ) {
+     define xmin 24.5 
+     define xmax 31.3
+     define lab_x <L_{1keV}>
+  }
+  if('$band2' == 'radio') {
+     define ymin 29.5
+     define ymax 37.5
+     define lab_y <L_{5GHz}>
+  }
+  if('$band2' == 'mm'  ) {
+     define ymin 29.0
+     define ymax 37.5
+     define lab_y <L_{230GHz}>
+  }
+  if('$band2' == 'opt' ) {
+     define ymin 28.5
+     define ymax 34.1
+     define lab_y <L_{5500\rm \AA}>
+  }
+  if('$band2' == 'x' ) {
+     define ymin 24.5
+     define ymin 23.9
+     define ymax 31.1
+     define lab_y <L_{1keV}>
+  }
+
+  limits $xmin $xmax $ymin $ymax
+  define xtickbig 0.2
+
+  location 6500 31000 5000 31000
+
+  lweight 2
+  ltype 0
+  ctype 2
+  expand 1.5
+  ticksize 0.25 1 0.25 1
+  box 
+  expand 2.0
+  xlabel $lab_x
+  ylabel $lab_y
+
+  read_wp
+  set flagg_wp = flagg
+  set l1_wp   = l_$!band1 
+  set l2_wp   = l_$!band2 
+  read_1jy
+  set flagg_1jy = flagg
+  set l1_1jy  = l_$!band1 
+  set l2_1jy  = l_$!band2 
+  read_slew
+  set flagg_slew = flagg
+  set l1_slew = l_$!band1 
+  set l2_slew = l_$!band2 
+
+
+  ctype 8
+  expand 3.5
+  ptype 4 3
+  points l1_wp l2_wp
+  ctype 3 
+  expand 3.5
+  ptype 4 0
+  points l1_wp l2_wp  
+  expand 2.0
+  ptype 4 3
+  points l1_wp l2_wp   if(flagg_1 > 1.5)
+
+  ctype 6
+  expand 3.1
+  ptype 20 3 
+  points l1_1jy l2_1jy 
+  ctype 5
+  expand 3.1
+  ptype 20 0
+  points l1_1jy l2_1jy    
+  expand 1.8
+  ptype 20 3
+  points l1_1jy l2_1jy   if(flagg_2 > 1.5)
+
+  ctype 4
+  expand 3.5
+  ptype 3 3
+  points l1_slew l2_slew
+  ctype 5
+  expand 3.5
+  ptype 3 0
+  points l1_slew l2_slew    
+  expand 1.5
+  ptype 3 3
+  points l1_slew l2_slew    if(flagg_3 > 1.5)
+
+  define ahead ? { Plot Sample Labels ? [y/n] }
+  if(substr('$ahead',0,1) == 'y') {
+  relocate ( $($gx1+2000) $($gy2-2000) )
+  expand 3.5 ctype 8 ptype 4 3 dot ctype 3 ptype 4 0 dot 
+  expand 2.0 putlabel 6   FSRQ
+
+  relocate ( $($gx1+2000) $($gy2-3500) )
+  expand 3.1 ctype 6 ptype 20 3 dot ctype 5 ptype 20 0 dot 
+  expand 2.0 putlabel 6   1Jy BLL
+
+  relocate ( $($gx1+2000) $($gy2-5000) )
+  expand 3.5 ctype 4 ptype 3 3 dot ctype 5 ptype 3 0 dot 
+  expand 2.0 putlabel 6   Slew BLL
+  }
+
+#---------------------------------------------------------------------------
+

@@ -1,0 +1,140 @@
+#-------------------------------------------------------------------------------
+# read_ssl07
+read_ssl07
+
+	#-----------------------------------------------------------
+	data table1.dat
+	read < z 2 Lopt 6 Lr 8 RL_par 9 Mbh 11 Lopt_Ledd 12 Lr_Ledd 13 >
+	set flag_ul_Lopt      = 0*Lopt
+	set flag_ll_RL_par    = 0*RL_par
+	set flag_ul_Lopt_Ledd = 0*Lopt_Ledd
+	set flag_nls1         = 0*Lopt
+	set lambda = Lopt_Ledd + 1
+
+	define 8 "blrg" 
+	foreach 9 < z Lopt Lr RL_par Mbh Lopt_Ledd Lr_Ledd lambda flag_ul_Lopt flag_ll_RL_par flag_ul_Lopt_Ledd flag_nls1 > { 
+	   set $8_$9 = $9
+	}
+
+	#-----------------------------------------------------------
+	data table2.dat
+	read < z 2 Lopt 6 Lr 8 RL_par 9 Mbh 11 Lopt_Ledd 12 Lr_Ledd 13 >
+	set flag_ul_Lopt      = 0*Lopt
+	set flag_ll_RL_par    = 0*RL_par
+	set flag_ul_Lopt_Ledd = 0*Lopt_Ledd
+	set flag_nls1         = 0*Lopt
+	set lambda = Lopt_Ledd + 1
+
+	define 8 "rlq" 
+	foreach 9 < z Lopt Lr RL_par Mbh Lopt_Ledd Lr_Ledd lambda flag_ul_Lopt flag_ll_RL_par flag_ul_Lopt_Ledd flag_nls1 > { 
+	   set $8_$9 = $9
+	}
+
+	#-----------------------------------------------------------
+	data table3.dat
+	read < Lopt 4 Lr 5 RL_par 6 Mbh 7 Lopt_Ledd 8 Lr_Ledd 9 >
+	set z = Lopt*0
+	set flag_ul_Lopt      = 0*Lopt
+	set flag_ll_RL_par    = 0*RL_par
+	set flag_ul_Lopt_Ledd = 0*Lopt_Ledd
+	set flag_nls1         = 0*Lopt
+	set lambda = Lopt_Ledd + 1
+
+	define 8 "sy" 
+	foreach 9 < z Lopt Lr RL_par Mbh Lopt_Ledd Lr_Ledd lambda flag_ul_Lopt flag_ll_RL_par flag_ul_Lopt_Ledd flag_nls1 > { 
+	   set $8_$9 = $9
+	}
+
+	#-----------------------------------------------------------
+	data table4.dat
+	read < z 2 Lopt 3 flag_ul_Lopt 5 Lr 6 RL_par 7 flag_ll_RL_par 8 Mbh 9 Lopt_Ledd 10 flag_ul_Lopt_Ledd 11 Lr_Ledd 12 >
+	set flag_nls1         = 0*Lopt
+	set lambda = Lopt_Ledd + 1
+
+	define 8 "fr1" 
+	foreach 9 < z Lopt Lr RL_par Mbh Lopt_Ledd Lr_Ledd lambda flag_ul_Lopt flag_ll_RL_par flag_ul_Lopt_Ledd flag_nls1 > { 
+	   set $8_$9 = $9
+	}
+
+	#-----------------------------------------------------------
+	data table5.dat
+	read < flag_nls1 2 z 3 Lopt 4 Lr 6 RL_par 7 Mbh 8 Lopt_Ledd 9 Lr_Ledd 10 >
+	set flag_ul_Lopt      = 0*Lopt
+	set flag_ll_RL_par    = 0*RL_par
+	set flag_ul_Lopt_Ledd = 0*Lopt_Ledd
+	set lambda = Lopt_Ledd + 1
+
+	define 8 "pgqso" 
+	foreach 9 < z Lopt Lr RL_par Mbh Lopt_Ledd Lr_Ledd lambda flag_ul_Lopt flag_ll_RL_par flag_ul_Lopt_Ledd flag_nls1 > { 
+	   set $8_$9 = $9
+	}
+
+#-------------------------------------------------------------------------------
+# plot_fig1
+plot_fig1
+
+	reset_graph
+
+	limits 38.5 46.5 36 44 
+	ticksize 0.5 1 0.5 1 
+	box
+	expand 2.5
+	xlabel L_{B}
+	ylabel L_{R}
+	expand 1.5
+
+	ptype 20 3 
+	points blrg_Lopt blrg_Lr
+
+	ptype 20 0
+	points rlq_Lopt rlq_Lr
+
+	angle 45
+	ptype 4 1
+	points sy_Lopt sy_Lr
+	angle 0
+
+	ptype 3 0
+	angle 180
+	points fr1_Lopt fr1_Lr
+	angle 0
+
+	ptype 5 2
+	points pgqso_Lopt pgqso_Lr
+
+
+#-------------------------------------------------------------------------------
+# plot_fig3
+plot_fig3
+
+	reset_graph
+
+	limits -7 1 -2 8 
+	ticksize 0.5 1 0.5 1 
+	box
+	expand 2.5
+	xlabel \lambda
+	expand 1.5
+	ylabel radio loudness
+
+	ptype 20 3 
+	points blrg_lambda blrg_RL_par
+
+	ptype 20 0
+	points rlq_lambda rlq_RL_par
+
+	angle 45
+	ptype 4 1
+	points sy_lambda sy_RL_par
+	angle 0
+
+	ptype 3 0
+	angle 180
+	points fr1_lambda fr1_RL_par
+	angle 0
+
+	ptype 5 2
+	points pgqso_lambda pgqso_RL_par
+
+
+#-------------------------------------------------------------------------------

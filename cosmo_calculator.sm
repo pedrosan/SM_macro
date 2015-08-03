@@ -1,0 +1,201 @@
+#-------------------------------------------------------------------------------
+# cosmo_calculator z=<z> H0=<H0> WM=<Omega_M> WV=<Omega_vac> myverbose=[0|1]
+#    OUTPUTs:    DL_Mpc  DL_cm  lg_DL_cm  kpc_DA   mM  zage_Gyr
+#    stored in variables by the same names
+cosmo_calculator 101
+  
+	define z   1.0
+	define H0 71.0
+	define WM  0.27
+	define WV  0.73
+	define myverbose local
+	define myverbose 0
+
+	define silentparsing 0
+        mparsep $1
+
+	#---------------------------------------
+        # initialize constants
+	#---------------------------------------
+        define WR       (0.0)  # Omega(radiation)
+        define WK       (0.0)  # Omega curvature (1-Omega(total)
+        define c (299792.458)  # velocity of light in km/sec
+	define pi  (3.14159265)
+        define Tyr    (977.8)  # coefficent for converting 1/H into Gyr
+	define Mpc2cm (3.08568e24)
+        
+        ##define DTT      (0.5)  # time from z to now in units of 1/H0
+        ##define DTT_Gyr  (0.0)  # value of DTT in Gyr
+        ##define age      (0.5)  # age of Universe in units of 1/H0
+        ##define age_Gyr  (0.0)  # value of age in Gyr
+        ##define zage     (0.1)  # age of Universe at redshift z in units of 1/H0
+        ##define zage_Gyr (0.0)  # value of zage in Gyr
+        
+	# comoving radial distance in units of c/H0
+        ##define DCMR     (0.0) 
+        ##define DCMR_Mpc (0.0) 
+        ##define DCMR_Gyr (0.0)
+        
+	# angular size distance
+        ##define DA       (0.0) 
+        ##define DA_Mpc   (0.0)
+        ##define DA_Gyr   (0.0)
+        ##define kpc_DA   (0.0)
+        
+	# luminosity distance
+        ##define DL       (0.0)  
+        ##define DL_Mpc   (0.0)
+        ##define DL_Gyr   (0.0) 
+        
+        ##define V_Gpc    (0.0)
+        
+        define a        (1.0)  # 1/(1+z), the scale factor of the Universe
+        define az       (0.5)  # 1/(1+z(object))
+        define h   ($H0/100.)
+        
+        #---------------------------------------
+        # real processing starts here
+        #---------------------------------------
+        define WR  ( 4.165E-5/($h*$h) )       # includes 3 massless neutrino species, T0 = 2.72528
+        define WK  ( 1 - $WM - $WR - $WV )
+        define az  ( 1.0/(1+1.0*$z) )
+        define age (0.0)
+        
+        define n (1000)     # number of points in integrals
+        define n ($n-1)
+        set i=0,$n,1
+        set a    = $az*(i + 0.5)/$n
+        set adot = sqrt( $WK + ($WM/a) + ($WR/(a*a))+($WV*a*a) )
+        define age  $(sum(1./adot))
+        
+        define zage     ($az*$age/$n)
+        define zage_Gyr (($Tyr/$H0)*$zage)
+        define DTT      (0.0)
+        define DCMR     (0.0)
+        
+        #---------------------------------------
+        # do integral over a=1/(1+z) from az to 1 in n steps, midpoint rule
+        #---------------------------------------
+        set a    = $az+(1. - $az)*(i + 0.5)/$n
+        set adot = sqrt( $WK + ($WM/a) + ($WR/(a*a))+($WV*a*a) )
+        define DTT  ( sum(1./adot) )
+        define DCMR ( sum(1./(a*adot)) )
+        
+        define DTT  ( (1. - $az)*$DTT/$n )
+        define DCMR ( (1. - $az)*$DCMR/$n )
+        define age      ( $DTT + $zage ) 
+        define age_Gyr  ( $age*($Tyr/$H0) )
+        define DTT_Gyr  ( ($Tyr/$H0)*$DTT )
+        define DCMR_Gyr ( ($Tyr/$H0)*$DCMR )
+        define DCMR_Mpc ( ($c/$H0)*$DCMR )
+        
+        # for i in range(n):
+        #    a = az+(1-az)*(i+0.5)/n
+        #    adot = sqrt(WK+(WM/a)+(WR/(a*a))+(WV*a*a))
+        #    DTT = DTT + 1./adot
+        #    DCMR = DCMR + 1./(a*adot)
+        # DTT = (1.-az)*DTT/n
+        # DCMR = (1.-az)*DCMR/n
+        # age = DTT+zage
+        # age_Gyr = age*(Tyr/H0)
+        # DTT_Gyr = (Tyr/H0)*DTT
+        # DCMR_Gyr = (Tyr/H0)*DCMR
+        # DCMR_Mpc = (c/H0)*DCMR
+        
+        #---------------------------------------
+        # tangential comoving distance
+        #---------------------------------------
+        define ratio (1.00)
+        define x     ( sqrt(abs($WK))*$DCMR )
+        
+        if( $x > 0.1 ) { 
+           if( $WK > 0 ) {
+              define ratio ( 0.5*(exp($x)-exp(-$x))/$x )
+           } else {
+              define ratio ( sin($x)/$x )
+           }
+         } else {
+           define y ( $x*$x )
+           if( $WK < 0 ) { define y ( -1.*$y ) }
+           define ratio ( 1. + $y/6. + $y*$y/120. )
+         }
+        
+        # ratio = 1.00
+        # x = sqrt(abs(WK))*DCMR
+        # if x > 0.1:
+        #   if WK > 0:
+        #     ratio =  0.5*(exp(x)-exp(-x))/x 
+        #   else:
+        #     ratio = sin(x)/x
+        # else:
+        #   y = x*x
+        #   if WK < 0: y = -y
+        #   ratio = 1. + y/6. + y*y/120.
+        
+        define DCMT   ( $ratio*$DCMR )
+        define DA     ( $az*$DCMT )
+        define DA_Mpc ( ($c/$H0)*$DA )
+        define kpc_DA ( $DA_Mpc/206.264806 )
+        define DA_Gyr ( ($Tyr/$H0)*$DA )
+        define DL     ( $DA/($az*$az) )
+        define DL_Mpc ( ($c/$H0)*$DL )
+        define DL_Gyr ( ($Tyr/$H0)*$DL )
+        
+        #---------------------------------------
+        # comoving volume computation
+        #---------------------------------------
+        define ratio (1.00)
+        define x  ( sqrt(abs($WK))*$DCMR )
+        if( $x > 0.1 ) {
+           if( $WK > 0 ) {
+              define ratio ( (0.125*(exp(2.*$x)-exp(-2.*$x))-$x/2.)/($x*$x*$x/3.) )
+           } else {
+              define ratio ( ($x/2. - sin(2.*$x)/4.)/($x*$x*$x/3.) )
+           }
+        } else {
+           define y ( $x*$x )
+           if( $WK < 0 ) { define y ( -1.*$y ) }
+           define ratio ( 1. + $y/5. + (2./105.)*$y*$y )
+        }
+        
+        define VCM   ( $ratio*$DCMR*$DCMR*$DCMR/3. )
+        define V_Gpc ( 4.*$pi*((0.001*$c/$H0)**3.)*$VCM )
+        
+        define mM $(5.0*lg($DL_Mpc*1e6) - 5.0)
+	define DL_cm $( $DL_Mpc*$Mpc2cm )
+	define lg_DL_cm $(lg($DL_cm))
+
+	if( $myverbose ) { 
+           echo "-------------------------------------------------------------------------------"
+           echo " The age at redshift z                    :  "$(sprintf('%.3f',$zage_Gyr)) " Gyr"
+           echo " The luminosity distance D_L is           : "$(sprintf('%.3f',$DL_Mpc)) " Mpc, "$(sprintf('%.4e',$DL_cm)) "cm"
+           echo " log(DL_cm)                               : "$(sprintf('%.4f',$lg_DL_cm)) 
+           # echo " The comoving radial distance             : "$(sprintf('%.2f',$DCMR_Mpc)) " Mpc"
+           # echo " The comoving volume within redshift z is :   "$(sprintf('%.2f',$V_Gpc)) " Gpc^3 "
+           echo " This gives a scale of                    :   "$(sprintf('%.3f',$kpc_DA)) " kpc/arcsec"
+           echo " The distance modulus m-M is              :  "$(sprintf('%.3f',$mM))
+           # echo " Wk : "$WK
+           echo "-------------------------------------------------------------------------------"
+	}
+
+#-------------------------------------------------------------------------------
+# cosmo_calculator_vec   <z_vec>
+#           OUTPUT: array  lg_dl_cm_vec
+#           NOTE  : As it is it does not allow to change the cosmology parameters
+cosmo_calculator_vec 1
+
+	# set tmp_z = $1
+	# set lg_dl_cm_vec = tmp_z*0
+	set lg_dl_cm_vec = fill($1,0)
+
+	do 9=0,dimen($1)-1 { 
+	   define tmp_z $($1[$9])
+	   if( $tmp_z > 0.0 ) { 
+              cosmo_calculator z=$tmp_z
+	      set lg_dl_cm_vec[$9] = $lg_DL_cm
+	   } else {
+	      set lg_dl_cm_vec[$9] = 0.0
+	   }
+	}
+  
+#-------------------------------------------------------------------------------

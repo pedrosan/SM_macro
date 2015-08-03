@@ -1,0 +1,1416 @@
+#---------------------------------------------------------------------------
+# help.seds_paths
+help.seds_paths
+
+	echo  ------------------------------------------
+	echo   * path_peak_aro_arx 03
+	echo   * path_peak_aro_arx_exp 600 11.7 8.3 0.2 -6.5 0.0 0.5 3.5 
+	echo   *                       600 11.7 8.3 0.2 -6.5 1.8 0.5 3.5 
+	echo   * ratio_rg_ro_rx
+	echo   * ratio_rg_ro_rx_100
+	echo   * 
+	echo   * egret_tev_lum
+	echo   * egret_tev_lum_land
+	echo   * egret_tev_rel100
+	echo   * egret_tev_rel
+	echo   * egret_tev_rel_top
+	echo   * egret_tev_2
+	echo   * egret_tev_2_bw
+	echo   * egret_tev_2_1
+	echo   * egret_tev_2_1_true
+	echo   * egret_tev_1_true
+	echo  ------------------------------------------
+
+#---------------------------------------------------------------------------
+# path_peak_aro_arx
+path_peak_aro_arx 03
+
+	if($?1 == 0) {	
+	  define 1 ? { First radio luminosity ? }
+	  define 2 ? { Final radio luminosity ? }
+	  define 3 ? { Luminosity step ? }
+	}
+
+	define suff ? { Suffix to rename vectors ? }
+	
+	define num (int(($2-$1)/$3) + 1)
+	echo * realizations: $num
+
+	set dimen(vec_arx)       = $num
+	set dimen(vec_aro)       = $num
+	set dimen(vec_aox)       = $num
+	set dimen(vec_arg)       = $num
+	set dimen(vec_artev)     = $num
+	set dimen(vec_lr)        = $num
+	set dimen(vec_lopt)      = $num
+	set dimen(vec_lx)        = $num
+	set dimen(vec_lpeak)     = $num
+	set dimen(vec_nupeak)    = $num
+	set dimen(vec_lpeakg)    = $num
+	set dimen(vec_nupeakg)   = $num
+	set dimen(vec_sigma)     = $num
+	set dimen(vec_ratio_rg)  = $num
+	set dimen(vec_ratio_rtev)= $num
+	set dimen(vec_lum_egret) = $num
+	set dimen(vec_lum_tev)   = $num
+
+	define j  (0)
+	
+	do lr=$1,$2,$3 {
+	  echo * running index is : $j
+	  seds_comp_radio $lr 600 11.7 8.3 0.2 -6.5 1.8 0.5
+	  # seds_comp_exp $lr 600 11.7 8.3 0.2 -6.5 1.8 0.5 3.5
+	  # seds_comp_exp $lr 600 11.7 8.3 0.2 -6.5 1.8 0.5 3.5
+	  set vec_lr[$j]     = $lr
+	  set vec_lopt[$j]   = $(l_opt_sync)
+	  set vec_lx[$j]     = $(l_1kev_sc)
+	  set vec_nupeak[$j] = $(x_peak) 
+	  set vec_lpeak[$j]  = $(l_peak)
+	  set vec_nupeakg[$j]= $(x_peak_g) 
+	  set vec_lpeakg[$j] = $(l_peak_g)
+	  set vec_sigma[$j]  = $(sigma)
+	  set vec_arx[$j]    = $(alrx) 
+	  set vec_aro[$j]    = $(alro)
+	  set vec_aox[$j]    = $(alox)
+	  set vec_arg[$j]    = $(alrg)
+	  set vec_ratio_rg[$j]  = $(ratio_rg)
+	  set vec_ratio_rtev[$j]= $(ratio_rtev)
+	  set vec_ratio_rtev[$j]= $(ratio_rtev)
+	  set vec_lum_egret[$j] = $(l_egret_t)
+	  set vec_lum_tev[$j]   = $(l_tev_t)
+	  define j ($j+1)
+	}
+
+	foreach var ( arx aro aox arg artev lr lopt lx lpeak nupeak lpeakg nupeakg sigma ratio_rg ratio_rtev lum_egret lum_tev ) {
+	  set vec_"$!var"_$suff = vec_$var
+	}
+
+#---------------------------------------------------------------------------
+# path_peak_aro_arx_exp
+path_peak_aro_arx_exp   08
+
+	define l1 ? { First radio luminosity ? }
+	define l2 ? { Final radio luminosity ? }
+	define l3 ? { Luminosity step ? }
+
+	define suff ? { Suffix to rename vectors ? }
+	
+	define num (int(($l2-$l1)/$l3) + 1)
+	echo * realizations: $num
+
+	set dimen(vec_arx)       = $num
+	set dimen(vec_aro)       = $num
+	set dimen(vec_aox)       = $num
+	set dimen(vec_arg)       = $num
+	set dimen(vec_artev)     = $num
+	set dimen(vec_lr)        = $num
+	set dimen(vec_lopt)      = $num
+	set dimen(vec_lx)        = $num
+	set dimen(vec_lx20)      = $num
+	set dimen(vec_lpeak)     = $num
+	set dimen(vec_nupeak)    = $num
+	set dimen(vec_lpeakg)    = $num
+	set dimen(vec_nupeakg)   = $num
+	set dimen(vec_sigma)     = $num
+	set dimen(vec_ratio_rg)  = $num
+	set dimen(vec_ratio_rtev)= $num
+	set dimen(vec_lum_egret) = $num
+	set dimen(vec_lum_tev)   = $num
+
+	define j  (0)
+	
+	do lr=$l1,$l2,$l3 {
+	  echo * running index is : $j
+	  # seds_comp_exp $lr 600 11.7 8.3 0.2 -6.5 1.8 0.5 3.5
+	  # seds_comp_exp $lr 600 11.7 8.3 0.2 -6.5 0.  0.5 3.5
+
+	  seds_comp_exp2 $lr $1 $2   $3  $4   $5  $6  $7  $8 
+
+	  # seds_comp_exp2 $lr 1000.0 11.7 8.3 0.2 -6.5 0.0 0.5 $gfactor
+	  ctype $color
+	  connect x nulnu
+	  set vec_lr[$j]     = $lr
+	  set vec_lopt[$j]   = $l_opt_sync
+	  set vec_lx[$j]     = $l_1kev_sc
+	  set vec_lx20[$j]   = $l_20kev
+	  set vec_lpeak[$j]  = $l_peak
+	  set vec_nupeak[$j] = $x_peak
+	  set vec_lpeakg[$j] = $l_peak_g
+	  set vec_nupeakg[$j]= $x_peak_g
+	  set vec_sigma[$j]  = $sigma
+	  set vec_arx[$j]    = $alrx
+	  set vec_aro[$j]    = $alro
+	  set vec_aox[$j]    = $alox
+	  set vec_arg[$j]    = $alrg
+	  set vec_ratio_rg[$j]  = $ratio_rg
+	  set vec_ratio_rtev[$j]= $ratio_rtev
+	  set vec_lum_egret[$j] = $l_egret_t
+	  set vec_lum_tev[$j]   = $l_tev_t
+	  define j ($j+1)
+	}
+
+	intgamma
+	set vec_lum_egret_true = egret_lum
+	set vec_lum_tev_true   = tev_lum
+
+	foreach var ( arx aro aox arg artev lr lopt lx lx20 \
+		      lpeak nupeak lpeakg nupeakg sigma \
+		      ratio_rg ratio_rtev lum_egret lum_tev ) {
+	  set vec_"$!var"_$suff = vec_$var
+	}
+
+#---------------------------------------------------------------------------
+# intgamma
+intgamma
+
+
+	echo >---------------------------------------------
+	echo > integrating the spectrum in the EGRET band 
+	echo > between 30 MeV and 3 GeV
+	echo > 
+	
+	define k 2.68957                # sqrt(ln10*pi)
+
+	#
+	# EGRET (E > 100 MeV)
+	#
+	define nu1    21.860         # 30 MeV 
+	define nu2    23.860         #  3 GeV 
+	set t1         = 1.517*($nu1 - vec_nupeakg)/vec_sigma
+	set t2         = 1.517*($nu2 - vec_nupeakg)/vec_sigma
+	set aux1       = $k*vec_sigma*0.5*erfc(t1)
+	set aux2       = $k*vec_sigma*0.5*erfc(t2)
+	set egret_lum1 = lg(aux1) + vec_lpeakg
+	set egret_lum2 = lg(aux2) + vec_lpeakg
+	set egret_lum  = 42 + lg(10**(egret_lum1-42.) - 10**(egret_lum2-42.))
+
+	echo >---------------------------------------------
+	echo > integrating the spectrum in the Whipple band
+	echo > between 0.5 TeV and 10 TeV
+	echo >---------------------------------------------
+	#
+	# Whipple (E > 0.5 TeV)
+	#
+	define nu1     26.082            # 0.5 TeV
+	define nu2     27.383            # 10 TeV
+	set t1         = 1.517*($nu1 - vec_nupeakg)/vec_sigma
+	set t2         = 1.517*($nu2 - vec_nupeakg)/vec_sigma
+	set aux1       = $k*vec_sigma*0.5*erfc(t1)
+	set aux2       = $k*vec_sigma*0.5*erfc(t2)
+	set tev_lum1   = lg(aux1) + vec_lpeakg
+	set tev_lum2   = lg(aux2) + vec_lpeakg
+	set tev_lum    = 40 + lg(10**(tev_lum1-40.) - 10**(tev_lum2-40.))
+
+
+#---------------------------------------------------------------------------
+# ratio_rg_ro_rx
+ratio_rg_ro_rx
+
+	ctype 2 
+	ltype 0
+
+	expand 1.5 
+	limits 0.21 1.09 -10.54 -8.86 
+	ticksize 0 0 0 0
+	box
+	ylabel log(F_{100MeV}/F_{5GHz})
+	expand 2
+	xlabel \alpha_{12}
+
+	expand 3
+	ptype 4 0 points vec_aro vec_ratio_rg
+	ptype 4 3 points vec_arx vec_ratio_rg
+
+	relocate ( $($gx2-9500) $($gy1+3500) )
+	ptype 4 3
+	expand 3
+	dot
+	expand 1.35
+	putlabel 6 "  radio-X"
+
+	relocate ( $($gx2-9500) $($gy1+2000) )
+	ptype 4 0
+	expand 3
+	dot
+	expand 1.35 
+	putlabel 6 "  radio-optical"
+
+	# draw_box 0.73 -9.5 1.05 -9.4 
+
+	relocate ( $($gx2-10500) $($gy1+1000) )
+	draw     ( $($gx2-10500) $($gy1+4500) )
+	draw     ( $($gx2- 1000) $($gy1+4500) )
+	draw     ( $($gx2- 1000) $($gy1+1000) )
+	draw     ( $($gx2-10500) $($gy1+1000) )
+
+#---------------------------------------------------------------------------
+# ratio_rg_ro_rx_100
+ratio_rg_ro_rx_100
+
+	ctype 2 
+	ltype 0
+
+	expand 1.5 
+	limits 0.21 1.09 -14 114
+	ticksize 0 0 0 0
+	box 
+	ylabel F_{100MeV}/F_{5GHz}    [% of maximum]
+	expand 2
+	xlabel \alpha_{12}
+
+	vecminmax vec_ratio_rg minrg maxrg
+	set lgy = vec_ratio_rg-$maxrg
+	set y   = 10**lgy
+	set y100= 100*y
+
+	expand 3
+	ptype 4 0 points vec_aro y100
+	ptype 4 3 points vec_arx y100
+
+	vecminmax vec_ratio_rtev minrtev maxrtev
+	set lgyy = vec_ratio_rtev-$maxrtev
+	set yy   = 10**lgyy
+	set yy100= 100*yy
+
+	expand 3
+	ctype  3 
+	ptype 4 0 points vec_aro yy100
+	ptype 4 3 points vec_arx yy100
+	ctype 2 
+
+	relocate -100 50
+	ltype 2
+	ctype 5
+	draw 100 50
+
+	ltype 0
+	ctype 2
+
+	relocate ( $($gx2-9500) $($gy1+3500) )
+	ptype 4 3
+	expand 3
+	dot
+	expand 1.35
+	putlabel 6 "  radio-X"
+
+	relocate ( $($gx2-9500) $($gy1+2000) )
+	ptype 4 0 expand 3
+	dot
+	expand 1.35 
+	putlabel 6 "  radio-optical"
+
+	# draw_box 0.73 20 1.06 34
+
+	relocate ( $($gx2-10500) $($gy1+1000) )
+	draw     ( $($gx2-10500) $($gy1+4500) )
+	draw     ( $($gx2- 1000) $($gy1+4500) )
+	draw     ( $($gx2- 1000) $($gy1+1000) )
+	draw     ( $($gx2-10500) $($gy1+1000) )
+
+#---------------------------------------------------------------------------
+# egret_tev_lum
+egret_tev_lum
+
+	location 7500 27500 5000 31500
+
+	#---------------------------------------------
+	window 1 -3  1  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 40.6 49.9 12.1 18.9 
+	box  1 2 0 2 
+	ylabel log(\\nu_{\rm peak,sync})
+	expand 2
+	xlabel log(\\nu L_{\\nu}) [erg/sec]
+
+	expand 2
+	ptype 4 3 
+	ctype 3 points vec_lum_tev   vec_nupeak
+	ctype 5 points vec_lum_egret vec_nupeak
+
+	#---------------------------------------------
+	window 1 -3  1  2 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 40.6 49.9 0.21 0.99
+	box 0 2 0 2 
+	ylabel \alpha_{RO}
+
+	expand 2
+	ptype 4 3 
+	ctype 3 points vec_lum_tev   vec_aro
+	ctype 5 points vec_lum_egret vec_aro
+
+	#---------------------------------------------
+	window 1 -3  1  3 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 40.6 49.9 0.21 0.99
+	box  0 2 0 2 
+	ylabel \alpha_{RX}
+
+	expand 2
+	ptype 4 3 
+	ctype 3 points vec_lum_tev   vec_arx
+	ctype 5 points vec_lum_egret vec_arx
+
+	location 5500 31000 8500 30000
+
+#---------------------------------------------------------------------------
+# egret_tev_lum_land
+egret_tev_lum_land
+
+	location 5000 31500 7500 27500 
+	ltype 0 
+
+	#---------------------------------------------
+	window -3  1  1  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 12.1 18.9 40.6 49.9 
+	box  1 2 0 0 
+	xlabel log(\\nu_{\rm peak,sync})
+	expand 2
+	ylabel log(\\nu L_{\\nu}) [erg/sec]
+
+	expand 2
+	ptype 4 3 
+	ctype 7 points  vec_nupeak vec_lum_tev   
+	        connect vec_nupeak vec_lum_tev   
+	ctype 6 points  vec_nupeak vec_lum_egret 
+	        connect vec_nupeak vec_lum_egret
+	ptype 4 0 
+	ctype 3 points  vec_nupeak vec_lum_tev   
+	ctype 5 points  vec_nupeak vec_lum_egret 
+
+	#---------------------------------------------
+	window -3  1  2  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 0.21 0.99 40.6 49.9 
+	box 1 0 0 0 
+	xlabel \alpha_{RO}
+
+	expand 2
+	ptype 4 3 
+	ctype 7 points  vec_aro vec_lum_tev
+	        connect vec_aro vec_lum_tev
+	ctype 6 points  vec_aro vec_lum_egret
+	        connect vec_aro vec_lum_egret
+	ptype 4 0 
+	ctype 3 points  vec_aro vec_lum_tev
+	ctype 5 points  vec_aro vec_lum_egret
+
+	#---------------------------------------------
+	window -3  1  3  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 0.21 0.99 40.6 49.9 
+	box  1 0 0 2 
+	xlabel \alpha_{RX}
+
+	expand 2
+	ptype 4 3 
+	ctype 7 points  vec_arx vec_lum_tev
+	        connect vec_arx vec_lum_tev
+	ctype 6 points  vec_arx vec_lum_egret
+	        connect vec_arx vec_lum_egret
+	ptype 4 0 
+	ctype 3 points  vec_arx vec_lum_tev
+	ctype 5 points  vec_arx vec_lum_egret
+
+	#location 5500 31000 8500 30000
+
+#---------------------------------------------------------------------------
+# egret_tev_rel100
+egret_tev_rel100
+
+	location 5000 30250 7500 27500 
+	notation -4 4 -1 1 
+	ltype 0 
+
+	#---------------------------------------------
+	vecminmax vec_ratio_rg minrg maxrg
+	set lgy      = vec_ratio_rg - $maxrg
+	set y        = 10**lgy
+	set egret100 = 100*y
+	set egret100 = y
+
+	vecminmax vec_ratio_rtev minrtev maxrtev
+	set lgyy   = vec_ratio_rtev - $maxrtev
+	set yy     = 10**lgyy
+	set tev100 = 100*yy
+	set tev100 = yy
+
+	#---------------------------------------------
+	window -3  1  1  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0 
+	limits 12.1 18.9 -5 0.3
+	box  1 2 0 0 
+	xlabel log(\\nu_{\rm peak,sync})
+	ylabel log((F_\gamma/F_{\rm 5GHz})/(F_\gamma/F_{\rm 5GHz})|_{\rm max}) 
+
+	expand 2
+	ptype 4 3 
+	ctype 7 points  vec_nupeak (lg(tev100))   
+	        connect vec_nupeak (lg(tev100))   
+	ctype 6 points  vec_nupeak (lg(egret100)) 
+	        connect vec_nupeak (lg(egret100))
+	ptype 4 0 
+	ctype 3 points  vec_nupeak (lg(tev100))   
+	ctype 5 points  vec_nupeak (lg(egret100)) 
+
+	#---------------------------------------------
+	window -3  1  2  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0 
+	limits 0.21 0.99 -5 0.3
+	box 1 0 0 0 
+	xlabel \alpha_{RO}
+
+	expand 2
+	ptype 4 3 
+	ctype 7 points  vec_aro (lg(tev100))
+	        connect vec_aro (lg(tev100))
+	ctype 6 points  vec_aro (lg(egret100))
+	        connect vec_aro (lg(egret100))
+	ptype 4 0 
+	ctype 3 points  vec_aro (lg(tev100))
+	ctype 5 points  vec_aro (lg(egret100))
+
+	#---------------------------------------------
+	window -3  1  3  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0 
+	limits 0.21 0.99 -5 0.3
+	box  1 0 0 2 
+	xlabel \alpha_{RX}
+
+	expand 2
+	ptype 4 3 
+	ctype 7 points  vec_arx (lg(tev100))
+	        connect vec_arx (lg(tev100))
+	ctype 6 points  vec_arx (lg(egret100))
+	        connect vec_arx (lg(egret100))
+	ptype 4 0 
+	ctype 3 points  vec_arx (lg(tev100))
+	ctype 5 points  vec_arx (lg(egret100))
+
+	#location 5500 31000 8500 30000
+	notation -4 4 -4 4 
+
+#---------------------------------------------------------------------------
+# egret_tev_rel
+egret_tev_rel
+
+	location 5000 30250 7500 27500 
+	notation -4 4 -1 1 
+	ltype 0 
+
+	#---------------------------------------------
+	vecminmax vec_ratio_rg minrg maxrg
+	set lgy      = vec_ratio_rg - $maxrg
+	set y        = 10**lgy
+	set egret100 = 100*y
+
+	vecminmax vec_ratio_rtev minrtev maxrtev
+	set lgyy   = vec_ratio_rtev - $maxrtev
+	set yy     = 10**lgyy
+	set tev100 = 100*yy
+
+	#---------------------------------------------
+	window -3  1  1  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0
+	limits 12.1 18.9 -0.1 4
+	box  1 2 0 0 
+	xlabel log(\\nu_{\rm peak,sync})
+	ylabel log(\\nu_\gamma F_{\\nu_\gamma}/\\nu_{\rm 5GHz} F_{\rm 5GHz}) 
+
+	expand 2
+	ptype 4 3 
+	ctype 7 points  vec_nupeak (vec_ratio_rtev+16.384)
+	        connect vec_nupeak (vec_ratio_rtev+16.384)
+	ctype 6 points  vec_nupeak (vec_ratio_rg+12.685) 
+	        connect vec_nupeak (vec_ratio_rg+12.685)
+	ptype 4 0 
+	ctype 3 points  vec_nupeak (vec_ratio_rtev+16.384)
+	ctype 5 points  vec_nupeak (vec_ratio_rg+12.685)
+
+	#---------------------------------------------
+	window -3  1  2  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0
+	limits 0.21 0.99 -0.1 4 
+	box 1 0 0 0 
+	xlabel \alpha_{RO}
+
+	expand 2
+	ptype 4 3 
+	ctype 7 points  vec_aro (vec_ratio_rtev+16.384)
+	        connect vec_aro (vec_ratio_rtev+16.384)
+	ctype 6 points  vec_aro (vec_ratio_rg+12.685) 
+	        connect vec_aro (vec_ratio_rg+12.685)
+	ptype 4 0 
+	ctype 3 points  vec_aro (vec_ratio_rtev+16.384)
+	ctype 5 points  vec_aro (vec_ratio_rg+12.685)
+
+	#---------------------------------------------
+	window -3  1  3  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0 
+	limits 0.21 0.99 -0.1 4 
+	box  1 0 0 2 
+	xlabel \alpha_{RX}
+
+	expand 2
+	ptype 4 3 
+	ctype 7 points  vec_arx (vec_ratio_rtev+16.384)
+	        connect vec_arx (vec_ratio_rtev+16.384)
+	ctype 6 points  vec_arx (vec_ratio_rg+12.685) 
+	        connect vec_arx (vec_ratio_rg+12.685)
+	ptype 4 0 
+	ctype 3 points  vec_arx (vec_ratio_rtev+16.384)
+	ctype 5 points  vec_arx (vec_ratio_rg+12.685)
+
+	#location 5500 31000 8500 30000
+	notation -4 4 -4 4 
+
+#---------------------------------------------------------------------------
+# egret_tev_rel_top
+egret_tev_rel_top
+
+	location 5000 30250 27500 32100
+	notation -4 4 -1 1 
+	ltype 0 
+
+	#---------------------------------------------
+
+	#---------------------------------------------
+	window -3  1  2  1 
+	expand 1.1 
+	ctype 2
+	ticksize 0 0 0 0
+	limits 0.21 0.99 -1 30
+	box 0 0 0 0 
+
+	ltype 0
+	histogram xx h_any_tot
+	angle 40
+	ctype 3 
+	shade histogram 75 xx h_g_tot
+	ctype 2 
+	angle 0
+	histogram xx h_g_tot
+
+	#---------------------------------------------
+
+#---------------------------------------------------------------------------
+# egret_tev_2
+egret_tev_2
+
+	location 5000 31000 5000 32000 
+	ltype 0 
+	notation -4 4 -4 4 
+
+	#---------------------------------------------
+	window -3 -2  1  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 12.1 18.9 40.6 49.9 
+	box  1 2 0 0 
+	xlabel log(\\nu_{\rm peak,sync})
+	expand 1.3
+	ylabel log(\\nu L_{\\nu}) [erg/sec]
+
+	expand 2
+	ptype 4 3 
+	ctype 7 points  vec_nupeak vec_lum_tev   
+	        connect vec_nupeak vec_lum_tev   
+	ctype 6 points  vec_nupeak vec_lum_egret 
+	        connect vec_nupeak vec_lum_egret
+	ptype 4 0 
+	ctype 3 points  vec_nupeak vec_lum_tev   
+	ctype 5 points  vec_nupeak vec_lum_egret 
+
+	#---------------------------------------------
+	window -3 -2  2  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 0.21 0.99 40.6 49.9 
+	box 1 0 0 0 
+	xlabel \alpha_{RO}
+
+	expand 2
+	ptype 4 3 
+	ctype 7 points  vec_aro vec_lum_tev
+	        connect vec_aro vec_lum_tev
+	ctype 6 points  vec_aro vec_lum_egret
+	        connect vec_aro vec_lum_egret
+	ptype 4 0 
+	ctype 3 points  vec_aro vec_lum_tev
+	ctype 5 points  vec_aro vec_lum_egret
+
+	#---------------------------------------------
+	window -3 -2  3  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 0.21 0.99 40.6 49.9 
+	box  1 0 0 2 
+	xlabel \alpha_{RX}
+
+	expand 2
+	ptype 4 3 
+	ctype 7 points  vec_arx vec_lum_tev
+	        connect vec_arx vec_lum_tev
+	ctype 6 points  vec_arx vec_lum_egret
+	        connect vec_arx vec_lum_egret
+	ptype 4 0 
+	ctype 3 points  vec_arx vec_lum_tev
+	ctype 5 points  vec_arx vec_lum_egret
+
+	#--------------------------------------------
+	#  SECOND (UPPER) ROW OF BOXES
+	#  
+
+	notation -4 4 -1 1 
+	ltype 0 
+
+	#---------------------------------------------
+	vecminmax vec_ratio_rg minrg maxrg
+	set lgy      = vec_ratio_rg - $maxrg
+	set y        = 10**lgy
+	set egret100 = 100*y
+
+	vecminmax vec_ratio_rtev minrtev maxrtev
+	set lgyy   = vec_ratio_rtev - $maxrtev
+	set yy     = 10**lgyy
+	set tev100 = 100*yy
+
+	#---------------------------------------------
+	window -3 -2  1  2 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0
+	limits 12.1 18.9 -0.1 4
+	limits 12.1 18.9 0.9 4
+	box  0 2 0 0 
+	# xlabel log(\\nu_{\rm peak,sync})
+	expand 1.3
+	ylabel \\nu_\gamma F_{\\nu_\gamma}/\\nu_{\rm 5GHz} F_{\rm 5GHz}
+
+	expand 2
+	ptype 4 3 
+	ctype 7 points  vec_nupeak (vec_ratio_rtev+16.384)
+	        connect vec_nupeak (vec_ratio_rtev+16.384)
+	ctype 6 points  vec_nupeak (vec_ratio_rg+12.685) 
+	        connect vec_nupeak (vec_ratio_rg+12.685)
+	ptype 4 0 
+	ctype 3 points  vec_nupeak (vec_ratio_rtev+16.384)
+	ctype 5 points  vec_nupeak (vec_ratio_rg+12.685)
+
+	#---------------------------------------------
+	window -3 -2  2  2 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0
+	limits 0.21 0.99 -0.1 4 
+	limits 0.21 0.99 0.9 4 
+	box 0 0 0 0 
+	# xlabel \alpha_{RO}
+
+	expand 2
+	ptype 4 3 
+	ctype 7 points  vec_aro (vec_ratio_rtev+16.384)
+	        connect vec_aro (vec_ratio_rtev+16.384)
+	ctype 6 points  vec_aro (vec_ratio_rg+12.685) 
+	        connect vec_aro (vec_ratio_rg+12.685)
+	ptype 4 0 
+	ctype 3 points  vec_aro (vec_ratio_rtev+16.384)
+	ctype 5 points  vec_aro (vec_ratio_rg+12.685)
+
+	#---------------------------------------------
+	window -3 -2  3  2 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0 
+	limits 0.21 0.99 -0.1 4 
+	limits 0.21 0.99 0.9 4 
+	box  0 0 0 2 
+	# xlabel \alpha_{RX}
+
+	expand 2
+	ptype 4 3 
+	ctype 7 points  vec_arx (vec_ratio_rtev+16.384)
+	        connect vec_arx (vec_ratio_rtev+16.384)
+	ctype 6 points  vec_arx (vec_ratio_rg+12.685) 
+	        connect vec_arx (vec_ratio_rg+12.685)
+	ptype 4 0 
+	ctype 3 points  vec_arx (vec_ratio_rtev+16.384)
+	ctype 5 points  vec_arx (vec_ratio_rg+12.685)
+
+	notation -4 4 -4 4 
+
+#---------------------------------------------------------------------------
+# egret_tev_2_bw
+egret_tev_2_bw
+
+	window 1 1 1 1 
+	location 5000 30000 5000 31000 
+	ltype 0 
+	notation -4 4 -4 4 
+
+	#---------------------------------------------
+	window -3 -2  1  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 0.21 0.99 40.6 49.9 
+	box 1 2 0 0 
+	xlabel \alpha_{RO}
+	expand 1.3
+	ylabel log(\\nu L_{\\nu}) [erg/sec]
+
+	lweight 4 
+	ltype 0 connect vec_aro vec_lum_tev
+	ltype 2 connect vec_aro vec_lum_egret
+	lweight 1.5
+
+	#---------------------------------------------
+	window -3 -2  2  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 0.31 0.92 40.6 49.9 
+	box  1 0 0 0 
+	xlabel \alpha_{RX}
+
+	lweight 4 
+	ltype 0 connect vec_arx vec_lum_tev
+	ltype 2 connect vec_arx vec_lum_egret
+	lweight 1.5
+
+	#---------------------------------------------
+	window -3 -2  3  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 12.1 18.9 40.6 49.9 
+	box  1 0 0 2 
+	xlabel log(\\nu_{\rm peak,sync})
+
+	lweight 4 
+	ltype 0 connect vec_nupeak vec_lum_tev   
+	ltype 2 connect vec_nupeak vec_lum_egret
+	lweight 1.5
+
+	#--------------------------------------------
+	#  SECOND (UPPER) ROW OF BOXES
+	#  
+
+	notation -4 4 -1 1 
+	ltype 0 
+
+	#---------------------------------------------
+	vecminmax vec_ratio_rg minrg maxrg
+	set lgy      = vec_ratio_rg - $maxrg
+	set y        = 10**lgy
+	set egret100 = 100*y
+
+	vecminmax vec_ratio_rtev minrtev maxrtev
+	set lgyy   = vec_ratio_rtev - $maxrtev
+	set yy     = 10**lgyy
+	set tev100 = 100*yy
+
+	#---------------------------------------------
+	window -3 -2  1  2 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0
+	limits 0.21 0.99 -0.1 4 
+	limits 0.21 0.99 0.9 4 
+	box 0 2 0 0 
+	expand 1.3
+	ylabel \\nu_\gamma F_{\\nu_\gamma}/\\nu_{\rm 5GHz} F_{\rm 5GHz}
+
+	lweight 4 
+	ltype 0 connect vec_aro (vec_ratio_rtev+16.384)
+	ltype 2 connect vec_aro (vec_ratio_rg+12.685)
+	lweight 1.5
+
+	#---------------------------------------------
+	window -3 -2  2  2 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0 
+	limits 0.21 0.99 -0.1 4 
+	limits 0.31 0.92 0.9 4 
+	box  0 0 0 0 
+	# xlabel \alpha_{RX}
+
+	lweight 4 
+	ltype 0 connect vec_arx (vec_ratio_rtev+16.384)
+	ltype 2 connect vec_arx (vec_ratio_rg+12.685)
+	lweight 1.5
+
+	#---------------------------------------------
+	window -3 -2  3  2 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0
+	limits 12.1 18.9 -0.1 4
+	limits 12.1 18.9 0.9 4
+	box  0 0 0 2 
+
+	lweight 4 
+	ltype 0 connect vec_nupeak (vec_ratio_rtev+16.384)
+	ltype 2 connect vec_nupeak (vec_ratio_rg+12.685)
+	lweight 1.5
+
+	notation -4 4 -4 4 
+
+	window 1 1 1 1 
+	location 5000 30000 5000 31000 
+
+#---------------------------------------------------------------------------
+# egret_tev_2_1
+egret_tev_2_1
+
+	window 1 1 1 1 
+	location 5000 21000 5000 31000 
+	ltype 0 
+	notation -4 4 -4 4 
+
+	define 1 ? { Colored lines or BW [bw] ? }
+
+	#---------------------------------------------
+	window -2 -3  1  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 0.21 0.99 40.6 49.9 
+	box 1 2 0 0 
+	xlabel \alpha_{RO}
+	expand 1.3
+	ylabel log(\\nu L_{\\nu}) [erg/sec]
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_aro vec_lum_tev
+	ltype 2 connect vec_aro vec_lum_egret
+	} else {
+	ctype 5 connect vec_aro vec_lum_tev
+	ctype 3 connect vec_aro vec_lum_egret
+	}
+	lweight 1.5
+
+	#---------------------------------------------
+	window -2 -3  2  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 0.31 0.92 40.6 49.9 
+	box  1 0 0 0 
+	xlabel \alpha_{RX}
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_arx vec_lum_tev
+	ltype 2 connect vec_arx vec_lum_egret
+	} else {
+	ctype 5 connect vec_arx vec_lum_tev
+	ctype 3 connect vec_arx vec_lum_egret
+	}
+	lweight 1.5
+
+	#--------------------------------------------
+	#  SECOND (MIDDLE) ROW OF BOXES
+	#  
+
+	notation -4 4 -1 1 
+	ltype 0 
+
+	#---------------------------------------------
+	window -2 -3  1  2 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0
+	limits 0.21 0.99 0.9 3.8
+	limits 0.21 0.99 1.1 3.8
+	box 0 2 0 0 
+	expand 1.5
+	ylabel \\nu_\gamma F_{\\nu_\gamma}/\\nu_{\rm R}F_{\rm R}
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_aro (vec_ratio_rtev+16.384)
+	ltype 2 connect vec_aro (vec_ratio_rg+12.685)
+	} else {
+	ctype 5 connect vec_aro (vec_ratio_rtev+16.384)
+	ctype 3 connect vec_aro (vec_ratio_rg+12.685)
+	}
+	lweight 1.5
+
+	#---------------------------------------------
+	window -2 -3  2  2 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0 
+	limits 0.31 0.92 0.9 3.8
+	limits 0.31 0.92 1.1 3.8
+	box  0 0 0 0 
+	# xlabel \alpha_{RX}
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_arx (vec_ratio_rtev+16.384)
+	ltype 2 connect vec_arx (vec_ratio_rg+12.685)
+	} else {
+	ctype 5 connect vec_arx (vec_ratio_rtev+16.384)
+	ctype 3 connect vec_arx (vec_ratio_rg+12.685)
+	}
+	lweight 1.5
+
+	#--------------------------------------------
+	#  THIRD (UPPER) ROW OF BOXES
+	#  
+
+	notation -4 4 -1 1 
+	ltype 0 
+
+	set vec_ratio_xg   = vec_lum_egret - vec_lx
+	set vec_ratio_xtev = vec_lum_tev   - vec_lx
+
+	#---------------------------------------------
+	window -2 -3  1  3 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0
+	limits 0.21 0.99 -1.1 2.6 
+	limits 0.21 0.99 -1.1 3.6 
+	box 0 2 0 0 
+	expand 1.5
+	ylabel \\nu_\gamma F_{\\nu_\gamma}/\\nu_{\rm X}F_{\rm X}
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_aro vec_ratio_xtev
+	ltype 2 connect vec_aro vec_ratio_xg
+	} else {
+	ctype 5 connect vec_aro vec_ratio_xtev
+	ctype 3 connect vec_aro vec_ratio_xg
+	}
+	lweight 1.5
+
+	#---------------------------------------------
+	window -2 -3  2  3 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0 
+	limits 0.31 0.92 -1.1 2.6
+	limits 0.31 0.92 -1.1 3.6
+	box  0 0 0 0 
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_arx vec_ratio_xtev
+	ltype 2 connect vec_arx vec_ratio_xg
+	} else {
+	ctype 5 connect vec_arx vec_ratio_xtev
+	ctype 3 connect vec_arx vec_ratio_xg
+	}
+	lweight 1.5
+
+	#---------------------------------------------
+	# SECOND COLUMN 
+	#
+
+	notation -4 4 -4 4 
+	window 1 1 1 1 
+	location 21750 29750 5000 31000 
+
+	#---------------------------------------------
+	window 1 -3  1  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 12.1 18.9 40.6 49.9 
+	box  1 0 0 2 
+	xlabel log(\\nu_{\rm peak,sync})
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_nupeak vec_lum_tev   
+	ltype 2 connect vec_nupeak vec_lum_egret
+	} else {
+	ctype 5 connect vec_nupeak vec_lum_tev   
+	ctype 3 connect vec_nupeak vec_lum_egret
+	}
+	lweight 1.5
+
+	#---------------------------------------------
+	notation -4 4 -1 1 
+	#---------------------------------------------
+	window 1 -3  1  2 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0
+	limits 12.1 18.9 0.9 3.8
+	limits 12.1 18.9 1.1 3.8
+	box  0 0 0 2 
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_nupeak (vec_ratio_rtev+16.384)
+	ltype 2 connect vec_nupeak (vec_ratio_rg+12.685)
+	} else {
+	ctype 5 connect vec_nupeak (vec_ratio_rtev+16.384)
+	ctype 3 connect vec_nupeak (vec_ratio_rg+12.685)
+	}
+	lweight 1.5
+
+	#---------------------------------------------
+	window 1 -3  1  3 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0
+	limits 12.1 18.9 -1.1 2.6
+	limits 12.1 18.9 -1.1 3.6
+	box  0 0 0 2 
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_nupeak vec_ratio_xtev
+	ltype 2 connect vec_nupeak vec_ratio_xg
+	} else {
+	ctype 5 connect vec_nupeak vec_ratio_xtev
+	ctype 3 connect vec_nupeak vec_ratio_xg
+	}
+	lweight 1.5
+
+
+        #---------------------------------------------
+	notation -4 4 -4 4 
+
+	window 1 1 1 1 
+	location 5000 30000 5000 31000 
+	lweight 1
+
+#---------------------------------------------------------------------------
+# egret_tev_2_1_true
+egret_tev_2_1_true
+
+	window 1 1 1 1 
+	location 5000 21000 5000 31000 
+	ltype 0 
+	notation -4 4 -4 4 
+
+	define 1 ? { Colored lines or BW [bw] ? }
+
+	#---------------------------------------------
+	window -2 -3  1  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 0.21 0.99 40.6 49.9 
+	box 1 2 0 0 
+	xlabel \alpha_{RO}
+	expand 1.3
+	ylabel log(\\nu L_{\\nu}) [erg/sec]
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_aro vec_lum_tev_true
+	ltype 2 connect vec_aro vec_lum_egret_true
+	} else {
+	ctype 5 connect vec_aro vec_lum_tev_true
+	ctype 3 connect vec_aro vec_lum_egret_true
+	}
+	lweight 1.5
+
+	#---------------------------------------------
+	window -2 -3  2  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 0.31 0.92 40.6 49.9 
+	box  1 0 0 0 
+	xlabel \alpha_{RX}
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_arx vec_lum_tev_true
+	ltype 2 connect vec_arx vec_lum_egret_true
+	} else {
+	ctype 5 connect vec_arx vec_lum_tev_true
+	ctype 3 connect vec_arx vec_lum_egret_true
+	}
+	lweight 1.5
+
+	#--------------------------------------------
+	#  SECOND (MIDDLE) ROW OF BOXES
+	#  
+
+	notation -4 4 -1 1 
+	ltype 0 
+
+	#---------------------------------------------
+	window -2 -3  1  2 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0
+	limits 0.21 0.99 2.1 4.8 
+	box 0 2 0 0 
+	expand 1.5
+	ylabel \\nu_\gamma F_{\\nu_\gamma}/\\nu_{\rm R}F_{\rm R}
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_aro (vec_lum_tev_true - vec_lr)
+	ltype 2 connect vec_aro (vec_lum_egret_true - vec_lr)
+	} else {
+	ctype 5 connect vec_aro (vec_lum_tev_true - vec_lr)
+	ctype 3 connect vec_aro (vec_lum_egret_true - vec_lr)
+	}
+	lweight 1.5
+
+	#---------------------------------------------
+	window -2 -3 2 2 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0 
+	limits 0.31 0.92 2.1 4.8
+	box  0 0 0 0 
+	# xlabel \alpha_{RX}
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_arx (vec_lum_tev_true - vec_lr)
+	ltype 2 connect vec_arx (vec_lum_egret_true - vec_lr)
+	} else {
+	ctype 5 connect vec_arx (vec_lum_tev_true - vec_lr)
+	ctype 3 connect vec_arx (vec_lum_egret_true - vec_lr)
+	}
+	lweight 1.5
+
+	#--------------------------------------------
+	#  THIRD (UPPER) ROW OF BOXES
+	#  
+
+	notation -4 4 -1 1 
+	ltype 0 
+
+	#---------------------------------------------
+	window -2 -3  1  3 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0
+	limits 0.21 0.99 -1.1 3.6 
+	box 0 2 0 0 
+	expand 1.5
+	ylabel \\nu_\gamma F_{\\nu_\gamma}/\\nu_{\rm X}F_{\rm X}
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_aro (vec_lum_tev_true - vec_lx)
+	ltype 2 connect vec_aro (vec_lum_egret_true - vec_lx)
+	} else {
+	ctype 5 connect vec_aro (vec_lum_tev_true - vec_lx)
+	ctype 3 connect vec_aro (vec_lum_egret_true - vec_lx)
+	}
+	lweight 1.5
+
+	#---------------------------------------------
+	window -2 -3  2  3 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0 
+	limits 0.31 0.92 -1.1 3.6
+	box  0 0 0 0 
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_arx (vec_lum_tev_true - vec_lx)
+	ltype 2 connect vec_arx (vec_lum_egret_true - vec_lx)
+	} else {
+	ctype 5 connect vec_arx (vec_lum_tev_true - vec_lx)
+	ctype 3 connect vec_arx (vec_lum_egret_true - vec_lx)
+	}
+	lweight 1.5
+
+	#---------------------------------------------
+	# SECOND COLUMN 
+	#
+
+	notation -4 4 -4 4 
+	window 1 1 1 1 
+	location 21750 29750 5000 31000 
+
+	#---------------------------------------------
+	window 1 -3  1  1 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 12.1 18.9 40.6 49.9 
+	box  1 0 0 2 
+	xlabel log(\\nu_{\rm peak,sync})
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_nupeak vec_lum_tev_true
+	ltype 2 connect vec_nupeak vec_lum_egret_true
+	} else {
+	ctype 5 connect vec_nupeak vec_lum_tev_true
+	ctype 3 connect vec_nupeak vec_lum_egret_true
+	}
+	lweight 1.5
+
+	#---------------------------------------------
+	notation -4 4 -1 1 
+	#---------------------------------------------
+	window 1 -3  1  2 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0
+	limits 12.1 18.9 2.1 4.8
+	box  0 0 0 2 
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_nupeak (vec_lum_tev_true - vec_lr)
+	ltype 2 connect vec_nupeak (vec_lum_egret_true - vec_lr)
+	} else {
+	ctype 5 connect vec_nupeak (vec_lum_tev_true - vec_lr)
+	ctype 3 connect vec_nupeak (vec_lum_egret_true - vec_lr)
+	}
+	lweight 1.5
+
+	#---------------------------------------------
+	window 1 -3  1  3 
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 -1 0
+	limits 12.1 18.9 -1.1 3.6
+	box  0 0 0 2 
+
+	lweight 4 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_nupeak (vec_lum_tev_true - vec_lx)
+	ltype 2 connect vec_nupeak (vec_lum_egret_true - vec_lx)
+	} else {
+	ctype 5 connect vec_nupeak (vec_lum_tev_true - vec_lx)
+	ctype 3 connect vec_nupeak (vec_lum_egret_true - vec_lx)
+	}
+	lweight 1.5
+
+
+
+        #---------------------------------------------
+	notation -4 4 -4 4 
+
+	window 1 1 1 1 
+	location 5000 30000 5000 31000 
+	lweight 1
+
+#---------------------------------------------------------------------------
+# egret_tev_1_true
+egret_tev_1_true
+
+	window 1 1 1 1 
+	location 12000 24500 5000 31000 
+	ltype 0 
+	notation -4 4 -4 4 
+
+	define 1 ? { Colored lines or BW [bw] ? }
+
+	#---------------------------------------------
+	# COLUMN 
+	#
+
+	#---------------------------------------------
+	window 1 -3  1  1 
+	expand 1.5 
+	lweight 2
+	ctype 2
+	ticksize 0 0 0 0 
+	limits 12.1 18.9 40.6 49.9 
+	box  1 2 0 0 
+	xlabel log(\\nu_{\rm peak,sync})
+	ylabel log(L_\gamma) [erg/sec]
+
+	lweight 30 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_nupeak vec_lum_tev_true
+	ltype 2 connect vec_nupeak vec_lum_egret_true
+	} else {
+	ctype 5 connect vec_nupeak vec_lum_tev_true
+	ctype 3 connect vec_nupeak vec_lum_egret_true
+	}
+	lweight 1.5
+
+	#---------------------------------------------
+	notation -4 4 -1 1 
+	#---------------------------------------------
+	window 1 -3  1  3 
+	expand 1.5 
+	lweight 2
+	ctype 2
+	ticksize 0 0 -1 0
+	limits 12.1 18.9 2.1 4.8
+	box  0 2 0 0 
+	ylabel F__\gamma/\\nu_{\rm R}F_{\rm R}
+
+	lweight 30
+	if('$1' == 'bw') {
+	ltype 0 connect vec_nupeak (vec_lum_tev_true - vec_lr)
+	ltype 2 connect vec_nupeak (vec_lum_egret_true - vec_lr)
+	} else {
+	ctype 5 connect vec_nupeak (vec_lum_tev_true - vec_lr)
+	ctype 3 connect vec_nupeak (vec_lum_egret_true - vec_lr)
+	}
+	lweight 1.5
+
+	#---------------------------------------------
+	window 1 -3  1  2 
+	expand 1.5 
+	lweight 2
+	ctype 2
+	ticksize 0 0 -1 0
+	limits 12.1 18.9 -1.1 3.6
+	box  0 2 0 0 
+	ylabel F_\gamma/\\nu_{\rm X}F_{\rm X}
+
+	lweight 30 
+	if('$1' == 'bw') {
+	ltype 0 connect vec_nupeak (vec_lum_tev_true - vec_lx)
+	ltype 2 connect vec_nupeak (vec_lum_egret_true - vec_lx)
+	} else {
+	ctype 5 connect vec_nupeak (vec_lum_tev_true - vec_lx)
+	ctype 3 connect vec_nupeak (vec_lum_egret_true - vec_lx)
+	}
+	lweight 1.5
+
+        #---------------------------------------------
+	notation -4 4 -4 4 
+
+	window 1 1 1 1 
+	location 5000 30000 5000 31000 
+	lweight 1
+
+#---------------------------------------------------------------------------

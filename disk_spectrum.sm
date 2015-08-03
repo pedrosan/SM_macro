@@ -1,0 +1,136 @@
+#-------------------------------------------------------------------------------
+# disk
+disk      	
+
+	reset_graph
+	# define_physical_constants
+
+	echo "------------------------------------------------------------"
+	define Tbb      ? <                        BB temperature [K] : >
+	define Tir      ? <                        IR temperature [K] : >
+	define lya_norm ? <       Relative norm. of Lyman-a w.r.t. BB : >
+	define alpha_pl ? < X-ray power law:   spectral index (alpha) : > 
+	define e_cut    ? < X-ray power law:             cutoff [keV] : >
+	define pl_norm  ? < X-ray power law: relative norm. w.r.t. BB : >
+	echo "------------------------------------------------------------"
+
+	define nu_cut    ($e_cut*2.418e17)
+	define nu_lya    (2.47e15)          # Hz
+	define lya_sigma (0.5e15)           # Hz
+
+	define nu_bb $($kboltz*$Tbb/$hplanck)
+	define nu_ir $($kboltz*$Tir/$hplanck)
+
+	echo " nu_bb = " $nu_bb
+	echo " nu_ir = " $nu_ir
+
+	set lg_nu=11.0,21.0,0.001
+	set nu=10.0**lg_nu
+
+        set lg_nfn1 = -0.5*(lg_nu-lg($nu_bb)) - 0.4343*(nu/$nu_bb) + lg(1 - exp(-nu/$nu_ir)) + lg_nu
+        vecminmax lg_nfn1 a b
+	set lg_nfn1 = lg_nfn1 - $b
+
+        set lg_nfn2a = lg($pl_norm) - $alpha_pl*lg_nu - 0.4343*(nu/$nu_cut) + lg_nu 
+	set lg_nfn2b = lg_nfn2a*0 - 40.0
+	set lg_nfn2  = (lg_nu > 15.2) ? lg_nfn2a : lg_nfn2b
+
+	set lya = gauss(nu,$nu_lya,$lya_sigma)
+	set nfn_lya = lya*nu*$lya_norm
+
+        set lg_nfn   = lg(10.0**lg_nfn1  + 10.0**lg_nfn2 + nfn_lya)
+
+	#--------------------
+	# range 10 8 
+        # limits 11 21 lg_nfn
+        limits 11 21 -6.8 1.2
+	box
+	xlabel log(\\nu) [Hz]
+	ylabel log(\\nu F_{\\nu}) [arb. units]
+
+	define dy (1000)
+	expand 1.1
+	relocate ( $($gx1 + 0.60*($gx2-$gx1))  $($gy1 + 4*$dy ) )
+	putlabel 6 T_{BB} = $Tbb K
+	relocate ( $($gx1 + 0.60*($gx2-$gx1))  $($gy1 + 3*$dy ) )
+	putlabel 6 T_{IR} = $Tir K
+	relocate ( $($gx1 + 0.60*($gx2-$gx1))  $($gy1 + 2*$dy ) )
+	putlabel 6 \alpha_{X} = $alpha_pl
+	relocate ( $($gx1 + 0.60*($gx2-$gx1))  $($gy1 + 1*$dy ) )
+	putlabel 6 E_{cut} = $e_cut keV
+
+	expand 1.5
+
+	lweight 5
+        ctype 3 
+	ltype 1 connect lg_nu (lg(nfn_lya))
+	ltype 0 connect lg_nu  lg_nfn 
+	ctype 2
+	lweight 3
+
+	#--------------------
+	set real_bb = bb_spectrum(lg_nu,$Tbb)
+	ctype 4
+	ltype 1 connect lg_nu real_bb
+	ctype 2 
+
+	#--------------------
+	data blr_fig3.dat
+	read < blr1_x 1 blr1_y 2 >
+	vecminmax blr1_y a b 
+	set blr1_y = blr1_y - $b 
+
+	data blr_fig3_dashed.dat
+	read < blr2_x 1 blr2_y 2 >
+	vecminmax blr2_y a b 
+	set blr2_y = blr2_y - $b 
+
+	ctype 5 
+	ltype 2 connect blr2_x blr2_y
+	ltype 0 connect blr1_x blr1_y
+	ctype 2
+
+	echo "------------------------------------------------------------"
+	echo " Red lines "
+	echo "  = solid : model spectrum"
+	echo "  = dotted: Lyman-alpha contribution"
+	echo " Green line"
+	echo "  = dotted: BB spectrum for the same Tbb"
+	echo " Blue lines"
+	echo "  = solid : complex BLR spectrum from Tavecchio & GG Fig.3"
+	echo "  = dashed: simpler BLR spectrum from Tavecchio & GG Fig.3"
+	echo "------------------------------------------------------------"
+
+##-------------------------------------------------------------------------------
+reset_graph
+
+        range 0 0 
+        angle 0
+        expand 1.5
+        lweight 3 
+        ltype 0
+        ctype 2
+        window 1 1 1 1
+        notation -4 4 -4 4
+        ticksize 0 0 0 0 
+        location 5500 30000 5500 30000
+
+#-------------------------------------------------------------------------------
+# bb_spectrum <log nu array> <Temperature>
+bb_spectrum 2
+
+	# define_physical_constants
+	define nu_bb $($kboltz*$2/$hplanck)
+
+	set xx local
+	set bb local
+	set xx = $1
+	set RR = xx - lg($nu_bb)
+
+	set bb = 3.*xx - lg(exp(10.**RR) - 1.0)
+	vecminmax bb bb1 bb2
+	set bb = bb - $bb2
+
+	set $0 = bb
+
+#-------------------------------------------------------------------------------

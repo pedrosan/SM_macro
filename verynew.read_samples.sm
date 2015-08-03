@@ -1,0 +1,1319 @@
+##-------------------------------------------------------------------------
+## help.read_samples
+help.read_samples
+
+	echo  "--------------------------------------------------" 
+        echo  "  * read_ax" 
+        echo  "  * read_gamma 1" 
+        echo  "  * read_z " 
+        echo  "  * read_iras" 
+        echo  "  * who_iras" 
+        echo  "  * bulk  1" 
+	echo  "--------------------------------------------------" 
+        echo  "  * read_emss" 
+        echo  "  * read_slew" 
+        echo  "  * read_1jy" 
+        echo  "  * read_wp " 
+	echo  "--------------------------------------------------" 
+        echo  "  * nln5_all" 
+        echo  "  * nln5_query    [<\#-of-the-source>]" 
+        echo  "  * fit_nln5_all" 
+	echo  "--------------------------------------------------" 
+
+##--------------------------------------------------------------------------
+read_ax
+
+	echo " REMEMBER to check the actual meaning of the flag_ax strings "
+
+	read { _flag_ax 2.s _ax 5 _err_ax_u 6 _err_ax_d 7 }
+
+	set dimen(ax)       = dimen(name)
+	set dimen(err_ax_u) = dimen(name)
+	set dimen(err_ax_d) = dimen(name)
+	set dimen(flag_ax)  = dimen(name)
+
+	do i=0,$(dimen(name)-1) {
+	   if(substr(_flag_ax[$i],0,1) == '3') {
+	       set ax[$i]       = _ax[$i]
+	       set err_ax_u[$i] = _err_ax_u[$i]
+	       set err_ax_d[$i] = _err_ax_d[$i]
+           } else {
+	       set ax[$i]       = 5
+	       set err_ax_u[$i] = 0
+	       set err_ax_d[$i] = 0
+           }
+
+	   if(substr(_flag_ax[$i],0,1) == '0') { set flag_ax[$i] = 0 }
+	   if(substr(_flag_ax[$i],0,1) == '1') { set flag_ax[$i] = 1 }
+	   if(substr(_flag_ax[$i],0,1) == '2') { set flag_ax[$i] = 2 } 
+	   if(substr(_flag_ax[$i],0,1) == '3') { set flag_ax[$i] = 3 }
+	}
+
+##--------------------------------------------------------------------------
+## 	1 - fa la media dell'indice spettrale per le sorgenti 
+##	    per le quali e` misurato.
+##	2 - assegna l'indice medio alle sorgenti prive di misura 
+##	3 - calcola il flusso gamma k-corrected per tutte, usando
+##	    il valore vero dell'indice gamma per quelle per cui c'e`
+##	    o quello medio per le altre.
+##
+read_gamma 1
+
+	delete n_g
+	read { flag_g 3 n_g 5 _ag 6 _err_ag_u 7 _err_ag_d 8 }
+
+	set dimen(ag)       = dimen(name)
+	set dimen(err_ag_u) = dimen(name)
+	set dimen(err_ag_d) = dimen(name)
+	set dimen(f_g)      = dimen(name)
+
+	define gu "n"
+	define gu ? { Show data on screen ? }
+	if(substr('$gu',0,1) == 'y' ) {
+	   print {flag_g _ag n_g _err_ag_u}
+	}
+
+	do i=0,$(dimen(name)-1) {
+	  if($(flag_g[$i]) == 3) {
+	     set ag[$i]       = _ag[$i]
+	     set err_ag_u[$i] = _err_ag_u[$i]
+	     set err_ag_d[$i] = _err_ag_d[$i]
+	     set f_g[$i]      = $(n_g[$i])*$(ag[$i])*6.62e-5*(1+$(z[$i]))**($(ag[$i])-1.)
+          } else {
+	     set ag[$i]       = 5
+	     set err_ag_u[$i] = 0
+	     set err_ag_d[$i] = 0
+	     set f_g[$i]      = 0
+          }
+	}
+
+	#-----------------------------------------------------------------
+	# fa la media dell'indice spettrale gamma per le sorgenti 
+	# per le quali c'e` la misura
+	#-----------------------------------------------------------------
+	# 
+	echo "*" 
+	echo "* averaging known Gamma-ray spectral indices" 
+	echo "*" 
+        define maxind (dimen(ag)-1)
+	define sum    (0.0)
+	define num    (0)
+	define sum2   (0.0)
+
+	do i=0,$(dimen(name)-1) {
+	  if($(flag_g[$i]) == 3) {
+             define sum  ($sum  + $(ag[$i])   )
+	     define sum2 ($sum2 + $(ag[$i])**2)
+	     define num  ($num + 1) 
+	  }
+	}
+
+	echo "--- alpha_g -----------------------------------"
+	echo "   Number of valid contributions : "$num
+
+	if($num > 0) {
+	   echo    Sum of them : $sum
+	   echo    Sum of them squared : $sum2
+
+	   define avrg_ag_vec   ($sum/$num)
+	   define sigma_ag_vec  (sqrt($sum2/$num - ($sum/$num)**2))
+	   echo " "
+	   echo "  the average spectral index is : "$avrg_ag_vec
+	   echo "  the associated sigma is : "$sigma_ag_vec
+	   if($num == 1) {define sigma_ag_vec  ($sigma_ag_vec/sqrt($num))   }
+	   if($num >= 2) {define sigma_ag_vec  ($sigma_ag_vec/sqrt($num-1)) }
+	   echo "  the associated sigma is : "$sigma_ag_vec
+	   echo "-----------------------------------------------"
+	} else {
+	   echo " "
+	   echo "  There are no contributions to the averaging "
+	   echo "    of the gamma-ray spectral index "
+	   echo "----------------------------------------------- "
+	}
+
+	#-----------------------------------------------------------------
+	# assegna il valore dell'indice spettrale gamma medio
+	# alle sorgenti per le quali non c'e` la misura
+	#-----------------------------------------------------------------
+	# 
+	echo  * assigning an average Gamma-ray spectral index to sources without
+	echo  *
+	do i=0,$(dimen(name)-1) {
+	  if($(flag_g[$i]) == 2 || $(flag_g[$i]) == 1) {
+	     set ag[$i]       = $avrg_ag_vec
+	     set err_ag_u[$i] = $sigma_ag_vec
+	     set err_ag_d[$i] = $sigma_ag_vec
+	  }
+	}
+
+	#-----------------------------------------------------------------
+	# calcola/converte il flusso gamma per le sorgenti per le quali c'e`
+	#-----------------------------------------------------------------
+	# 
+	echo " * computing the Gamma-ray flux "
+	echo " * "
+	do i=0,$(dimen(name)-1) {
+	  if( flag_g[$i] == 3 || flag_g[$i] == 2) {
+	     set f_g[$i] = $(n_g[$i])*$(ag[$i])*6.62e-5*(1+$(z[$i]))**($(ag[$i])-1.)
+           } 
+	}
+
+	#
+	# definisce delle variabili che serviranno all'eventuale
+	# chiamata della macro "prepare_g" 
+	#
+	set gname = name
+	set flag_g = flag_g
+	define sam $1
+	set flagsam = 0*flag_g + $sam
+
+
+##--------------------------------------------------------------------------
+## 	1 - fa la media del redshift per le sorgenti 
+##	    per le quali e` misurato.
+##	2 - assegna il redshift medio alle sorgenti prive di misura 
+##
+read_z 
+
+	read { zs 6.s }
+
+	set dimen(flag_z) = dimen(name)
+	set dimen(z)      = dimen(name)
+
+	do i=0,$(dimen(name)-1) {
+	   if(substr(zs[$i],0,1) == '>') {
+	      set flag_z[$i] = 1
+	      set z[$i] = atof(substr(zs[$i],1,5)) 
+           } else {
+	     if(substr(zs[$i],0,1) == '?') {
+	        set flag_z[$i] = 2
+	        set z[$i] = atof(substr(zs[$i],1,5)) 
+             } else {
+	       if(substr(zs[$i],0,1) == '-') {
+	          set flag_z[$i] = 0
+	          set z[$i] = 0
+	       } else {
+	          set flag_z[$i] = 3
+	          set z[$i] = atof(zs[$i])
+	       }
+	     }
+	   }
+	}
+	#------------------------
+	# flag_z:
+	#    0 = no redshift
+	#    1 = lower limit
+	#    2 = uncertain
+	#    3 = firm
+	#------------------------
+
+	#-----------------------------------------------------------------
+	# fa la media del redshift 
+	#-----------------------------------------------------------------
+	# 
+        define maxind (dimen(name)-1)
+	define sum    (0.0)
+	define num    (0)
+
+	do i=0,$(dimen(name)-1) {
+	  if($(flag_z[$i]) > 0) {
+             define sum  ($sum  + $(z[$i])   )
+	     define num  ($num + 1) 
+	  }
+	}
+
+	echo "--- redshift -----------------------------------"
+	echo "   Number of valid contributions : "$num
+	echo "   Sum of them : "$sum
+
+	define avrg_z   ($sum/$num)
+	echo " "
+	echo "   the average redshift is : "$avrg_z 
+	echo "-----------------------------------------------"
+
+
+	#-----------------------------------------------------------------
+	# assegna il valore del redshift 
+	# alle sorgenti per le quali non c'e` la misura
+	#-----------------------------------------------------------------
+	# 
+	do i=0,$(dimen(name)-1) {
+	  if($(flag_z[$i]) == 0 ) {
+	     set z[$i]       = $avrg_z
+	  }
+	}
+
+
+##---------------------------------------------------------------------------
+## read_iras [<sample-name>]
+read_iras 01
+
+	if(!$?1) {
+	   define sample ? {What sample-list are you going to read ? }
+	   define 1 $sample
+	}
+	define sample $1
+
+	data $sample.data
+	read { name 1.s f_radio 7 }
+	read_z
+
+	if('$sample' == '1jy'     ) { define maxidx (33) }
+	if('$sample' == 'wp'      ) { define maxidx (49) }
+	if('$sample' == 'slew_c'  ) { define maxidx (47) }
+	if('$sample' == 'slew_red') { define maxidx (41) }
+
+	#
+	# spectral index used for K-correction
+	#
+	if('$sample' == '1jy'     ) { define aa (0.8) }
+	if('$sample' == 'wp'      ) { define aa (1.0) }
+	if('$sample' == 'slew_c'  ) { define aa (0.5) }
+	if('$sample' == 'slew_red') { define aa (0.5) }
+
+	data $sample.iras
+	read { iras12 2 iras25 3 iras60 4 iras100 5 }
+
+	define light (2.99792e8)
+	define nu12  (lg($light/12e-6))
+	define nu25  (lg($light/25e-6))
+	define nu60  (lg($light/60e-6))
+	define nu100 (lg($light/100e-6))
+
+	#-----------------------------------------------------------------------------
+	echo " * Defining cosmological parameters...  "
+	echo "   (calling cosmo_calculator_vec) "
+        if(!$(is_macro(cosmo_calculator_vec))) {
+            echo "WARNING: this macro REQUIRES cosmo_calculator_vec included in cosmo_calculator.sm"
+	    myload cosmo_calculator
+        }
+	cosmo_calculator_vec z
+	# returns lg_dl_cm_vec
+	set d_l = lg_dl_cm_vec
+
+	# define h0 50
+	# define q0 0
+	# define h_100     ($h0/100.)
+	# define log_c_H_0 (27.96616033 - lg($h_100))
+	# set d_l = $log_c_H_0 + lg(z*(1. + 0.5*z))
+
+	delete flag_iras
+	set flag_iras=0*f_radio
+
+	foreach 3 ( 12 25 60 100 ) {
+	set dimen(lg_f_iras$3) = $($maxidx+1)
+	do 2=0,$maxidx {
+	   if( $(iras$3[$2]) < 55555 ) {
+	      set flag_iras[$2] = flag_iras[$2] + 1
+	      set lg_f_iras$3[$2] = lg(iras$3[$2]) - 26.
+	   } else {
+	      set lg_f_iras$3[$2] = 0
+	   }
+	}
+	}
+
+	set lg_nf_iras12 = lg_f_iras12 + $nu12
+	set lg_kf_iras12 = lg_f_iras12 + ($aa - 1.)*lg(1. + z)
+	set l_iras12     = 1.09920986 + 2.*d_l + lg_kf_iras12
+	set nl_iras12    = l_iras12  + $nu12
+
+	set lg_nf_iras25 = lg_f_iras25 + $nu25
+	set lg_kf_iras25 = lg_f_iras25 + ($aa - 1.)*lg(1. + z)
+	set l_iras25     = 1.09920986 + 2.*d_l + lg_kf_iras25
+	set nl_iras25    = l_iras25  + $nu25
+
+	set lg_nf_iras60 = lg_f_iras60 + $nu60
+	set lg_kf_iras60 = lg_f_iras60 + ($aa - 1.)*lg(1. + z)
+	set l_iras60     = 1.09920986 + 2.*d_l + lg_kf_iras60
+	set nl_iras60    = l_iras60  + $nu60
+
+	set lg_nf_iras100 = lg_f_iras100 + $nu100
+	set lg_kf_iras100 = lg_f_iras100 + ($aa - 1.)*lg(1. + z)
+	set l_iras100     = 1.09920986 + 2.*d_l + lg_kf_iras100
+	set nl_iras100    = l_iras100  + $nu100
+
+	echo * Setting CHECK vector
+	set_checks_iras
+
+##---------------------------------------------------------------------------
+## who_iras
+who_iras
+
+	define n (0)
+	do 1=0,$(dimen(flag_iras)-1) { 
+	   if($(flag_iras[$1]) > 0 ) {
+	      define n ($n+1)
+	      echo * [$n] * [$1] * $(name[$1]) -- $(flag_iras[$1]) 
+ 	   }
+	}
+
+##---------------------------------------------------------------------------
+## who_iras_flux
+who_iras_flux
+
+	define which ? { What IRAS flux do want to check [12/25/60/100] ? }
+	define 2 $which
+
+	define n (0)
+	do 1=0,$(dimen(flag_iras)-1) { 
+	   if($(lg_f_iras$2[$1]) < 0 ) {
+	      define n ($n+1)
+	      echo * [$n] * [$1] * $(name[$1]) -- $(flag_iras[$1]) 
+ 	   }
+	}
+
+##---------------------------------------------------------------------------
+## bulk <costante per radio-flux>
+bulk  1
+
+	define nu5    9.698
+	define numm  11.361
+	define nuir  14.136
+	define nuopt 14.736
+	define nux   17.383
+
+	define nu_radio  9.698
+	define nu_mm     11.361
+	define nu_ir     14.136
+	define nu_opt    14.736
+	define nu_x      17.383
+
+	set f_opt = 3480*10**(-mopt/2.5)
+	set f_ir  =  614*10**(-mir/2.5)
+
+	set lg_f_radio = lg(f_radio) - $1
+	set lg_f_mm    = lg(f_mm)    - $1
+	set lg_f_ir    = lg(f_ir)    - 23.
+	set lg_f_opt   = lg(f_opt)   - 23.
+	set lg_f_x     = lg(f_x)     - 29.
+
+	set lg_nf_radio= lg(f_radio) - $1  + $nu5
+	set lg_nf_mm   = lg(f_mm)    - $1  + $numm 
+	set lg_nf_ir   = lg(f_ir)    - 23. + $nuir 
+	set lg_nf_opt  = lg(f_opt)   - 23. + $nuopt
+	set lg_nf_x    = lg(f_x)     - 29. + $nux
+
+	set vnu5   = 0*f_radio + $nu5
+	set vnumm  = 0*f_mm    + $numm 
+	set vnuir  = 0*f_ir    + $nuir 
+	set vnuopt = 0*f_opt   + $nuopt
+	set vnux   = 0*f_x     + $nux
+
+	## nln_start ##
+
+	#-----------------------------------------------------------------------------
+	echo " * Defining cosmological parameters...  "
+	echo "   (calling cosmo_calculator_vec) "
+        if(!$(is_macro(cosmo_calculator_vec))) {
+            echo "WARNING: this macro REQUIRES cosmo_calculator_vec included in cosmo_calculator.sm"
+	    myload cosmo_calculator
+        }
+	cosmo_calculator_vec z
+	# returns lg_dl_cm_vec
+	set d_l = lg_dl_cm_vec
+
+	# echo "-------------------------------------- "
+	# echo "* defining cosmological parameters... "
+	# define h0 50
+	# define q0 0
+	# define h_100 ($h0/100.)
+	# define log_c_H_0 (27.96616033 - lg($h_100))
+	# set d_l=$log_c_H_0+lg(z*(1. + 0.5*z))
+ 
+	echo "* K-correcting the fluxes.... "
+	set lg_kf_radio = lg_f_radio + ($a_radio-1.)*lg(1.+z)
+  	set lg_kf_mm    = lg_f_mm    +    ($a_mm-1.)*lg(1.+z)
+	set lg_kf_ir    = lg_f_ir    +    ($a_ir-1.)*lg(1.+z)
+	set lg_kf_opt   = lg_f_opt   +   ($a_opt-1.)*lg(1.+z)
+	
+	define xkcorr "y" 
+	define xkcorr ? { K-correction for X-ray using real data (or average) ?}
+	if(substr('$xkcorr',0,1) == 'y') {
+	   sub_xkcorr
+	   set lg_kf_x = lg_f_x + (ax_kz - 1.)*lg(1.+z)
+	} else {
+	   set ax_kz = 0*ax_kz + $avrg_ax
+	   set lg_kf_x = lg_f_x + (ax_kz - 1.)*lg(1.+z)
+	}
+
+	echo "* computing luminosities... "
+	set l_radio = 1.09920986 + 2.*d_l + lg_kf_radio 
+	set l_mm    = 1.09920986 + 2.*d_l + lg_kf_mm    
+	set l_ir    = 1.09920986 + 2.*d_l + lg_kf_ir  
+	set l_opt   = 1.09920986 + 2.*d_l + lg_kf_opt 
+	set l_x     = 1.09920986 + 2.*d_l + lg_kf_x  
+
+	set nl_radio = l_radio + $nu5
+	set nl_mm    = l_mm    + $numm 
+	set nl_ir    = l_ir    + $nuir 
+	set nl_opt   = l_opt   + $nuopt
+	set nl_x     = l_x     + $nux
+	set ratio    = l_x - l_radio
+	echo "--------------------------------------"
+
+sub_xkcorr
+
+	#-----------------------------------------------------------------
+	# fa la media dell'indice spettrale X per le sorgenti 
+	# per le quali c'e` la misura
+	#-----------------------------------------------------------------
+	# 
+	echo " * "
+	echo " * averaging known X-ray spectral indices "
+	echo " * "
+        define maxind (dimen(ax)-1)
+	define sum    (0.0)
+	define num    (0)
+	define sum2   (0.0)
+
+	do i=0,$(dimen(name)-1) {
+	  if($(flag_ax[$i]) == 3) {
+             define sum  ($sum  + $(ax[$i])   )
+	     define sum2 ($sum2 + $(ax[$i])**2)
+	     define num  ($num + 1) 
+	  }
+	}
+
+	echo --- alpha_X -----------------------------------
+	echo    Number of valid contributions : $num
+
+	if($num > 0) {
+	   ##  echo    Sum of them : $sum
+	   ##  echo    Sum of them squared : $sum2
+
+	   define avrg_ax   ($sum/$num)
+	   define sigma_ax  (sqrt($sum2/$num - ($sum/$num)**2))
+	   ##  echo
+	   echo "  the average spectral index is : "$avrg_ax
+	   if($num == 1) {define sigma_ax  ($sigma_ax/sqrt($num))   }
+	   if($num >= 2) {define sigma_ax  ($sigma_ax/sqrt($num-1)) }
+	   ##  echo -----------------------------------------------
+	} else {
+	   echo " " 
+	   echo "  There are no contributions to the averaging "
+	   echo "    of the X-ray spectral index "
+	   echo "----------------------------------------------- "
+	}
+
+	#-----------------------------------------------------------------
+	# Prepare un nuovo vettore ax_kz, usato solo per la K-correction.
+	# Assegna il valore proprio di ax se la sorgente ha una misura,
+	# assegna il valore dell'indice spettrale X medio
+	# alle sorgenti per le quali non c'e` la misura
+	#-----------------------------------------------------------------
+	# 
+	echo " * assigning an average X-ray spectral index to sources without "
+	echo " * in order to be able to perform K-correction  "
+
+	set dimen(ax_kz)       = dimen(ax)
+	set dimen(err_ax_kz_u) = dimen(ax)
+	set dimen(err_ax_kz_d) = dimen(ax)
+
+	do i=0,$(dimen(name)-1) {
+	  if( $(flag_ax[$i]) == 3 ) {
+	     set ax_kz[$i] = ax[$i] 
+	     set err_ax_kz_u[$i] = err_ax_u[$i]
+	     set err_ax_kz_d[$i] = err_ax_d[$i] 
+	  } else {
+	     set ax_kz[$i]       = $avrg_ax
+	     set err_ax_kz_u[$i] = $sigma_ax
+	     set err_ax_kz_d[$i] = $sigma_ax
+	  }
+	}
+
+#--------------------------------------------------------------------------
+# rename_sample
+rename_sample
+	
+	echo "-------------------------------------------------- "
+	echo " * Renames f_, lg_f_, lg_kf_, l_, nl_ vectors "
+	echo "   and also name, z, type, flag_z, a_x, m_V  flag_ax flag_x"
+	echo "   and check_x check_opt check_g check_ir check_mm "
+	echo "-------------------------------------------------- "
+
+	define namsam ? < Which sample [slew|1jy|wp] : >
+	echo "--------------------------------------------------"
+
+	define 2 $namsam
+
+	foreach vec { name z type flag_z a_x m_V flag_ax flag_x check_mm check_ir check_opt check_x check_g } { 
+	   echo Setting : "$!vec"_$namsam
+	   set "$!vec"_$namsam = $vec 
+	}
+
+	foreach 1 < sed_type_rorx sed_type_ro sed_type_rx sed_type_ox > {
+	   echo Setting : $1_$2
+	   set $1_$2 = $1 
+	}
+
+	foreach vec { f lg_f lg_kf l nl } {
+	  foreach aux { x radio opt } {
+	     echo  Setting : "$!vec"_"$!aux"_$namsam 
+	     set "$!vec"_"$!aux"_$namsam = "$!vec"_"$!aux"
+	  }
+	}
+
+	foreach vec { radio_opt radio_x opt_x } { 
+	 foreach aux { a ak } {
+	     echo  Setting : "$!aux"_"$!vec"_$namsam 
+	     set "$!aux"_"$!vec"_$namsam = "$!aux"_"$!vec"
+	 }
+	}
+
+	set m_V_$namsam = mopt
+
+	define 7 $namsam
+	foreach 9 < a sed_type > { 
+	   foreach 8 < rorx ro rx ox > { 
+	      define 1 "$9_$8"
+	      echo " Setting : "$1_$7
+	      set $1_$7 = $1 
+	   }
+	}
+
+#---------------------------------------------------------------------------
+# set_checks
+set_checks
+
+	set dimen(check_mm)  = $(dimen(name))
+	set dimen(check_ir)  = $(dimen(name))
+	set dimen(check_opt) = $(dimen(name))
+	set dimen(check_x)   = $(dimen(name))
+	set dimen(check_g)   = $(dimen(name))
+
+	set check_radio=0*f_radio + 1
+
+	#
+	# Millimeter
+	#
+	do i=0,$(dimen(name)-1) {
+	   if(f_mm[$i] > 0.0) {
+	      set check_mm[$i]=1
+           } else {
+	      set check_mm[$i]=0
+           }
+	}
+
+	#
+	# Infra-Red
+	#
+	do i=0,$(dimen(name)-1) {
+	   if(mir[$i] > 0.0) {
+	      set check_ir[$i]=1
+           } else {
+	      set check_ir[$i]=0
+           }
+	}
+
+	#
+	# Optical
+	#
+	do i=0,$(dimen(name)-1) {
+	   if(mopt[$i] > 0.0) {
+	      set check_opt[$i]=1
+           } else {
+	      set check_opt[$i]=0
+           }
+	}
+
+	#
+	# X-ray
+	#
+	do i=0,$(dimen(name)-1) {
+	   if(flag_x[$i] > 0) {
+	      set check_x[$i]=1
+           } else {
+	      set check_x[$i]=0
+           }
+	}
+
+	#
+	# Gamma-ray
+	#
+	do i=0,$(dimen(name)-1) {
+	   if(flag_g[$i] > 1) {
+	      set check_g[$i]=1
+           } else {
+	      set check_g[$i]=0
+           }
+	}
+
+#---------------------------------------------------------------------------
+# set_checks_iras
+set_checks_iras
+
+	foreach 1 ( 12 25 60 100 ) {
+
+	   set dimen(check_iras$1)= $(dimen(name))
+	
+	   do i=0,$(dimen(name)-1) {
+	      if(iras$1[$i] < 55555 ) {
+	         set check_iras$1[$i]=1
+              } else {
+	         set check_iras$1[$i]=0
+              }
+	   }
+	}
+
+##--------------------------------------------------------------------------
+# read_emss OBSOLETED BY 'read_emss2'
+read_emss   ## OBSOLETE
+
+	echo " DO NOT USE: use read_emss2 instead, from read_other_samples.sm "
+	return
+	#######################
+
+        if(!$(is_macro(bb_indices))) {
+	    echo "WARNING: this macro REQUIRES 'bb_indices' included in read_other_samples.sm"
+            return
+	}
+        if(!$(is_macro(prepare_g))) {
+	    echo "WARNING: this macro REQUIRES 'prepare_g' included in verynew.gamma.sm"
+            return
+	}
+
+	define remember_sample EMSS 
+	define EMSSarchive "/home/gfossati/Science/Blazars/Seds/samples_data"
+	echo " "
+	echo "*-* EMSS survey *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* "
+
+	data "$!EMSSarchive/emss_c.data"
+	read < name 1.s flag_g 3 f_radio 7 f_mm 8 mopt 9 f_x 10 >
+
+	set type = 0*f_radio + 1   # type = 1 == BLL
+
+	# All objects have x-ray flux by definition
+	set flag_x = 0.0*f_radio + 1
+
+	read_z 
+
+	define dered "n"
+	define dered ?  < Correction for reddening [NOT available yet] : >
+	if(substr('$dered',0,1) == 'y') {
+	   data "$!EMSSarchive/emss.ab"
+	   read ab 3
+	   set  av = ab/1.324
+	   set mopt= mopt - av
+	}
+
+	define a_radio   0.2
+	define a_mm	 0.32
+	define a_ir      1.00
+	define a_opt     1.00
+	define a_x       1.36
+	define avrg_ax   $a_x
+
+	# set f_mm = f_radio*(10**11.361/10**9.698)**(-0.32)
+	# set f_mm = f_radio
+	do i=0,$(dimen(name)-1) {
+	   if(f_mm[$i] > 0) {
+	      set f_mm[$i] = f_mm[$i]
+           } else {
+	      set f_mm[$i] = f_radio[$i]
+           } 
+	}
+
+	data "$!EMSSarchive/emss_c.index.free"
+	read_ax
+
+	set a_x    = ax
+	# set flag_x = flagx   # NOTE: left for "safety" because there might be leftover flagx
+
+	bulk 26
+
+	echo " READ_EMSS: emss does not have infrared data: mir does not exist "
+	## nln_start
+
+	echo " READ_EMSS: End "
+
+##--------------------------------------------------------------------------
+# read_slew
+read_slew  
+
+        if(!$(is_macro(bb_indices))) {
+	    echo "WARNING: this macro REQUIRES 'bb_indices' included in read_other_samples.sm"
+            return
+	}
+        if(!$(is_macro(prepare_g))) {
+	    echo "WARNING: this macro REQUIRES 'prepare_g' included in verynew.gamma.sm"
+            return
+	}
+
+	define remember_sample Slew 
+	define SLEWarchive "/home/gfossati/Science/Blazars/Seds/samples_data"
+	echo " "
+	echo "*-* Slew survey *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+
+	data "$!SLEWarchive/slew_c.data"
+	read < name 1.s flag_ax 2.s flag_g 3 f_radio 7 f_mm 8 mir 9 mopt 10 f_x 11 >
+	read_z
+
+	set type = 0*f_radio + 1   # type = 1 == BLL
+
+	# All objects have x-ray flux by definition
+	set flag_x = 0.0*f_radio + 1
+
+	define dered "y"
+	define dered ? {Correction for reddening ? }
+	if(substr('$dered',0,1) == 'y') {
+	   data "$!SLEWarchive/slew_c.ab"
+	   read ab 3
+	   set  av = ab/1.324
+	   set mopt= mopt - av
+	}
+
+	define a_radio  0.2
+	define a_mm     0.32
+	define a_ir     0.67 # 1.00
+	define a_opt    0.67 # 1.00
+	define a_x      1.40
+
+	do i=0,$(dimen(name)-1) {
+	   if(substr(flag_ax[$i],-2,2) == 'sl') {
+	      set f_x[$i] = f_x[$i]*(2.)**$a_x
+           } else {
+	      set f_x[$i] = f_x[$i]
+           }
+	}
+
+	data "$!SLEWarchive/slew_c.index.free"
+	read_ax
+
+	set a_x    = ax
+	# set flag_x = flag_x   # NOTE: left for "safety"
+
+	set_checks
+
+	define truemm ? {Use real limited mm-data ? }
+	do i=0,$(dimen(name)-1) {
+	   if(check_mm[$i] > 0) {
+	      set f_mm[$i] = f_mm[$i]*1000.
+           } else {
+	      set f_mm[$i] = 99999
+	      set f_mm[$i] = f_radio[$i]*(10**11.361/10**9.698)**(-0.32)
+	      if(substr('$truemm',0,1) == 'y') { set f_mm[$i] = 0 }
+           }
+	}
+
+	bulk 26
+	set nl_radio_slew  = nl_radio
+
+	bb_indices radio opt ro
+	bb_indices radio x   rx 
+	bb_indices opt   x   ox
+	set_sed_type
+
+	define goon1 "y"
+	define goon1 ? { Go ahead reading Gamma-Ray data file ? }
+	if(substr('$goon1',0,1) == 'y' ) { 
+	   data "$!SLEWarchive/slew_c.gamma"
+	   read_gamma 2
+	}
+
+	define goon2 "y"
+	define goon2 ? { Go ahead computing Gamma-Ray luminosities ? }
+	if(substr('$goon2',0,1) == 'y' ) { 
+	   prepare_g 
+	   set nl_g_slew  = nl_g 
+	   set flag_g_slew = flag_g
+	   define second_pro_flag  "w/ G" 
+	} else {
+	   define second_pro_flag  " "
+	}
+	prompt $remember_sample $second_pro_flag :
+
+	echo " READ_SLEW: End "
+
+##--------------------------------------------------------------------------
+# read_slew_red 
+read_slew_red  
+
+        if(!$(is_macro(bb_indices))) {
+	    echo "WARNING: this macro REQUIRES 'bb_indices' included in read_other_samples.sm"
+            return
+	}
+        if(!$(is_macro(prepare_g))) {
+	    echo "WARNING: this macro REQUIRES 'prepare_g' included in verynew.gamma.sm"
+            return
+	}
+
+	define remember_sample "Slew-red"
+	define SLEWarchive "/home/gfossati/Science/Blazars/Seds/samples_data"
+	echo " "
+	echo "*-* Slew survey (reduced) *-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+
+	data "$!SLEWarchive/slew_red.data"
+	read {name 1.s flag_ax 2.s flag_g 3 f_radio 7 f_mm 8 mir 9 mopt 10 f_x 11}
+	read_z
+
+	set type = 0*f_radio + 1   # type = 1 == BLL
+
+	# All objects have x-ray flux by definition
+	set flag_x = 0.0*f_radio + 1
+
+	define dered "y"
+	define dered ? {Correction for reddening ? }
+	if(substr('$dered',0,1) == 'y') {
+	   data "$!SLEWarchive/slew_red.ab"
+	   read ab 3
+	   set  av = ab/1.324
+	   set mopt= mopt - av
+	}
+
+	define a_radio  0.2
+	define a_mm     0.32
+	define a_ir     0.67 # 1.00
+	define a_opt    0.67 # 1.00
+	define a_x      1.40
+
+	do i=0,$(dimen(name)-1) {
+	   if(substr(flag_ax[$i],-2,2) == 'sl') {
+	      set f_x[$i] = f_x[$i]*(2.)**$a_x
+           } else {
+	      set f_x[$i] = f_x[$i]
+           }
+	}
+
+	data "$!SLEWarchive/slew_red.index.free"
+	read_ax
+
+	set a_x    = ax
+	# set flag_x = flag_x  # NOTE: left for safety
+
+	set_checks
+
+	define truemm ? {Use real limited mm-data ? }
+	do i=0,$(dimen(name)-1) {
+	   if(check_mm[$i] > 0) {
+	      set f_mm[$i] = f_mm[$i]*1000.
+           } else {
+	      set f_mm[$i] = 99999
+	      set f_mm[$i] = f_radio[$i]*(10**11.361/10**9.698)**(-0.32)
+	      if(substr('$truemm',0,1) == 'y') { set f_mm[$i] = 0 }
+           }
+	}
+
+	bulk 26
+
+	bb_indices radio opt ro
+	bb_indices radio x   rx
+	bb_indices opt   x   ox
+	set_sed_type
+
+	define goon1 "y"
+	define goon1 ? { Go ahead reading Gamma-Ray data file ? }
+	if(substr('$goon1',0,1) == 'y' ) { 
+	   data "$!SLEWarchive/slew_red.gamma"
+	   read_gamma 2
+	}
+
+
+	define goon2 "y"
+	define goon2 ? { Go ahead computing Gamma-Ray luminosities ? }
+	if(substr('$goon2',0,1) == 'y' ) { 
+	   prepare_g 
+	   define second_pro_flag  "w/ G" 
+	} else {
+	   define second_pro_flag  " "
+	}
+
+	prompt $remember_sample $second_pro_flag :
+
+	echo "WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING"
+	echo " "
+	echo "     Now all the vectors called "slew" contain data "
+	echo "     only for the Slew sub-sample not common with 1 Jy sample "
+	echo "  "
+	echo "WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING "
+
+	echo " READ_SLEW_RED: End "
+
+##--------------------------------------------------------------------------
+# read_1jy 
+read_1jy   
+
+        if(!$(is_macro(bb_indices))) {
+	    echo "WARNING: this macro REQUIRES 'bb_indices' included in read_other_samples.sm"
+            return
+	}
+        if(!$(is_macro(prepare_g))) {
+	    echo "WARNING: this macro REQUIRES 'prepare_g' included in verynew.gamma.sm"
+            return
+	}
+
+	define remember_sample "1Jy"
+	define oneJyarchive "/home/gfossati/Science/Blazars/Seds/samples_data"
+
+	echo " "
+	echo "*-* 1 Jy sample *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+
+	data "$!oneJyarchive/1jy.data"
+	read {name 1.s flag_g 3 f_radio 7 f_mm 8 mir 9 mopt 10 f_x 11}
+	read_z
+
+	set type = 0*f_radio + 1   # type = 1 == BLL
+
+	# All objects have x-ray flux by definition
+	set flag_x = 0.0*f_radio + 1
+
+	define dered "y"
+	define dered ? {Correction for reddening ? }
+	if(substr('$dered',0,1) == 'y') {
+	   data "$!oneJyarchive/1jy.ab"
+	   read ab 3
+	   set  av = ab/1.324
+	   set mopt= mopt - av
+	}
+
+	data "$!oneJyarchive/1jy.index.free"
+	read_ax
+
+	set a_x    = ax
+	# set flag_x = flagx   # NOTE: left for "safety" because there might be leftover flagx
+
+	set_checks
+
+	define a_radio   0.0
+	define a_mm	 0.32
+	define a_ir      1.21  # 1.00
+	define a_opt     1.21  # 1.20
+	define a_x       1.25
+
+	bulk 23
+	set nl_radio_1jy  = nl_radio
+
+	bb_indices radio opt ro
+	bb_indices radio x   rx
+	bb_indices opt   x   ox
+	set_sed_type
+
+	define goon1 "y"
+	define goon1 ? { Go ahead reading Gamma-Ray data file ? }
+	if(substr('$goon1',0,1) == 'y' ) { 
+	   data "$!oneJyarchive/1jy.gamma"
+	   read_gamma  2
+	}
+
+	define goon2 "y"
+	define goon2 ? { Go ahead computing Gamma-Ray luminosities ? }
+	if(substr('$goon2',0,1) == 'y' ) { 
+	   prepare_g 
+	   set nl_g_1jy  = nl_g 
+	   set flag_g_1jy = flag_g
+	   define second_pro_flag  "w/ G" 
+	} else {
+	   define second_pro_flag  " "
+	}
+	prompt $remember_sample $second_pro_flag :
+
+	echo " READ_1JY: End "
+
+##--------------------------------------------------------------------------
+# read_wp
+read_wp 
+
+        if(!$(is_macro(bb_indices))) {
+	    echo "WARNING: this macro REQUIRES 'bb_indices' included in read_other_samples.sm"
+	    myload read_other_samples
+	}
+        if(!$(is_macro(prepare_g))) {
+	    echo "WARNING: this macro REQUIRES 'prepare_g' included in verynew.gamma.sm"
+	    myload verynew.gamma
+	}
+
+	define remember_sample "W&P"
+	define WParchive "/home/gfossati/Science/Blazars/Seds/samples_data"
+
+	echo " "
+	echo "*-* Wall & Peacock -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+
+	data "$!WParchive/wall_peacock.data"
+	read { name 1.s flag_g 3 f_radio 7 f_mm 8 mir 9 mopt 10 f_x 11 }
+	read_z
+
+	set type = 0*f_radio + 2   # type = 2 == FSRQ
+
+	# not all objects have x-ray flux
+	# start y setting positive default, and then re-set the bad ones to zero
+	set flag_x = 0.0*f_radio + 1
+	do 9=0,dimen(name) - 1 { 
+	   if( f_x[$9] > 1000. ) { set flag_x[$9] = 0 }
+	}
+
+	define dered "y"
+	define dered ? {Correction for reddening ? }
+	if(substr('$dered',0,1) == 'y') {
+	   data "$!WParchive/wall_peacock.ab"
+	   read ab 3
+	   set  av = ab/1.324
+	   set mopt= mopt - av
+	}
+
+	data "$!WParchive/wall_peacock.index.free"
+	read_ax
+
+	set a_x    = ax
+	# set flag_x = flagx   # NOTE: left for "safety" because there might be leftover flagx
+
+	set_checks
+
+	define a_radio  -0.3
+	define a_mm	 0.48
+	define a_ir      1.52  # 1.00
+	define a_opt     1.52  # 1.20
+	define a_x       0.83
+
+	bulk 23
+	set nl_radio_wp  = nl_radio
+
+	bb_indices radio opt ro
+	bb_indices radio x   rx
+	bb_indices opt   x   ox
+	set_sed_type
+
+	define goon1 "y"
+	define goon1 ? { Go ahead reading Gamma-Ray data file ? }
+	if(substr('$goon1',0,1) == 'y' ) { 
+	   data "$!WParchive/wall_peacock.gamma"
+	   read_gamma 1
+	}
+
+	define goon2 "y"
+	define goon2 ? { Go ahead computing Gamma-Ray luminosities ? }
+	if(substr('$goon2',0,1) == 'y' ) { 
+	   prepare_g 
+	   set nl_g_wp  = nl_g 
+	   set flag_g_wp = flag_g
+	   define second_pro_flag  "w/ G" 
+	} else {
+	   define second_pro_flag  " "
+	}
+	prompt $remember_sample $second_pro_flag :
+
+	echo " READ_WP: End "
+
+##--------------------------------------------------------------------------
+## nln5_all
+##	Plotta la SED di tutte le sorgenti di un campione, 
+##	Radio - mm - ir - opt - X
+##	NON plotta il punto GAMMA
+##
+##	La macro che plotta anche il punto GAMMA e` la gamma.sm/g_nln_all
+##
+nln5_all
+
+	nln_frame empty
+	define maxind (dimen(f_radio)-1)
+
+	do i=0,$maxind {
+
+	  if( $(mir[$i]) < 0.01 ) {
+             set vnl= < $(nl_radio[$i]) $(nl_mm[$i]) $(nl_opt[$i]) $(nl_x[$i])>
+	     set vnu= < $nu5 $numm  $nuopt $nux >
+	  } else {
+	     set vnl= < $(nl_radio[$i]) $(nl_mm[$i]) $(nl_ir[$i]) $(nl_opt[$i]) $(nl_x[$i]) >
+	     set vnu= < $nu5 $numm  $nuir $nuopt $nux >
+	  }
+
+	 if( flag_x[$i] > 0 ) { 
+	    define color ($i - 6*INT($i/6.)+2)
+	    ctype $color 
+	    points  vnu vnl
+	    connect vnu vnl 
+	    if( flag_ax[$i] == 3 ) {
+	      butterfly $(ax[$i]-1) err_ax_u[$i] err_ax_d[$i] 17.384 16.384 18.0
+	      set nl_btfly = btfly + $(nl_x[$i]) 
+	      connect nufly nl_btfly
+	    } else {
+	      echo ***> Source [$(name[$i])] has NOT an X-ray  spectral index measure
+            }
+	 } else { 
+	    echo ***> Source [$(name[$i])] has NOT an X-ray flux measure
+
+	    if( $(mir[$i]) < 0.01 ) {
+              set vnl=<$(nl_radio[$i]) $(nl_mm[$i]) $(nl_opt[$i])>
+	      set vnu=<$nu5 $numm  $nuopt >
+	    } else {
+	      set vnl=<$(nl_radio[$i]) $(nl_mm[$i]) $(nl_ir[$i]) $(nl_opt[$i])>
+	      set vnu=<$nu5 $numm  $nuir $nuopt >
+	    }
+	    define color ($i - 6*INT($i/6.)+2)
+	    ctype $color 
+	    points  vnu vnl
+	    connect vnu vnl 
+
+	    # echo ***> ...skipping source ...   
+	 }
+	}                     #--end do
+	    
+
+##--------------------------------------------------------------------------
+## nln5_query
+##	Plotta una sorgente, anche l'IR se misurato.
+##	Plotta anche il punto GAMMA
+##
+nln5_query  01
+
+	# nln_frame  points
+	nln_frame  empty 
+
+	if(!$?1) {
+	   echo  " Choose the source to be plotted...."
+	   echo 
+	   set order=0,$(dimen(f_radio)-1),1
+	   print '  [%2g]  %8s  %6.3f     %5.2f    %6.3f     %1g   %5.2f  \n' { order name z f_radio nl_radio flag_ax ax }
+	   define pp  ? { What source ? (give the corresponding number)}
+	   define 1 $pp
+	}
+	define pp $1
+	
+	if( $(mir[$1]) < 0.01 ) {
+	   set vnl= <$(nl_radio[$1]) $(nl_mm[$1]) $(nl_opt[$1]) $(nl_x[$1])>
+	   set vnu= <$nu5 $numm  $nuopt $nux >
+	} else {
+	   set vnl= <$(nl_radio[$1]) $(nl_mm[$1]) $(nl_ir[$1]) $(nl_opt[$1]) $(nl_x[$1]) >
+	   set vnu= <$nu5 $numm  $nuir $nuopt $nux >
+	}
+	
+	if( flag_x[$1] > 0 ) { 
+	
+	    define color ($1 - 6*INT($1/6.)+2)
+	    ctype $color 
+	    ctype 2
+	    lweight 3 
+	    ltype 2
+	    points  vnu vnl 
+	    connect vnu vnl 
+	    ltype 0
+	    lweight 1
+	
+	    if( flag_ax[$1] == 3 ) {
+	      butterfly $(ax[$1]-1) err_ax_u[$1] err_ax_d[$1] 17.384 16.384 18.0
+	      set nl_btfly = btfly + $(nl_x[$1])
+	      connect nufly nl_btfly
+	    } else {
+		echo ***> This source [$(name[$1])] has NOT a X-ray spectral index measure
+	    }
+	
+	} else { 
+	    echo ***> Source [$(name[$1])] has NOT an X-ray flux measure
+
+	    if( $(mir[$1]) < 0.01 ) {
+              set vnl=<$(nl_radio[$1]) $(nl_mm[$1]) $(nl_opt[$1])>
+	      set vnu=<$nu5 $numm  $nuopt >
+	    } else {
+	      set vnl=<$(nl_radio[$1]) $(nl_mm[$1]) $(nl_ir[$1]) $(nl_opt[$1])>
+	      set vnu=<$nu5 $numm  $nuir $nuopt >
+	    }
+	    define color ($1 - 6*INT($1/6.)+2)
+	    ctype $color 
+	    points  vnu vnl
+	    connect vnu vnl 
+
+	}
+	
+	if( flag_g[$1] > 1) {
+	    relocate 22.384 $(nl_g[$1])
+	    dot
+	
+	    if($(flag_g[$1]) == 3) {
+	        butterfly $(ag[$1]-1) err_ag_u[$1] err_ag_d[$1] 22.384 22.000 24.00
+	        set nl_btfly = btfly + $(nl_g[$1])
+	        connect nufly nl_btfly
+	    } else {
+	        echo ***> This source [$(name[$1])] has NOT a Gamma-ray spectral index measure
+	    }
+	} 
+	
+	relocate 18.4 $(nl_x[$1])
+	putlabel 6 $(name[$1])
+	
+	set index_ro = (l_radio - l_opt)/5.037
+	set ratio_xr = (l_x - l_radio) 
+	echo "----------------------------------------------------------- "
+	echo " * the radio-optical spectral index is : "$(index_ro[$1])
+	echo " * the X-ray-radio ratio is : "$(ratio_xr[$1])
+	echo "----------------------------------------------------------- "
+
+##--------------------------------------------------------------------------
+## fit_nln5_all
+##	fitta tutto un campione in un colpo solo
+##      OUTPUT: fitparams0-5 contenenti per tutte le sorgenti 
+##              <a0 a1 a2 a3 peak2 test1> 
+##              Per le sorgenti "marce" tutti i valori sono fissati a 0
+fit_nln5_all
+
+	nln_frame empty
+	
+	define maxind (dimen(f_radio)-1)
+	do k=0,6 {
+	   set dimen(fitparams$k) = dimen(f_radio)
+	}
+
+	do i=0,$maxind {
+
+	  define kk $i
+
+	  if( mir[$i] < 0.01 ) {
+             set vnl= <$(nl_radio[$i]) $(nl_mm[$i]) $(nl_opt[$i]) $(nl_x[$i]) >
+	     set vnu= <$nu5 $numm  $nuopt $nux >
+	  } else {
+	     set vnl= <$(nl_radio[$i]) $(nl_mm[$i]) $(nl_ir[$i]) $(nl_opt[$i]) $(nl_x[$i]) >
+	     set vnu= <$nu5 $numm $nuir $nuopt $nux >
+	  }
+
+	  if( flag_x[$i] > 0 ) { 
+	      define color ($i - 6*INT($i/6.)+2)
+	      ctype $color 
+	      points  vnu vnl
+	      connect vnu vnl 
+
+	      pol3fit
+	      if($checkdermin == 3) {
+	          echo $kk
+	          define i $kk
+	          set fitparams0[$kk] = $a0
+	          set fitparams1[$kk] = $a1
+	          set fitparams2[$kk] = $a2
+	          set fitparams3[$kk] = $a3
+	          set fitparams4[$kk] = $peak2
+	          set fitparams5[$kk] = $test1
+	          set fitparams6[$kk] = $checkdermin
+	      } else {                    # i.e. $checkdermin == 0
+	          pol2fit
+	          echo $kk
+	          define i $kk
+	          set fitparams0[$kk] = $a0
+	          set fitparams1[$kk] = $a1
+	          set fitparams2[$kk] = $a2
+	          set fitparams3[$kk] = $a3
+	          set fitparams4[$kk] = $peak2
+	          set fitparams5[$kk] = $test1
+	          set fitparams6[$kk] = $checkdermin
+	      }
+
+	      if( flag_ax[$i] == 3) {
+	        define color ($i - 6*INT($i/6.)+2)
+	        ctype $color 
+	        points  vnu vnl
+	        connect vnu vnl 
+	        butterfly $(ax[$i]-1) err_ax_u[$i] err_ax_d[$i] 17.384 16.384 18.0
+	        set nl_btfly = btfly + $(nl_x[$i]) 
+	        connect nufly nl_btfly
+	      } else {
+	        echo ---> Source [$(name[$i])] has NOT a spectral index measure
+              }
+	  } else { 
+	      echo ---> skipping source [$(name[$kk])]...$kk
+	      set fitparams0[$kk] = 0
+	      set fitparams1[$kk] = 0
+	      set fitparams2[$kk] = 0
+	      set fitparams3[$kk] = 0
+	      set fitparams4[$kk] = 0
+	      set fitparams5[$kk] = 0
+	      set fitparams6[$kk] = 0
+	  }
+	}                     #--end do
+
+	    
+##--------------------------------------------------------------------------

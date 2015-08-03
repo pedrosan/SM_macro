@@ -1,0 +1,660 @@
+##--------------------------------------------------------------------------
+# is_var : return 1 if $1 is a vector
+is_var 1
+	
+	define 1 ( whatis($1) )
+	set $0 = is_set($1,2)
+
+##--------------------------------------------------------------------------
+# shift <array> <shift> 
+#          USAGE: shift array ##
+#          : It moves the component of an array, and replace them with "0"s
+#            the value for the shift can be positive or negative
+#            [negative]: the array is shifted down, ie. emptied at the end
+#            [positive]: the array is shifted up,   ie. emptied at the beginning
+shift 2
+        #  USAGE: shift array ##
+        #  : It moves the component of an array, and replace them with "0"s
+        #    the value for the shift can be positive or negative
+        #    [negative]: the array is shifted down, ie. emptied at the end
+        #    [positive]: the array is shifted up,   ie. emptied at the beginning
+	define nm $(dimen($1)-1)
+	set dimen(mask) = dimen($1)
+
+	if( $2 > 0 ) {
+	   set mask[abs($2),$nm]=1
+	   set mask=reverse(mask)
+	   set v1 local
+	   set v1=$1  if(mask==1)
+	   do i=1,abs($2) { set v1 = < 0 > concat v1 }
+	} else {
+	   set mask[abs($2),$nm]=1
+	   set v1 local
+	   set v1=$1  if(mask==1)
+	   do i=1,abs($2) { set v1 = v1 concat < 0 > }
+	}
+	set $1=v1
+
+##--------------------------------------------------------------------------
+# shift2 <array> <shift> 
+#         It moves the component of an array, and replace them with "0"s
+#         the value for the shift can be positive or negative
+#           [negative]: the array is shifted down, ie. emptied at the end
+#           [positive]: the array is shifted up,   ie. emptied at the beginning
+shift2 2
+
+	set vec local
+	set v1  local 
+
+	define nshift local
+	if( is_vector($2) ) {
+	   set vec = $2
+	   define nshift $1
+	} else {
+	   set vec = $1
+	   define nshift $2
+	}
+
+	define nm $(dimen(vec)-1)
+	set dimen(mask) = dimen(vec)
+
+	if( $nshift > 0 ) {
+	   set mask[abs($nshift),$nm]=1
+	   set mask=reverse(mask)
+	   set v1=vec  if(mask==1)
+	   do i=1,abs($nshift) { set v1 = < 0 > concat v1 }
+	} else {
+	   set mask[abs($nshift),$nm]=1
+	   set v1=vec  if(mask==1)
+	   do i=1,abs($nshift) { set v1 = v1 concat < 0 > }
+	}
+
+	set $0=v1
+
+##--------------------------------------------------------------------------
+# shift3 <array> <shift> [<fill value>]
+#          It moves the component of an array, and replace them with either:
+#           * the value of the original first/last element of the array or 
+#           * the numeric value given
+#          The value for the shift can be positive or negative:
+#           [negative]: the array is emptied at the end
+#           [positive]: the array is emptied at the beginning
+shift3 23
+
+	set vec local
+	set v1  local 
+	define nshift local
+
+	if( is_vector($2) ) {
+	   set vec = $2
+	   define nshift $1
+	} else {
+	   set vec = $1
+	   define nshift $2
+	}
+
+	if( $?3 ) {
+	   define fillvalue $3
+	} else {
+	   if( $nshift < 0 ) { 
+	      define fillvalue $(vec[dimen(vec)-1]) 
+	   } else {
+	      define fillvalue $(vec[0]) 
+	   }
+	}
+
+	define nm $(dimen(vec)-1)
+	set dimen(mask) = dimen(vec)
+
+	if( $nshift > 0 ) {
+	   set mask[abs($nshift),$nm]=1
+	   set mask=reverse(mask)
+	   set v1=vec  if(mask==1)
+	   do i=1,abs($nshift) { set v1 = < $fillvalue > concat v1 }
+	} else {
+	   set mask[abs($nshift),$nm]=1
+	   set v1=vec  if(mask==1)
+	   do i=1,abs($nshift) { set v1 = v1 concat < $fillvalue > }
+	}
+
+	set $0=v1
+
+##---------------------------------------------------------------------------
+## pop_old <n-elements> <array>
+##           USAGE: set new=pop(3,old)
+##                  set new=pop(-5,old)
+##           : It "pops" n-elements from array, from either the end or the beginning
+##           > if n-elements is positive it pops them from the beginning
+##           > if n-elements is negative it pops them from the end
+pop_old 2	
+        # USAGE: set new=pop(3,old)
+        #        set new=pop(-5,old)
+        # : It "pops" n-elements from array, from either the end or the beginning
+        #  > if n-elements is positive it pops them from the beginning
+        #  > if n-elements is negative it pops them from the end
+
+	define nm (dimen($2)-1)
+	set dimen(mask)=dimen($2)
+
+	if( $1 > 0 ) {
+	   set mask[$1,$nm]=1
+	   set v1 local 
+	   set v1=$2 if(mask==1)
+	} else {
+	   set mask[0,$($nm+$1)]=1
+	   set v1 local 
+	   set v1=$2 if(mask==1)
+	}
+	set $0=v1
+
+#---------------------------------------------------------------------------
+# pop <n_elements> <array>  OR <array> <n_elements>
+#           USAGE: set new=pop(3,old)   OR  set new=pop(old,3)
+#                  set new=pop(-5,old)  OR  set new=pop(old,-5)
+#           : It "pops" n-elements from array, from either the end or the beginning
+#           > if n-elements is positive it pops them from the beginning
+#           > if n-elements is negative it pops them from the end
+pop 2	
+        # USAGE: set new=pop(3,old)   OR  set new=pop(old,3)
+        #        set new=pop(-5,old)  OR  set new=pop(old,-5)
+        # : It "pops" n-elements from array, from either the end or the beginning
+        #  > if n-elements is positive it pops them from the beginning
+        #  > if n-elements is negative it pops them from the end
+
+	if( is_vector($2) ) {
+	   set vec = $2
+	   define npop $1
+	} else {
+	   set vec = $1
+	   define npop $2
+	}
+
+	define nm (dimen(vec)-1)
+	set dimen(mask)=dimen(vec)
+
+	if( $npop > 0 ) {
+	   set mask[$npop,$nm]=1
+	   set v1 local 
+	   set v1=vec if(mask==1)
+	} else {
+	   set mask[0,$($nm+$npop)]=1
+	   set v1 local 
+	   set v1=vec if(mask==1)
+	}
+	set $0=v1
+
+##------------------------------------------------------------------------------
+# mythin : creates a "thinned" version of a vector for plotting points
+#             thin  x n
+#          returns a vector containing every n'th element of x
+mythin 2
+
+        set _i local
+        set _i=0,int((dimen($1)-1)/$2)
+	set _i=_i*$2
+	set _i = _i CONCAT < $(dimen($1)-1) >
+        set $0=$1[_i]
+
+##------------------------------------------------------------------------------
+# fill :two possible syntaxes
+#        i)  set vec=fill(vector,NNN) : takes "vector" as template.
+#       ii)  set vec=fill(DIM,NNN)    : creates a vector of dimension DIM.
+fill 2
+
+	if(is_vector($1)){ 
+	   set $0 = 0.0*$1 + $2
+	} else {
+	   set _tmp local
+	   set dimen(_tmp) = $1
+	   set $0 = 0.0*_tmp + $2
+	}
+
+##------------------------------------------------------------------------------
+## mysmooth  <array> <output array> <filter_size>
+##           boxcar smooth a vector
+##           NOTE: for filter of even length it resorts to a "cheat".
+mysmooth 3
+
+        if( $3 <= 1 ) {
+           set $2 = $1
+           return
+        }
+
+	if( $3 % 2 == 0 ) {
+	    set alt=shift3($1,-1)
+	    # set alt[dimen(alt)-1] = $1[dimen($1)-1]
+	    set _w = 0.5*($1+alt)
+	} else {
+	    set _w = $1
+	}
+
+        set dimen(_end2) = $3 
+        set _end2 = _end2 + _w[dimen(_w)-1]
+        set $2    = _w CONCAT _end2
+
+        do 4=1,$3-1 {
+           define 5 ($3-$4)
+           set dimen(_end1) = $4 
+           set dimen(_end2) = $5
+           set _end1 = 0*_end1 + _w[0]
+           set _end2 = 0*_end2 + _w[dimen(_w)-1]
+           set tmp$4  = _end1 CONCAT _w CONCAT _end2
+           set $2 = $2 + tmp$4
+        }
+	set tmpsum = $2
+
+        set _i = 1,dimen($2)
+        set $2 = $2/$3   if( _i >= $3/2 && _i < $3/2 + dimen(_w) )
+
+        #set HELP $2 $1 smoothed with $3-point boxcar filter
+
+        foreach _v ( _end1 _end2 _i ) { delete $_v }
+
+##------------------------------------------------------------------------------
+## mysmooth_with_stats  <array> <output array: values> <output array: variance> <filter_size>
+##           boxcar smooth a vector
+##           NOTE: for filter of even length it resorts to a "cheat".
+mysmooth_with_stats 4
+
+        if( $4 <= 1 ) {
+           set $2 = $1
+           return
+        }
+
+	if( $4 % 2 == 0 ) {
+	    set alt=shift3($1,-1)
+	    # set alt[dimen(alt)-1] = $1[dimen($1)-1]
+	    set _in = 0.5*($1+alt)
+	} else {
+	    set _in = $1
+	}
+
+        set dimen(_end2) = $4 
+        set _end2 = _end2 + _in[dimen(_in)-1]
+        set _sum1 = _in CONCAT _end2
+	set _sum2 = _sum1*_sum1
+
+        do 9=1,$4-1 {
+           define 8 ($4-$9)
+           set dimen(_end1) = $9 
+           set dimen(_end2) = $8
+           set _end1 = 0*_end1 + _in[0]
+           set _end2 = 0*_end2 + _in[dimen(_in)-1]
+           set tmp$9  = _end1 CONCAT _in CONCAT _end2
+           set _sum1 = _sum1 + tmp$9
+           set _sum2 = _sum2 + (tmp$9)**2.
+	   delete tmp$9
+        }
+
+        set _i = 1,dimen(_sum1)
+        set $2    = _sum1/$4   if( _i >= $4/2 && _i < $4/2 + dimen(_in) )
+        set _sum2 = _sum2/$4   if( _i >= $4/2 && _i < $4/2 + dimen(_in) )
+	set $3    = sqrt(abs($2*$2 - _sum2))
+
+        foreach _v ( _sum1 _sum2 _end1 _end2 _i _in ) { delete $_v }
+
+##------------------------------------------------------------------------------
+## myvsmooth 2	
+##              boxcar smooth a vector
+##              Usage:   set sy = vsmooth(y, 5)
+myvsmooth 2
+
+        define 2 ($2)           # expand any expressions
+        mysmooth $1 $0 $2
+
+#---------------------------------------------------------------------------
+# find_max:  
+#          USAGE: find_max <array> <idx> <value>
+#          : It finds the index of the maximum value in <array>, and the 
+#            maximum value.
+#            Returns them stored in the given variables <idx> and <value>
+#  
+find_max 3
+
+	define dummy local
+	define max local
+
+	set rank local
+	set sorting local
+
+	set sorting = $1
+	set rank = 0,dimen($1)-1,1
+
+	sort < sorting rank > 
+	set rank=reverse(rank)
+
+	define $2 $(rank[0])
+	define $3 $($1[rank[0]])
+
+#------------------------------------------------------------------------------
+# setmin 
+# USAGE:  set vnew=setmin(v1,v2,v3,v4)
+#         Array vnew will have each component equal to the smallest 
+#           value for that position among the input arrays
+setmin 24
+
+	set $0 = $1
+	if(!$?4) { define 4  $1 }
+	if(!$?3) { define 3  $1 }
+
+	set dum local
+	do i=0,dimen($1)-1 {
+	     set dum = < $($1[$i]) $($2[$i]) $($3[$i]) $($4[$i]) >
+	     vecminmax dum x2 dum
+	     set $0[$i] = $x2
+	}
+
+#------------------------------------------------------------------------------
+# setmax
+# USAGE:  set vnew=setmax(v1,v2,v3,v4)
+#         Array vnew will have each component equal to the largest
+#           value for that position among the input arrays
+setmax 24
+
+	set $0 = $1
+	if(!$?4) { define 4  $1 }
+	if(!$?3) { define 3  $1 }
+
+	set dum local
+	do i=0,dimen($1)-1 {
+	     set dum = < $($1[$i]) $($2[$i]) $($3[$i]) $($4[$i]) >
+	     vecminmax dum dum x2 
+	     set $0[$i] = $x2
+	}
+
+#---------------------------------------------------------------------------
+# systemcall: passes the argument as a system call.
+#             Not a big "advantage" over doing it directly, but maybe "cleaner"
+#             in terms of editing.
+systemcall 101
+
+	#echo "cmd:"$1
+	!$1
+	return
+
+#---------------------------------------------------------------------------
+# mparsep 1
+#        : to be used inside another macro.
+#          parses a list of command line arguments passed to the macro as 
+#          VARNAME=VALUE pairs, and assigns value 'VALUE' to variable as 'VARNAME'
+#          e.g.  mymacro dev=x11 Emin=0.4 qmax=0.9
+#          (inside mymacro, put 'mparsep $1', see example test_parsep)
+mparsep 101
+
+	#echo "Input:  "$1
+
+	set in local
+	define key   local
+	define value local
+
+	set in= { $!!1 }
+	if(!$?silentparsing) {
+	    print '  %s\n' < in >
+	}
+	foreach 1 in {
+
+	   define key   $(substr('$1',0,index('$1','=')))
+	   define value $(substr('$1',index('$1','=')+1,strlen('$1')-index('$1','=')-1))
+
+	   define $key $value
+	   if(!$?silentparsing) {
+	      echo PARSED [$1]: $key = $value   # $(sprintf('$fmt1','$value'))
+	   }
+	}
+
+#---------------------------------------------------------------------------
+# mparse 1
+#        : to be used inside another macro.
+#          parses a list of command line arguments passed to the macro 
+#          e.g.  mymacro abc def ghi jkl mno pqrs 0123 0988 silvina cecilia joel lesha
+#          (inside mymacro, put 'mparse $1', see example test_parse)
+#          and assigns the passed values to a set of variables name vNNN (e.g. v001,v002...).
+#
+#          It would actually be enough to just be happy with storing all values
+#          in an array (as in 'in') that is then used as preferred.
+mparse 101
+
+	#echo "Input:  "$1
+
+	set in local
+	set in= { $!!1 }
+	if(!$?silentparsing) {
+	    print '  %s\n' < in >
+	}
+	define 2 0
+	foreach 1 in {
+	   define 2 $($2+1)
+	   define 3 $(sprintf('v%03d',$2))
+	   #echo $2 $3 $1
+	   define $3 $1
+	   if(!$?silentparsing) {
+	       echo PARSED [$2]  $3=$$3
+	   }
+	}
+
+#---------------------------------------------------------------------------
+# test_parsep [ v1=value1 v2=value2 v3=value3 ... ]
+# USAGE:
+#      > test_parsep r=10  lh=1e-4  b=0.02  g1=10   g2=3e6   s=2   d=10
+#  or
+#      > test_parsep   (in this case it prompts for all parameters)
+#
+test_parsep 101
+                                                                                                                                                   
+        if($?1) {
+            if(substr('$1',0,2) == '-h' ){
+               echo " test_parse: "
+               echo " "
+               echo " USAGE: "
+               echo "    > test_parse r=10  lh=1e-4  b=0.02  g1=10   g2=3e6   s=2   d=10 "
+               echo "  or"
+               echo "    > test_parse  (in this case it prompts for all parameters)"
+               echo " "
+               return
+            } else {
+               mparsep $1 
+            }
+        } else {
+            define r   ? < R_blob (units of 1e15) : >
+            define lh  ? <   injected compactness : >
+            define b   ? <         magnetic field : >
+            define g1  ? <              gamma_min : >
+            define g2  ? <              gamma_max : >
+            define s   ? <                  slope : >
+            define d   ? <                  delta : >
+        }
+
+#---------------------------------------------------------------------------
+# test_parse [ value1 value2 value3 ... ]
+# USAGE:
+#      > test_parse 10  1e-4  0.02  pop etc 
+#  or
+#      > test_parse   (in this case it prompts for all parameters)
+#
+test_parse 101
+                                                                                                                                                   
+        if($?1) {
+            if(substr('$1',0,2) == '-h' ){
+               echo " test_parse: "
+               echo " "
+               echo " USAGE: "
+               echo "    > test_parse r=10  lh=1e-4  b=0.02  g1=10   g2=3e6   s=2   d=10 "
+               echo "  or"
+               echo "    > test_parse  (in this case it prompts for all parameters)"
+               echo " "
+               return
+            } else {
+               mparse $1 
+            }
+        } else {
+            define r   ? < R_blob (units of 1e15) : >
+            define lh  ? <   injected compactness : >
+            define b   ? <         magnetic field : >
+            define g1  ? <              gamma_min : >
+            define g2  ? <              gamma_max : >
+            define s   ? <                  slope : >
+            define d   ? <                  delta : >
+        }
+
+#---------------------------------------------------------------------------
+#v1=1 v2=2  v3=3 v4=4 v5=5 v6=6 v7=7 v8=8 v9=9 v10=10 v11=dfasdfafdkhfldsgfgadkjf
+#v1=abcdef v2=12345 v3=098776 v4=chiara v5=cecilia v6=pippols v7=giovanni v8=elef
+#v1=1 v2=2  v3=3 v4=4 v5=5 v6=6 v7=7 v8=8 v9=9 v10=10 v11=11 name=silvina lname=M
+#---------------------------------------------------------------------------
+# parsing 1
+parsing 1
+
+	define key   $(substr('$1',0,index('$1','=')))
+	define value $(substr('$1',index('$1','=')+1,strlen('$1')-index('$1','=')-1))
+	         # define STRlen1 $(strlen('$(substr('$1',index('$1','=')+1,strlen('$1')-index('$1','=')-1))'))
+	         # define STRlen2 $(strlen('$value'))
+	         # echo String lengths: $STRlen1 $STRlen2
+	         # define fmt1 "%."$!STRlen1"s"
+	         # echo fmt1: $fmt1
+	         # define $key (sprintf('$fmt1','$value'))
+
+	define $key $value
+	if(!$?silentpars) {
+	   echo PLAIN PARSED [$1]: $key = $value   # $(sprintf('$fmt1','$value'))
+	}
+
+#---------------------------------------------------------------------------
+# interp_gf   <x> <y> <newx> <newy>
+#             Linearily interpolate $3 into ($1,$2), giving $4
+#             Note that x must be increasing. Points beyond the range of x
+#             are interpolated linearily
+interp_gf 4
+
+        if(dimen($1) < 2) {
+           user abort Please use vectors with at least 2 elements
+        }
+
+        if(dimen($1) != dimen($2)) {
+           user abort $1 and $2 have different dimensions
+        }
+
+        set _index = ifloor($1,$3)
+	# ifloor returns the indices of the largest points in $1 that don't exceed $2 (-1 if off left of array).
+
+        set _x1 = $1[(_index < 0 ? 0 : _index >= dimen($1) - 1 ?  dimen($1) - 2 : _index)]
+        set _y1 = $2[(_index < 0 ? 0 : _index >= dimen($1) - 1 ?  dimen($1) - 2 : _index)]
+        set _x2 = $1[(_index < 0 ? 1 : _index >= dimen($1) - 1 ?  dimen($1) - 1 : _index + 1)]
+        set _y2 = $2[(_index < 0 ? 1 : _index >= dimen($1) - 1 ?  dimen($1) - 1 : _index + 1)]
+
+        set $4 = _y1 + ($3 - _x1)*(_y2 - _y1)/(_x1 == _x2 ? 1 : _x2 - _x1)
+        
+        # echo delete _index delete _x1 delete _y1 delete _x2 delete _y2
+        
+#---------------------------------------------------------------------------
+# run_avgr <x> <y> <dt>
+run_avrg 3
+ 
+	foreach var < mean_y sigma_y kurt_y x1 x2 dx > {
+	   define $var local
+	}
+
+        set x   = $1
+        set y   = $2
+	define dx $3
+
+	define trail_or_middle ? < Trailing or Centered [t|c] : >
+
+	if( substr('$trail_or_middle',0,1) == 't' ) { define flag_trail 1 }
+	if( substr('$trail_or_middle',0,1) == 'c' ) { define flag_trail 0 }
+ 
+        set dimen(runavrg_x)     = dimen(x)
+        set dimen(runavrg_y)     = dimen(x)
+        set dimen(runavrg_var_y) = dimen(x)
+        set dimen(runavrg_n)     = dimen(x)
+
+	do 9=0,dimen(x)-1 {
+	    if( $flag_trail == 1 ) {
+	       define x1 $( x[$9] - $dx )
+	       define x2 $( x[$9] )
+	    } else {
+	       define x1 $( x[$9] - 0.5*$dx )
+	       define x2 $( x[$9] + 0.5*$dx )
+	    }
+	    set temp = y   if( x > $x1 && x <= $x2 )
+	    # echo [$9] $x2 $(dimen(temp))
+	    stats temp mean_y sigma_y kurt_y
+	    set runavrg_x[$9]     = x[$9]
+	    set runavrg_y[$9]     = $mean_y
+	    set runavrg_var_y[$9] = $sigma_y
+	    set runavrg_n[$9]     = dimen(temp)
+	}
+
+	define dum "n"
+	define dum ? < Rename arrays [if yes, provide suffix] : >
+        if( substr('$dum',0,1) == 'n' && strlen('$dum') == 1 ) {
+           echo ">>> Leaving arrays on standard names"
+        } else {
+           echo ">>> Renaming arrays to *_"$dum"_x|y|var_y"
+	   define 1 $dum
+           foreach 2 < x y var_y > {
+              set  runavrg_$1_$2 = runavrg_$2
+           }
+        }
+
+#---------------------------------------------------------------------------
+# median 2
+median 2
+
+	set work = $1 if($1 > 0)
+	sort < work >
+	define nmid (int($(dimen(work))/2)+1)
+	set xtmp = 1,$(dimen(work)),1
+
+	set tmp  = work  if(xtmp >= $($nmid-2) && xtmp <= $($nmid+2) )
+	set tmpx = xtmp  if(xtmp >= $($nmid-2) && xtmp <= $($nmid+2) )
+	define cic $(sum(tmp)/dimen(tmp))
+	define $2 $cic
+
+	delete tmp
+	delete tmp1
+	delete tmp2
+	delete xtmp
+	delete work
+	delete tmpx
+	define nmid delete
+	define cic  delete
+
+
+#---------------------------------------------------------------------------
+# mystats <vector> <mean> <sigma> <abs_dev> <skewness> : 
+#                  calculate $mean $sigma $absdev $skewness
+mystats 5
+
+	DEFINE _n ( DIMEN($1) )
+	DEFINE $2 ( SUM($1)/$_n )                               # mean
+	DEFINE $3 ( SQRT(SUM(($1 - $$2)**2)/($_n - 1)) )        # sigma
+	DEFINE $4 ( SUM(abs($1 - $$2)/$_n) )                    # abs. deviation
+	DEFINE $5 ( SUM((($1 - $$2)/$$3)**3)/$_n )              # skewness
+	DEFINE _n DELETE
+
+#---------------------------------------------------------------------------
+# logerr_x  <x> <y> <error_x> 
+#              where <x> is logged, and <error_x> isn't
+logerr_x 3
+
+        set _x  = 10**$1
+        set d_x = lg(_x + $3) - $1 errorbar $1 $2 d_x 1
+        set d_x = $1 - lg(_x - $3) errorbar $1 $2 d_x 3
+
+#---------------------------------------------------------------------------
+# logerr_y  <x> <y> <error_y> 
+#              where <y> is logged, and <error_y> isn't
+logerr_y 3
+
+        set _y  = 10**$2
+        set d_y = lg(_y + $3) - $2 errorbar $1 $2 d_y 2
+        set d_y = $2 - lg(_y - $3) errorbar $1 $2 d_y 4
+
+#---------------------------------------------------------------------------
+# nint
+#      set vec=nint(othervec)
+nint 1
+
+	set $0 = int($1+0.5)
+
+#---------------------------------------------------------------------------

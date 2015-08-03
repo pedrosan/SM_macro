@@ -1,0 +1,216 @@
+#-------------------------------------------------------------------------------
+# test_lf_draw
+test_lf_draw
+
+	define method ?  < Which method [0=eileen|1=alt] : >
+
+	define nsrc  (1e5)
+	define rseed (3911)
+	set random $rseed
+
+        define lg_Lmin ( 25.0 )
+        define lg_Lmax ( 28.0 )
+
+        define c    ( 10**(29.83) )
+        define d    ( 10**(16) )
+        define g1   ( -2.1 )
+        define g2   ( -2.4 )
+
+        define c    ( 10**(29.83) )
+        define d    ( 10**(36) )
+        define g1   ( -2.12 )
+        define g2   ( -2.4 )
+
+        define ap1 $( $g1+1 )
+        define ap2 $( $g2+1 )
+        define A1  $( $c/$ap1 )
+        define B1  $( $d/$ap2 )
+
+	# not used here
+        define Glg $(ln(10.0)/($A1*(10.0**($lg_Lmax*$ap1) - 10.0**($lg_Lmin*$ap1)) + $B1*(10**($lg_Lmax*$ap2) - 10**($lg_Lmin*$ap2))))
+
+	#-----------------------------------------------------------
+	# building up the phi(L)*L (?)
+	#
+        set lg_lum  = $lg_Lmin, $lg_Lmax ,$(($lg_Lmax - $lg_Lmin)/1000.)
+        set phi_l_1 = $c*(10**lg_lum)**($g1+1)
+        set phi_l_2 = $d*(10**lg_lum)**($g2+1)
+        set phi_l   = phi_l_1 + phi_l_2
+	vecminmax phi_l phi_l_min phi_l_max
+
+	#-----------------------------------------------------------
+	# don't understand this, really don't
+	#
+	if($method == 0 ) { 
+           if( $($phi_l_max*1.1) < 1.0 ) { 
+              define norm $(1.1*$phi_l_max)
+           } else {
+              define norm (1.0)
+           }
+	}
+
+	#-----------------------------------------------------------
+	# this should be the right way, i.e. set the max to 1.
+	#
+	if($method == 1 ) { 
+	   define norm $phi_l_max
+	   set phi_l   = phi_l/$phi_l_max
+	   set phi_l_1 = phi_l_1/$phi_l_max
+	   set phi_l_2 = phi_l_2/$phi_l_max
+	}
+	set lg_phi_l   = lg(phi_l)
+	set lg_phi_l_1 = lg(phi_l_1)
+	set lg_phi_l_2 = lg(phi_l_2)
+
+	#-----------------------------------------------------------
+	# random draws for X-axis
+	#
+	set r4l = random($nsrc)
+        set lg_lum_rnd= $lg_Lmin + ($lg_Lmax - $lg_Lmin)*r4l
+        set lum_rnd   = 10.0**lg_lum_rnd
+        # set phi_l_rnd = $c*lum_rnd**($g1+1) + $d*lum_rnd**($g2+1)
+
+	#-----------------------------------------------------------
+	# random draws for Y-axis
+	#
+	set r4p = random($nsrc)
+
+	# wrong (?)
+	if($method == 0 ) { 
+           set phi_l_rnd = $c*lum_rnd**($g1+1) + $d*lum_rnd**($g2+1)
+	   set rnorm = r4p*$norm
+	}
+	# right
+	if($method == 1 ) { 
+           set phi_l_rnd = ($c*lum_rnd**($g1+1) + $d*lum_rnd**($g2+1))/$norm
+	   set rnorm = r4p
+	}
+
+	#-----------------------------------------------------------
+	# testing and actual drawing
+	#
+	set test_draw = r4l*0 
+	do 9=0,dimen(lum_rnd)-1 {
+	   if( rnorm[$9] < phi_l_rnd[$9] ) { 
+	      set test_draw[$9] = 1 
+	   }
+	}
+
+	define npass $(sum(test_draw))
+	
+	echo "----------------------------------------"
+	echo "  N draw : " $nsrc
+	echo "  N pass : " $npass
+	echo "----------------------------------------"
+
+	set lg_lum_good = lg_lum_rnd   if( test_draw > 0 )
+	set phi_l_good  = phi_l_rnd    if( test_draw > 0 )
+	set rnorm_good  = rnorm        if( test_draw > 0 )
+
+#-------------------------------------------------------------------------------
+# plot_phi_log
+plot_phi_log
+
+	reset_graph
+
+	limits lg_lum (lg(phi_l))
+	ticksize 0 0 -1 0 
+	box
+	xlabel log(L)
+	ylabel \Phi(L)
+
+	lweight 4 
+	ctype 3 connect lg_lum (lg(phi_l_1))
+	ctype 5 connect lg_lum (lg(phi_l_2))
+	ctype 4 connect lg_lum (lg(phi_l))
+	lweight 3 
+
+	ctype 2 
+
+#-------------------------------------------------------------------------------
+# plot_phi_lin
+plot_phi_lin
+
+	reset_graph
+
+	limits lg_lum phi_l
+	ticksize 0 0 0 0 
+	box
+	xlabel log(L)
+	ylabel \Phi(L)
+
+	ctype 2
+	expand 0.5 
+	points lg_lum_good rnorm_good 
+	expand 1.5
+
+	lweight 4
+	ctype 3 connect lg_lum phi_l_1
+	ctype 5 connect lg_lum phi_l_2
+	ctype 4 connect lg_lum phi_l
+	lweight 3 
+
+	ctype 2 
+
+#-------------------------------------------------------------------------------
+# make_histo_lg_lum
+make_histo_lg_lum
+
+	define hstep (0.05)
+	set hxlum = $lg_Lmin-1-0.5*$hstep,$lg_Lmax+1,$hstep
+
+	set hyphi     = histogram(lg_lum_good:hxlum)
+	set err_hyphi = sqrt(hyphi)
+
+	set phiphi       = hyphi/(2.3*$hstep*10.0**hxlum)
+	set err_phiphi   = err_hyphi/(2.3*$hstep*10.0**hxlum)
+	set phiphi_n     = hyphi/(2.3*$hstep*10.0**hxlum)*10.0**hxlum
+	set err_phiphi_n = err_hyphi/(2.3*$hstep*10.0**hxlum)*10.0**hxlum
+	vecminmax phiphi_n a b 
+	set phiphi_n    = phiphi_n/$b
+	set err_phiphi_n = err_phiphi_n/$b
+
+#-------------------------------------------------------------------------------
+# plot_phi_with_data
+#           * must run make_histo_lg_lum first
+plot_phi_with_data
+
+	reset_graph
+
+	limits lg_lum (lg(phi_l))
+	ticksize 0 0 -1 0 
+	box
+	xlabel log(L)
+	ylabel \Phi(L)
+
+	lweight 4 
+	ctype 3 connect lg_lum (lg(phi_l_1))
+	ctype 5 connect lg_lum (lg(phi_l_2))
+	ctype 4 connect lg_lum (lg(phi_l))
+	lweight 3 
+
+	ctype 2 
+	connect hxlum (lg(phiphi_n))
+	expand 1.01
+	ptype 4 3 
+	points hxlum (lg(phiphi_n))
+	logerr hxlum (lg(phiphi_n)) err_phiphi_n
+	expand 1.5
+
+#-------------------------------------------------------------------------------
+## 
+## DO WHILE (good.eq.0)
+##               CALL random1(idum,ran1)
+##               lum = 10**(Lmin + (Lmax - Lmin)*ran1)
+##               p_lum = c*lum**(g1+1) + d*lum**(g2+1)                         
+## 	      CALL random1(idum,ran1)
+##               if (ran1*norm.lt.p_lum) good = 1
+## ENDDO
+## 
+## weighted:
+##            CALL random1(idum,ran1)
+##            lum = 10**(Lmin + (Lmax - Lmin)*ran1) !sampled at log rate!!
+##            p_lum = Glg*(c*lum**(g1+1) + d*lum**(g2+1))
+##            weight_save(j) = p_lum*(Lmax-Lmin)
+## 
+## 

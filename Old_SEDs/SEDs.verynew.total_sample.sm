@@ -1,0 +1,352 @@
+##--------------------------------------------------------------------------
+## aiuto.total_sample
+aiuto.total_sample
+
+        echo     * total_sample
+        echo     * name_back
+        echo     * total_sample_iras
+        echo     * name_back_iras
+
+#---------------------------------------------------------------------------
+# total_sample
+total_sample
+
+	read_wp
+
+	set tot_name     = name
+	set tot_z        = z
+	set tot_d_l      = d_l 
+	set tot_flagg    = flagg
+	set tot_flagx    = flagx
+	set tot_flag_z   = flag_z
+	set tot_flagsam  = flagsam
+
+	set tot_ax       = ax
+	set tot_err_ax_u = err_ax_u
+	set tot_err_ax_d = err_ax_d
+
+	set tot_ag       = ag
+	set tot_err_ag_u = err_ag_u
+	set tot_err_ag_d = err_ag_d
+
+	set tot_f_radio  = f_radio 
+	set tot_f_mm     = f_mm    
+	set tot_mir      = mir
+	set tot_f_ir     = f_ir    
+	set tot_mopt     = mopt
+	set tot_f_opt    = f_opt   
+	set tot_f_x      = f_x     
+	set tot_n_g      = n_g     
+	set tot_f_g      = f_g     
+
+	set tot_lg_f_radio  = lg_f_radio 
+	set tot_lg_f_mm     = lg_f_mm    
+	set tot_lg_f_ir     = lg_f_ir    
+	set tot_lg_f_opt    = lg_f_opt   
+	set tot_lg_f_x      = lg_f_x     
+	set tot_lg_f_g      = lg_f_g     
+
+	set tot_lg_kf_radio = lg_kf_radio 
+	set tot_lg_kf_mm    = lg_kf_mm    
+	set tot_lg_kf_ir    = lg_kf_ir    
+	set tot_lg_kf_opt   = lg_kf_opt   
+	set tot_lg_kf_x     = lg_kf_x     
+	set tot_lg_kf_g     = lg_kf_g     
+
+	set tot_l_radio     = l_radio 
+	set tot_l_mm        = l_mm    
+	set tot_l_ir        = l_ir    
+	set tot_l_opt       = l_opt   
+	set tot_l_x         = l_x     
+	set tot_l_g         = l_g     
+
+	set tot_nl_radio    = nl_radio 
+	set tot_nl_mm       = nl_mm    
+	set tot_nl_ir       = nl_ir    
+	set tot_nl_opt      = nl_opt   
+	set tot_nl_x        = nl_x     
+	set tot_nl_g        = nl_g     
+
+
+	read_1jy
+
+	set tot_name     = tot_name CONCAT name
+	set tot_z        = tot_z CONCAT z
+	set tot_d_l      = tot_d_l CONCAT d_l
+	set tot_flagg    = tot_flagg CONCAT flagg
+	set tot_flagx    = tot_flagx CONCAT flagx
+	set tot_flag_z   = tot_flag_z CONCAT flag_z
+	set tot_flagsam  = tot_flagsam CONCAT flagsam
+
+	set tot_ax       = tot_ax CONCAT ax
+	set tot_err_ax_u = tot_err_ax_u CONCAT err_ax_u
+	set tot_err_ax_d = tot_err_ax_d CONCAT err_ax_d
+
+	set tot_ag       = tot_ag CONCAT ag
+	set tot_err_ag_u = tot_err_ag_u CONCAT err_ag_u
+	set tot_err_ag_d = tot_err_ag_d CONCAT err_ag_d
+
+	set tot_f_radio  = tot_f_radio CONCAT f_radio
+	set tot_f_mm     = tot_f_mm CONCAT f_mm
+	set tot_mir      = tot_mir CONCAT mir  
+	set tot_f_ir     = tot_f_ir CONCAT f_ir 
+	set tot_mopt     = tot_mopt CONCAT mopt
+	set tot_f_opt    = tot_f_opt CONCAT f_opt
+	set tot_f_x      = tot_f_x CONCAT f_x
+	set tot_n_g      = tot_n_g CONCAT n_g
+	set tot_f_g      = tot_f_g CONCAT f_g
+
+	set tot_lg_f_radio  = tot_lg_f_radio CONCAT lg_f_radio
+	set tot_lg_f_mm     = tot_lg_f_mm CONCAT lg_f_mm
+	set tot_lg_f_ir     = tot_lg_f_ir CONCAT lg_f_ir 
+	set tot_lg_f_opt    = tot_lg_f_opt CONCAT lg_f_opt
+	set tot_lg_f_x      = tot_lg_f_x CONCAT lg_f_x
+	set tot_lg_f_g      = tot_lg_f_g CONCAT lg_f_g
+
+	set tot_lg_kf_radio = tot_lg_kf_radio CONCAT lg_kf_radio
+	set tot_lg_kf_mm    = tot_lg_kf_mm CONCAT lg_kf_mm
+	set tot_lg_kf_ir    = tot_lg_kf_ir CONCAT lg_kf_ir 
+	set tot_lg_kf_opt   = tot_lg_kf_opt CONCAT lg_kf_opt
+	set tot_lg_kf_x     = tot_lg_kf_x CONCAT lg_kf_x
+	set tot_lg_kf_g     = tot_lg_kf_g CONCAT lg_kf_g
+
+	set tot_l_radio     = tot_l_radio CONCAT l_radio
+	set tot_l_mm        = tot_l_mm CONCAT l_mm
+	set tot_l_ir        = tot_l_ir CONCAT l_ir 
+	set tot_l_opt       = tot_l_opt CONCAT l_opt
+	set tot_l_x         = tot_l_x CONCAT l_x
+	set tot_l_g         = tot_l_g CONCAT l_g
+
+	set tot_nl_radio    = tot_nl_radio CONCAT nl_radio
+	set tot_nl_mm       = tot_nl_mm CONCAT nl_mm
+	set tot_nl_ir       = tot_nl_ir CONCAT nl_ir 
+	set tot_nl_opt      = tot_nl_opt CONCAT nl_opt
+	set tot_nl_x        = tot_nl_x CONCAT nl_x
+	set tot_nl_g        = tot_nl_g CONCAT nl_g
+
+	read_slew_red
+
+	set tot_name     = tot_name CONCAT name
+	set tot_z        = tot_z CONCAT z
+	set tot_d_l      = tot_d_l CONCAT d_l
+	set tot_flagg    = tot_flagg CONCAT flagg
+	set tot_flagx    = tot_flagx CONCAT flagx
+	set tot_flag_z   = tot_flag_z CONCAT flag_z
+	set tot_flagsam  = tot_flagsam CONCAT flagsam
+
+	set tot_ax       = tot_ax CONCAT ax
+	set tot_err_ax_u = tot_err_ax_u CONCAT err_ax_u
+	set tot_err_ax_d = tot_err_ax_d CONCAT err_ax_d
+
+	set tot_ag       = tot_ag CONCAT ag
+	set tot_err_ag_u = tot_err_ag_u CONCAT err_ag_u
+	set tot_err_ag_d = tot_err_ag_d CONCAT err_ag_d
+
+	set tot_f_radio  = tot_f_radio CONCAT f_radio
+	set tot_f_mm     = tot_f_mm CONCAT f_mm
+	set tot_mir      = tot_mir CONCAT mir  
+	set tot_f_ir     = tot_f_ir CONCAT f_ir 
+	set tot_mopt     = tot_mopt CONCAT mopt
+	set tot_f_opt    = tot_f_opt CONCAT f_opt
+	set tot_f_x      = tot_f_x CONCAT f_x
+	set tot_n_g      = tot_n_g CONCAT n_g
+	set tot_f_g      = tot_f_g CONCAT f_g
+
+	set tot_lg_f_radio  = tot_lg_f_radio CONCAT lg_f_radio
+	set tot_lg_f_mm     = tot_lg_f_mm CONCAT lg_f_mm
+	set tot_lg_f_ir     = tot_lg_f_ir CONCAT lg_f_ir 
+	set tot_lg_f_opt    = tot_lg_f_opt CONCAT lg_f_opt
+	set tot_lg_f_x      = tot_lg_f_x CONCAT lg_f_x
+	set tot_lg_f_g      = tot_lg_f_g CONCAT lg_f_g
+
+	set tot_lg_kf_radio = tot_lg_kf_radio CONCAT lg_kf_radio
+	set tot_lg_kf_mm    = tot_lg_kf_mm CONCAT lg_kf_mm
+	set tot_lg_kf_ir    = tot_lg_kf_ir CONCAT lg_kf_ir 
+	set tot_lg_kf_opt   = tot_lg_kf_opt CONCAT lg_kf_opt
+	set tot_lg_kf_x     = tot_lg_kf_x CONCAT lg_kf_x
+	set tot_lg_kf_g     = tot_lg_kf_g CONCAT lg_kf_g
+
+	set tot_l_radio     = tot_l_radio CONCAT l_radio
+	set tot_l_mm        = tot_l_mm CONCAT l_mm
+	set tot_l_ir        = tot_l_ir CONCAT l_ir 
+	set tot_l_opt       = tot_l_opt CONCAT l_opt
+	set tot_l_x         = tot_l_x CONCAT l_x
+	set tot_l_g         = tot_l_g CONCAT l_g
+
+	set tot_nl_radio    = tot_nl_radio CONCAT nl_radio
+	set tot_nl_mm       = tot_nl_mm CONCAT nl_mm
+	set tot_nl_ir       = tot_nl_ir CONCAT nl_ir 
+	set tot_nl_opt      = tot_nl_opt CONCAT nl_opt
+	set tot_nl_x        = tot_nl_x CONCAT nl_x
+	set tot_nl_g        = tot_nl_g CONCAT nl_g
+
+
+#---------------------------------------------------------------------------
+# name_back
+name_back
+
+	set name     = tot_name
+	set gname    = tot_name
+	set z        = tot_z
+	set d_l      = tot_d_l
+	set flagg    = tot_flagg
+	set flagx    = tot_flagx 
+	set flag_z   = tot_flag_z 
+	set flagsam  = tot_flagsam
+
+	set ax       = tot_ax
+	set err_ax_u = tot_err_ax_u
+	set err_ax_d = tot_err_ax_d
+
+	set ag       = tot_ag
+	set err_ag_u = tot_err_ag_u
+	set err_ag_d = tot_err_ag_d
+
+	set f_radio  = tot_f_radio
+	set f_mm     = tot_f_mm
+	set mir      = tot_mir
+	set f_ir     = tot_f_ir 
+	set mopt     = tot_mopt 
+	set f_opt    = tot_f_opt
+	set f_x      = tot_f_x
+	set n_g      = tot_n_g
+	set f_g      = tot_f_g
+
+	set lg_f_radio  = tot_lg_f_radio
+	set lg_f_mm     = tot_lg_f_mm
+	set lg_f_ir     = tot_lg_f_ir 
+	set lg_f_opt    = tot_lg_f_opt
+	set lg_f_x      = tot_lg_f_x
+	set lg_f_g      = tot_lg_f_g
+
+	set lg_kf_radio = tot_lg_kf_radio
+	set lg_kf_mm    = tot_lg_kf_mm
+	set lg_kf_ir    = tot_lg_kf_ir 
+	set lg_kf_opt   = tot_lg_kf_opt
+	set lg_kf_x     = tot_lg_kf_x
+	set lg_kf_g     = tot_lg_kf_g
+
+	set l_radio     = tot_l_radio
+	set l_mm        = tot_l_mm
+	set l_ir        = tot_l_ir 
+	set l_opt       = tot_l_opt
+	set l_x         = tot_l_x
+	set l_g         = tot_l_g
+
+	set nl_radio    = tot_nl_radio
+	set nl_mm       = tot_nl_mm
+	set nl_ir       = tot_nl_ir 
+	set nl_opt      = tot_nl_opt
+	set nl_x        = tot_nl_x
+	set nl_g        = tot_nl_g
+
+	set_checks
+
+	define remember_sample "Total"
+	define second_pro_flag "w/ G"
+	prompt $remember_sample $second_pro_flag :
+
+#---------------------------------------------------------------------------
+# name_back_bis
+name_back_bis
+
+	set lista = < z        d_l      flagg    flagx    flag_z   flagsam  ax       err_ax_u err_ax_d \
+                      ag       err_ag_u err_ag_d f_radio  f_mm     mir      f_ir     mopt     f_opt    \
+                      f_x      n_g      f_g      lg_f_radio  lg_f_mm     lg_f_ir     lg_f_opt lg_f_x   \
+	              lg_f_g   lg_kf_radio lg_kf_mm    lg_kf_ir    lg_kf_opt   lg_kf_x     lg_kf_g     \
+	              l_radio     l_mm        l_ir        l_opt       l_x         l_g        \
+                      nl_radio    nl_mm       nl_ir       nl_opt      nl_x        nl_g      >
+
+	set name_tot  = tot_name
+	set gname_tot = tot_name
+
+	foreach 1 lista {
+	     set $1_tot = tot_$1
+	}
+
+	set_checks
+
+	define remember_sample "Total"
+	define second_pro_flag "w/ G"
+	prompt $remember_sample $second_pro_flag :
+
+#---------------------------------------------------------------------------
+# total_sample_iras
+total_sample_iras
+	
+	read_iras  wp
+
+	set tot_name      = name
+	set tot_flag_iras = flag_iras
+	foreach 1 ( 12 25 60 100 ) {
+	   set tot_iras$1       = iras$1
+	   set tot_lg_f_iras$1  = lg_f_iras$1
+	   set tot_lg_kf_iras$1 = lg_kf_iras$1 
+	   set tot_l_iras$1     = l_iras$1
+	   set tot_nl_iras$1    = nl_iras$1
+	}
+
+	read_iras 1jy
+
+	set tot_name      = tot_name      CONCAT name
+	set tot_flag_iras = tot_flag_iras CONCAT flag_iras
+	foreach 1 ( 12 25 60 100 ) {
+	   set tot_iras$1       = tot_iras$1 CONCAT iras$1
+	   set tot_lg_f_iras$1  = tot_lg_f_iras$1  CONCAT lg_f_iras$1
+	   set tot_lg_kf_iras$1 = tot_lg_kf_iras$1 CONCAT lg_kf_iras$1 
+	   set tot_l_iras$1     = tot_l_iras$1     CONCAT l_iras$1
+	   set tot_nl_iras$1    = tot_nl_iras$1    CONCAT nl_iras$1
+	}
+
+	read_iras slew_red
+
+	set tot_name      = tot_name      CONCAT name
+	set tot_flag_iras = tot_flag_iras CONCAT flag_iras
+	foreach 1 ( 12 25 60 100 ) {
+	   set tot_iras$1       = tot_iras$1 CONCAT iras$1
+	   set tot_lg_f_iras$1  = tot_lg_f_iras$1  CONCAT lg_f_iras$1
+	   set tot_lg_kf_iras$1 = tot_lg_kf_iras$1 CONCAT lg_kf_iras$1 
+	   set tot_l_iras$1     = tot_l_iras$1     CONCAT l_iras$1
+	   set tot_nl_iras$1    = tot_nl_iras$1    CONCAT nl_iras$1
+	}
+
+#---------------------------------------------------------------------------
+# name_back_iras
+name_back_iras
+
+	set name      = tot_name
+	set z         = tot_z
+	set flag_iras = tot_flag_iras 
+	foreach 1 ( 12 25 60 100 ) {
+	   set iras$1       = tot_iras$1
+	   set lg_f_iras$1  = tot_lg_f_iras$1
+	   set lg_kf_iras$1 = tot_lg_kf_iras$1
+	   set l_iras$1     = tot_l_iras$1
+	   set nl_iras$1    = tot_nl_iras$1
+	}
+
+	set_checks_iras
+
+#---------------------------------------------------------------------------
+# write_verybig
+write_verybig
+
+	set lista = < name        z  \
+		      lg_f_radio  lg_f_opt   lg_f_x  \
+	              lg_kf_radio lg_kf_opt  lg_kf_x \
+	              l_radio     l_opt      l_x     \
+                      nl_radio    nl_opt     nl_x    >
+
+	define fmt "  %16s  %6.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f\n"
+
+	set samp = < dxrbs sallyc emss tot bade rgball >
+
+	foreach 1 samp {
+	print + test '$!fmt' < name_$1        z_$1  \
+		      lg_f_radio_$1  lg_f_opt_$1   lg_f_x_$1  \
+	              lg_kf_radio_$1 lg_kf_opt_$1  lg_kf_x_$1 \
+	              l_radio_$1     l_opt_$1      l_x_$1     \
+                      nl_radio_$1    nl_opt_$1     nl_x_$1    >
+	}
+
+#---------------------------------------------------------------------------

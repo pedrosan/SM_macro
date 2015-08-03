@@ -1,0 +1,2953 @@
+#---------------------------------------------------------------------------
+#
+
+#	define SM_HOME :
+#	macro read "$!SM_HOME"/x11_tools.sm"
+
+#---------------------------------------------------------------------------
+# read_pointings_98 [<which-dataset>]
+#                   : read all the 1998 datasets
+#                     this is the REAL data reading macro
+read_pointings_98 01
+
+	define data1998dir "/data/analysis/SAX/Mkn421/1998/Test/Def_XClean"
+	echo $data1998dir
+
+	if($?1) { 
+	    define quali $1
+	} else { 
+	    define quali ? { Which set of Fit parameters ? [top/sub05/sub075] }
+	} 
+
+	define check_del ? { Delete OLD vectors ? [y/n] }
+	if(substr('$check_del',0,1) == 'y') {
+	   foreach 2 { a1_1 a2 eb fold a1_01 epeak norm1kev } {
+	      echo ** Deleting $2
+	      delete $2
+	   }
+	}
+
+	set all_pointings_vec = { low_1_2 \
+				  low_3 \
+				  top1_4 \
+				  top2_5 \
+				  after_6 \
+				  after_7 \
+				  after_8_9 \
+				  after_10_12 \
+				  after_13_16 \
+				  april23_1 \
+				  april23_2 \
+				  april23_3 }
+	set sub_pointings_vec = { low_3 \
+				  top1_4 \
+				  top2_5 \
+				  after_6 \
+				  after_7 \
+				  after_8_9 \
+				  after_10_12 \
+				  after_13_16 \
+				  april23_1 \
+				  april23_2 \
+				  april23_3 }
+
+	define 2 $quali
+	foreach 1 all_pointings_vec {
+	data "$!data1998dir/$!2_$!1.out"
+
+	lines 4 4 
+	read time_$1  1
+	read time_mid_$1   1
+	read time_start_$1 2 
+	read time_stop_$1  3 
+
+	lines 5 5 
+	read fl_low_ab_$1   1 
+	read fl_high_ab_$1  2 
+	if( '$2' == 'top') { 
+	  read fl_all_ab_$1   3 
+	} else {
+	  set fl_all_ab_$1 = fl_high_ab_$1+fl_low_ab_$1
+	  echo >>> the 0.1-10 keV flux is not defined <<<
+	  echo   > approximating with (0.2-1)+(2-10)  <
+	}
+
+	lines 6 6
+	read fl_low_unab_$1  1 
+	read fl_high_unab_$1 2 
+	if( '$2' == 'top') { 
+	  read fl_all_unab_$1   3 
+	} else {
+	  set fl_all_unab_$1 = fl_high_unab_$1+fl_low_unab_$1
+	  echo >>> the 0.1-10 keV flux is not defined <<<
+	  echo   > approximating with (0.2-1)+(2-10)  <
+	}
+
+	lines 7 12
+	read < a1_$1       1 err_a1_d_$1     2 err_a1_u_$1     3 >
+	read < a10_$1      4 err_a10_d_$1    5 err_a10_u_$1    6 >
+	read < eb_$1       7 err_eb_d_$1     8 err_eb_u_$1     9 >
+	read < fold_$1    10 err_fold_d_$1  11 err_fold_u_$1  12 >
+	read < a01_$1     13 err_a01_d_$1   14 err_a01_u_$1   15 >
+	read < epeak_$1   16 err_epeak_d_$1 17 err_epeak_u_$1 18 >
+	read < a05_$1     20 err_a05_d_$1   21 err_a05_u_$1   22 >
+	read < a5_$1      23 err_a5_d_$1    24 err_a5_u_$1    25 >
+	read norm1kev_$1    19
+
+	}
+
+	#----------------------------------------------
+	define 1 $(all_pointings_vec[0])
+	echo * Doing concatenation with $1 data
+
+	foreach 2 { fl_low_ab fl_high_ab fl_low_unab fl_high_unab fl_all_ab fl_all_unab \
+		    norm1kev time time_start time_stop time_mid } {
+	  set $2       = $2_$1 
+	  delete $2_$1
+	}
+
+	foreach 2 { a01 a05 a1 a5 a10 eb fold epeak } {
+	  set $2       = $2_$1 
+	  set err_$2_d = err_$2_d_$1 
+	  set err_$2_u = err_$2_u_$1 
+
+	  delete $2_$1
+	  delete err_$2_d_$1
+	  delete err_$2_u_$1
+	}
+	
+	#----------------------------------------------
+	foreach 1 sub_pointings_vec {
+	echo * Doing concatenation with $1 data
+
+	foreach 2 { fl_low_ab     \
+		    fl_high_ab    \
+		    fl_all_ab     \
+		    fl_low_unab   \
+		    fl_high_unab  \
+		    fl_all_unab   \
+		    norm1kev \
+		    time_start \
+		    time_stop \
+		    time_mid \
+		    time } {
+	  set $2       = $2       CONCAT $2_$1 
+	  delete $2_$1
+	}
+
+	foreach 2 { a01 a05 a1 a5 a10 eb fold epeak } {
+	  set $2       = $2       CONCAT $2_$1 
+	  set err_$2_d = err_$2_d CONCAT err_$2_d_$1 
+	  set err_$2_u = err_$2_u CONCAT err_$2_u_$1 
+
+	  delete $2_$1
+	  delete err_$2_d_$1
+	  delete err_$2_u_$1
+	}
+	}
+
+	foreach 1 { a01 a05 a1 a5 a10 eb fold epeak } {
+	    set err_$1_u = err_$1_u - $1
+	    set err_$1_d = $1 - err_$1_d 
+	}
+	set dalpha = a5 - a05
+	set err_dalpha_u = sqrt(err_a5_u**2 + err_a05_u**2)
+	set err_dalpha_d = sqrt(err_a5_d**2 + err_a05_d**2)
+
+	set fl_low_ab    = fl_low_ab  
+	set fl_high_ab   = fl_high_ab
+	set fl_all_ab    = fl_all_ab
+	set fl_low_unab  = fl_low_unab
+	set fl_high_unab = fl_high_unab
+	set fl_all_unab  = fl_all_unab
+
+	foreach 2 { a01 a05 a1 a5 a10 } {
+	  set $2       = $2 - 1
+	}
+
+	#
+	# renaming vectors
+	#
+	echo  ...Renaming vectors to 'new_/sub05/sub075' ...
+	if ( '$quali' == 'top' ) {
+	   foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha } {
+                 set new_$var = $var
+	         set err_new_"$!var"_u = err_"$!var"_u
+	         set err_new_"$!var"_d = err_"$!var"_d
+	   }
+	   foreach var { fl_low_ab fl_high_ab fl_all_ab fl_low_unab fl_high_unab fl_all_unab } {
+                 set new_$var = $var
+	   }
+	   foreach var { time time_start time_stop time_mid } {
+                 set new_$var = $var
+	   }
+
+	   foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha} {
+	         set new_old_$var = 100.*(new_$var-old_$var)/new_$var
+	   }
+	}
+
+	if ( '$quali' == 'sub05' ) {
+	   foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha} {
+                 set sub05_$var = $var
+	         set err_sub05_"$!var"_u = err_"$!var"_u
+	         set err_sub05_"$!var"_d = err_"$!var"_d
+	   }
+	   foreach var { fl_low_ab fl_high_ab fl_all_ab fl_low_unab fl_high_unab fl_all_unab } {
+                 set sub05_$var = $var
+	   }
+
+	   foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha} {
+	         set sub05_new_$var = 100.*(sub05_$var-new_$var)/sub05_$var
+	   }
+	}
+
+	if ( '$quali' == 'sub075' ) {
+	   foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha} {
+                 set sub075_$var = $var
+	         set err_sub075_"$!var"_u = err_"$!var"_u
+	         set err_sub075_"$!var"_d = err_"$!var"_d
+	   }
+	   foreach var { fl_low_ab fl_high_ab fl_all_ab fl_low_unab fl_high_unab fl_all_unab } {
+                 set sub075_$var = $var
+	   }
+
+	   foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha} {
+	         set sub075_new_$var = 100.*(sub075_$var-new_$var)/sub075_$var
+	   }
+	}
+
+#---------------------------------------------------------------------------
+# clean_pointings_98
+clean_pointings_98
+
+	define quali ? { Which set of array [y98/y00/new/top/sub05/sub075] or 'none' : }
+	#
+	# removing vectors
+	#
+	define 1 $quali
+	foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha norm1kev } {
+                 delete $1_$var 
+	         delete err_$1_"$!var"_u 
+	         delete err_$1_"$!var"_d 
+	}
+	foreach var { fl_low_ab fl_high_ab fl_all_ab fl_low_unab fl_high_unab fl_all_unab } {
+                 delete $1_$var 
+	}
+	foreach var { time time_start time_stop time_mid } {
+                 delete $1_$var
+	}
+	foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha norm1kev } {
+	         delete $1_old_$var 
+	}
+
+	# special arrays
+	#
+	if ( '$quali' == 'sub05' ) {
+	   foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha norm1kev } {
+	         delete sub05_new_$var 
+	   }
+	}
+
+	if ( '$quali' == 'sub075' ) {
+	   foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha norm1kev } {
+	         delete sub075_new_$var 
+	   }
+	}
+
+	if( '$quali' == 'none' ) { 
+	   foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha norm1kev } {
+                 delete $var 
+	         delete err_"$!var"_u 
+	         delete err_"$!var"_d 
+	   }
+	   foreach var { fl_low_ab fl_high_ab fl_all_ab fl_low_unab fl_high_unab fl_all_unab } {
+                 delete $var 
+	   }
+	   foreach var { time time_start time_stop time_mid } {
+                 delete $var
+	   }
+	   foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha} {
+	         delete old_$var 
+	   }
+	}
+
+#---------------------------------------------------------------------------
+# plot_pointings_98 : check whether this is good or not.
+plot_pointings_98
+
+	define aa (is_vector(new_a5))
+	if( $aa != 1 ) {
+	    echo '>>>> Require prepare_check_old_new" <<<'
+	    define aa y 
+	    define aa ? { Run it ? [y/n] }
+	    if ( substr('$aa',0,1) == 'y') { prepare_check_old_new }
+	}
+	define aa delete
+
+	define cheanno ? { Which year of data ? [old/new/sub05/sub075] }
+	define 3 <$cheanno>
+
+	location 6000 31000 6000 31000
+	ctype 2
+	ltype 0
+	lweight 3
+
+	define min_fl_low_ab      2.0  
+	define max_fl_low_ab      5.0
+	define min_fl_low_unab    2.5
+	define max_fl_low_unab    6.5
+	define min_fl_high_ab     1.0
+	define max_fl_high_ab     5.0
+	define min_fl_high_unab   1.0
+	define max_fl_high_unab   5.0
+	define min_fl_all_ab      4.0
+	define max_fl_all_ab     13.0
+	define min_fl_all_unab    7.0
+	define max_fl_all_unab   16.0
+
+	echo ------------------------------
+	echo  [1] alpha @ 0.1 keV
+	echo  [2] alpha @ 0.5 keV
+	echo  [3] alpha @   1 keV
+	echo  [4] alpha @   5 keV
+	echo  [5] alpha @  10 keV
+	echo  [6] E_break 
+	echo  [7] E_peak
+	echo  [8] d_alpha 0.5 - 5.0
+
+	define whichpar ? { Which Parameter ? [1-7] }
+	if ($whichpar == 1) { 
+	      define 1 "a01" 
+	      define ymin 0.3 
+	      define ymax 1.3
+	      define lab_y "\alpha_{(@0.1keV)}"
+	}
+	if ($whichpar == 2) { 
+	      define 1 "a05" 
+              if( '$3' == 'new' ){ 
+	          define ymin 0.6
+	          define ymax 1.1
+	      }
+              if( '$3' == 'sub05' ){ 
+	          define ymin 0.4
+	          define ymax 1.0
+	      }
+              if( '$3' == 'sub075' ){ 
+	          define ymin -0.45
+	          define ymax  0.75
+	      }
+	      define lab_y "\alpha_{(@0.5keV)}"
+	}
+	if ($whichpar == 3) { 
+	      define 1 "a1" 
+              if( '$3' == 'new' ){ 
+	          define ymin 0.8
+	          define ymax 1.3
+	      }
+              if( '$3' == 'sub05' ){ 
+	          define ymin 0.7
+	          define ymax 1.3
+	      }
+              if( '$3' == 'sub075' ){ 
+	          define ymin 0.7
+	          define ymax 1.4
+	      }
+	      define lab_y "\alpha_{(@1keV)}"
+	}
+	if ($whichpar == 4) { 
+	      define 1 "a5" 
+              if( '$3' == 'new' ){ 
+	          define ymin 1.4
+	          define ymax 1.9
+	      }
+              if( '$3' == 'sub05' ){ 
+	          define ymin 1.2
+	          define ymax 1.8
+	      }
+              if( '$3' == 'sub075' ){ 
+	          define ymin 1.1
+	          define ymax 1.8
+	      }
+	      define lab_y "\alpha_{(@5keV)}"
+	}
+	if ($whichpar == 5) { 
+	      define 1 "a10" 
+              if( '$3' == 'new' ){ 
+	          define ymin 1.35
+	          define ymax 1.85
+	      }
+              if( '$3' == 'sub05' ){ 
+	          define ymin 1.2
+	          define ymax 1.8
+	      }
+              if( '$3' == 'sub075' ){ 
+	          define ymin 1.2
+	          define ymax 2.4
+	      }
+	      define lab_y "\alpha_{(@10keV)}"
+	}
+	if ($whichpar == 6) { 
+	      define 1 "eb"
+	      define ymin 0.1 
+	      define ymax 20.0
+	      define lab_y "E_{break}"
+	}
+	if ($whichpar == 7) { 
+	      define 1 "epeak"
+              if( '$3' == 'new' ){ 
+	          define ymin 0.05
+	          define ymax 1.8 
+	      }
+              if( '$3' == 'sub05' ){ 
+	          define ymin 0.05
+	          define ymax 1.8 
+	      }
+              if( '$3' == 'sub075' ){ 
+	          define ymin 0.02
+	          define ymax 2.0
+	      }
+	      define lab_y "E_{peak} [keV]"
+	}
+	if ($whichpar == 8) { 
+	      define 1 "dalpha"
+              if( '$3' == 'new' ){ 
+	          define ymin 0.4
+	          define ymax 1.0 
+	      }
+              if( '$3' == 'sub05' ){ 
+	          define ymin 0.6
+	          define ymax 1.2 
+	      }
+              if( '$3' == 'sub075' ){ 
+	          define ymin 0.8
+	          define ymax 1.8 
+	      }
+	      define lab_y "\alpha_{@ 5 keV} - \alpha_{@ 0.5 keV}"
+	}
+	echo *** $1 ***
+
+	define 1 $3_$1
+
+	echo *** $1 ***
+
+	echo --- FOLD PARAMETER -----------
+	echo  [0] ALL (42)
+	echo  [1] 0.5
+	echo  [2] 1.0
+	echo  [3] 2.0
+	echo  [4] 3.0
+	echo  [5] FREE (and errors for 3 interesting parameters)
+	echo  [6] FREE (and errors for 4 interesting parameters)
+	define whichfold ? { Which value of Fold parameter ? [1-6] }
+	echo $whichfold
+
+	if ($whichfold == 0) { define lab_t "ALL Fold Parameter values" }
+	if ($whichfold == 1) { define lab_t "{\it f} = 0.5" }
+	if ($whichfold == 2) { define lab_t "{\it f} = 1.0" }
+	if ($whichfold == 3) { define lab_t "{\it f} = 2.0" }
+	if ($whichfold == 4) { define lab_t "{\it f} = 3.0" }
+	if ($whichfold == 5) { define lab_t "{\it f} (a)" }
+	if ($whichfold == 6) { define lab_t "{\it f} (b)" }
+
+	if ($whichfold > 0) {
+	define 2 ($whichfold-1)
+	echo $2
+
+	set yvec = < $($1[$2]) > 
+	set err_yvec_d = < $(err_$1_d[$2]) > 
+	set err_yvec_u = < $(err_$1_u[$2]) > 
+	do 3=1,$(dimen(all_pointings_vec)-1) {
+	   set yvec       = yvec       CONCAT < $($1[$2+$3*6]) >
+	   set err_yvec_d = err_yvec_d CONCAT < $(err_$1_d[$2+$3*6]) >
+	   set err_yvec_u = err_yvec_u CONCAT < $(err_$1_u[$2+$3*6]) >
+	}
+
+	echo ------------------------------
+	echo  [0] time
+	echo  [1] order 
+	echo  [2] 0.2- 1.0 keV ABSORBED flux 
+	echo  [3]          keV UN-ABSORBED flux
+	echo  [4] 2.0-10.0 keV ABSORBED flux 
+	echo  [5]          keV UN-ABSORBED flux
+	echo  [6] 0.1-10.0 keV ABSORBED flux 
+	echo  [7]          keV UN-ABSORBED flux
+	define whatx ? { What X-axis variable ? }
+
+	define 6 $cheanno
+	if ($whatx == 0) {
+	    set xvec = (time - $(time[0]) )*1.0e8
+	    define xmin -20000
+	    define xmax ($(xvec[$(dimen(all_pointings_vec))-1])+20000)
+	    define lab_x "Time from TJD=10924.0 [s]"
+	}
+	if ($whatx == 1) {
+	    set xvec = 1,$(dimen(all_pointings_vec)),1
+	    define xmin 0
+	    define xmax $(dimen(xvec)+1)
+	    define lab_x "\# sequence number"
+	}
+	if ($whatx == 2) {
+	    set xvec = $6_fl_low_ab*1.e10
+	    define xmin $min_fl_low_ab
+	    define xmax $max_fl_low_ab
+	    define lab_x "F^{obs}_{0.2-1keV} [10^{-10} erg/cm^2/s^{-1}]"
+	}
+	if ($whatx == 3) {
+	    set xvec = $6_fl_low_unab*1.e10
+	    define xmin 2.5
+	    define xmax 6.5
+	    define xmin $min_fl_low_unab
+	    define xmax $max_fl_low_unab
+	    define lab_x "F^{dered}_{0.2-1keV} [10^{-10} erg/cm^2/s^{-1}]"
+	}
+	if ($whatx == 4) {
+	    set xvec = $6_fl_high_ab*1.e10
+	    define xmin 1 
+	    define xmax 5
+	    define xmin $min_fl_high_ab
+	    define xmax $max_fl_high_ab
+	    define lab_x "F^{obs}_{2-10keV} [10^{-10} erg/cm^2/s^{-1}]"
+	}
+	if ($whatx == 5) {
+	    set xvec = $6_fl_high_unab*1.e10
+	    define xmin 1 
+	    define xmax 5
+	    define xmin $min_fl_high_unab
+	    define xmax $max_fl_high_unab
+	    define lab_x "F^{dered}_{2-10keV} [10^{-10} c.g.s]"
+	}
+	if ($whatx == 6) {
+	    set xvec = $6_fl_all_ab*1.e10
+	    define xmin 4
+	    define xmax 13
+	    define xmin $min_fl_all_ab
+	    define xmax $max_fl_all_ab
+	    define lab_x "F^{obs}_{0.1-10keV} [10^{-10} c.g.s]"
+	}
+	if ($whatx == 7) {
+	    set xvec = $6_fl_all_unab*1.e10
+	    define xmin 7
+	    define xmax 16
+	    define xmin $min_fl_all_unab
+	    define xmax $max_fl_all_unab
+	    define lab_x "F^{dered}_{0.1-10keV} [10^{-10} c.g.s]"
+	}
+	} 
+
+	if ($whichfold == 1) {
+	    set xvec = 1,$($(dimen(all_pointings_vec)*6)),1
+	    define xmin  0
+	    define xmax  $(dimen(xvec)+1)
+	    set yvec = $1
+	    set err_yvec_u = err_$1_u
+	    set err_yvec_d = err_$1_d
+	    define lab_x "\# sequence number"
+	}
+
+	ctype 2 
+	lweight 3
+	expand 1.5
+	limits $xmin $xmax $ymin $ymax
+	if ($whichfold == 0) { 
+	     ticksize 1 6 0 0 
+	} else {
+	     ticksize 1 1 0 0 
+	}
+	if ($whatx == 0) {
+	   ticksize 0 0 0 0
+	}
+	box 
+	expand 2.0
+	xlabel $lab_x 
+	expand 2.5
+	ylabel $lab_y 
+
+	define col ? { Color ? }
+	ctype $col
+
+	ptype 4 3
+	expand 2.0
+	points   xvec yvec
+	errorbar xvec yvec err_yvec_u 2
+	errorbar xvec yvec err_yvec_d 4
+
+	ctype 2 
+	expand 1.5
+	relocate ( $gx2 $($gy2+300) )
+	putlabel 7 $cheanno
+	relocate ( $gx1 $($gy2+300) )
+	putlabel 9 $lab_t
+
+#---------------------------------------------------------------------------
+# highlight
+highlight
+
+	echo --- FOLD PARAMETER -----------
+	echo  [0] ALL (42)
+	echo  [1] 0.5
+	echo  [2] 1.0
+	echo  [3] 2.0
+	echo  [4] 3.0
+	echo  [5] FREE (and errors for 3 interesting parameters)
+	echo  [6] FREE (and errors for 4 interesting parameters)
+	define whatlight ? { What is the case to highlight ? [0-6] }
+
+	define 2 ($whatlight-1)
+	echo $2
+
+	set xvec_hl = < $(xvec[$2]) >    
+	set yvec_hl = < $(yvec[$2]) > 
+	set err_yvec_hl_d = < $(err_yvec_d[$2]) > 
+	set err_yvec_hl_u = < $(err_yvec_u[$2]) > 
+	do 3=1,$(dimen(all_pointings_vec)-1) {
+	   set yvec_hl       = yvec_hl       CONCAT < $(yvec[$2+$3*6]) >
+	   set xvec_hl       = xvec_hl       CONCAT < $(xvec[$2+$3*6]) >
+	   set err_yvec_hl_d = err_yvec_hl_d CONCAT < $(err_yvec_d[$2+$3*6]) >
+	   set err_yvec_hl_u = err_yvec_hl_u CONCAT < $(err_yvec_u[$2+$3*6]) >
+	}
+
+	define col ? { what Color ? }
+	ctype $col 
+	ptype 4 0 
+	lweight 4
+	expand 2.5
+	points   xvec_hl yvec_hl
+	errorbar xvec_hl yvec_hl err_yvec_hl_u 2
+	errorbar xvec_hl yvec_hl err_yvec_hl_d 4
+	lweight 3
+
+#---------------------------------------------------------------------------
+# plot_pointings_97_98  : this is the REAL ONE
+plot_pointings_97_98
+
+	location 6000 31000 6000 31000
+	ctype 2
+	ltype 0
+	lweight 3
+
+	echo ------------------------------
+	echo  [1] alpha @ 0.1 keV
+	echo  [2] alpha @ 0.5 keV
+	echo  [3] alpha @   1 keV
+	echo  [4] alpha @   5 keV
+	echo  [5] alpha @  10 keV
+	echo  [6] E_break 
+	echo  [7] E_peak
+	echo  [8] d_alpha 0.5 - 5.0
+
+	define whichpar ? { Which Parameter ? [1-7] }
+
+	define che98 ? { Which dataset for 1998 ? [new/sub05/sub075] }
+	define 3 <$che98>
+
+	if ($whichpar == 1) { 
+	      define 1 "a01" 
+	      define ymin 0.3 
+	      define ymax 1.3
+	      define lab_y "\alpha_{(@0.1keV)}"
+	}
+	if ($whichpar == 2) { 
+	      define 1 "a05" 
+              if( '$3' == 'new' ){ 
+	          define ymin 0.7
+	          define ymax 1.3
+	      }
+              if( '$3' == 'sub05' ){ 
+	          define ymin 0.4
+	          define ymax 1.3
+	      }
+              if( '$3' == 'sub075' ){ 
+	          define ymin -0.45
+	          define ymax  1.3
+	      }
+	      define lab_y "\alpha_{(@0.5keV)}"
+	}
+	if ($whichpar == 3) { 
+	      define 1 "a1" 
+              if( '$3' == 'new' ){ 
+	          define ymin 0.85
+	          define ymax 1.65
+	      }
+              if( '$3' == 'sub05' ){ 
+	          define ymin 0.7
+	          define ymax 1.65
+	      }
+              if( '$3' == 'sub075' ){ 
+	          define ymin 0.7
+	          define ymax 1.65
+	      }
+	      define lab_y "\alpha_{(@1keV)}"
+	}
+	if ($whichpar == 4) { 
+	      define 1 "a5" 
+              if( '$3' == 'new' ){ 
+	          define ymin 2.4
+	          define ymax 1.4
+	          # define ymin 1.4
+	          # define ymax 2.4
+	      }
+              if( '$3' == 'sub05' ){ 
+	          define ymin 1.2
+	          define ymax 2.4
+	      }
+              if( '$3' == 'sub075' ){ 
+	          define ymin 1.1
+	          define ymax 2.4
+	      }
+	      define lab_y "\alpha_{(@5keV)}"
+	}
+	if ($whichpar == 5) { 
+	      define 1 "a10" 
+              if( '$3' == 'new' ){ 
+	          define ymin 1.35
+	          define ymax 2.95
+	      }
+              if( '$3' == 'sub05' ){ 
+	          define ymin 1.2
+	          define ymax 2.95
+	      }
+              if( '$3' == 'sub075' ){ 
+	          define ymin 1.2
+	          define ymax 2.95
+	      }
+	      define lab_y "\alpha_{(@10keV)}"
+	}
+	if ($whichpar == 6) { 
+	      define 1 "eb"
+	      define ymin 0.01
+	      define ymax 10.0
+	      define lab_y "E_{break}"
+	}
+	if ($whichpar == 7) { 
+	      define 1 "epeak"
+              if( '$3' == 'new' ){ 
+	          define ymin 0.01
+	          define ymax 1.4 
+	      }
+              if( '$3' == 'sub05' ){ 
+	          define ymin 0.01
+	          define ymax 1.8 
+	      }
+              if( '$3' == 'sub075' ){ 
+	          define ymin 0.01
+	          define ymax 2.0
+	      }
+	      define lab_y "E_{peak} [keV]"
+	}
+	if ($whichpar == 8) { 
+	      define 1 "dalpha"
+              if( '$3' == 'new' ){ 
+	          define ymin 0.4
+	          define ymax 1.0 
+	      }
+              if( '$3' == 'sub05' ){ 
+	          define ymin 0.6
+	          define ymax 1.2 
+	      }
+              if( '$3' == 'sub075' ){ 
+	          define ymin 0.8
+	          define ymax 1.8 
+	      }
+	      define lab_y "\alpha_{@ 5 keV} - \alpha_{@ 0.5 keV}"
+	}
+
+	#
+	# define plot vectors for 1998 dataset
+	#
+	 # echo --- FOLD PARAMETER for 1998 -----------
+	 # echo  [1] 0.5
+	 # echo  [2] 1.0
+	 # echo  [3] 2.0
+	 # echo  [4] 3.0
+	 # echo  [5] FREE (and errors for 3 interesting parameters)
+	 # echo  [6] FREE (and errors for 4 interesting parameters)
+	 # define whichfold98 ? { Which value of Fold parameter for 1998 data ? [1-6] }
+	 # echo $whichfold98
+
+	define whichfold98 3 
+
+	define 5 $3_$1
+	define 2 ($whichfold98-1)
+	set yvec98 = < $($5[$2]) > 
+	set err_yvec98_d = < $(err_$5_d[$2]) > 
+	set err_yvec98_u = < $(err_$5_u[$2]) > 
+	do 3=1,$(dimen($3_epeak)/6-1) {
+	   set yvec98       = yvec98       CONCAT < $($5[$2+$3*6]) >
+	   set err_yvec98_d = err_yvec98_d CONCAT < $(err_$5_d[$2+$3*6]) >
+	   set err_yvec98_u = err_yvec98_u CONCAT < $(err_$5_u[$2+$3*6]) >
+	}
+
+	set yvec00       = < 2.95 4.08 2.16 4.43 2.43 2.12 2.02  6.1 >
+	set err_yvec00_d = < 0.16 0.55 0.15 0.32 0.14 0.14 0.12  1.0 >
+	set err_yvec00_u = < 0.16 2.10 0.15 0.57 0.15 0.14 0.12 10.0 >
+	set xvec00       = < 5.2  7.66 4.5  9.39 8.07 5.0  4.9  12.0 >
+
+	#
+	# define plot vectors for 1997 dataset
+	#
+	 # echo --- FOLD PARAMETER for 1997 -----------
+	 # echo  [1] 0.5
+	 # echo  [2] 1.0
+	 # echo  [3] 2.0
+	 # echo  [4] 3.0
+	 # echo  [5] FREE (and errors for 3 interesting parameters)
+	 # echo  [6] FREE (and errors for 4 interesting parameters)
+	 # define whichfold97 ? { Which value of Fold parameter for 1997 data ? [1-6] }
+	 # echo $whichfold97
+
+	define whichfold97 2 
+
+	define 5 veryold_$1
+	define 2 ($whichfold97-1)
+	set yvec97 = < $($5[$2]) > 
+	set err_yvec97_d = < $(err_$5_d[$2]) > 
+	set err_yvec97_u = < $(err_$5_u[$2]) > 
+	do 3=1,$(dimen(veryold_epeak)/6-1) {
+	   set yvec97       = yvec97       CONCAT < $($5[$2+$3*6]) >
+	   set err_yvec97_d = err_yvec97_d CONCAT < $(err_$5_d[$2+$3*6]) >
+	   set err_yvec97_u = err_yvec97_u CONCAT < $(err_$5_u[$2+$3*6]) >
+	}
+	#
+	# end of handling data and creating arrays
+	#-------------------------------------------------------
+
+	if ($whichpar == 6 || $whichpar == 7 ) {
+	    define howyaxis ? { Y-axis LIN or LOG [1/2] ? }
+	} else {
+	    define howyaxis 1
+	}
+
+	if ($howyaxis == 1) { 
+	   define ytick1  0
+	   define ytick2  0
+	} else {
+	   set err_yvec97_d = lg(yvec97) - lg(yvec97 - err_yvec97_d)
+	   set err_yvec97_u = lg(yvec97 + err_yvec97_u) - lg(yvec97)
+	   set yvec97 = lg(yvec97)
+	   set err_yvec98_d = lg(yvec98) - lg(yvec98 - err_yvec98_d)
+	   set err_yvec98_u = lg(yvec98 + err_yvec98_u) - lg(yvec98)
+	   set yvec98 = lg(yvec98)
+	   # NEW
+	   set err_yvec00_d = lg(yvec00) - lg(yvec00 - err_yvec00_d)
+	   set err_yvec00_u = lg(yvec00 + err_yvec00_u) - lg(yvec00)
+	   set yvec00 = lg(yvec00)
+	   # NEW
+
+	   define ytick1 -1 
+	   define ytick2  0
+	   if($whichpar == 6) { 
+	      define ymin $(lg(0.15))
+	      define ymax $(lg(15.0))
+	   }
+	   if($whichpar == 7) { 
+	      define ymin $(lg(0.08))
+	      define ymax $(lg(1.6))
+
+	      # NEW
+	      # this changed for 2000 data
+	      define ymin $(lg(0.08))
+	      define ymax $(lg(11.0))
+	      # NEW
+	   }
+	}
+
+	#
+	# X-Axis
+	#
+	echo ------------------------------
+	echo  [1] order 
+	echo  [2] 0.2- 1.0 keV ABSORBED flux 
+	echo  [3]          keV UN-ABSORBED flux
+	echo  [4] 2.0-10.0 keV ABSORBED flux 
+	echo  [5]          keV UN-ABSORBED flux
+	echo  [6] 0.1-10.0 keV ABSORBED flux 
+	echo  [7]          keV UN-ABSORBED flux
+	define whatx ? { What X-axis variable ? }
+
+	define 6 $che98
+	if ($whatx == 1) {
+	    set xvec97 = 1,$(dimen(veryold_fl_low_ab)),1
+	    define first $(xvec97[$(dimen(xvec97)-1)]+2)
+	    define last  ( $first + dimen(new_fl_low_ab) - 1 )
+	    set xvec98 = $first,$last,1
+	    define xmin 0
+	    define xmax  $(xvec98[$(dimen(xvec98)-1)]+2)
+	    define lab_x "\# sequence number"
+	    define first delete
+	    define last  delete
+	}
+	if ($whatx == 2) {
+	    set xvec97 = veryold_fl_low_ab*1.e10 
+	    set xvec98 = $6_fl_low_ab*1.e10 
+	    define xmin 1.0
+	    define xmax 5.0
+	    define lab_x "F^{obs}_{0.2-1keV} [10^{-10} erg/cm^2/s^{-1}]"
+	}
+	if ($whatx == 3) {
+	    set xvec97 = veryold_fl_low_unab*1.e10 
+	    set xvec98 = $6_fl_low_unab*1.e10 
+	    define xmin 1.3
+	    define xmax 6.5
+	    # define lab_x "F^{dered}_{0.2-1keV} [10^{-10} erg/cm^2/s^{-1}]"
+	    define lab_x "F_{0.2-1keV} [10^{-10} erg/cm^2/s^{-1}]"
+	}
+	if ($whatx == 4) {
+	    set xvec97 = veryold_fl_high_ab*1.e10 
+	    set xvec98 = $6_fl_high_ab*1.e10 
+	    define xmin 0.1
+	    define xmax 5.0
+	    define lab_x "F^{obs}_{2-10keV} [10^{-10} erg/cm^2/s^{-1}]"
+	}
+	if ($whatx == 5) {
+	    set xvec97 = veryold_fl_high_unab*1.e10 
+	    set xvec98 = $6_fl_high_unab*1.e10 
+	    define xmin 0.35
+	    define xmax 5.0
+	    # NEW
+	    # this changed for 2000 data
+	    define xmin 0.35
+	    define xmax 15.0
+	    # NEW
+
+	    # define lab_x "F^{dered}_{2-10keV} [10^{-10} c.g.s]"
+	    define lab_x "F_{2-10 keV} [10^{-10} erg/cm^2/s]"
+	}
+	if ($whatx == 6) {
+	    set xvec97 = veryold_fl_all_ab*1.e10 
+	    set xvec98 = $6_fl_all_ab*1.e10 
+	    define xmin  0.1
+	    define xmax 13.0
+	    define lab_x "F^{obs}_{0.1-10keV} [10^{-10} erg/cm^2/s^{-1}]"
+	}
+	if ($whatx == 7) {
+	    set xvec97 = veryold_fl_all_unab*1.e10 
+	    set xvec98 = $6_fl_all_unab*1.e10 
+	    define xmin  2.5
+	    define xmax 17.0
+	    # define lab_x "F^{dered}_{0.1-10keV} [10^{-10} c.g.s]"
+	    define lab_x "F_{0.1-10 keV} [10^{-10} erg/cm^2/s]"
+	}
+
+	if ($whatx > 1) { 
+	    define howxaxis ? { X-axis LIN or LOG [1/2] ? }
+	} else {
+	    define howxaxis 1
+	}
+
+	if ($howxaxis == 1) { 
+	    define xtick1 1 
+	    define xtick2 1 
+	} else {
+	    define xtick1 -0.5
+	    define xtick2  1
+	    define xmin $(lg($xmin))
+	    define xmax $(lg($xmax))
+	    set xvec97 = lg(xvec97)
+	    set xvec98 = lg(xvec98)
+	    # NEW
+	    set xvec00 = lg(xvec00)
+	    # NEW
+	}
+	if ($whatx == 5 && $howxaxis == 2) {
+	   define xtick1 -1
+	   define xtick2  2
+	}
+
+	ctype 2 
+	lweight 3
+	expand 1.5
+	ticksize $xtick1 $xtick2 $ytick1 $ytick2
+	limits $xmin $xmax $ymin $ymax
+	box 
+	expand 2.0
+	xlabel $lab_x 
+	expand 2.5
+	ylabel $lab_y 
+
+	# plot 1997
+	#
+	echo ------------------------------------
+	echo  Plotting 1997 data... 
+	# set xav     = xvec97
+	# set e_vec_u = 0*xav
+	# set e_vec_d = 0*xav
+	# set yme     = yvec97 
+	# set eyme_u  = err_yvec97_u
+	# set eyme_d  = err_yvec97_d
+	set _x      = xvec97
+	set _ex_u   = 0*_x
+	set _ex_d   = 0*_x
+	set _y      = yvec97 
+	set _ey_u   = err_yvec97_u
+	set _ey_d   = err_yvec97_d
+	plot_verynice
+
+	# plot 1998
+	#
+	echo ------------------------------------
+	echo  Plotting 1998 data... 
+	# set xav = xvec98
+	# set e_vec_u = 0*xav
+	# set e_vec_d = 0*xav
+	# set yme = yvec98 
+	# set eyme_u = err_yvec98_u
+	# set eyme_d = err_yvec98_d
+	set _x      = xvec98
+	set _ex_u   = 0*_x
+	set _ex_d   = 0*_x
+	set _y      = yvec98 
+	set _ey_u   = err_yvec98_u
+	set _ey_d   = err_yvec98_d
+	plot_verynice
+
+	# plot 2000
+	#
+	echo ------------------------------------
+	echo  Plotting 2000 data... 
+	# set xav = xvec00
+	# set e_vec_u = 0*xav
+	# set e_vec_d = 0*xav
+	# set yme = yvec00 
+	# set eyme_u = err_yvec00_u
+	# set eyme_d = err_yvec00_d
+	set _x      = xvec00
+	set _ex_u   = 0*_x
+	set _ex_d   = 0*_x
+	set _y      = yvec00 
+	set _ey_u   = err_yvec00_u
+	set _ey_d   = err_yvec00_d
+	plot_verynice
+
+pip
+	ptype 4 3
+	expand 2.0
+	ctype 5
+	points   xvec98 yvec98
+	errorbar xvec98 yvec98 err_yvec98_u 2
+	errorbar xvec98 yvec98 err_yvec98_d 4
+
+	ctype 3
+	points   xvec97 yvec97
+	errorbar xvec97 yvec97 err_yvec97_u 2
+	errorbar xvec97 yvec97 err_yvec97_d 4
+
+	ctype 2 
+	expand 1.5
+
+#---------------------------------------------------------------------------
+# curved_model_seq
+curved_model_seq
+
+	   echo --- FOLD PARAMETER -----------
+	   echo  [1] 0.5
+	   echo  [2] 1.0
+	   echo  [3] 2.0
+	   echo  [4] 3.0
+	   echo  [5] FREE (and errors for 3 interesting parameters)
+	   echo  [6] FREE (and errors for 4 interesting parameters)
+	   define whichfold ? { Which value of Fold parameter ? [1-6] }
+	   echo  * Active value is: $whichfold
+
+	   echo --- Which representation --------
+   	   echo   [1] Fnu
+	   echo   [2] nu_Fnu
+	   define repre ? { Your choice ? }
+
+	   define ymin ? { Y_min : }
+	   define ymax ? { Y_max : }
+
+	   do i=1,$(dimen(all_pointings_vec)) {
+	      define igo ? { Go ? [y/n] }
+	      if(substr('$igo',0,1) == 'y') {
+	        echo  [$i] $(all_pointings_vec[$i-1])
+	        define color ($i - 6*INT($i/6.)+2)
+	        curved_model $i $whichfold $repre $color $ymin $ymax 
+	      } else {
+		return
+	      }
+	   }
+
+
+#---------------------------------------------------------------------------
+# curved_model: relazione usata da Fabrizio nel paper
+#               CON aggiunto un esponente di 'fold'
+#               CON cambiata la forma dell'INPUT
+#               E` come quella implementata in XSPEC
+#               Calcolata sul range -2 < log(nu) < 2
+#               [1]= DataSet
+#               [2]= Fold Parameter
+#               [3]= f_nu/nu_f_nu
+#               [4]= color
+#               [5]= Y_min
+#               [6]= Y_max
+curved_model 06
+
+        if($?1 == 0) {
+
+    	   echo -----------------------------------------------
+	   echo  relazione usata nel "curved model"
+	   echo  Legge i parametri direttamente dai Log Files
+	   echo  Calcolata sul range -2 < log(nu) < 2
+    	   echo -----------------------------------------------
+
+	   do i=1,$(dimen(all_pointings_vec)) {
+	      echo  [$i] $(all_pointings_vec[$i-1])
+	   }
+	   define oldwhichdata ? { Which DataSet [NUMBER] ? }
+
+	   echo --- FOLD PARAMETER -----------
+	   echo  [1] 0.5
+	   echo  [2] 1.0
+	   echo  [3] 2.0
+	   echo  [4] 3.0
+	   echo  [5] FREE (and errors for 3 interesting parameters)
+	   echo  [6] FREE (and errors for 4 interesting parameters)
+	   define oldwhichfold ? { Which value of Fold parameter ? [1-6] }
+	   echo  * Active value is: $oldwhichfold
+
+	   echo --- Which representation --------
+   	   echo   [1] Fnu
+	   echo   [2] nu_Fnu
+	   define oldrepre ? { Your choice ? }
+
+           define oldcolor ? { Color ? }
+
+           define 1 $oldwhichdata 
+           define 2 $oldwhichfold
+           define 3 $oldrepre
+           define 4 $oldcolor
+        } 
+
+	define whichdata $1
+	define whichfold $2
+	define repre     $3
+	define color     $4
+
+	define e1       (1.0)
+	define e2      (10.0)
+
+	if ($whichfold == 1) { define lab_t "Fold Parameter = 0.5" }
+	if ($whichfold == 2) { define lab_t "Fold Parameter = 1.0" }
+	if ($whichfold == 3) { define lab_t "Fold Parameter = 2.0" }
+	if ($whichfold == 4) { define lab_t "Fold Parameter = 3.0" }
+	if ($whichfold == 5) { define lab_t "Fold Parameter Free (a)" }
+	if ($whichfold == 6) { define lab_t "Fold Parameter Free (b)" }
+
+	define g1       $($(a1[($whichdata-1)*6+$whichfold-1])-1)
+	define g2       $($(a10[($whichdata-1)*6+$whichfold-1])-1)
+	define e_break  $(eb[($whichdata-1)*6+$whichfold-1])
+	define fold     $(fold[($whichdata-1)*6+$whichfold-1])
+	define realnorm $(norm1kev[($whichdata-1)*6+$whichfold-1])
+	define temp (lg($realnorm))
+
+	echo  Log of RealNorm = $temp
+
+        if($?5 == 0) {
+	   define oldymin ? { Y_min : }
+	   define oldymax ? { Y_max : }
+           define 5 $oldymin
+           define 6 $oldymax
+	}
+	define ymin      $5
+	define ymax      $6
+
+	echo ------------------------------
+	echo  Alpha @ E_ref_1 = $g1
+	echo  Alpha @ E_ref_2 = $g2
+	echo  E_break         = $e_break
+	echo  Fold Parameter  = $fold
+	echo ------------------------------
+
+	define xb (lg($e_break))
+	define x1 (lg($e1))
+	define x2 (lg($e2))
+
+	define dum1 ( exp(2.302*($x1 - $xb)*$fold) )
+	define dum2 ( exp(2.302*($x2 - $xb)*$fold) )
+
+	define a1 ( ($g1*$dum2*(1+$dum1)-$g2*$dum1*(1+$dum2))/($dum2-$dum1) ) 
+	define a2 ( ($g2*(1+$dum2)-$g1*(1+$dum1))/($dum2-$dum1) ) 
+
+	define normdum  ( -2.302585093*$xb*$fold )
+	define normdumf ( ($a1 - $a2)*lg(1. + exp($normdum))/$fold )
+
+	echo --- Spectral Indices "at infty" ---
+	echo * alpha_1 = $a1
+	echo * alpha_2 = $a2
+	echo -----------------------------------
+
+	set lg_e=-2,2.1,0.02
+	set dum = 2.302585*(lg_e - $xb)*$fold
+
+	set lg_f = -$a1*lg_e + ($a1 - $a2)*lg(1 + exp(dum))/$fold
+	set lg_f = lg_f - $normdumf + lg($realnorm)
+
+	set dimen(xx)=$(dimen(lg_e)-1)
+	set dimen(aa)=$(dimen(lg_e)-1)
+
+	do 1=0,$(dimen(lg_e)-2) {
+	  set xx[$1] = (lg_e[$1]+lg_e[$1+1])/2
+	  set aa[$1] = (lg_f[$1]-lg_f[$1+1])/(lg_e[$1+1]-lg_e[$1])
+	}
+
+	#-----------------------------------
+	# location 6000 29000 7000 30000
+
+	echo " Define MULTIWINDOW flag : "
+	echo "  [0] single window "
+	echo "  [1] 2x2 "
+	echo "  [2] 4 horizontal "
+	define multiwindow ? { Define flag : }
+
+	# if $multiwindow is NOT defined (!$?) then...
+	#
+	if($multiwindow == 0 || !$?multiwindow ) {
+	    window 1 1 1 1
+	    location 6000 30000 6000 30000
+	}
+	if($multiwindow == 1) {
+	    window 1 1 1 1
+	    location 6000 30000 6000 30000
+	}
+	if($multiwindow == 2) {
+	    window 1 1 1 1
+	    location 4000 32000 10000 18000 
+	}
+
+	ctype 2
+	lweight 2
+	expand 1.5
+	if ($repre == 1) {limits -1.1 1.3 -4 3 }
+	if ($repre == 2) {limits -1.1 1.3 $ymin $ymax }
+
+	expand 1.5
+	ticksize -1 0 0 0 
+	lweight 1.5
+
+	# if $multiwindow is NOT defined (!$?) then...
+	#
+	if(!$?multiwindow) {
+	    box 1 2 0 3
+	} 
+	if($multiwindow == 1) {
+	    echo "--------------------------------------------"
+	    echo "     ul   |   ur "
+	    echo "    ------+------"
+	    echo "     ll   |   lr "
+	    define dove ? { Which window position ? }
+	    expand 1.1
+	    if('$dove' == 'll') { 
+		window -2 -2 1 1 
+		box 1 2 0 0 
+	    }
+	    if('$dove' == 'ul') { 
+		window -2 -2 1 2 
+		box 0 2 0 0 
+	    }
+	    if('$dove' == 'ur') { 
+		window -2 -2 2 2 
+	        box 0 0 0 2 
+	    }
+	    if('$dove' == 'lr') { 
+		window -2 -2 2 1 
+	        box 1 0 0 2 
+	    }
+	    expand 1.5
+	}
+	if($multiwindow == 2) {
+	    echo "--------------------------------------------"
+	    echo "     1 | 2 | 3 | 4 "
+	    echo "--------------------------------------------"
+	    define dove ? { Which window position ? }
+	    expand 1.1
+	    if('$dove' == '1') { 
+		window -4 1 1 1 
+		box 2 2 0 0 
+	    }
+	    if('$dove' == '2') { 
+		window -4 1 2 1 
+		box 2 0 0 0 
+	    }
+	    if('$dove' == '3') { 
+		window -4 1 3 1 
+	        box 2 0 0 0 
+	    }
+	    if('$dove' == '4') { 
+		window -4 1 4 1 
+	        box 2 0 0 2 
+	    }
+	    expand 1.5
+	}
+
+	lweight 2 
+
+	ctype $color
+	if ($repre == 1) { connect lg_e lg_f }
+	if ($repre == 2) {  
+	   set nufnu = lg_f + lg(662.6176) - 29. + lg_e + 17.383
+           connect lg_e nufnu   # (lg_e+lg_f) 
+	}
+
+
+pip	#----- avanzi di galera ----
+	ctype 2
+	lweight 1.5
+	box 1 3 0 2 
+	ctype 7
+	connect lg_e aa
+
+	ltype 2 
+	ctype 2
+	relocate $xb -10
+	draw $xb 10
+	relocate ($(($gx2-$gx1)*($xb-$fx1)/($fx2-$fx1)+$gx1+100) $($gy1 + 1500) )
+	putlabel 6 E_{break}
+	ctype 4 
+	relocate -10 $(($a1+$a2)/2.) draw  10 $(($a1+$a2)/2.)
+	relocate -10 $g2             draw  10 $g2
+	relocate -10 $g1             draw  10 $g1
+	relocate $x1 -10             draw  $x1 10
+	relocate $x2 -10             draw  $x2 10
+	ltype 0
+
+#---------------------------------------------------------------------------
+# read_takahashi
+read_takahashi
+
+	data summary_fit_single_pl.dat
+	read { nh  2 nh_d  3 nh_u  4 }
+	read { apl 5 apl_d 6 apl_u 7 }
+	read { flab_low    8 flab_high    9  flab_hhigh   10 }
+	read { flunab_low 11 flunab_high 12  flunab_hhigh 13 }
+
+	set err_nh_d = nh - nh_d
+	set err_nh_u = nh_u - nh
+	set err_apl_d = apl - apl_d 
+	set err_apl_u = apl_u - apl
+
+#---------------------------------------------------------------------------
+# tmp_labels_4per1
+tmp_labels_4per1
+
+	relocate ( 18000 7500 )
+	expand 2 
+	ctype 2 
+	putlabel 5 Energy [keV]
+
+	relocate ( 1100 14000 )
+
+	angle 90
+	expand 1.1
+	putlabel 5 log(\\nu F_\\nu) [erg/cm^2/s]
+	angle 0
+
+#---------------------------------------------------------------------------
+# tmp_labels_2per2
+tmp_labels_2per2
+
+	relocate ( 17500 3000 )
+	expand 2 
+	ctype 2 
+	putlabel 5 Energy [keV]
+
+	relocate ( 2000 18000 )
+	angle 90
+	expand 2
+	putlabel 5 log(\\nu F_\\nu) [erg/cm^2/s]
+	angle 0
+
+#---------------------------------------------------------------------------
+# indice
+indice
+
+
+	window 1 1 1 1
+	location 6000 31000 6000 31000
+
+	window 1 -2 1 1 
+	limits -20000 280000 1.6 3.01
+	ctype 2
+	lweight 3
+	expand 1.5
+	box 1 2 0 0 
+	expand 2.5
+
+	ctype 3
+	points itime i05
+	errorbar itime i05 err_i05_u 2
+	errorbar itime i05 err_i05_d 4
+
+	ctype 4
+	points itime i1
+	errorbar itime i1 err_i1_u 2
+	errorbar itime i1 err_i1_d 4
+
+	ctype 5
+	points itime i5
+	errorbar itime i5 err_i5_u 2
+	errorbar itime i5 err_i5_d 4
+
+	ctype 7
+	points itime i10
+	errorbar itime i10 err_i10_u 2
+	errorbar itime i10 err_i10_d 4
+
+	set idiff = i10 - i05
+	set err_idiff = sqrt( ((err_i05_u+err_i05_d)/2.)**2. + ((err_i10_u+err_i10_d)/2.)**2. )
+
+	window 1 -2 1 2 
+	limits -20000 280000 0.1 1.5
+	ctype 2
+	lweight 3
+	expand 1.5
+	box 0 2 0 0 
+	expand 2.5
+
+	ctype 2
+	points itime ipeak
+	errorbar itime ipeak err_ipeak_u 2
+	errorbar itime ipeak err_ipeak_d 4
+
+#---------------------------------------------------------------------------
+# indice2
+indice2
+
+	define cheanno ? { Which set of data ? [new/sub05/sub075] }
+	define 4 <$cheanno>
+
+	if ('$cheanno' == 'veryold' ) {
+	   define tzero (1.04889600)
+	} else {
+	   define tzero (1.35734400)
+	}
+
+	echo --- FOLD PARAMETER -----------
+	echo  [1] 0.5
+	echo  [2] 1.0
+	echo  [3] 2.0
+	echo  [4] 3.0
+	define whichfold ? { Which value of Fold parameter ? [1-4] }
+
+	define 2 ($whichfold-1)
+
+	foreach 1 { a05 a1 a5 a10 epeak } {
+	    if( '$1' == 'a05'   ) { define 5 "i05"   }
+	    if( '$1' == 'a1'    ) { define 5 "i1"    }
+	    if( '$1' == 'a5'    ) { define 5 "i5"    }
+	    if( '$1' == 'a10'   ) { define 5 "i10"   }
+	    if( '$1' == 'epeak' ) { define 5 "ipeak" }
+	    define 1 $4_$1
+	    set $5 = < $($1[$2]) > 
+	    set err_$5_d = < $(err_$1_d[$2]) > 
+	    set err_$5_u = < $(err_$1_u[$2]) > 
+	    do 3=1,$(dimen(all_pointings_vec)-1) {
+	       set $5       = $5       CONCAT < $($1[$2+$3*6]) >
+	       set err_$5_d = err_$5_d CONCAT < $(err_$1_d[$2+$3*6]) >
+	       set err_$5_u = err_$5_u CONCAT < $(err_$1_u[$2+$3*6]) >
+	    }
+	}
+
+	set itime = (new_time - $(new_time_start[0]) )*1.0e8
+	set itime = (new_time - $tzero)*1.0e8
+	set err_itime_d = (new_time_mid - new_time_start)*1.e8
+	set err_itime_u = (new_time_stop - new_time_mid)*1.e8
+	set ifll = $4_fl_low_unab*1.e10
+	set iflh = $4_fl_high_unab*1.e10
+	set ifla = $4_fl_all_unab*1.e10
+
+	#-----------------------------------
+	# Plot
+	#
+	window 1 1 1 1
+	location 6000 31000 5000 31000
+	location 6000 16000 5000 31000
+
+	define tmin 0 
+	define tmax 13
+
+	define tmin -20000 
+	define tmax 280000
+
+	define tmin  -2000 
+	define tmax 100000
+
+	#-----------------------------------
+	window 1 -3 1 1 
+	# limits -20000 280000 0.6 1.25
+	# limits $tmin $tmax 0.89 1.25
+	# limits $xmin $xmax 1.25 0.91
+	limits $tmin $tmax 1.23 0.85
+	ticksize 0 0 0 0
+	ctype 2
+	lweight 3
+	expand 1.5
+	box 1 2 0 0 
+	xlabel Time [s]
+	expand 2.0
+	# ylabel \alpha_{LOW}
+	ylabel \alpha_{@ 1keV}
+	expand 2.5
+
+	set xvecsh       = itime       if(itime < 25e3)
+	set yvec       = i1       if(itime < 25e3)
+	set err_yvec_u = err_i1_u if(itime < 25e3)
+	set err_yvec_d = err_i1_d if(itime < 25e3)
+
+	mypoints 4 2 1 itime i1 err_i1_u err_i1_d 
+	mypoints 4 2 2 xvecsh yvec err_yvec_u err_yvec_d
+
+	#-----------------------------------
+	window 1 -3 1 2 
+	# limits -20000 280000 1.41 2.01
+	# limits $tmin $tmax 1.41 1.91
+	# limits $tmin $tmax 1.41 1.81
+	limits $tmin $tmax 1.81 1.41
+	ctype 2
+	lweight 3
+	expand 1.5
+	box 0 2 0 0 
+	expand 2.0
+	# ylabel \alpha_{HIGH}
+	ylabel \alpha_{@ 5keV}
+	expand 2.5
+
+
+	set yvec       = i5       if(itime < 25e3)
+	set err_yvec_u = err_i5_u if(itime < 25e3)
+	set err_yvec_d = err_i5_d if(itime < 25e3)
+
+	mypoints 4 2 1 itime i5 err_i5_u err_i5_d 
+	mypoints 4 2 2 xvecsh yvec err_yvec_u err_yvec_d
+
+	#-----------------------------------
+	window 1 -3 1 3 
+	limits $tmin $tmax 0.21 1.4
+	limits $tmin $tmax 0.45 1.4
+	ctype 2
+	lweight 3
+	expand 1.5
+	box 0 2 0 0 
+	ylabel E_{peak} [keV]
+	expand 2.5
+
+	set yvec       = ipeak       if(itime < 25e3)
+	set err_yvec_u = err_ipeak_u if(itime < 25e3)
+	set err_yvec_d = err_ipeak_d if(itime < 25e3)
+
+	mypoints 4 2 1 itime ipeak err_ipeak_u err_ipeak_d
+	mypoints 4 2 2 xvecsh yvec err_yvec_u err_yvec_d
+
+	window 1 1 1 1
+
+	#-----------------------------------
+	#  SECONDA PARTE
+	#-----------------------------------
+	location 19000 29000 5000 31000
+
+	echo -----------------------------------
+	echo   Which Band for the flux:
+	echo   [1] 0.2- 1.0 keV
+	echo   [2] 2.0-10.0 keV
+	echo   [3] 0.1-10.0 keV
+	echo -----------------------------------
+	define whichband ? { Which ? }
+
+	if( $whichband == 2 ) {
+	   define xmin  1.8
+	   define xmax  5.
+	   define lab_x "F_{2-10 keV} [10^{-10} erg/cm^2/s]"
+	   # define xvec  iflh
+	   define xvec  dum
+	   set dum    = iflh   if(itime < 90e3)
+	   set xvecsh = iflh   if(itime < 25e3)
+	}
+
+	if( $whichband == 1 ) {
+	   define xmin  3.1
+	   define xmax  6.5 
+	   define lab_x "F_{0.2-1 keV} [10^{-10} erg/cm^2/s]"
+	   # define xvec  ifll
+	   define xvec  dum
+	   set dum    = ifll   if(itime < 90e3)
+	   set xvecsh = ifll   if(itime < 25e3)
+	}
+
+	if( $whichband == 3 ) {
+	   define xmin  7.8
+	   define xmax 16.5 
+	   define lab_x "F_{0.1-10 keV} [10^{-10} erg/cm^2/s]"
+	   # define xvec  iflh
+	   define xvec  dum
+	   set dum    = ifla   if(itime < 90e3)
+	   set xvecsh = ifla   if(itime < 25e3)
+	}
+
+	#-----------------------------------
+	window 1 -3 1 1 
+	# limits $xmin $xmax 0.89 1.25
+	# limits $xmin $xmax 1.25 0.91
+	limits $xmin $xmax 1.23 0.85
+	ticksize 0 0 0 0
+	ctype 2
+	lweight 3
+	expand 1.5
+	box 1 0 0 2 
+	expand 1.3
+	xlabel $lab_x
+	expand 2.5
+
+	set yvec       = i1       if(itime < 90e3)
+	set err_yvec_u = err_i1_u if(itime < 90e3)
+	set err_yvec_d = err_i1_d if(itime < 90e3)
+
+	ctype 2  
+	connect  $xvec yvec
+	mypoints 4 2 1 $xvec yvec err_yvec_u err_yvec_d
+
+	set yvec       = i1       if(itime < 25e3)
+	set err_yvec_u = err_i1_u if(itime < 25e3)
+	set err_yvec_d = err_i1_d if(itime < 25e3)
+
+	ctype 2
+	connect  xvecsh yvec
+	mypoints 4 2 2 xvecsh yvec err_yvec_u err_yvec_d
+
+
+	#-----------------------------------
+	window 1 -3 1 2 
+	# limits -20000 280000 1.41 2.01
+	# limits $xmin $xmax 1.41 1.81
+	limits $xmin $xmax 1.81 1.41
+	ctype 2
+	lweight 3
+	expand 1.5
+	box 0 0 0 2 
+	expand 2.5
+
+	set yvec       = i5       if(itime < 90e3)
+	set err_yvec_u = err_i5_u if(itime < 90e3)
+	set err_yvec_d = err_i5_d if(itime < 90e3)
+
+	ctype 2  
+	connect  $xvec yvec
+	mypoints 4 2 1 $xvec yvec err_yvec_u err_yvec_d
+
+	set yvec       = i5       if(itime < 25e3)
+	set err_yvec_u = err_i5_u if(itime < 25e3)
+	set err_yvec_d = err_i5_d if(itime < 25e3)
+
+	ctype 2
+	connect  xvecsh yvec
+	mypoints 4 2 2 xvecsh yvec err_yvec_u err_yvec_d
+
+	#-----------------------------------
+	window 1 -3 1 3 
+	limits $xmin $xmax 0.21 1.4
+	limits $xmin $xmax 0.45 1.4
+	ctype 2
+	lweight 3
+	expand 1.5
+	box 0 0 0 2 
+	expand 2.5
+
+	set yvec       = ipeak       if(itime < 90e3)
+	set err_yvec_u = err_ipeak_u if(itime < 90e3)
+	set err_yvec_d = err_ipeak_d if(itime < 90e3)
+
+	ctype 2  
+	connect  $xvec yvec
+	mypoints 4 2 1 $xvec yvec err_yvec_u err_yvec_d
+
+	set yvec       = ipeak       if(itime < 25e3)
+	set err_yvec_u = err_ipeak_u if(itime < 25e3)
+	set err_yvec_d = err_ipeak_d if(itime < 25e3)
+
+	ctype 2
+	connect  xvecsh yvec
+	mypoints 4 2 2 xvecsh yvec err_yvec_u err_yvec_d
+
+	window 1 1 1 1
+
+#---------------------------------------------------------------------------
+# summary_98
+summary_98
+
+	set all_pointings_vec = { low_1_2 \
+				  low_3 \
+				  top1 \
+				  top2 \
+				  after_6 \
+				  after_7 \
+				  after_8_9 \
+				  after_10_12 \
+				  after_13_16 \
+				  april23_1 \
+				  april23_2 \
+				  april23_3 }
+	set sub_pointings_vec = { low_3 \
+				  top1 \
+				  top2 \
+				  after_6 \
+				  after_7 \
+				  after_8_9 \
+				  after_10_12 \
+				  after_13_16 \
+				  april23_1 \
+				  april23_2 \
+				  april23_3 }
+
+	# define cheanno ? { Which set of data ? [new/sub05/sub075] }
+	define cheanno "new"
+	define 4 <$cheanno>
+
+	# echo --- FOLD PARAMETER -----------
+	# echo  [1] 0.5
+	# echo  [2] 1.0
+	# echo  [3] 2.0
+	# echo  [4] 3.0
+	# define whichfold ? { Which value of Fold parameter ? [1-6] }
+
+	define whichfold (3)
+	define 2 ($whichfold-1)
+
+	foreach 1 { a05 a1 a5 a10 epeak } {
+	    if( '$1' == 'a05'   ) { define 5 "i05"   }
+	    if( '$1' == 'a1'    ) { define 5 "i1"    }
+	    if( '$1' == 'a5'    ) { define 5 "i5"    }
+	    if( '$1' == 'a10'   ) { define 5 "i10"   }
+	    if( '$1' == 'epeak' ) { define 5 "ipeak" }
+	    define 1 $4_$1
+	    set $5 = < $($1[$2]) > 
+	    set err_$5_d = < $(err_$1_d[$2]) > 
+	    set err_$5_u = < $(err_$1_u[$2]) > 
+	    do 3=1,$(dimen(all_pointings_vec)-1) {
+	       set $5       = $5       CONCAT < $($1[$2+$3*6]) >
+	       set err_$5_d = err_$5_d CONCAT < $(err_$1_d[$2+$3*6]) >
+	       set err_$5_u = err_$5_u CONCAT < $(err_$1_u[$2+$3*6]) >
+	    }
+	}
+
+	set itime = (new_time - $(new_time_start[0]) )*1.0e8
+	set itime = (new_time - 1.35734400 )*1.0e8
+	set err_itime_d = (new_time_mid - new_time_start)*1.e8
+	set err_itime_u = (new_time_stop - new_time_mid)*1.e8
+	set ifll = new_fl_low_unab*1.e10
+	set iflh = new_fl_high_unab*1.e10
+
+	#-----------------------------------
+	# Plot
+	#
+	window 1 1 1 1
+	location 6000 31000 5000 31000
+
+	define tmin -5000 
+	define tmax 290e3
+
+	#-----------------------------------
+	window 1 -4 1 1 
+	limits $tmin $tmax 0.5 2.95
+	ticksize 0 0 0.2 1.0
+	ctype 2
+	lweight 3
+	expand 1.5
+	ctype 4 
+	ltype 1
+	grid 1 1
+	ltype 0
+	ctype 2 
+	box 1 2 0 0 
+	xlabel Time [s from T_0 = 10924.0 (TJD)]
+	ylabel cts/s
+
+	ctype 3
+	ptype 4 3 
+	expand 1.01
+	points  newt_m23_2_3_1000ab rate_m23_2_3_1000ab
+	expand 1.5
+	error_y newt_m23_2_3_1000ab rate_m23_2_3_1000ab err_rate_m23_2_3_1000ab
+
+	#-----------------------------------
+	window 1 -4 1 2 
+	# limits $tmin $tmax 0.89 1.26
+	limits $tmin $tmax 1.26 0.89
+	ticksize 0 0 0.05 0.1
+	ctype 2
+	lweight 3
+	expand 1.5
+	ctype 4 
+	ltype 1
+	grid 1 1
+	ltype 0
+	ctype 2 
+	box 0 2 0 0 
+	# ylabel \alpha_{LOW}
+	expand 2.
+	ylabel \alpha_{@ 1keV}
+
+	expand 1.5
+	ctype 3
+	points itime i1
+	expand 1.5
+	errorbar itime i1 err_i1_u 2
+	errorbar itime i1 err_i1_d 4
+	errorbar itime i1 err_itime_u 1
+	errorbar itime i1 err_itime_d 3
+
+	set xvecsh       = itime       if(itime < 25e3)
+
+	set yvec       = i1       if(itime < 25e3)
+	set err_yvec_u = err_i1_u if(itime < 25e3)
+	set err_yvec_d = err_i1_d if(itime < 25e3)
+	set err_xvec_u = err_itime_u if(itime < 25e3)
+	set err_xvec_d = err_itime_d if(itime < 25e3)
+
+	expand 1.5
+	ctype 2
+	points   xvecsh yvec
+	expand 1.5
+	errorbar xvecsh yvec err_yvec_u 2
+	errorbar xvecsh yvec err_yvec_d 4
+	errorbar xvecsh yvec err_xvec_u 1
+	errorbar xvecsh yvec err_xvec_d 3
+
+	#-----------------------------------
+	window 1 -4 1 3 
+	# limits $tmin $tmax 1.41 1.89
+	limits $tmin $tmax 1.89 1.41
+	ticksize 0 0 0.05 0.1 
+	ctype 2
+	lweight 3
+	expand 1.5
+	ctype 4 
+	ltype 1
+	grid 1 1
+	ltype 0
+	ctype 2 
+	box 0 2 0 0 
+	expand 2.
+	# ylabel \alpha_{HIGH}
+	ylabel \alpha_{@ 5keV}
+
+	expand 1.5
+	ctype 3
+	points itime i5
+	expand 1.5
+	errorbar itime i5 err_i5_u 2
+	errorbar itime i5 err_i5_d 4
+	errorbar itime i5 err_itime_u 1
+	errorbar itime i5 err_itime_d 3
+
+	set yvec       = i5       if(itime < 25e3)
+	set err_yvec_u = err_i5_u if(itime < 25e3)
+	set err_yvec_d = err_i5_d if(itime < 25e3)
+	set err_xvec_u = err_itime_u if(itime < 25e3)
+	set err_xvec_d = err_itime_d if(itime < 25e3)
+
+	expand 1.5
+	ctype 2
+	points   xvecsh yvec
+	expand 1.5
+	errorbar xvecsh yvec err_yvec_u 2
+	errorbar xvecsh yvec err_yvec_d 4
+	errorbar xvecsh yvec err_xvec_u 1
+	errorbar xvecsh yvec err_xvec_d 3
+
+	#-----------------------------------
+	window 1 -4 1 4 
+	limits $tmin $tmax 0.11 1.29
+	ticksize 0 0 0.05 0.3 
+	ctype 2
+	lweight 3
+	expand 1.5
+	ctype 4 
+	ltype 1
+	grid 1 1
+	ltype 0
+	ctype 2 
+	box 0 2 0 0 
+	ylabel E_{peak} [keV]
+
+	expand 1.5
+	ctype 3
+	points itime ipeak
+	expand 1.5
+	errorbar itime ipeak err_ipeak_u 2
+	errorbar itime ipeak err_ipeak_d 4
+	errorbar itime ipeak err_itime_u 1
+	errorbar itime ipeak err_itime_d 3
+
+	set yvec       = ipeak       if(itime < 25e3)
+	set err_yvec_u = err_ipeak_u if(itime < 25e3)
+	set err_yvec_d = err_ipeak_d if(itime < 25e3)
+	set err_xvec_u = err_itime_u if(itime < 25e3)
+	set err_xvec_d = err_itime_d if(itime < 25e3)
+
+	expand 1.5
+	ctype 2
+	points   xvecsh yvec
+	expand 1.5
+	errorbar xvecsh yvec err_yvec_u 2
+	errorbar xvecsh yvec err_yvec_d 4
+	errorbar xvecsh yvec err_xvec_u 1
+	errorbar xvecsh yvec err_xvec_d 3
+
+	window 1 1 1 1
+
+	#  SECONDA PARTE
+	#-----------------------------------
+	# location 19000 29000 5000 31000
+
+#---------------------------------------------------------------------------
+# summary_97
+summary_97
+
+	set all_pointings_vec = { a b c d e f g h i l m n o p q r }
+	set sub_pointings_vec = {   b c d e f g h i l m n o p q r }
+	define cheanno "veryold"
+	define 4 $cheanno
+	define tzero ( 1.04889600 )
+
+	# echo --- FOLD PARAMETER -----------
+	# echo  [1] 0.5
+	# echo  [2] 1.0
+	# echo  [3] 2.0
+	# echo  [4] 3.0
+	# define whichfold ? { Which value of Fold parameter ? [1-6] }
+
+	define whichfold (2)
+	define 2 ($whichfold-1)
+
+	foreach 1 { a05 a1 a5 a10 epeak } {
+	    if( '$1' == 'a05'   ) { define 5 "i05"   }
+	    if( '$1' == 'a1'    ) { define 5 "i1"    }
+	    if( '$1' == 'a5'    ) { define 5 "i5"    }
+	    if( '$1' == 'a10'   ) { define 5 "i10"   }
+	    if( '$1' == 'epeak' ) { define 5 "ipeak" }
+	    define 1 $4_$1
+	    set $5 = < $($1[$2]) > 
+	    set err_$5_d = < $(err_$1_d[$2]) > 
+	    set err_$5_u = < $(err_$1_u[$2]) > 
+	    do 3=1,$(dimen(all_pointings_vec)-1) {
+	       set $5       = $5       CONCAT < $($1[$2+$3*6]) >
+	       set err_$5_d = err_$5_d CONCAT < $(err_$1_d[$2+$3*6]) >
+	       set err_$5_u = err_$5_u CONCAT < $(err_$1_u[$2+$3*6]) >
+	    }
+	}
+
+	set itime = (veryold_time - $(veryold_time_start[0]) )*1.0e8
+	set itime = (veryold_time - $tzero )*1.0e8
+	set err_itime_d = (veryold_time_mid - veryold_time_start)*1.e8
+	set err_itime_u = (veryold_time_stop - veryold_time_mid)*1.e8
+	set ifll = veryold_fl_low_unab*1.e10
+	set iflh = veryold_fl_high_unab*1.e10
+
+	#-----------------------------------
+	# Plot
+	#
+	window 1 1 1 1
+	location 6000 31000 5000 31000
+
+	define tmin -5000 
+	define tmax 580e3
+
+	#-----------------------------------
+	window 1 -4 1 1 
+	limits $tmin $tmax 0.25 1.49
+	ticksize 20e3 1e5 0.1 0.5
+	ctype 2
+	lweight 3
+	expand 1.5
+	box 1 2 0 0 
+	ctype 4 
+	ltype 1 
+	grid 1 1 
+	ltype 0
+	ctype 2
+	xlabel Time [s from T_0 = 10567.0 (TJD)]
+	ylabel cts/s
+
+	expand 1.01
+	ctype 3
+	ptype 4 3 
+	points  newt_m23_2_3_1500_97 rate_m23_2_3_1500_97
+	expand 1.5
+	error_y newt_m23_2_3_1500_97 rate_m23_2_3_1500_97 err_rate_m23_2_3_1500_97
+
+	#-----------------------------------
+	window 1 -4 1 2 
+	# limits $tmin $tmax 1.11 1.65
+	limits $tmin $tmax 1.65 1.11
+	ticksize 20e3 1e5 0.05 0.1
+	ctype 2
+	lweight 3
+	expand 1.5
+	box 0 2 0 0 
+	ctype 4 
+	ltype 1 
+	grid 1 1 
+	ltype 0
+	ctype 2
+	# ylabel \alpha_{LOW}
+	expand 2.
+	ylabel \alpha_{@ 1keV}
+
+	expand 1.5
+	ctype 3
+	points itime i1
+	expand 1.5
+	errorbar itime i1 err_i1_u 2
+	errorbar itime i1 err_i1_d 4
+	errorbar itime i1 err_itime_u 1
+	errorbar itime i1 err_itime_d 3
+
+	#-----------------------------------
+	window 1 -4 1 3 
+	# limits $tmin $tmax 1.71 2.35
+	limits $tmin $tmax 2.35 1.61
+	ticksize 20e3 1e5 0.05 0.2 
+	ctype 2
+	lweight 3
+	expand 1.5
+	box 0 2 0 0 
+	ctype 4 
+	ltype 1 
+	grid 1 1 
+	ltype 0
+	ctype 2
+	# ylabel \alpha_{HIGH}
+	expand 2.
+	ylabel \alpha_{@ 5keV}
+
+	expand 1.5
+	ctype 3
+	points itime i5
+	expand 1.5
+	errorbar itime i5 err_i5_u 2
+	errorbar itime i5 err_i5_d 4
+	errorbar itime i5 err_itime_u 1
+	errorbar itime i5 err_itime_d 3
+
+	#-----------------------------------
+	window 1 -4 1 4 
+	limits $tmin $tmax 0.08 0.8
+	ticksize 20e3 1e5 0.05 0.2
+	ctype 2
+	lweight 3
+	expand 1.5
+	box 0 2 0 0 
+	ctype 4 
+	ltype 1 
+	grid 1 1 
+	ltype 0
+	ctype 2
+	ylabel E_{peak} [keV]
+
+	expand 1.5
+	ctype 3
+	points itime ipeak
+	expand 1.5
+	errorbar itime ipeak err_ipeak_u 2
+	errorbar itime ipeak err_ipeak_d 4
+	errorbar itime ipeak err_itime_u 1
+	errorbar itime ipeak err_itime_d 3
+
+	window 1 1 1 1
+
+	#  SECONDA PARTE
+	#-----------------------------------
+	# location 19000 29000 5000 31000
+
+#---------------------------------------------------------------------------
+# prepare_check_old_new
+prepare_check_old_new
+
+	echo *** reading OLD parameter files ***
+	read_pointings_98_old
+
+	foreach var { a01 a05 a1 a10 a5 epeak fold eb } {
+              set old_$var = $var
+	      set err_old_"$!var"_u = err_"$!var"_u
+	      set err_old_"$!var"_d = err_"$!var"_d
+	}
+
+	echo *** reading NEW parameter files ***
+	read_pointings_98_subtr top
+
+	echo *** reading SUB05 parameter files ***
+	read_pointings_98_subtr sub05
+
+	echo *** reading SUB075 parameter files ***
+	read_pointings_98_subtr sub075
+
+#---------------------------------------------------------------------------
+# check_old_new
+check_old_new
+
+	define whichvar ? { Which parameter do you want to check ? }
+	define 1 $whichvar
+
+	print '  %6.3f  %7.4f  %7.4f %8.4f\n' < fold new_$1 old_$1 new_old_$1 >
+
+	location 5500 31000 5000 24000
+	limits new_$1 old_$1
+	ticksize 0 0 0 0 
+	ctype 2 
+	expand 1.5
+	box
+	xlabel NEW
+	ylabel OLD
+
+	expand 2.5 
+	ptype 4 3 
+	points new_$1  old_$1 
+
+	ctype 3 
+	ltype 2
+	lweight 3
+	relocate -100 -100
+	draw 100 100
+	lweight 2
+	ctype 2 
+	ltype 0 
+
+	set dumx=1,$(dimen(fold))
+	location 5500 31000 26000 31500
+	limits dumx -10 10
+	ticksize 0 0 0 0 
+	ctype 2
+	expand 1.5
+	box
+
+	expand 2.5
+	ptype 4 3
+	points dumx new_old_$1
+
+	ctype 3 
+	ltype 2
+	lweight 3
+	relocate -10 0 
+	draw 100 0
+	lweight 2
+	ctype 2 
+	ltype 0 
+
+	location 6000 30000 6000 30000
+
+#---------------------------------------------------------------------------
+# read_pointings_00 [<which-dataset>]
+#                   : read all the 2000 datasets
+#                     this is the REAL data reading macro
+read_pointings_00 01
+
+	define data2000dir "/home/gf/Science/Mkn421/2000/Spectral/Plots"
+	echo $data2000dir
+
+	if($?1) { 
+	    define quali $1
+	} else { 
+	    define quali ? { Which set of Fit parameters ? [top/sub05/sub075] }
+	} 
+
+	define check_del ? { Delete OLD vectors ? [y/n] }
+	if(substr('$check_del',0,1) == 'y') {
+	   foreach 2 { a1_1 a2 eb fold a1_01 epeak norm1kev } {
+	      echo ** Deleting $2
+	      delete $2
+	   }
+	}
+
+	set all_pointings_vec = { a_00 \
+				  b_00 \
+				  c_00 \
+				  d_00 \
+				  e_00 \
+				  f_00 \
+				  g_00 \
+				  top_00 }
+	set sub_pointings_vec = { b_00 \
+				  c_00 \
+				  d_00 \
+				  e_00 \
+				  f_00 \
+				  g_00 \
+				  top_00 }
+
+	define 2 $quali
+	foreach 1 all_pointings_vec {
+	data "$!data2000dir/$!2_$!1.out"
+
+	lines 4 4 
+	read time_$1  1
+	read time_mid_$1   1
+	read time_start_$1 2 
+	read time_stop_$1  3 
+
+	lines 5 5 
+	read fl_low_ab_$1   1 
+	read fl_high_ab_$1  2 
+	if( '$2' == 'top') { 
+	  read fl_all_ab_$1   3 
+	} else {
+	  set fl_all_ab_$1 = fl_high_ab_$1+fl_low_ab_$1
+	  echo >>> the 0.1-10 keV flux is not defined <<<
+	  echo   > approximating with (0.2-1)+(2-10)  <
+	}
+
+	lines 6 6
+	read fl_low_unab_$1  1 
+	read fl_high_unab_$1 2 
+	if( '$2' == 'top') { 
+	  read fl_all_unab_$1   3 
+	} else {
+	  set fl_all_unab_$1 = fl_high_unab_$1+fl_low_unab_$1
+	  echo >>> the 0.1-10 keV flux is not defined <<<
+	  echo   > approximating with (0.2-1)+(2-10)  <
+	}
+
+	lines 7 12
+	read a1_$1          1 
+	read err_a1_d_$1    2 
+	read err_a1_u_$1    3 
+	read a10_$1         4 
+	read err_a10_d_$1   5 
+	read err_a10_u_$1   6
+	read eb_$1          7 
+	read err_eb_d_$1    8 
+	read err_eb_u_$1    9
+	read fold_$1        10 
+	read err_fold_d_$1  11 
+	read err_fold_u_$1  12 
+	read a01_$1         13 
+	read err_a01_d_$1   14 
+	read err_a01_u_$1   15
+	read epeak_$1       16 
+	read err_epeak_d_$1 17
+	read err_epeak_u_$1 18
+	read norm1kev_$1    19
+	read a05_$1         20
+	read err_a05_d_$1   21
+	read err_a05_u_$1   22
+	read a5_$1          23
+	read err_a5_d_$1    24
+	read err_a5_u_$1    25
+
+	}
+
+	#----------------------------------------------
+	define 1 $(all_pointings_vec[0])
+	echo * Doing concatenation with $1 data
+
+	foreach 2 { fl_low_ab fl_high_ab fl_low_unab fl_high_unab fl_all_ab fl_all_unab \
+		    norm1kev time time_start time_stop time_mid } {
+	  set $2       = $2_$1 
+	  delete $2_$1
+	}
+
+	foreach 2 { a01 a05 a1 a5 a10 eb fold epeak } {
+	  set $2       = $2_$1 
+	  set err_$2_d = err_$2_d_$1 
+	  set err_$2_u = err_$2_u_$1 
+
+	  delete $2_$1
+	  delete err_$2_d_$1
+	  delete err_$2_u_$1
+	}
+	
+	#----------------------------------------------
+	foreach 1 sub_pointings_vec {
+	echo * Doing concatenation with $1 data
+
+	foreach 2 { fl_low_ab     \
+		    fl_high_ab    \
+		    fl_all_ab     \
+		    fl_low_unab   \
+		    fl_high_unab  \
+		    fl_all_unab   \
+		    norm1kev \
+		    time_start \
+		    time_stop \
+		    time_mid \
+		    time } {
+	  set $2       = $2       CONCAT $2_$1 
+	  delete $2_$1
+	}
+
+	foreach 2 { a01 a05 a1 a5 a10 eb fold epeak } {
+	  set $2       = $2       CONCAT $2_$1 
+	  set err_$2_d = err_$2_d CONCAT err_$2_d_$1 
+	  set err_$2_u = err_$2_u CONCAT err_$2_u_$1 
+
+	  delete $2_$1
+	  delete err_$2_d_$1
+	  delete err_$2_u_$1
+	}
+	}
+
+	foreach 1 { a01 a05 a1 a5 a10 eb fold epeak } {
+	    set err_$1_u = err_$1_u - $1
+	    set err_$1_d = $1 - err_$1_d 
+	}
+	set dalpha = a5 - a05
+	set err_dalpha_u = sqrt(err_a5_u**2 + err_a05_u**2)
+	set err_dalpha_d = sqrt(err_a5_d**2 + err_a05_d**2)
+
+	set fl_low_ab    = fl_low_ab  
+	set fl_high_ab   = fl_high_ab
+	set fl_all_ab    = fl_all_ab
+	set fl_low_unab  = fl_low_unab
+	set fl_high_unab = fl_high_unab
+	set fl_all_unab  = fl_all_unab
+
+	foreach 2 { a01 a05 a1 a5 a10 } {
+	  set $2       = $2 - 1
+	}
+
+	#
+	# renaming vectors
+	#
+	echo  ...Renaming vectors to 'new_/sub05/sub075' ...
+	if ( '$quali' == 'top' ) {
+	   foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha } {
+                 set new_$var = $var
+	         set err_new_"$!var"_u = err_"$!var"_u
+	         set err_new_"$!var"_d = err_"$!var"_d
+	   }
+	   foreach var { fl_low_ab fl_high_ab fl_all_ab fl_low_unab fl_high_unab fl_all_unab } {
+                 set new_$var = $var
+	   }
+	   foreach var { time time_start time_stop time_mid } {
+                 set new_$var = $var
+	   }
+
+	   foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha} {
+	         set new_old_$var = 100.*(new_$var-old_$var)/new_$var
+	   }
+	}
+
+	if ( '$quali' == 'sub05' ) {
+	   foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha} {
+                 set sub05_$var = $var
+	         set err_sub05_"$!var"_u = err_"$!var"_u
+	         set err_sub05_"$!var"_d = err_"$!var"_d
+	   }
+	   foreach var { fl_low_ab fl_high_ab fl_all_ab fl_low_unab fl_high_unab fl_all_unab } {
+                 set sub05_$var = $var
+	   }
+
+	   foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha} {
+	         set sub05_new_$var = 100.*(sub05_$var-new_$var)/sub05_$var
+	   }
+	}
+
+	if ( '$quali' == 'sub075' ) {
+	   foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha} {
+                 set sub075_$var = $var
+	         set err_sub075_"$!var"_u = err_"$!var"_u
+	         set err_sub075_"$!var"_d = err_"$!var"_d
+	   }
+	   foreach var { fl_low_ab fl_high_ab fl_all_ab fl_low_unab fl_high_unab fl_all_unab } {
+                 set sub075_$var = $var
+	   }
+
+	   foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha} {
+	         set sub075_new_$var = 100.*(sub075_$var-new_$var)/sub075_$var
+	   }
+	}
+
+#---------------------------------------------------------------------------
+# dot_xsed  the REAL Xsed Plotting Program (for Mkn-421 1998 and 2000)
+dot_xsed
+
+	define cheanno ? { Which year [1998/2000] : }
+
+	if( $cheanno == 1998 ) {
+	set all_pointings_vec = { low_1_2 \
+				  low_3 \
+				  top1_4 \
+				  top2_5 \
+				  after_6 \
+				  after_7 \
+				  after_8_9 \
+				  after_10_12 \
+				  after_13_16 \
+				  april23_1 \
+				  april23_2 \
+				  april23_3 }
+	set sub_pointings_vec = { low_3 \
+				  top1_4 \
+				  top2_5 \
+				  after_6 \
+				  after_7 \
+				  after_8_9 \
+				  after_10_12 \
+				  after_13_16 \
+				  april23_1 \
+				  april23_2 \
+				  april23_3 }
+	}
+
+	if( $cheanno == 2000 ) {
+	set all_pointings_vec = { a  \
+				  b  \
+				  c  \
+				  d  \
+				  e  \
+				  f  \
+				  g  \
+				  top  \
+				  lmp_low \
+				  lmp_top }
+	set sub_pointings_vec = { b  \
+				  c  \
+				  d  \
+				  e  \
+				  f  \
+				  g  \
+				  top \
+				  lmp_low \
+				  lmp_top }
+	}
+
+	do i=1,$(dimen(all_pointings_vec)) {
+	   echo  [$i] $(all_pointings_vec[$i-1])
+	}
+
+	define datafile ? { Name of XSED data file [ratio_****.qdp] [NAME] ? }
+	lweight 3
+
+	# for 2000
+	#
+	if( $cheanno == 2000 ) {
+	   define datadir "/home/gf/Science/Mkn421/2000/Spectral/Plots"
+	   echo $datadir
+
+	   data "$!datadir/eufs_"$!datafile"_00.qdp.clean"
+	   read {kev 1 dkev 2 eufs 5}
+
+	   data "$!datadir/ratio_"$!datafile"_00.qdp.clean"
+	   read {ratio 3 err_ratio 4}
+	}
+
+	# for 1998
+	#
+	if( $cheanno == 1998 ) {
+	   define datadir "/neutronstar/gf/SAX/mkn421/1998/Test/Plots"
+	   echo $datadir
+
+	   data "$!datadir/eufs_top_"$!datafile"_2.qdp.clean"
+	   read {kev 1 dkev 2 eufs 5}
+
+	   data "$!datadir/ratio_top_"$!datafile"_2.qdp.clean"
+	   read {ratio 3 err_ratio 4}
+	}
+
+	# get going...
+	#
+	set lkev = lg(kev)
+	set lkev = lg(kev)
+	set dx_d = 0*eufs
+	set dx_u = 0*eufs
+
+	set spec  = ratio*eufs
+	set nufnu = lg(spec) + lg(662.6176) - 29. + lkev + 17.383
+	
+	set err_spec_u =  lg(1 + err_ratio/ratio)
+	set err_spec_d = -lg(1 - err_ratio/ratio)
+
+	#---------------------------
+	#
+	#
+	echo " Define MULTIWINDOW flag : "
+	echo "  [0] single window "
+	echo "  [1] 2x2 "
+	echo "  [2] 4 horizontal "
+	define multiwindow ? { Define flag : }
+
+	# if $multiwindow is NOT defined (!$?) then...
+	#
+	if($multiwindow == 0) {   
+	    window 1 1 1 1
+	    location 6000 30000 6000 30000
+	}
+	if($multiwindow == 1) {
+	    window 1 1 1 1
+	    location 6000 29000 6000 30000
+	}
+	if($multiwindow == 2) {
+	    window 1 1 1 1
+	    location 6000 30000 10000 16000 
+	    location 4000 32000 10000 18000 
+	}
+	expand 1.5
+	ctype 2 
+
+	define whatx ? {Energy [1] of Frequency [2] X-Axis ?}
+	if($whatx == 2) {
+	    define xmin 16.1 
+	    define xmax 19.7
+	    define tick  0
+	    define lab_x "log(\\nu)"
+
+	    set xl  = lkev + 17.383
+	    set aaa = xl 
+	} else {
+	    define xmin -1.1
+	    define xmax  2.3
+	    define tick  -1
+	    define lab_x "Energy [keV]"
+
+	    set xl  = lkev
+	    set aaa = xl 
+	}
+
+	define whaty ? {F_nu [1] of nu_F_nu [2] Y-Axis ?}
+	if($whaty == 1) {
+	    define ymin -3.9
+	    define ymax  0.1 
+	    define lab_y "log(F_\\nu) [erg/cm^2/s/Hz]"
+
+	    set yl  = lg(spec)
+	    set bbb = yl
+	} else {
+	    define ymin -10.51
+	    define ymax  -9.2
+	    define ymax  -8.99
+	    define lab_y "log(\\nu F_\\nu) [erg/cm^2/s]"
+
+	    set yl  = nufnu
+	    set bbb = yl
+	}
+
+	set errbbb_u = err_spec_u 
+	set errbbb_d = err_spec_d 
+	delete err_spec_u
+	delete err_spec_d
+
+	limits $xmin $xmax $ymin $ymax 
+	ticksize $tick 0 0 0 
+	expand 1.5
+	if($multiwindow == 0) {  
+	    box 1 2 0 3
+	    expand 1.5
+	    ylabel $lab_y
+	    expand 2
+	    xlabel $lab_x
+	}
+	if($multiwindow == 1) {
+	    echo "--------------------------------------------"
+	    echo "     ul   |   ur "
+	    echo "    ------+------"
+	    echo "     ll   |   lr "
+	    echo "--------------------------------------------"
+	    define dove ? { Which window position ? }
+	    expand 1.3
+	    if('$dove' == 'll') { 
+		window -2 -2 1 1 
+		box 1 2 0 0 
+	    }
+	    if('$dove' == 'ul') { 
+		window -2 -2 1 2 
+		box 0 2 0 0 
+	    }
+	    if('$dove' == 'ur') { 
+		window -2 -2 2 2 
+	        box 0 0 0 2 
+	    }
+	    if('$dove' == 'lr') { 
+		window -2 -2 2 1 
+	        box 1 0 0 2 
+	    }
+	    expand 1.5
+	}
+	if($multiwindow == 2) {
+	    echo "--------------------------------------------"
+	    echo "     1 | 2 | 3 | 4 "
+	    echo "--------------------------------------------"
+	    define dove ? { Which window position ? }
+	    expand 1.1
+	    if('$dove' == '1') { 
+		window -4 1 1 1 
+		box 2 2 0 0 
+	    }
+	    if('$dove' == '2') { 
+		window -4 1 2 1 
+		box 2 0 0 0 
+	    }
+	    if('$dove' == '3') { 
+		window -4 1 3 1 
+	        box 2 0 0 0 
+	    }
+	    if('$dove' == '4') { 
+		window -4 1 4 1 
+	        box 2 0 0 0 
+	    }
+	    expand 1.5
+	}
+
+	echo *** ----------------------
+	echo *** PLOT Options :
+	echo    [1] B/W
+	echo    [2] Ptype/Ctype
+	echo    [3] Ctype/Ctype
+	define come ? { Your choice ? }
+
+	if($come == 1){
+	   ctype 2
+	   expand 1.5
+	   # usage: mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d>
+	   mypoints 20 2 1 aaa bbb errbbb_u errbbb_d 2.1
+	   define cty1 2
+	   define cty2 1
+	}
+	
+	# if($come == 1){
+	#    ctype 2
+	#    expand 1.5
+	#    errorbar aaa bbb errbbb_u 2 
+	#    errorbar aaa bbb errbbb_d 4 
+	#    errorbar aaa bbb dx_d     3
+	#    errorbar aaa bbb dx_u     1
+	#    expand 1.6
+	#    ctype 1
+	#    ptype 20 3 
+	#    points   aaa bbb
+	#    ctype 2 
+	#    expand 2.0
+	#    ptype 20 0 
+	#    points   aaa bbb
+	#    define cty1 2
+	#    define cty2 1
+	# }
+
+	if($come == 2) {
+	   define pty ? { Give the code for PTYPE [#1 #2] : }
+	   define cty ? { Give the code for CTYPE [#1] : }
+
+	   define cty1 $cty
+	   define cty2 $cty
+	   ptype $pty
+	   ctype $cty
+	   expand 1.5
+	   errorbar aaa bbb errbbb_u 2 
+	   errorbar aaa bbb errbbb_d 4 
+	   errorbar aaa bbb dx_d     3
+	   errorbar aaa bbb dx_u     1
+	   expand 1.6
+	   points   aaa bbb
+	}
+
+	if($come == 3) {
+	   echo -----------------------------------------
+	   define cty1 ? { Give the code for CTYPE [border] : }
+	   define cty2 ? { Give the code for CTYPE [inside] : }
+	   echo -----------------------------------------
+
+	   ctype $cty1
+	   expand 1.5
+	   errorbar aaa bbb errbbb_u 2 
+	   errorbar aaa bbb errbbb_d 4 
+	   errorbar aaa bbb dx_d     3
+	   errorbar aaa bbb dx_u     1
+
+	   expand 2.0
+	   ctype $cty1
+	   ptype 20 3 
+	   points   aaa bbb
+
+	   expand 1.5
+	   ctype $cty2
+	   ptype 20 3 
+	   points   aaa bbb
+
+	   expand 1.7
+	   lweight 1.5
+	   ctype $cty1
+	   ptype 20 0 
+	   points   aaa bbb
+	}
+
+	define plotlab ? { Label ? [y/n] }
+	if(substr('$plotlab',0,1) == 'y') { 
+	  echo -----------------------------------------
+	  define order ? { Which position from the Bottom ? }
+
+	  relocate ( $($gx1 + 1000) $($gy1 + 1500 + 1200*($order-1)) ) 
+	  expand 2.0
+	  ctype $cty1
+	  ptype 20 3 
+	  dot
+
+	  expand 1.2
+	  ctype $cty2
+	  ptype 20 3 
+	  dot
+
+	  expand 2.0
+	  lweight 1.5
+	  ctype $cty1
+	  ptype 20 0 
+	  dot
+
+	  if($come == 1){ define cty2 2 }
+	  define labtxt ? { TEXT of Label : }
+
+	  ctype $cty2
+	  relocate ( $($gx1 + 1750) $($gy1 + 1450 + 1200*($order-1)) ) 
+	  expand 1.1
+	  putlabel 6 $labtxt
+	  expand 1.5
+
+	  ctype $cty1
+	  relocate ( $($gx1 + 1700) $($gy1 + 1500 + 1200*($order-1)) ) 
+	  expand 1.1
+	  putlabel 6 $labtxt
+	  expand 1.5
+	}
+
+	lweight 3
+	foreach var { kev lkev dkev eufs ratio err_ratio spec nufnu xl yl } {
+	    echo Removing: $var
+	    delete $var
+	}
+	foreach var { aaa bbb errbbb_u errbbb_d dx_d dx_u } {
+	    echo Removing: $var
+	    delete $var
+	}
+
+#---------------------------------------------------------------------------
+# read_pointings_98_00 : read all the 1998, or 2000, datasets
+#                        this is the REAL data reading macro
+read_pointings_98_00
+
+	define cheanno ? { Which year [1998/2000] : }
+
+	#-------------------------------------------------------
+	# case: 1998
+	#
+	if( $cheanno == 1998 ) {
+	# define datadir "/neutronstar/gf/SAX/mkn421/1998/Test/Def_XClean"
+	define datadir "/data/analysis/SAX/Mkn421/1998/Test/Def_XClean"
+	echo $datadir
+
+	# define quali ? { Which set of Fit parameters ? [top/sub05/sub075] }
+	define quali "top"
+	define 2 $quali
+
+	define check_del ? { Delete OLD vectors ? [y/n] }
+	if(substr('$check_del',0,1) == 'y') {
+	   clean_pointings_98 
+	   # foreach 2 { a1_1 a2 eb fold a1_01 epeak norm1kev } {
+	   #    echo ** Deleting $2
+	   #    delete $2
+	   # }
+	}
+
+	set all_pointings_vec = { low_1_2 \
+				  low_3 \
+				  top1_4 \
+				  top2_5 \
+				  after_6 \
+				  after_7 \
+				  after_8_9 \
+				  after_10_12 \
+				  after_13_16 \
+				  april23_1 \
+				  april23_2 \
+				  april23_3 }
+	set sub_pointings_vec = { low_3 \
+				  top1_4 \
+				  top2_5 \
+				  after_6 \
+				  after_7 \
+				  after_8_9 \
+				  after_10_12 \
+				  after_13_16 \
+				  april23_1 \
+				  april23_2 \
+				  april23_3 }
+	}
+
+	#-------------------------------------------------------
+	# case: 2000
+	#
+	if( $cheanno == 2000 ) {
+	define datadir "/home/gf/Science/Mkn421/2000/Spectral/Plots"
+	echo $datadir
+
+	define check_del ? { Delete OLD vectors ? [y/n] }
+	if(substr('$check_del',0,1) == 'y') {
+	   clean_pointings_00
+	}
+
+	set all_pointings_vec = { a  \
+				  b  \
+				  c  \
+				  d  \
+				  e  \
+				  f  \
+				  g  \
+				  top  }
+	set sub_pointings_vec = { b  \
+				  c  \
+				  d  \
+				  e  \
+				  f  \
+				  g  \
+				  top  }
+	}
+
+	# Proceeding...
+	#
+	foreach 1 all_pointings_vec {
+
+	if( $cheanno == 1998 ) { data "$!datadir/"$2_$1.out }
+	if( $cheanno == 2000 ) { data "$!datadir/"$1.out }
+
+	lines 4 4 
+	read time_$1  1
+	read time_mid_$1   1
+	read time_start_$1 2 
+	read time_stop_$1  3 
+
+	lines 5 5 
+	read fl_low_ab_$1   1 
+	read fl_high_ab_$1  2 
+	if( '$2' == 'top') { 
+	  read fl_all_ab_$1   3 
+	} else {
+	  set fl_all_ab_$1 = fl_high_ab_$1+fl_low_ab_$1
+	  echo >>> the 0.1-10 keV flux is not defined <<<
+	  echo   > approximating with (0.2-1)+(2-10)  <
+	}
+
+	lines 6 6
+	read fl_low_unab_$1  1 
+	read fl_high_unab_$1 2 
+	if( '$2' == 'top') { 
+	  read fl_all_unab_$1   3 
+	} else {
+	  set fl_all_unab_$1 = fl_high_unab_$1+fl_low_unab_$1
+	  echo >>> the 0.1-10 keV flux is not defined <<<
+	  echo   > approximating with (0.2-1)+(2-10)  <
+	}
+
+	lines 7 12
+	read a1_$1          1 
+	read err_a1_d_$1    2 
+	read err_a1_u_$1    3 
+	read a10_$1         4 
+	read err_a10_d_$1   5 
+	read err_a10_u_$1   6
+	read eb_$1          7 
+	read err_eb_d_$1    8 
+	read err_eb_u_$1    9
+	read fold_$1        10 
+	read err_fold_d_$1  11 
+	read err_fold_u_$1  12 
+	read a01_$1         13 
+	read err_a01_d_$1   14 
+	read err_a01_u_$1   15
+	read epeak_$1       16 
+	read err_epeak_d_$1 17
+	read err_epeak_u_$1 18
+	read norm1kev_$1    19
+	read a05_$1         20
+	read err_a05_d_$1   21
+	read err_a05_u_$1   22
+	read a5_$1          23
+	read err_a5_d_$1    24
+	read err_a5_u_$1    25
+
+	}
+
+	#----------------------------------------------
+	define 1 $(all_pointings_vec[0])
+	echo * Doing concatenation with $1 data
+
+	foreach 2 { fl_low_ab fl_high_ab fl_low_unab fl_high_unab fl_all_ab fl_all_unab \
+		    norm1kev time time_start time_stop time_mid } {
+	  set $2       = $2_$1 
+	  delete $2_$1
+	}
+
+	foreach 2 { a01 a05 a1 a5 a10 eb fold epeak } {
+	  set $2       = $2_$1 
+	  set err_$2_d = err_$2_d_$1 
+	  set err_$2_u = err_$2_u_$1 
+
+	  delete $2_$1
+	  delete err_$2_d_$1
+	  delete err_$2_u_$1
+	}
+	
+	#----------------------------------------------
+	foreach 1 sub_pointings_vec {
+	echo * Doing concatenation with $1 data
+
+	foreach 2 { fl_low_ab     \
+		    fl_high_ab    \
+		    fl_all_ab     \
+		    fl_low_unab   \
+		    fl_high_unab  \
+		    fl_all_unab   \
+		    norm1kev \
+		    time_start \
+		    time_stop \
+		    time_mid \
+		    time } {
+	  set $2       = $2       CONCAT $2_$1 
+	  delete $2_$1
+	}
+
+	foreach 2 { a01 a05 a1 a5 a10 eb fold epeak } {
+	  set $2       = $2       CONCAT $2_$1 
+	  set err_$2_d = err_$2_d CONCAT err_$2_d_$1 
+	  set err_$2_u = err_$2_u CONCAT err_$2_u_$1 
+
+	  delete $2_$1
+	  delete err_$2_d_$1
+	  delete err_$2_u_$1
+	}
+	}
+
+	foreach 1 { a01 a05 a1 a5 a10 eb fold epeak } {
+	    set err_$1_u = err_$1_u - $1
+	    set err_$1_d = $1 - err_$1_d 
+	}
+	set dalpha = a5 - a05
+	set err_dalpha_u = sqrt(err_a5_u**2 + err_a05_u**2)
+	set err_dalpha_d = sqrt(err_a5_d**2 + err_a05_d**2)
+
+	set fl_low_ab    = fl_low_ab  
+	set fl_high_ab   = fl_high_ab
+	set fl_all_ab    = fl_all_ab
+	set fl_low_unab  = fl_low_unab
+	set fl_high_unab = fl_high_unab
+	set fl_all_unab  = fl_all_unab
+
+	foreach 2 { a01 a05 a1 a5 a10 } {
+	  set $2       = $2 - 1
+	}
+
+	#
+	# renaming vectors
+	#
+	echo  ...Renaming vectors to 'y98/y00' ...
+
+	if( $cheanno == 1998 ) { define 4 "y98" }
+	if( $cheanno == 2000 ) { define 4 "y00" }
+
+	foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha } {
+                 set $4_$var = $var
+	         set err_$4_"$!var"_u = err_"$!var"_u
+	         set err_$4_"$!var"_d = err_"$!var"_d
+	}
+	foreach var { fl_low_ab fl_high_ab fl_all_ab fl_low_unab fl_high_unab fl_all_unab } {
+                 set $4_$var = $var
+	}
+	foreach var { time time_start time_stop time_mid } {
+                 set $4_$var = $var
+	}
+
+#---------------------------------------------------------------------------

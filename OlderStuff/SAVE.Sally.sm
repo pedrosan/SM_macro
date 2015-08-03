@@ -1,0 +1,841 @@
+#---------------------------------------------------------------------------
+# read_sally
+read_sally
+
+	data sally_all.dat
+	read {name 1.s z 2 fr 3 mo 4 fxband 5 }
+	#
+	# X are in 0.1-2.4 band units of 10^-12
+	#
+	# radio are in milliJy
+	#
+
+	set fx = fxband/9.013   # converte a monocromatico ad 1 keV (muJy)
+	set fr = fr/1000.       # con il fattore che corrisponde ad
+	set lgfx = lg(fx)       # un indice spettrale 1.2 tra 0.1-2.4 keV
+	set lgfr = lg(fr)
+
+	do i=0,$(dimen(z)-1) {
+	   if(z[$i] < 4) {set z[$i] = z[$i]} else {set z[$i] = 0.16 }
+	}
+
+	set ratio_xr = lg(fx/fr) - 6.
+	set a_rx     = ratio_xr/7.685
+
+	define ax (1.2)
+	define ar (0.0)
+
+	set lgkfx = lgfx + ($ax - 1)*lg(1+z)
+	set lgkfr = lgfr + ($ar - 1)*lg(1+z)
+
+	set ratio_kxr = lgkfx - lgkfr - 6.
+	set a_krx     = ratio_kxr/7.685
+	
+#---------------------------------------------------------------------------
+# read_complete
+read_complete
+
+	data sally_complete.dat
+	read {name 1.s z 2 f_radio 3 mopt 4 f_x 5 }
+	#
+	# X are monochromatic @ 1keV, in nanoJy
+	#
+	# radio are CORE, in milliJy
+	#
+
+	set f_x     = f_x/1000.
+	set f_radio = f_radio/1000. 
+	set lg_f_x     = lg(f_x)
+	set lg_f_radio = lg(f_r)
+
+	do i=0,$(dimen(z)-1) {
+	   if(z[$i] < 4) {set z[$i] = z[$i]} else {set z[$i] = 0.16 }
+	}
+
+	set ratio_xr = lg(f_x/f_radio) - 6.
+	set a_rx     = ratio_xr/7.685
+
+	define a_x     (1.2)
+	define a_radio (0.0)
+
+	set lg_kf_x     = lg_f_x     + ($a_x - 1)*lg(1+z)
+	set lg_kf_radio = lg_f_radio + ($a_radio - 1)*lg(1+z)
+
+	set ratio_kxr = lg_kf_x - lg_kf_radio - 6.
+	set a_krx     = ratio_kxr/7.685
+	
+#---------------------------------------------------------------------------
+# read_area1
+read_area1
+
+
+##     RA   (J2000)  Dec     Peak Flux Int. Flux Flux Dist1 alpha  Ecl Emag Ocl Omag  Color Dist2a Dist2b Class        Notes
+##                             (20cm)    (20cm) (6cm)
+##    (FIRST POSITION)        (mJy)     (mJy)  (mJy)  (")   (radio)     (mag)    (mag)  (mag)  (")  (") 
+## ------------ ------------- --------- -------- ----- ----- ------ --- ----- -- ----- ------ ----- ---- ----- -----------------
+## 1  2  3        4  5  6             7        8     9    10     11  12    13 14    15     16    17   18
+## ------------ ------------- --------- -------- ----- ----- ------ --- ----- -- ----- ------ ----- ---- ----- -----------------
+## 00 01 21.522  -00 11 40.75     39.38    80.62    49  27.8   0.18  -1 19.22 -1 20.83   1.61  0.89 1.04
+## 00 02 57.196  -00 24 47.51    124.90   159.13   139  15.0   0.09  -1 19.19 -1 20.85   1.66  0.33 0.54 Galaxy? (z unknown)
+
+	data sally_area1.sample
+	read { ra_h 1 ra_m 2 ra_s 3 dec_d 4 dec_m 5 dec_s 6 f14peak 7 f14tot 8 f5 9 }
+	read { ecl 12 emag 13 ocl 14 omag 15 }
+
+	set ra  = (ra_h + ra_m/60.  + ra_s/3600.)*15.
+	set dec = dec_d   + dec_m/60. + dec_s/3600. 
+
+
+#---------------------------------------------------------------------------
+# read_area2
+read_area2
+
+
+##     RA   (J2000)  Dec     Peak Flux Int. Flux Flux Dist1 alpha  Ecl Emag Ocl Omag  Color Dist2a Dist2b Class        Notes
+##                             (20cm)    (20cm) (6cm)
+##    (FIRST POSITION)        (mJy)     (mJy)  (mJy)  (")   (radio)     (mag)    (mag)  (mag)  (")  (") 
+## ------------ ------------- --------- -------- ----- ----- ------ --- ----- -- ----- ------ ----- ---- ----- -----------------
+## 1  2  3        4  5  6             7        8     9    10     11  12    13 14    15     16    17   18
+## ------------ ------------- --------- -------- ----- ----- ------ --- ----- -- ----- ------ ----- ---- ----- -----------------
+## 00 01 21.522  -00 11 40.75     39.38    80.62    49  27.8   0.18  -1 19.22 -1 20.83   1.61  0.89 1.04
+## 00 02 57.196  -00 24 47.51    124.90   159.13   139  15.0   0.09  -1 19.19 -1 20.85   1.66  0.33 0.54 Galaxy? (z unknown)
+
+	data sally_area2.sample
+	read { ra_h 1 ra_m 2 ra_s 3 dec_d 4 dec_m 5 dec_s 6 f14peak 7 f14tot 8 f5 9 }
+	read { ecl 12 emag 13 ocl 14 omag 15 }
+
+	set ra  = (ra_h + ra_m/60.  + ra_s/3600.)*15.
+	set dec = dec_d   + dec_m/60. + dec_s/3600. 
+
+
+#---------------------------------------------------------------------------
+# read_list1
+read_list1
+
+##     RA   (J2000)  Dec     Peak Flux Int. Flux Flux Dist1 alpha  Ecl Emag Ocl Omag  Color Dist2a Dist2b Class        Notes
+##                             (20cm)    (20cm) (6cm)
+##    (FIRST POSITION)        (mJy)     (mJy)  (mJy)  (")   (radio)     (mag)    (mag)  (mag)  (")  (") 
+## ------------ ------------- --------- -------- ----- ----- ------ --- ----- -- ----- ------ ----- ---- ----- -----------------
+## 1  2  3        4  5  6             7        8     9    10     11  12    13 14    15     16    17   18
+## ------------ ------------- --------- -------- ----- ----- ------ --- ----- -- ----- ------ ----- ---- ----- -----------------
+## 00 01 21.522  -00 11 40.75     39.38    80.62    49  27.8   0.18  -1 19.22 -1 20.83   1.61  0.89 1.04
+## 00 02 57.196  -00 24 47.51    124.90   159.13   139  15.0   0.09  -1 19.19 -1 20.85   1.66  0.33 0.54 Galaxy? (z unknown)
+
+	data sally_list1.sample
+	read { ra_h 1 ra_m 2 ra_s 3 dec_d 4 dec_m 5 dec_s 6 f14peak 7 f14tot 8 f5 9 }
+	read { ecl 12 emag 13 ocl 14 omag 15 }
+
+	set ra  = (ra_h + ra_m/60.  + ra_s/3600.)*15.
+	set dec = dec_d   + dec_m/60. + dec_s/3600. 
+
+#---------------------------------------------------------------------------
+# my_aitoffgrid
+my_aitoffgrid
+
+	define min_ra_deg    ? { Min RA, in deg ? }
+	define max_ra_deg    ? { Max RA, in deg ? }
+	define step_ra_deg   ? { Step RA, in deg ? }
+	define min_dec_deg   ? { Min DEC, in deg ? }
+	define max_dec_deg   ? { Max DEC, in deg ? }
+	define step_dec_deg  ? { Step DEC, in deg ? }
+
+	limits $($min_ra_deg-5) $($max_ra_deg+5) $($min_dec_deg-5) $($max_dec_deg+5)
+
+	define i local
+	foreach i (_l _b _x _y) {
+	   set $i local
+	}
+
+	ctype 2
+
+	set _l = $min_ra_deg,$max_ra_deg
+	do i = $min_dec_deg,$max_dec_deg,$step_dec_deg {
+	   set _b = $i
+	   aitoff _l _b _x _y
+	   connect _x _y
+	}
+
+	set _b = $min_dec_deg,$max_dec_deg
+	do i = $min_ra_deg,$max_ra_deg,$step_ra_deg {
+	   set _l = $i
+	   aitoff _l _b _x _y
+	   connect _x _y
+	}
+
+#---------------------------------------------------------------------------
+# read_cross_rass
+read_cross_rass
+
+	data sally_cross_RASS.dat
+	read { ra_h 1 ra_m 2 ra_s 3 dec_d 4 dec_m 5 dec_s 6 f14 7 f5 8 ar 9 }
+	read { ecl 10 emag 11 ocl 12 omag 13 xcps 14 e_xcps 15 xbcps 16 xexp 17 }
+
+	set ra  = (ra_h + ra_m/60.  + ra_s/3600.)*15.
+	set dec = dec_d   + dec_m/60. + dec_s/3600. 
+
+#---------------------------------------------------------------------------
+# read_cross_wga
+read_cross_wga
+
+	data sally_cross_WGA.dat
+	read { ra_h 1 ra_m 2 ra_s 3 dec_d 4 dec_m 5 dec_s 6 f14 7 f5 8 ar 9 }
+	read { ecl 10 emag 11 ocl 12 omag 13 xcps 14 e_xcps 15 xexp 16 }
+
+	set ra  = (ra_h + ra_m/60.  + ra_s/3600.)*15.
+	set dec = dec_d + dec_m/60. + dec_s/3600. 
+
+#---------------------------------------------------------------------------
+# read_true
+read_true
+
+	data sally_cross_VV_with_Z.dat
+	read { ra_h 1 ra_m 2 ra_s 3 dec_d 4 dec_m 5 dec_s 6 f14 7 f5 8 ar 9 }
+	read { ecl 10 emag 11 ocl 12 omag 13 z 14 }
+
+	data my_sally1.dat
+	read { class 20.s }
+
+	data sally_cross_ALL.dat
+	read { xcps 14 e_xcps 15 }
+
+	set ra  = (ra_h +  ra_m/60. +  ra_s/3600.)*15.
+	set dec = dec_d + dec_m/60. + dec_s/3600. 
+
+	set lg_f_r_14 = lg(f14) - 26.
+	set lg_f_r_5  = lg(f5)  - 26. 
+
+	set lg_f_ir  = -19.556 - 0.4*emag
+	set lg_f_uv  = -19.348 - 0.4*omag
+	set lg_f_opt1= lg_f_ir - lg(5.432/4.282)
+	set lg_f_opt2= lg_f_uv + lg(8.213/5.432)
+
+	set lg_f_opt = lg(0.5*(10.**(lg_f_opt1 + 26.) + 10.**(lg_f_opt2 + 26.))) - 26. 
+	set classn   = lg_f_opt*0.0 + 2 
+
+	do 1=0,$(dimen(ra)-1) {
+	   if( emag[$1] == 0 && omag[$1] >  0 ) {
+	       set lg_f_opt[$1] = lg_f_opt2[$1]
+	   }
+	   if( emag[$1] >  0 && omag[$1] == 0 ) {
+	       set lg_f_opt[$1] = lg_f_opt1[$1]
+	   }
+
+	   define dumcl "$(class[$1])"
+
+	   if(substr('$dumcl',0,1) == 'G' ){
+	       set classn[$1] = -1 
+	   }
+	   if(substr('$dumcl',0,1) == 'Sy' ){
+	       set classn[$1] = -1
+	   }
+	   if(substr('$dumcl',0,1) == 'P' ){
+	       set classn[$1] = -2
+	   }
+	   if(substr('$dumcl',0,2) == 'St' ){
+	       set classn[$1] = -2
+	   }
+	   if(substr('$dumcl',0,1) == 'Z' ){
+	       set classn[$1] = 0 
+	   }
+	   if(substr('$dumcl',0,1) == 'B' ){
+	       set classn[$1] = 1
+	   }
+	}
+
+	set lg_f_x_flat = lg(xcps*7.69e-12)   # alpha=0.6
+	set lg_f_x_steep= lg(xcps*4.40e-12)   # alpha=2.0
+
+	set lg_f_1_flat = lg(xcps*7.69*0.166e-29)
+	set lg_f_1_steep= lg(xcps*4.40*0.045e-29)
+	set lg_f_1_mid  = 0.5*(lg_f_1_flat + lg_f_1_steep)
+
+	define lg_nu_ir (lg(4.282e14))
+	define lg_nu_uv (lg(8.213e14))
+
+	set a_ro      = (lg_f_r_5 - lg_f_opt  )/5.037
+	set a_ro1     = (lg_f_r_5 - lg_f_opt1 )/5.037
+	set a_ro2     = (lg_f_r_5 - lg_f_opt2 )/5.037
+
+	set a_rx_flat = (lg_f_r_5 - lg_f_1_flat)/7.685
+	set a_rx_steep= (lg_f_r_5 - lg_f_1_steep)/7.685
+	set a_rx_mid  = (lg_f_r_5 - lg_f_1_mid)/7.685
+
+	set a_rx_guess = 0.52 + 0.55*sqrt((a_ro-0.3)/0.5)
+
+	set a_ox_mid  = (lg_f_opt  - lg_f_1_mid)/2.648
+	set a_ox_mid1 = (lg_f_opt1 - lg_f_1_mid)/2.648
+	set a_ox_mid2 = (lg_f_opt2 - lg_f_1_mid)/2.648
+
+	set lg_f_1_guess = lg_f_r_5 - 7.685*a_rx_guess 
+
+	set f_1_ujy = 10.**(lg_f_1_guess + 29.)
+
+	## set ra_flat  = (f_1_ujy/0.0084)*(15.6/1000.)
+	## set ra_steep = (f_1_ujy/0.0084)*(26.7/1000.)
+	## SUPERSEDED
+	# these rates are cts/s
+	# 0.0084 is the F_1 in microJy for F_[0.2-10] = 1e-13 c.g.s 
+	# 15.6 and 26.7 are the cts/ks for Gamma=1.6 or 3.0 and F=1.e-13
+	#
+
+	define flat_1kev_norm  ( 0.00933 )
+	define steep_1kev_norm ( 0.00835 )
+	# these numbers are the F_1 in microJy for F_[0.2-8] = 1e-13 c.g.s 
+	# 15.6 and 26.7 are the cts/ks for Gamma=1.6 or 3.0 and F=1.e-13
+	#
+
+	# these constants are the cts/ks for 
+	#  F=1.e-13
+	#  in the 0.2-8 keV band.
+	#  Gamma=1.6 or 3.0 
+	#  nH = 2e20
+	define flat_conv_factor_full  ( 15.98 )
+	define flat_conv_factor_soft  ( 11.26 )
+	define flat_conv_factor_hard  (  4.71 )
+
+	define steep_conv_factor_full ( 22.19 )
+	define steep_conv_factor_soft ( 20.86 )
+	define steep_conv_factor_hard (  1.33 )
+
+	set ra_flat       = (f_1_ujy/$flat_1kev_norm)*($flat_conv_factor_full/1000.)
+	set ra_flat_soft  = (f_1_ujy/$flat_1kev_norm)*($flat_conv_factor_soft/1000.)
+	set ra_flat_hard  = (f_1_ujy/$flat_1kev_norm)*($flat_conv_factor_hard/1000.)
+
+	set ra_steep      = (f_1_ujy/$steep_1kev_norm)*($steep_conv_factor_full/1000.)
+	set ra_steep_soft = (f_1_ujy/$steep_1kev_norm)*($steep_conv_factor_soft/1000.)
+	set ra_steep_hard = (f_1_ujy/$steep_1kev_norm)*($steep_conv_factor_hard/1000.)
+
+	#
+	# 100 required counts, divided by the rate cts/ks
+	#    to give the exposure time in kiloseconds
+	#
+	set time_flat  = 100./(ra_flat*1000.)
+	set time_steep = 100./(ra_steep*1000.)
+
+	define cts_full ( 100. )
+	define cts_soft ( 100. )
+	define cts_hard (  25. )
+
+	set time_flat       = 100./(ra_flat*1000.)
+	set time_flat_soft  = $cts_soft/(ra_flat_soft*1000.)
+	set time_flat_hard  = $cts_hard/(ra_flat_hard*1000.)
+
+	# set time_flat_disc_1 = int(time_flat) + 1 
+	set time_flat_disc_1 = 3*int( time_flat/3 ) + 3
+	set time_flat_disc_2 = 2*int( time_flat/2 ) + 2 
+
+	set time_steep       = 100./(ra_steep*1000.)
+	set time_steep_soft  = $cts_soft/(ra_steep_soft*1000.)
+	set time_steep_hard  = $cts_hard/(ra_steep_hard*1000.)
+
+	# set time_steep_disc_1 = int(time_steep) + 1
+	set time_steep_disc_1 = 3*int( time_steep/3 ) + 3
+	set time_steep_disc_2 = 2*int( time_steep/2 ) + 2 
+
+#---------------------------------------------------------------------------
+# checks
+checks
+
+	echo First define variable "filter"
+
+	set _ra_flat    = ra_flat if( $filter )
+	set _ra_steep   = ra_steep if( $filter )
+	set _time_flat  = time_flat if( $filter )
+	set _time_steep = time_steep if( $filter )
+	set _time_flat_disc_1  = time_flat_disc_1 if( $filter )
+	set _time_steep_disc_1 = time_steep_disc_1 if( $filter )
+	set _time_flat_disc_2  = time_flat_disc_2 if( $filter )
+	set _time_steep_disc_2 = time_steep_disc_2 if( $filter )
+
+	echo 
+	echo *** the sub-sample size is :  $(dimen(_ra_flat))
+	echo 
+
+	set lg_ra_flat    = lg(_ra_flat)
+	set lg_ra_steep   = lg(_ra_steep)
+	set lg_time_flat  = lg(_time_flat)
+	set lg_time_steep = lg(_time_steep)
+
+	define step ? { Histogram step : }
+
+	set xrate=-3-0.5*$step,+3+0.5*$step,$step
+	set h_ra_flat    = histogram(lg_ra_flat:xrate)
+	set h_ra_steep   = histogram(lg_ra_steep:xrate)
+	set h_time_flat  = histogram(lg_time_flat:xrate)
+	set h_time_steep = histogram(lg_time_steep:xrate)
+
+	expand 1.5
+	lweight 3 
+	ctype 2 
+
+	window 1 1 1 1
+	location 6000 30000 10000 28000
+
+	limits -3 3 h_ra_flat 
+	ticksize -1 0 0 0 
+	expand 1.5
+	box 1 2 3 0 
+	expand 2.0
+	xlabel Rate [cts/s]
+	histogram xrate h_ra_flat
+	ctype 4 
+	ltype 2 
+	foreach pip_rate < 0.02 0.05 0.1 > {
+	   relocate $(lg($pip_rate)) -10 
+	   draw     $(lg($pip_rate)) 100
+	}
+	ctype 2 
+	ltype 0
+
+	limits 2 -4 h_ra_flat
+	expand 1.5
+	box 3 3 1 0
+	ctype 2 
+	relocate ( $( 0.5*($gx1+$gx2) ) $( $gy2 + 2000 ) )
+	expand 2.0
+	putlabel 8 T_{exp} [ks]
+
+
+	# window 1 2 1 2 
+	# limits 3 -3 h_time_flat 
+	# ticksize -1 0 0 0 
+	# box 1 2 0 0 
+	# xlabel T_{exp} [ks]
+	# histogram xrate h_time_flat
+	# relocate ( $( $gx2 - 5000 ) $( $gy2 - 1500 ) )
+	# putlabel 6 T_{exp}
+	
+
+#---------------------------------------------------------------------------
+# print_rps
+print_rps
+
+	define pref1 ? { Define Prefix for Vectors  : }
+	define 1 $pref1
+
+	define out ? { Define Output : }
+
+	set veclist1 = < ra_h ra_m ra_s dec_d dec_m dec_s \
+			 f5 a_ro f_1_ujy xcps ra_flat ra_steep \
+			 time_flat time_steep \
+	 		 time_flat_disc_1 time_flat_disc_2 \
+			 time_steep_disc_1 time_steep_disc_2 >
+	foreach 2 veclist1 {
+	   set pr_$2 = $1_$2
+	}
+
+	set coordveclist = < ra_h ra_m dec_d dec_m >
+	foreach 3 coordveclist {
+	     do i=0,$(dimen(pr_ra_h)-1) {
+		if( pr_$3[$i] < 10 ) {
+		    set pr_$3[$i] = $(sprintf('0%1d',$(pr_$3[$i])))
+		}
+	     }
+	}
+
+	set coordveclist = < ra_s dec_s >
+	foreach 3 coordveclist {
+	     do i=0,$(dimen(pr_ra_h)-1) {
+		if( pr_$3[$i] < 10 ) {
+		    set pr_$3[$i] = $(sprintf('0%3.1f',$(pr_$3[$i])))
+		}
+	     }
+	}
+
+	define fmt " %2d %2d %4.1f    +%2d %2d %4.1f   %6d %6.3f %10.6f %7.4f  %6.2e  %6.2e  %6.2f  %6.2f  "
+	print $out '$!fmt\n' { pr_ra_h pr_ra_m pr_ra_s pr_dec_d pr_dec_m pr_dec_s pr_f5 pr_a_ro pr_f_1_ujy pr_xcps pr_ra_flat pr_ra_steep pr_time_flat pr_time_steep }
+
+#---------------------------------------------------------------------------
+# print_rps_short
+print_rps_short
+
+	define pref1 ? { Define Prefix for Vectors  : }
+	define 1 $pref1
+
+	define out ? { Define Output : }
+
+	set veclist1 = < ra_h ra_m ra_s dec_d dec_m dec_s \
+			 f5 a_ro f_1_ujy xcps ra_flat ra_steep \
+			 time_flat time_steep \
+	 		 time_flat_disc_1 time_flat_disc_2 \
+			 time_steep_disc_1 time_steep_disc_2 >
+	foreach 2 veclist1 {
+	   set pr_$2 = $1_$2
+	}
+
+	set coordveclist = < ra_h ra_m dec_d dec_m >
+	foreach 3 coordveclist {
+	     do i=0,$(dimen(pr_ra_h)-1) {
+		if( pr_$3[$i] < 10 ) {
+		    set pr_$3[$i] = $(sprintf('0%1d',$(pr_$3[$i])))
+		}
+	     }
+	}
+
+	set coordveclist = < ra_s dec_s >
+	foreach 3 coordveclist {
+	     do i=0,$(dimen(pr_ra_h)-1) {
+		if( pr_$3[$i] < 10 ) {
+		    set pr_$3[$i] = $(sprintf('0%3.1f',$(pr_$3[$i])))
+		}
+	     }
+	}
+
+	define fmt " %2d %2d %4.1f    +%2d %2d %4.1f   %6d %6.3f  %6.2e %6.2e   %6.2f  %6.2f  %6.2f    %6.2f  %6.2f  %6.2f"
+	print $out '$!fmt\n' { pr_ra_h pr_ra_m pr_ra_s pr_dec_d pr_dec_m pr_dec_s pr_f5 pr_a_ro pr_ra_flat pr_ra_steep pr_time_flat pr_time_flat_disc_1 pr_time_flat_disc_2 pr_time_steep pr_time_steep_disc_1 pr_time_steep_disc_2 }
+
+#---------------------------------------------------------------------------
+# print_rps_sort
+print_rps_sort
+
+	define pref1 ? { Define Prefix for Vectors  : }
+	define 1 $pref1
+
+	define out ? { Define Output : }
+
+	set savesortvec = $1_dec_d + $1_dec_m/60.0 + $1_dec_s/3600.
+
+	set veclist1 = < ra_h ra_m ra_s dec_d dec_m dec_s \
+			 f5 a_ro f_1_ujy xcps ra_flat ra_steep \
+			 time_flat time_steep \
+	 		 time_flat_disc_1 time_flat_disc_2 \
+			 time_steep_disc_1 time_steep_disc_2 >
+	foreach 2 veclist1 {
+	   set sortvec = savesortvec
+	   set pr_$2 = $1_$2
+	   sort < sortvec pr_$2 >
+	}
+
+	set coordveclist = < ra_h ra_m dec_d dec_m >
+	foreach 3 coordveclist {
+	     do i=0,$(dimen(pr_ra_h)-1) {
+		if( pr_$3[$i] < 10 ) {
+		    set pr_$3[$i] = $(sprintf('0%1d',$(pr_$3[$i])))
+		}
+	     }
+	}
+
+	set coordveclist = < ra_s dec_s >
+	foreach 3 coordveclist {
+	     do i=0,$(dimen(pr_ra_h)-1) {
+		if( pr_$3[$i] < 10 ) {
+		    set pr_$3[$i] = $(sprintf('0%3.1f',$(pr_$3[$i])))
+		}
+	     }
+	}
+
+	define fmt " %2d %2d %4.1f    +%2d %2d %4.1f   %6d %6.3f  %6.2e %6.2e   %6.2f  %6.2f  %6.2f    %6.2f  %6.2f  %6.2f"
+	print $out '$!fmt\n' { pr_ra_h pr_ra_m pr_ra_s pr_dec_d pr_dec_m pr_dec_s pr_f5 pr_a_ro pr_ra_flat pr_ra_steep pr_time_flat pr_time_flat_disc_1 pr_time_flat_disc_2 pr_time_steep pr_time_steep_disc_1 pr_time_steep_disc_2 }
+
+#---------------------------------------------------------------------------
+# print_chandra_sort
+print_chandra_sort
+
+	define pref1 ? { Define Prefix for Vectors  : }
+	define 1 $pref1
+
+	define out ? { Define Output : }
+
+	set savesortvec = $1_dec_d + $1_dec_m/60.0 + $1_dec_s/3600.
+
+	set veclist1 = < ra_h ra_m ra_s dec_d dec_m dec_s \
+			 z f5 a_ro f_1_ujy xcps ra_flat ra_steep \
+			 time_flat time_steep class \
+	 		 time_flat_disc_1 time_flat_disc_2 \
+			 time_steep_disc_1 time_steep_disc_2 >
+	foreach 2 veclist1 {
+	   set sortvec = savesortvec
+	   set pr_$2 = $1_$2
+	   sort < sortvec pr_$2 > 
+	}
+
+	define fmt " %2d %2d %6.3f    +%2d %2d %5.2f   %6.4f %6d %6.3f %10.6f %7.4f  %6.2e  %6.2e  %6.2f  %6.2f  %s"
+	print $out '$!fmt\n' { pr_ra_h pr_ra_m pr_ra_s pr_dec_d pr_dec_m pr_dec_s pr_z pr_f5 pr_a_ro pr_f_1_ujy pr_xcps pr_ra_flat pr_ra_steep pr_time_flat pr_time_steep pr_class }
+
+#---------------------------------------------------------------------------
+# print_sample
+print_sample
+
+	define pref1 ? { Define Prefix for Vectors  : }
+	define 1 $pref1
+
+	define out ? { Define Output : }
+
+	set veclist1 = < ra_h ra_m ra_s dec_d dec_m dec_s \
+			 z f5 a_ro f_1_ujy xcps ra_flat ra_steep class >
+	foreach 2 veclist1 {
+	   set pr_$2 = $1_$2
+	}
+
+	define fmt " %2d %2d %6.3f    +%2d %2d %5.2f   %6.4f %6d %6.3f %10.6f %7.4f  %7.3e  %7.3e   %s"
+	print $out '$!fmt\n' { pr_ra_h pr_ra_m pr_ra_s pr_dec_d pr_dec_m pr_dec_s pr_z pr_f5 pr_a_ro pr_f_1_ujy pr_xcps pr_ra_flat pr_ra_steep pr_class }
+
+#---------------------------------------------------------------------------
+# select
+select
+
+	# define cond ? { Define selection criterion : }
+	define pref ? { Define Prefix for Vectors  : }
+	define 2 $pref
+
+	set veclist = < ra dec ra_h ra_m ra_s dec_d dec_m dec_s \
+			class classn z f14 f5 emag omag \
+			lg_f_ir lg_f_uv lg_f_opt lg_f_opt1 lg_f_opt2 \
+			lg_f_x_flat lg_f_x_steep lg_f_1_flat lg_f_1_steep \
+			lg_f_1_mid a_ro a_ro1 a_ro2 \
+			a_rx_flat a_rx_steep a_rx_mid \
+			a_rx_guess a_ox_mid a_ox_mid1 a_ox_mid2 \
+			lg_f_1_guess f_1_ujy \
+			xcps lg_f_r_14 lg_f_r_5 \
+			ra_flat ra_steep \
+			time_flat time_steep \
+			time_flat_disc_1 time_flat_disc_2 \
+			time_steep_disc_1 time_steep_disc_2 >
+
+	foreach 1 veclist {
+	   set $2_$1 = $1 if( $!filter ) 
+	}
+
+#---------------------------------------------------------------------------
+# plot_sky
+plot_sky
+
+	aitoffgrid
+	eqgald ra dec l b
+	aitoff l b x y
+	ctype 2 
+	ptype 4 3 
+	points x y
+	ctype 5 aitoffdec 0
+	foreach a { 20 30 40 50 60 70 80 } { ctype 3 aitoffdec $a }
+	ctype 2
+
+#---------------------------------------------------------------------------
+# chandra_rates
+chandra_rates
+
+	location 5000 31000 5000 31000
+
+	set fake_x = < 0.45  0.55  0.95  1.05  1.45  1.55  1.95  2.05 > 
+	set hr     = < 0.393 0.463 0.231 0.273 0.114 0.147 0.054 0.076 >
+	set e_hr   = < 0.221 0.267 0.129 0.158 0.075 0.098 0.047 0.067 >
+
+	define flux  ? { 0.2-10 Flux in units of 1e-13 c.g.s.: }
+	define t_exp ? {                  Exposure time (ks) : }
+	
+	set e_hr = e_hr/sqrt($t_exp)/sqrt($flux)
+
+	limits 0 2.5 0 0.7 
+	ctype 2 
+	expand 1.5
+	lweight 3
+	box
+	ylabel HR (ACIS-S [1.5-10]/[0.2-1.5])
+	expand 2.5
+	xlabel \alpha 
+
+	ptype 4 3 
+	points fake_x hr
+	error_y fake_x hr e_hr
+	expand 1.5
+
+	echo $flux
+	define prfl $(sprintf('%4.1f',$flux))
+	echo $prfl
+
+	expand 1.8
+	relocate (7500 29500)
+	putlabel 6 F_{0.2-10keV}=$prfl\times 10^{-13} erg/cm^2/s 
+	relocate (7500 27500)
+	putlabel 6      T_{exp}=$t_exp ks
+	expand 1.5
+
+#---------------------------------------------------------------------------
+# chandra_rates_01
+chandra_rates_01
+
+	location 5000 31000 5000 31000
+
+	# set fake_x = < 0.45  0.55  0.95  1.05  1.45  1.55  1.95  2.05  > 
+	# set f_soft = < 8.898 7.784 14.86 12.52 19.39 15.56 20.75 15.73 >
+	# set f_hard = < 4.245 4.218 3.722 3.694 2.492 2.471 1.326 1.314 >
+	# define flux  ? { 0.2-10 Flux in units of 1e-13 c.g.s.: }
+
+	set fake_x = < 0.6 1.0 1.5 2.0 >
+	set chandra_soft_1 = < 11.26  15.76  19.77  20.86 >
+	set chandra_soft_2 = < 9.787  13.27  15.87  15.81 >
+	set chandra_soft_3 = < 5.092  6.188  6.441  5.454 >
+	set chandra_soft_4 = < 0.956  1.062  0.949  0.674 >
+	set chandra_hard_1 = < 4.712  3.938  2.538  1.332 >
+	set chandra_hard_2 = < 4.680  3.908  2.517  1.320 >
+	set chandra_hard_3 = < 4.438  3.683  2.355  1.227 >
+	set chandra_hard_4 = < 3.483  2.805  1.729  0.872 >
+	set chandra_bkg_soft = < 0.0 0.0 0.0 0.0 >
+	set chandra_bkg_hard = < 0.0 0.0 0.0 0.0 >
+
+	set xmm_soft_1 = < 33.83  49.99  67.27  76.00 >
+	set xmm_soft_2 = < 28.12  39.93  50.72  53.70 >
+	set xmm_soft_3 = < 12.60  15.92  17.11  14.99 >
+	set xmm_soft_4 = < 2.130  2.370  2.133  1.520 >
+	set xmm_hard_1 = < 13.29  10.76  6.725  3.449 >
+	set xmm_hard_2 = < 13.21  10.69  6.673  3.419 >
+	set xmm_hard_3 = < 12.61  10.13  6.273  3.192 >
+	set xmm_hard_4 = < 10.19  7.923  4.719  2.317 >
+	set xmm_bkg_soft =< 0.35 0.35 0.35 0.35 >
+	set xmm_bkg_hard =< 0.35 0.35 0.35 0.35 >
+
+	echo -------------------------------------------------------
+	define mission ? { What Mission [chandra/xmm] : }
+	define 1 $mission
+
+	echo -------------------------------------------------------
+	echo  [1] nH = 2e20
+	echo  [2] nH = 4e20
+	echo  [3] nH = 2e21
+	echo  [4] nH = 1e22
+	define nhcase ? { What case : }
+	define 2 $nhcase
+	set nh_vec = < 2e20 4e20 2e21 1e22 >
+
+	echo -------------------------------------------------------
+	echo  [1] withOUT Background
+	echo  [2] with    Background
+	define back ? { Select : }
+	set f_soft = $1_soft_$2 
+	set f_hard = $1_hard_$2 
+
+	if( substr('$1',0,2) == 'ch' ) { 
+	   set fake_x = fake_x + 0.05*($2 - 2)
+	} else {
+	   set fake_x = fake_x + 0.05*($2 - 2) + 0.02
+	}
+
+	define flux  ? { 0.2-8 keV Flux in units of 1e-13 c.g.s.: }
+	define t_exp ? {                     Exposure time (ks) : }
+
+	set cts_soft_src = $t_exp*(f_soft*$flux) 
+	set cts_soft_bkg = $t_exp*(($back - 1)*$1_bkg_soft)
+	set cts_hard_src = $t_exp*(f_hard*$flux) 
+	set cts_hard_bkg = $t_exp*(($back - 1)*$1_bkg_hard)
+
+	set cts_full_src = cts_soft_src + cts_hard_src
+	set cts_full_bkg = cts_soft_bkg + cts_hard_bkg
+
+	set snr_soft = cts_soft_src/sqrt(cts_soft_src + cts_soft_bkg )
+	set snr_hard = cts_hard_src/sqrt(cts_hard_src + cts_hard_bkg )
+	set snr_full = cts_full_src/sqrt(cts_full_src + cts_full_bkg )
+
+	define prfl $(sprintf('%5.2f',$flux))
+	echo ----------------------------------------------------
+	echo Telescope: $mission
+	echo ----------------------------------------------------
+	echo F_[0.2-8keV] = $prfl e-13 erg/cm^2/s 
+	echo        T_exp = $t_exp ks
+	echo           nH = $(nh_vec[$($nhcase-1)])
+	echo ----- Soft band ------------------------------------
+	print '   %8.3f [%8.3f] ==> S/N: %5.2f\n' < cts_soft_src cts_soft_bkg snr_soft >
+	echo ----- Hard band ------------------------------------
+	print '   %8.3f [%8.3f] ==> S/N: %5.2f\n' < cts_hard_src cts_hard_bkg snr_hard >
+	echo ----- Full band ------------------------------------
+	print '   %8.3f [%8.3f] ==> S/N: %5.2f\n' < cts_full_src cts_full_bkg snr_full >
+	echo ----------------------------------------------------
+
+	set hr   = cts_hard_src/cts_soft_src
+	set e_hr = hr*sqrt( (cts_soft_src + cts_soft_bkg)/cts_soft_src**2. + \
+				 (cts_hard_src + cts_hard_bkg)/cts_hard_src**2. )
+
+	set pip = hr/e_hr
+	print '   %8.3f [%8.3f] ==> S/N: %5.2f\n' < hr e_hr pip  >
+	echo ----------------------------------------------------
+	
+	# set hr     = f_hard/f_soft
+	# set e_hr = e_hr/sqrt($t_exp)/sqrt($flux)
+	# set e_hr = sqrt( (f_hard/f_soft)**2.0/$t_exp*(1./$flux)*(1./f_hard + 1./f_soft) )
+
+	limits 0 2.5 0 0.7 
+	ctype 2 
+	expand 1.5
+	lweight 3
+	box
+	# ylabel HR (ACIS-S [1.5-10]/[0.2-1.5])
+	if( substr('$1',0,2) == 'ch' ) { 
+	    ylabel HR (ACIS-S [1.5-8]/[0.2-1.5])
+	} else {
+	    ylabel HR (XMM pn/thin [1.5-8]/[0.2-1.5])
+	}
+	expand 2.5
+	xlabel \alpha 
+
+	ptype 4 3 
+	if( substr('$1',0,2) == 'ch' ) { 
+	    ctype 3 
+	} else {
+	    ctype 5 
+	}
+
+	points fake_x hr
+	error_y fake_x hr e_hr
+	expand 1.5
+	ctype 2
+
+	# echo $flux
+	define prfl $(sprintf('%4.1f',$flux))
+	# echo $prfl
+
+	expand 1.8
+	relocate (7500 29500)
+	# putlabel 6 F_{0.2-10keV}=$prfl\times 10^{-13} erg/cm^2/s 
+	putlabel 6 F_{0.2-8keV}=$prfl\times 10^{-13} erg/cm^2/s 
+	relocate (7500 27500)
+	putlabel 6      T_{exp}=$t_exp ks
+	expand 1.5
+
+#---------------------------------------------------------------------------
+# xmm_rates_01
+xmm_rates_01
+
+	location 5000 31000 5000 31000
+
+	set fake_x = < 0.45  0.55  0.95  1.05  1.45  1.55  1.95  2.05  > 
+	set f_soft = < 26.38 22.12 47.14 37.65 65.96 49.74 75.62 53.43 >
+	set f_hard = < 12.46 12.39 10.35 10.28 6.66  6.61  3.45  3.42 >
+
+	set fake_x = fake_x - 0.02
+
+	set hr     = f_hard/f_soft
+
+	define flux  ? { 0.2-10 Flux in units of 1e-13 c.g.s.: }
+	define t_exp ? {                  Exposure time (ks) : }
+	
+	# set e_hr = e_hr/sqrt($t_exp)/sqrt($flux)
+	set e_hr = sqrt( (f_hard/f_soft)**2.0/$t_exp*(1./$flux)*(1./f_hard + 1./f_soft) )
+
+	limits 0 2.5 0 0.7 
+	ctype 2 
+	expand 1.5
+	lweight 3
+	box
+	ylabel HR (XMM pn [1.5-10]/[0.2-1.5])
+	expand 2.5
+	xlabel \alpha 
+
+	ptype 3 0 
+	ctype 5
+	points fake_x hr
+	error_y fake_x hr e_hr
+	expand 1.5
+	ctype 2
+
+	echo $flux
+	define prfl $(sprintf('%4.1f',$flux))
+	echo $prfl
+
+	expand 1.8
+	relocate (7500 29500)
+	putlabel 6 F_{0.2-10keV}=$prfl\times 10^{-13} erg/cm^2/s 
+	relocate (7500 27500)
+	putlabel 6      T_{exp}=$t_exp ks
+	expand 1.5
+
+
+#---------------------------------------------------------------------------

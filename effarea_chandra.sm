@@ -1,0 +1,680 @@
+#--------------------------------------------------------------------------------
+# read_effarea
+read_effarea
+
+	foreach 9 < p1 p2 p3 m1 m2 m3 > {
+	   data leg_$9_arf.dat
+	   read < e1_$9 1 e2_$9 2 area_$9 3 lam1_$9 4 lam2_$9 5 fracexpo_$9 6 >
+	   set e_$9    = 0.5*(e1_$9+e2_$9)
+	   set de_$9   = e2_$9 - e1_$9
+	   set lam_$9  = 0.5*(lam1_$9+lam2_$9)
+	   set dlam_$9 = lam2_$9 - lam1_$9
+	}
+
+	foreach 9 < 1 2 3 > { 
+	   set area_$9 = area_p$9 + area_m$9
+	   foreach 8 < p m > {
+	      set mlam_$8$9 = $9*lam_$8$9
+	      set me_$8$9 = e_$8$9/$9
+	   }
+	   set lam_$9  = lam_p$9
+	   set dlam_$9 = dlam_p$9
+	   set e_$9    = e_p$9
+	   set de_$9   = de_p$9
+	}
+
+	define area_min (  0.1)
+	define area_max (240.0)
+
+#--------------------------------------------------------------------------------
+# powerlaw <slope=1.5> [<e1=0.2> <e2=10> <estep=0.01>]
+powerlaw 101
+	
+	define e1 0.2
+	define e2 10.0
+	define estep 0.01
+
+	mparsep $1
+
+	define gamma $slope
+	
+	set x=$e1,$e2,$estep
+	set dx=x*0+$estep
+
+	define norm $( (1.-$gamma)/($e2**(1.-$gamma) - $e1**(1.-$gamma) ) )
+	echo "Norm @E=1 : "$norm "ph/cm^2/s/keV"
+
+	set spectrum=$norm*x**(-$gamma)
+
+	echo $(sum(spectrum*dx))
+
+#--------------------------------------------------------------------------------
+# spectral_weight <gg=1.5> [<e1=0.2> <e2=10>]
+spectral_weight 101
+	
+	define e1 0.2
+	define e2 10.0
+
+	mparsep $1
+
+	define gg1  $(1-$gg)
+	define norm $( $gg1/($e2**$gg1 - $e1**$gg1) )
+	echo "Norm @E=1 : "$norm "ph/cm^2/s/KeV"
+
+	define c     (2.99792e8)
+	define nu0   (2.418e17)
+	define lam0 $(($c/$nu0)/1e-10)
+	# echo "lamba 0 = "$lam0
+
+	foreach 9 < 1 2 3 > { 
+	   set Nlam_$9 = $norm*($lam0/lam_$9)**(2.-$gg)/$lam0
+	   set Nnu_$9  = $norm*(e_$9)**(-$gg)
+	}
+
+	set tmp_spec local
+	set tmp_de local
+	set tmp_spec = Nnu_1    if( e_1 >= $e1 && e_1 <= $e2)
+	set tmp_de   = de_1     if( e_1 >= $e1 && e_1 <= $e2)
+
+	echo "Nnu integral :" $(sum(tmp_spec*tmp_de))
+
+	define l2 $(12.398/$e1)
+	define l1 $(12.398/$e2)
+	set tmp_dlam local
+	set tmp_spec = Nlam_1  if( lam_1 >= $l1 && lam_1 <= $l2)
+	set tmp_dlam = dlam_1  if( lam_1 >= $l1 && lam_1 <= $l2)
+
+	echo "Nlam integral :" $(sum(tmp_spec*tmp_dlam))
+
+#--------------------------------------------------------------------------------
+# effarea_vs_lambda
+effarea_vs_lambda
+
+	read_effarea
+
+	ctype 2 
+	ltype 0 
+	lweight 3 
+
+	echo "------------------------------------------------------------"
+	define lam_min ?            <                 Min wavelength : > 
+	define lam_max ?            <                 Max wavelength : > 
+	define what_lambda ?        <      Lambda or M*Lambda [l|ml] : >
+	define add_orders ?         <          Orders [p/m/both/add] : >
+	define weight_by_spectrum ? < Weight by Spectral Shape [y/n] : >
+	echo "------------------------------------------------------------"
+
+	if( substr('$what_lambda',0,1) == 'l') { 
+	   define 8 "lam"
+	   define labx "wavelength [\AA]"
+	} else {
+	   define 8 "mlam"
+	   define labx "m*wavelength [\AA]"
+	}
+
+	define laby "Effective Area [cm^2]"
+
+	######################################
+	old_SUB_prepare_effarea_arrays $add_orders
+	######################################
+
+	define area_min $($area_min/$areascal)
+	define area_max $($area_max/$areascal)
+
+	if( substr('$weight_by_spectrum',0,1) == 'y') { 
+	   define gg ? < Power law slope : > 
+	   spectral_weight gg=$gg e1=0.2 e2=10.0
+
+	   foreach 7 < 1 2 3 > {
+	      # set a$7 = a$7*Nlam_$7*dlam_$7
+	      # set b$7 = b$7*Nlam_$7*dlam_$7
+	      set a$7 = a$7*Nlam_$7
+	      set b$7 = b$7*Nlam_$7
+	   }
+	   define area_min $(1e-4/$areascal)
+	   define area_max $(30.0/$areascal)
+
+	   define laby "Spectrum weighted Effective Area [\propto cm^2/\AA]"
+	   define labw "weighted on power law with \Gamma=$!gg"
+	} 
+
+	#----------------------------------------
+	window 1 -2 1 2 
+	limits $lam_min $lam_max $area_min $area_max
+	ticksize 0 0 0 0
+	notation -4 4 -4 4 
+	box 0 2 0 0
+
+	ctype 3 
+	ltype 0 connect $8_p1 a1
+	ltype 2 connect $8_m1 b1
+	ctype 4 
+	ltype 0 connect $8_p2 a2
+	ltype 2 connect $8_m2 b2
+	ctype 5 
+	ltype 0 connect $8_p3 a3
+	ltype 2 connect $8_m3 b3
+	ctype 2 
+
+	#----------------------------------------
+	window 1 -2 1 1 
+	limits $lam_min $lam_max $(lg($area_min)) $(lg($area_max)) 
+	ticksize 0 0 -1 0
+	notation -4 4 -2 2 
+	box 1 2 0 0
+	xlabel $labx
+
+	ltype 1 
+	define saveexp $expand
+	expand 0.9
+	foreach em < 0.2 0.4 0.6 1.0 2.0 4.0 8.0 > {
+	    define ll $(12.4/$em)
+	    relocate $ll $fy1
+	    draw     $ll $fy2
+	    relocate ( $xp $($gy2 - 300) )
+	    putlabel 3 $em
+	}
+	ltype 0 
+	expand $saveexp
+
+	ctype 3 
+	ltype 0 connect $8_p1 (lg(a1))
+	ltype 2 connect $8_m1 (lg(b1))
+	ctype 4 
+	ltype 0 connect $8_p2 (lg(a2))
+	ltype 2 connect $8_m2 (lg(b2))
+	ctype 5 
+	ltype 0 connect $8_p3 (lg(a3))
+	ltype 2 connect $8_m3 (lg(b3))
+	ctype 2 
+	ltype 0 
+
+	##########################
+	SUB_print_effarea_labels
+	##########################
+
+#--------------------------------------------------------------------------------
+# effarea_vs_energy
+effarea_vs_energy
+
+	read_effarea
+
+	ctype 2 
+	ltype 0 
+	lweight 3 
+
+	echo "------------------------------------------------------------"
+	define e_min ?              <               Min Energy [keV] : > 
+	define e_max ?              <               Max Energy [keV] : > 
+	define what_yscale ?        <      Energy or Energy/m [e|me] : >
+	define add_orders ?         <          Orders [+/-/both/add] : >
+	define weight_by_spectrum ? < Weight by Spectral Shape [y/n] : >
+	echo "------------------------------------------------------------"
+
+	if( substr('$what_yscale',0,1) == 'e') { 
+	   define 8 "e"
+	   define labx "Energy [keV]"
+	} else {
+	   define 8 "me"
+	   define labx "Energy/m [keV]"
+	}
+
+	define laby "Effective Area [cm^2]"
+
+	#########################################
+	SUB_prepare_effarea_arrays $add_orders
+	#########################################
+
+	define area_min $($area_min/$areascal)
+	define area_max $($area_max/$areascal)
+
+	if( substr('$weight_by_spectrum',0,1) == 'y') { 
+	   define gg ? < Power law slope : > 
+	   spectral_weight gg=$gg e1=0.2 e2=10.0
+
+	   foreach 7 < 1 2 3 > {
+	      # set a$7 = a$7*Nnu_$7*de_$7
+	      # set b$7 = b$7*Nnu_$7*de_$7
+	      set a$7 = a$7*Nnu_$7
+	      set b$7 = b$7*Nnu_$7
+	   }
+	   define area_min $(1e-2/$areascal)
+	   define area_max $(65/$areascal)
+
+	   define laby "Spectrum weighted Effective Area [\propto cm^2/keV]"
+	   define labw "weighted on power law with \Gamma=$!gg"
+	} 
+
+	#----------------------------------------
+	window 1 -2 1 2 
+	limits $(lg($e_min)) $(lg($e_max)) $area_min $area_max
+	ticksize -1 0 0 0
+	notation -4 4 -4 4 
+	box 0 2 0 0
+
+	ctype 3 
+	ltype 0 connect (lg($8_p1)) a1
+	ltype 2 connect (lg($8_m1)) b1
+	ctype 4                       
+	ltype 0 connect (lg($8_p2)) a2
+	ltype 2 connect (lg($8_m2)) b2
+	ctype 5                       
+	ltype 0 connect (lg($8_p3)) a3
+	ltype 2 connect (lg($8_m3)) b3
+	ctype 2 
+
+	#----------------------------------------
+	window 1 -2 1 1 
+	limits $(lg($e_min)) $(lg($e_max)) $(lg($area_min)) $(lg($area_max)) 
+	ticksize -1 0 -1 0
+	notation -4 4 -2 2 
+	box 1 2 0 0
+	xlabel $labx
+
+	ltype 1 
+	define saveexp $expand
+	expand 0.9
+	foreach ll < 2 5 10 20 40 60 > {
+	    define em $(lg(12.4/$ll))
+	    relocate $em $fy1
+	    draw     $em $fy2
+	    relocate ( $xp $($gy2 - 300) )
+	    putlabel 3 $ll
+	}
+	ltype 0 
+	expand $saveexp
+
+	ctype 3 
+	ltype 0 connect (lg($8_p1)) (lg(a1))
+	ltype 2 connect (lg($8_m1)) (lg(b1))
+	ctype 4                             
+	ltype 0 connect (lg($8_p2)) (lg(a2))
+	ltype 2 connect (lg($8_m2)) (lg(b2))
+	ctype 5                             
+	ltype 0 connect (lg($8_p3)) (lg(a3))
+	ltype 2 connect (lg($8_m3)) (lg(b3))
+	ctype 2 
+	ltype 0
+
+	##########################
+	SUB_print_effarea_labels
+	##########################
+
+## SUB_prepare_effarea_arrays
+SUB_prepare_effarea_arrays 1
+
+        define case local
+        define case "$!1"
+
+	define ap local
+	define am local
+	define bp local
+	define bm local
+	define eps local
+
+	define eps (1e-9)
+
+	if( substr('$case',0,1) == 'p') { 
+	   define ap 1
+	   define am 0
+	   define bp 0
+	   define bm 0
+	   define titlestr2 "(+)"
+	}
+
+	if( substr('$case',0,1) == 'm') { 
+	   define ap 0
+	   define am 1
+	   define bp 0
+	   define bm 0
+	   define titlestr2 "(-)"
+	}
+
+	if( substr('$case',0,1) == 'a') { 
+	   define ap 1
+	   define am 1
+	   define bp 0
+	   define bm 0
+	   define titlestr2 "(+/- added)"
+	}
+
+	if( substr('$case',0,1) == 'b') { 
+	   define ap 1
+	   define am 0
+	   define bp 0
+	   define bm 1
+	   define titlestr2 "(+/- added)"
+	}
+
+	foreach 7 < 1 2 3 > {
+	   define areascal $(2/($ap+$am))
+	   set a$7 = $ap*area_p$7 + $am*area_m$7 + $eps
+	   set b$7 = $bp*area_p$7 + $bm*area_m$7 + $eps
+	   define titlestr2 "(+,-)"
+	}
+
+	define titlestr "LETG/ACIS - Orders 1,2,3 $!titlestr2"
+
+old_SUB_prepare_effarea_arrays 1
+
+        define case local
+        define case "$!1"
+
+	if( substr('$case',0,1) == 'p') { 
+	   foreach 7 < 1 2 3 > {
+	      set a$7 = area_p$7
+	      set b$7 = area_p$7*0 + 1e-9
+	      define areascal (2)
+	      define titlestr "LETG/ACIS - Orders 1,2,3 (+)"
+	   }
+	}
+
+	if( substr('$case',0,1) == 'm') { 
+	   foreach 7 < 1 2 3 > {
+	      set a$7 = area_m$7
+	      set b$7 = area_m$7*0 + 1e-9
+	      define areascal (2)
+	      define titlestr "LETG/ACIS - Orders 1,2,3 (-)"
+	   }
+	}
+
+	if( substr('$case',0,1) == 'a') { 
+	   foreach 7 < 1 2 3 > {
+	      set a$7 = area_$7
+	      set b$7 = area_$7*0 + 1e-9
+	      define areascal (1)
+	      define titlestr "LETG/ACIS - Orders 1,2,3 (+/- added)"
+	   }
+	}
+
+	if( substr('$case',0,1) == 'b') { 
+	   foreach 7 < 1 2 3 > {
+	      set a$7 = area_p$7
+	      set b$7 = area_m$7
+	      define areascal (2)
+	      define titlestr "LETG/ACIS - Orders 1,2,3 "
+	   }
+	}
+
+## SUB_print_effarea_labels
+SUB_print_effarea_labels
+
+	#----------------------------------------
+	window 1 1 1 1 
+	define saveexp $expand
+	relocate ( $($gx1 - 4000) $(0.5*($gy1+$gy2)) )
+	angle 90
+	expand 1.2
+	putlabel 5 $laby
+	angle 0
+	relocate ( $(0.5*($gx1+$gx2)) $($gy2+500 ) )
+	putlabel 5 $titlestr
+
+	define gystart 2750
+	define gystep   750
+	ctype 3 
+	relocate ( $($gx1 - 1000) $($gy1 - $gystart) )
+	draw     ( $($gx1 + 2000) $($gy1 - $gystart) )
+	relocate ( $($gx1 + 2550) $($gy1 - $gystart) )
+	putlabel 6 "order 1"
+
+	ctype 4 
+	relocate ( $($gx1 - 1000) $($gy1 - $gystart - $gystep) )
+	draw     ( $($gx1 + 2000) $($gy1 - $gystart - $gystep) )
+	relocate ( $($gx1 + 2550) $($gy1 - $gystart - $gystep) )
+	putlabel 6 "order 2" 
+
+	ctype 5 
+	relocate ( $($gx1 - 1000) $($gy1 - $gystart - 2.*$gystep) )
+	draw     ( $($gx1 + 2000) $($gy1 - $gystart - 2.*$gystep) )
+	relocate ( $($gx1 + 2550) $($gy1 - $gystart - 2.*$gystep) )
+	putlabel 6 "order 3" 
+	ctype 2
+
+	if( substr('$weight_by_spectrum',0,1) == 'y') { 
+	   ctype darkorange
+	   relocate ( $gx2 $($gy1 - $gystart - 2.*$gystep) )
+	   putlabel 4 $labw
+	}
+
+	expand $saveexp
+
+#--------------------------------------------------------------------------------
+# counts_cumulative
+counts_cumulative
+
+	data leg_all_counts.dat
+	read < ch 1 e1 2 e2 3 src_m1 4 src_p1 5 bkg_u_m1 6 bkg_d_m1 7 bkg_u_p1 8 bkg_d_p1 9 >
+	set ee = 0.5*(e1+e2)
+
+	data leg_p1_arf.dat
+	read < arf_p1 3 >
+
+	data leg_m1_arf.dat
+	read < arf_m1 3 >
+
+	define backscal ? < Background up/down scaling factor [e.g. 2.82] : >
+	define texp     ? <                            Exposure Time [ks] : >
+	define ecut_lo  ? <                MINimun Energy Threshold [keV] : >
+	define ecut_hi  ? <                MAXimun Energy Threshold [keV] : >
+
+	set src_p1 = src_p1   if( ee >= $ecut_lo && ee <= $ecut_hi )
+	set src_m1 = src_m1   if( ee >= $ecut_lo && ee <= $ecut_hi )
+	set e      = ee       if( ee >= $ecut_lo && ee <= $ecut_hi )
+
+	set bkg_p1 = (bkg_u_p1 + bkg_d_p1)/(2.*$backscal)
+	set bkg_m1 = (bkg_u_m1 + bkg_d_m1)/(2.*$backscal)
+
+	define tot_counts_src_p1 $(sum(src_p1))
+	define tot_counts_src_m1 $(sum(src_m1))
+
+	set src = src_p1 + src_m1
+	define tot_counts_src $(sum(src))
+
+	set src_p1_c = cumulate(src_p1)
+	set src_m1_c = cumulate(src_m1)
+	set bkg_p1_c = cumulate(bkg_p1)
+	set bkg_m1_c = cumulate(bkg_m1)
+	set src_c    = cumulate(src)
+
+	set arf_p1_c = cumulate(arf_p1)
+	set arf_m1_c = cumulate(arf_m1)
+
+	vecminmax src_p1_c tmp max_src_p1_c 
+	vecminmax src_m1_c tmp max_src_m1_c
+	vecminmax src_c    tmp max_src_c   
+	vecminmax arf_p1_c tmp max_arf_p1_c
+	vecminmax arf_m1_c tmp max_arf_m1_c
+
+	set src_p1_c_norm = src_p1_c/$max_src_p1_c
+	set src_m1_c_norm = src_m1_c/$max_src_m1_c
+	set src_c_norm    = src_c/$max_src_c
+	set arf_p1_c_norm = arf_p1_c/$max_arf_p1_c
+	set arf_m1_c_norm = arf_m1_c/$max_arf_m1_c
+
+	limits 0.1 10. -0.05 1.05
+	limits $(lg(0.2)) 1 -0.05 1.05
+	ticksize  0 0 0 0 
+	ticksize  -1 5 0 0 
+	ctype 2 
+	box 1 2 0 0 
+	lweight 1.5 ctype 4 ltype 1 
+	grid 2 0 
+	ltype 0 ctype 2 lweight 3 
+	box 0 2
+
+	ylabel  Fraction of events 
+	relocate ( $(0.5*($gx1+$gx2))  $($gy1 - 2500) )
+	putlabel 5 Energy
+
+	ltype 0
+	lweight 5 
+	ctype 4 connect (lg(e)) src_c_norm
+	ltype 0
+	lweight 3 
+	ctype 3 connect (lg(e)) src_p1_c_norm
+	ctype 5 connect (lg(e)) src_m1_c_norm
+	# ltype 2
+	# ctype 7 connect (lg(e)) arf_p1_c_norm
+	# ctype 6 connect (lg(e)) arf_m1_c_norm
+	# ltype 0 
+
+	ctype 0
+
+	#----------------------------------------
+	define fstep ? < Step for computing fractions [%]: >
+	set fractions=0.00,1.00,$($fstep/100.)
+	set tmp local
+	foreach frac fractions {
+	   set tmp = e  if( src_c_norm >= $frac )
+	   # echo $(sprintf('%4.2f',$frac)) $(sprintf('%6.3f',$(tmp[0])))
+	   if( $frac < 0.01 ) {
+	      set tmp_f = < $(1.0*$frac) >
+	      set tmp_e = < $(tmp[0]) >
+	   } else {
+	      set tmp_f = tmp_f CONCAT < $(1.0*$frac) >
+	      set tmp_e = tmp_e CONCAT < $(tmp[0]) >
+	   }
+	}
+	print '  Fraction    %4.2f @  %6.3f  keV\n' < tmp_f tmp_e >
+
+	echo "----------------------------------------"
+	echo "  Total counts +1 : "$tot_counts_src_p1
+	echo "  Total counts -1 : "$tot_counts_src_m1
+	echo "  Total counts    : "$tot_counts_src
+	echo "----------------------------------------"
+	echo "  Exposure Time   : "$texp" ks"
+	echo "  "$fstep"% of counts is : "$($tot_counts_src*($fstep/100.))
+	echo "  "$fstep"% count rate   : "$($tot_counts_src*($fstep/100.)/($texp*1000.))
+	define fracerr100 $(100./sqrt(100.*$tot_counts_src*($fstep/100.)/($texp*1000.)))
+	define fracerr200 $(100./sqrt(200.*$tot_counts_src*($fstep/100.)/($texp*1000.)))
+	define fracerr500 $(100./sqrt(500.*$tot_counts_src*($fstep/100.)/($texp*1000.)))
+	echo " 100s bins error  : "$(sprintf('%4.1f',$fracerr100))" %"
+	echo " 200s bins error  : "$(sprintf('%4.1f',$fracerr200))" %"
+	echo " 500s bins error  : "$(sprintf('%4.1f',$fracerr500))" %"
+	echo "----------------------------------------"
+
+	#----------------------------------------
+	# plotting fractions
+	#----------------------------------------
+	ptype 3 0 
+	ctype 2 
+	points (lg(tmp_e)) tmp_f
+
+	ltype 1 
+	do 9=0,dimen(tmp_e)-1 {
+	   relocate $(lg(tmp_e[$9])) -0.2
+	   draw     $(lg(tmp_e[$9])) $(tmp_f[$9])
+	}
+	ltype 0
+	
+	#----------------------------------------
+	# printing fraction labels
+	#----------------------------------------
+	window 1 1 1 1 
+	define saveexp $expand
+
+	expand 0.8
+	define gystart $($gy2 - 500)
+	define gystep   650
+	relocate ( $($gx1 + 250) $gystart )
+	putlabel 6 " Frac.  Energy"
+
+	do 9=0,dimen(tmp_e)-1 {
+	   relocate ( $($gx1 + 450) $($gystart - ($9+1)*$gystep) )
+	   putlabel 6  $(sprintf('%4.2f  ',$(tmp_f[$9]))) $(sprintf('%6.3f',$(tmp_e[$9])))
+	}
+
+	expand 1.1
+	define gystart 2750
+	define gystep   750
+	ctype 3 
+	relocate ( $($gx1 - 1000) $($gy1 - $gystart) )
+	draw     ( $($gx1 + 2000) $($gy1 - $gystart) )
+	relocate ( $($gx1 + 2550) $($gy1 - $gystart) )
+	putlabel 6 "order +1"
+
+	ctype 5 
+	relocate ( $($gx1 - 1000) $($gy1 - $gystart - $gystep) )
+	draw     ( $($gx1 + 2000) $($gy1 - $gystart - $gystep) )
+	relocate ( $($gx1 + 2550) $($gy1 - $gystart - $gystep) )
+	putlabel 6 "order -1" 
+
+	ctype 4 
+	relocate ( $($gx1 - 1000) $($gy1 - $gystart - 2.*$gystep) )
+	draw     ( $($gx1 + 2000) $($gy1 - $gystart - 2.*$gystep) )
+	relocate ( $($gx1 + 2550) $($gy1 - $gystart - 2.*$gystep) )
+	putlabel 6 "orders +/-1" 
+	ctype 2
+
+	relocate ( $($gx2 - 200) $($gy1 - $gystart - 2.*$gystep) ) 
+	putlabel 4 "Energy range: $!ecut_lo - $!ecut_hi keV"
+	ctype 2
+
+	expand $saveexp
+
+
+#--------------------------------------------------------------------------------
+# check_bands
+check_bands
+
+	define mnCH ? < First Included REAL channel :> 
+	define mxCH ? < Last  Included REAL channel :> 
+
+	define minCH ( $mnCH - 4 )
+	define maxCH ( $mxCH - 4 )
+
+	set tmps1 = soft_df
+	set tmps2 = soft_df
+	shift tmps1 +1
+	shift tmps2 -1
+	set tmps1 = 0.5*(tmps1 + soft_df)
+	set tmps2 = 0.5*(tmps2 + soft_df)
+
+	set tmph1 = hard_df
+	set tmph2 = hard_df
+	shift tmph1 +1
+	shift tmph2 -1
+	set tmph1 = 0.5*(tmph1 + hard_df)
+	set tmph2 = 0.5*(tmph2 + hard_df)
+
+	set good_soft   = soft_df   if( soft_n >= $minCH && soft_n <= $maxCH )
+	set tmps1       = tmps1     if( soft_n >= $minCH && soft_n <= $maxCH )
+	set tmps2       = tmps2     if( soft_n >= $minCH && soft_n <= $maxCH )
+	set good_soft_e = soft_e    if( soft_n >= $minCH && soft_n <= $maxCH )
+	set good_soft_e1= soft_e1   if( soft_n >= $minCH && soft_n <= $maxCH )
+	set good_soft_e2= soft_e2   if( soft_n >= $minCH && soft_n <= $maxCH )
+
+	set good_hard   = hard_df   if( hard_n >= $minCH && hard_n <= $maxCH )
+	set tmph1       = tmph1     if( hard_n >= $minCH && hard_n <= $maxCH )
+	set tmph2       = tmph2     if( hard_n >= $minCH && hard_n <= $maxCH )
+	set good_hard_e = hard_e    if( hard_n >= $minCH && hard_n <= $maxCH )
+	set good_hard_e1= hard_e1   if( hard_n >= $minCH && hard_n <= $maxCH )
+	set good_hard_e2= hard_e2   if( hard_n >= $minCH && hard_n <= $maxCH )
+
+	define sum_soft ( sum(good_soft) )
+	define sum_hard ( sum(good_hard) )
+
+	define baryE_soft     ( sum(good_soft*good_soft_e)/$sum_soft )
+	define baryE_soft_alt ( sum(tmps1*good_soft_e1+tmps2*good_soft_e2)/(sum(tmps1)+sum(tmps2)) )
+	define baryE_hard     ( sum(good_hard*good_hard_e)/$sum_hard )
+	define baryE_hard_alt ( sum(tmph1*good_hard_e1+tmph2*good_hard_e2)/(sum(tmph1)+sum(tmph2)) )
+
+	set dums local
+	set dumh local
+	set dums = < $sum_soft $baryE_soft $baryE_soft_alt \
+	              $(good_soft_e1[0]) $(good_soft_e2[$(dimen(good_soft)-1)]) >
+	set dumh = < $sum_hard $baryE_hard $baryE_hard_alt \
+	              $(good_hard_e1[0]) $(good_hard_e2[$(dimen(good_hard)-1)]) >
+	set dumt = < "Fraction"  "<E>"  "<E>_alt" "E_min" "E_max"  > 
+
+	echo "----------------------------------------------"
+	echo "                   Soft       Hard "
+	echo "                 Spectrum   Spectrum  "
+	echo "----------------------------------------------"
+	define print_noheader 1 
+	print ' %12s:   %7.3f    %7.3f\n' < dumt dums dumh >
+	echo "----------------------------------------------"
+	define print_noheader 0
+
+#--------------------------------------------------------------------------------

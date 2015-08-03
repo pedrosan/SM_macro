@@ -1,0 +1,609 @@
+#---------------------------------------------------------------------------
+# help.plotcont
+help.plotcont
+
+	echo " * read_matrix "
+	echo " * read_matrix_renorm "
+	echo " * define_image "
+	echo " * plot_grey      [<shade-colour>] [<contours-colour>] "
+	echo " * matrix2file1   <root-matrix-name> <#-of-vectors>   "
+	echo " * matrix2file2   <root-matrix-name> <#-of-vectors> "
+	echo " * save_image      "
+	echo " * read_image      "
+
+#---------------------------------------------------------------------------
+# read_matrix
+read_matrix
+
+	define datafile ? { Name .##. of data file : }
+	data "matrix.$!datafile.output"
+
+	define many_x read 1 1 
+	define min_x  read 1 2 
+	define max_x  read 1 3 
+
+	define many_y read 1 4 
+	define min_y  read 1 5 
+	define max_y  read 1 6 
+
+	define many_x ? { How many X components ?}
+	define many_y ? { How many Y components ?}
+
+	delete x
+	delete y
+
+	read row x 5
+
+	echo * X vector : $(dimen(x))
+	lines 6 $($many_y + 5)
+	read y 1
+	echo * Y vector : $(dimen(y))
+
+	define min1 $min_x
+	define max1 $max_x
+	define min2 $min_y
+	define max2 $max_y
+
+	echo * X : $min1 - $max1
+	echo * Y : $min2 - $max2
+	
+	image ($(dimen(x)),$(dimen(y))) $min1 $max1 $min2 $max2
+
+	do 1=1,$many_y {
+	   lines 6 $($many_y + 5)
+	   read mat_x_$1 $($1+1) 
+	}
+
+	echo --------------------------------------------
+	echo * the matrix is : $(dimen(x)) X $(dimen(y))
+	echo --------------------------------------------
+
+	define mindeep (10000)
+	define maxdeep (-1000)
+
+	do 1=0,$(dimen(x)-1) {
+	  do 2=0,$(dimen(y)-1) {
+
+	    define 3 $($1+1)
+	    define dum ($(mat_x_$3[$2]))
+	    if($dum > $maxdeep)              {define maxdeep $dum}
+	    if($dum < $mindeep && $dum > 0 ) {define mindeep $dum}
+	    set image[$1,$2] = $dum
+
+	  }
+	}
+
+	echo Image Depth: $mindeep $maxdeep
+
+	define print ? { Print [y/n] : }
+	if( substr('$print',0,1) == 'y' ) {
+	   plot_grey
+	}
+
+#---------------------------------------------------------------------------
+# read_matrix_renorm
+read_matrix_renorm
+
+	define datafile ? { Name .##. of data file : }
+	data "matrix.$!datafile.output"
+
+	define many_x read 1 1 
+	define min_x  read 1 2 
+	define max_x  read 1 3 
+
+	define many_y read 1 4 
+	define min_y  read 1 5 
+	define max_y  read 1 6 
+
+	define many_x ? { How many X components ?}
+	define many_y ? { How many Y components ?}
+
+	delete x
+	delete y
+
+	read row x 5
+
+	echo * X vector : $(dimen(x))
+	lines 6 $($many_y + 5)
+	read y 1
+	echo * Y vector : $(dimen(y))
+
+	define min1 $min_x
+	define max1 $max_x
+	define min2 $min_y
+	define max2 $max_y
+
+	echo * X : $min1 - $max1
+	echo * Y : $min2 - $max2
+
+	#-------------------------------------------------------
+	
+	define integral (0)
+	set dum_idx_x = 1,$many_y,1
+	set dum_idx_x = 0*dum_idx_y + 1
+	set dum_idx_y = 1,$many_y,1
+
+	echo how many Y: $many_y
+
+	do 1=1,$many_y {
+	   lines 6 $($many_y + 5)
+	   read mat_x_$1 $($1+1) 
+
+	   set dum_idx_x = 0*dum_idx_x + $1
+	   if( $1 == 1 ) {
+	      set mat_array = mat_x_$1
+	      set mat_x     = dum_idx_x
+	      set mat_y     = dum_idx_y
+	   } else {
+	      set mat_array = mat_array CONCAT mat_x_$1
+	      set mat_x     = mat_x CONCAT dum_idx_x
+	      set mat_y     = mat_y CONCAT dum_idx_y
+	   }
+	   define integral ($integral + sum(mat_x_$1))
+
+	}
+	define integral2 ( sum(mat_array) )
+
+	sort < mat_array mat_x mat_y >
+	set cumul_array = cumulate(mat_array)/sum(mat_array)
+
+	echo --------------------------------------------
+	echo * the matrix is : $(dimen(x)) X $(dimen(y))
+	echo * The Integral is: $integral
+	echo * The Integral is: $integral2
+	echo --------------------------------------------
+
+	define mindeep (10000)
+	define maxdeep (-1000)
+
+	#
+	# arrays mat_x_* are numbered from 1 up,
+	#  but their component are numbered starting from 0
+	#
+	echo Dimension of Cumulative Array: $(dimen(cumul_array))
+	echo Dimension of Cumulative X    : $(dimen(mat_x))
+	echo Dimension of Cumulative Y    : $(dimen(mat_y))
+
+	#-----------------------------------------------------------------
+	# stuff needed to contruct the image/matrix
+	# Arrays:
+	#   { mat_x_** }
+	#   x / y / mat_x / mat_y / cumul_array
+	#
+	# Variables:
+	#   $many_x $many_y $min1 $max1 $min2 $max2
+	#-----------------------------------------------------------------
+
+	echo ---------------------------------------------------
+	define vecname $datafile
+	define vecname ? { Name to use to save the matrix : }
+	echo * Saving the matrix with the new name
+	do 1=1,$many_x { 
+	   set mat_x_$1_$vecname = mat_x_$1
+	   delete mat_x_$1
+	}
+
+	echo * Saving the auxiliary arrays with the new name
+	foreach 1 < x y mat_x mat_y cumul_array > {
+	   set $1_$vecname = $1 
+	   echo Dimension of (renamed) $1    : $(dimen($1_$vecname))
+	   delete $1
+	}
+
+	echo * Saving the auxiliary variables with the new name
+	foreach 1 < many_x many_y min1 max1 min2 max2 > {
+	   # echo $$1
+	   define $1_$vecname ( $$1 )
+	   # echo --> $$1_$vecname
+	   define $1 delete
+	}
+	echo ---------------------------------------------------
+
+#------------------------------------------------------------------------------
+# define_image [<shade-colour>] [<contours-colour>] [<l-type>]
+define_image 03
+
+	if($?1) {
+	  define shade_col $1
+	  define cont_col  $2
+	  define line_type $3
+	} else {
+	  define shade_col " "
+	  define cont_col  " "
+	  define line_type " "
+	}
+
+	define vecname ? { Name for matrix to be loaded : }
+
+	echo * Reading the auxiliary variables
+	foreach 1 < many_x many_y min1 max1 min2 max2 > {
+	   # echo $$1_$vecname
+	   define $1 ( $$1_$vecname )
+	   # echo $1 = $$1
+	}
+
+	echo * Reading the matrix arrays
+	do 1=1,$many_x { 
+	   set mat_x_$1 = mat_x_$1_$vecname
+	}
+
+	echo * Reading the auxiliary arrays 
+	foreach 1 < x y mat_x mat_y cumul_array > {
+	   set $1 = $1_$vecname 
+	   echo Dimension of (renamed) $1 : $(dimen($1))
+	}
+
+	#-------------------------------------------------------
+	# Fils up the matrix/image itself from the arrays
+	#
+	echo * Defining the Matrix layout: $(dimen(x)) $(dimen(y)) $min1 $max1 $min2 $max2
+	image ($(dimen(x)),$(dimen(y))) $min1 $max1 $min2 $max2
+
+	do 9=0,$(dimen(cumul_array)-1) {
+	    define 1 $(mat_x[$9])
+	    define 2 $(mat_y[$9])
+
+	    # define dum ($(mat_x_$1[$($2-1)]))
+	    define dum ($(cumul_array[$9]))
+
+	    if($dum > $maxdeep)              {define maxdeep $dum}
+	    if($dum < $mindeep && $dum > 0 ) {define mindeep $dum}
+	    set image[$($1-1),$($2-1)] = $dum
+
+	}
+	# echo Image Depth: $mindeep $maxdeep
+
+	define print ? { Print [y/n] : }
+	if( substr('$print',0,1) == 'y' ) {
+	   plot_grey  $shade_col $cont_col $line_type
+	}
+
+#---------------------------------------------------------------------------
+# plot_grey [<shade-colour>] [<contours-colour>] [<l-type>]
+plot_grey  03
+
+
+	location 6000 30000 6000 30000
+
+	define what_scale ? { LIN [1] or LOG [2] Vertical Scale ? }
+
+	set gldum1 = {0.01 0.1 0.25 0.5 0.75 0.9 0.95 0.99 }
+	set gldum2 = {0.001 0.005 0.01 0.1 0.25 0.5 0.9 0.95 0.99 }
+	echo * The pre-defined levels are at :
+	print '    %5.3f    %5.3f  \n ' { gldum1 gldum2 }
+
+	echo * Which set of levels do you prefer ? [0/1/2]
+	define change ? { Type '0' if you wish to change them ? [y/n] }
+	
+	if($change == 0) {
+	   define str_gl ? { New level vector  : }
+	   set gldum = < $!str_gl >
+	} else { 
+	   set gldum = gldum$change
+	}
+
+	if($what_scale == 1) {
+	   # define levstep ( ($maxdeep-$mindeep)/9. )
+	   # set gl=$mindeep,$maxdeep,$levstep
+	} else {
+	   # define levstep ( (lg($maxdeep))/9. )
+	   # set gg = 0,lg($maxdeep),$levstep
+	   # set gg = lg($maxdeep)*gldum
+	   # # set gg = lg($maxdeep)*{0.01 0.1 0.25 0.5 0.75 0.9 0.95 0.99 }
+	   # set gl = 10.**gg
+	   # set gl = { 0.0 } concat gl
+	}
+
+	set gl = gldum
+	print < gl >
+	glevels gl
+	levels gl
+
+	ctype 2
+
+	define whatbox ? { Do you want to use the "boxing" limits ? [y/n] }
+
+	if(substr('$whatbox',0,1) == 'y') { 
+	    limits $min1 $max1 $min2 $max2 
+	    ticksize 0 0 0 0
+	    lweight 3 
+	    ctype 2 
+	    expand 1.5
+	    box 
+	    define labelon ? {Do you want to put labels ? [y/n] }
+	    if(substr('$labelon',0,1) == 'y') { 
+	       define lab_x ? { X-label ? }
+	       define lab_y ? { Y-label ? }
+	       expand 2.5
+	       xlabel $lab_x
+	       ylabel $lab_y
+	       expand 1.5
+	    }
+	}
+
+	if(substr('$whatbox',0,1) == 'n') { 
+	    define yourlim ? { Give me your limits x1 x2 y1 y2 in a row :}
+	    limits $yourlim
+	    ticksize 0 0 0 0
+	    lweight 3 
+	    ctype 2 
+	    expand 1.5
+	    box 
+	    define labelon ? {Do you want to put labels ? [y/n] }
+	    if(substr('$labelon',0,1) == 'y') { 
+	       define lab_x ? { X-label ? }
+	       define lab_y ? { Y-label ? }
+	       expand 2.5
+	       xlabel $lab_x
+	       ylabel $lab_y
+	       expand 1.5
+	    }
+	}
+
+	if($?1) { 
+	if($1 != 0) { 
+	   ctype $1 
+	   greyscale 150 150 6
+	}
+	}
+	if($?2) { ctype $2 }
+	ltype 0
+	if($?3) { ltype $3 }
+	lweight 4
+	contour
+	ltype 0
+
+	# if($what_scale == 2) {
+	#   relocate ( $gx1 $($gy2+700) )
+	#   putlabel 6 Logarithmic Levels
+	# } else {
+	#   relocate ( $gx1 $($gy2+700) )
+	#   putlabel 6 Linearly spaced Levels
+	# }
+
+#---------------------------------------------------------------------------
+# save_image
+# 	print the currently stored image 
+# 	First step : download it in a set of vectors, mimicking a matrix.
+# 	Then print the matrix [ $1  (given as $1_0 $1_1 etc -- see minv) ]
+save_image
+	
+	set xx = 0,$($many_y-1)
+	set yy = 0,$($many_y-1)
+
+	do i=0,$(dimen(xx)-1) {
+	  set u_$i=image(xx[$i],yy)
+	}
+
+	do 1=0,9 {
+	  if ($?(u_$1)) { set u_0$1 = u_$1 }
+	}
+
+	echo -- $(dimen(xx)) vectors 'u_\#' have been created
+	set dimen(aux_matrix)= 10
+
+	set aux_matrix[0] = $min1
+	set aux_matrix[1] = $max1
+	set aux_matrix[2] = $step1
+	set aux_matrix[3] = $min2
+	set aux_matrix[4] = $max2
+	set aux_matrix[5] = $step2
+	set aux_matrix[6] = $scale1
+	set aux_matrix[7] = $scale2
+	set aux_matrix[8] = $bonus1
+	set aux_matrix[9] = $bonus2
+	echo -- the vector 'aux_matrix[10]' has been created loading
+	echo    min1,max1,step1,min2,max2,step2,scale1,scale2,bonus1,bonus2
+	echo 
+
+#---------------------------------------------------------------------------
+# matrix2file1 <root-matrix-name> <#-of-vectors>  
+matrix2file1 2
+
+	define 3 < $1_0>             # $3 e` la lista di nomi dei vettori
+	define 4 < %6.3g>            # $4 e` la lista del format
+	echo * $3
+	print { $!!3 }
+	echo * $4
+
+	define filebase ? {Base name for the set of files to be written ...}
+	define 7 $filebase
+
+	print   $7_aux '%6.3g ' < aux_matrix > 
+	write + $7_aux  \n
+	print + $7_aux '%6.3g ' < xx >   
+	write + $7_aux  \n
+	print + $7_aux '%6.3g ' < yy >   
+
+	if( $2 <= 10 ) {
+
+	   do k=1,($2-1) {
+	      define 3 <$3 $1_$k> 
+	      define 4 <$4 %6.3g>
+	      echo * [$k]
+	      echo * $3
+	      echo * $4
+	   }
+	   echo * -------------
+	   echo * PRONI !
+	   echo * $3
+	   echo * $4
+	   print '$4\n' < $3 >   
+	   echo $7_data_1.1
+	   print $7_data_1.1 '$4\n' < $3 >   
+	}
+
+	if( $2 > 10 ) {
+
+	   define parts (int($2/10))
+	   define rest  ($2-10*int($2/10))
+	   if($rest == 0) {define max (9)} else {define max ($2-1-10*$parts)}
+	   if($rest == 0) {define tot ($parts)} else {define tot ($parts+1)}
+	   echo * parts = $parts
+	   echo * max   = $max
+
+	   do 5=1,9 {
+	      define 3 <$3 $1_$5> 
+	      define 4 <$4 %6.3g>
+   	   }
+	   print '$4\n' < $3 >   
+	   print $7_data_1.$tot  '$4\n' < $3 >   
+
+	   if($tot > 2) {
+	   do 6=1,($tot-2) {
+	      echo * sei = $6
+	      define 3 < $1_$60>
+	      define 4 < %6.3g>
+
+	      do 5=1,9 {
+	         define 3 <$3 $1_$6$5> 
+	         define 4 <$4 %6.3g>
+	      }
+	      print '$4\n' < $3 >   
+	      print $7_data_$($6+1).$tot '$4\n' < $3 >   
+	   }
+	   }
+
+	   define 3 < $1_""$($tot-1)""0>
+	   define 4 < %6.3g>
+
+	   do 5=1,$max {
+	      define 3 <$3 $1_""$($tot-1)""$5> 
+	      define 4 <$4 %6.3g>
+	   }
+	   print '$4\n' < $3 >   
+	   print $7_data_""$tot"".$tot '$4\n' < $3 >   
+
+	}
+
+#---------------------------------------------------------------------------
+# matrix2file2 <root-matrix-name> <#-of-vectors>  
+matrix2file2 2
+
+	define 3 < $1_0>             # $3 e` la lista di nomi dei vettori
+	define 4 < %6.3g>            # $4 e` la lista del format
+	echo * $3
+	print { $!!3 }
+	echo * $4
+
+	define filebase ? { Base name for the set of files to be written ...}
+	define 7 $filebase
+
+	print   $7_aux '%6.3g ' < aux_matrix > 
+	write + $7_aux  \n
+	print + $7_aux '%6.3g ' < xx >   
+	write + $7_aux  \n
+	print + $7_aux '%6.3g ' < yy >   
+
+	define parts (int($2/10))
+	define rest  ($2-10*int($2/10))
+	if($rest == 0) {define max (9)} else {define max ($2-1-10*$parts)}
+	if($rest == 0) {define tot ($parts)} else {define tot ($parts+1)}
+	echo * parts = $parts
+	echo * tot   = $tot  
+	echo * max   = $max
+
+	if($tot > 1) {
+	do 6=0,($tot-2) {
+	   echo * sei = $6
+	   define 3 < $1_$60>
+	   define 4 < %6.3g>
+
+	   do 5=1,9 {
+	      define 3 <$3 $1_$6$5> 
+	      define 4 <$4 %6.3g>
+	   }
+	   print '$4\n' < $3 >   
+	   print $7_data_$($6+1).$tot '$4\n' < $3 >   
+	}
+	}
+
+	define 3 < $1_""$($tot-1)""0>
+	define 4 < %6.3g>
+
+	do 5=1,$max {
+	   define 3 <$3 $1_""$($tot-1)""$5> 
+	   define 4 <$4 %6.3g>
+	}
+	print '$4\n' < $3 >   
+	print $7_data_""$tot"".$tot '$4\n' < $3 >   
+
+
+#---------------------------------------------------------------------------
+# read_image
+read_image 
+
+	define filebase ? {Base name for the set of files to be read...}
+	define 1 $filebase
+
+	data $1_aux
+	read row daux 3 
+	read row dx   6 
+	read row dy   9 
+
+	define 2 (dimen(dx))
+	echo * $2
+
+	define parts (int($2/10))
+	define rest  ($2-10*int($2/10))
+	if($rest == 0) {define tot ($parts)} else {define tot ($parts+1)}
+	if($rest == 0) {define max (9)} else {define max ($2-1-10*$parts)}
+	echo * parts = $parts
+	echo * tot   = $tot  
+	echo * max   = $max
+
+	if( $tot > 1 ) {
+	   do 3=0,($tot-2) {
+	      data $1_data_$($3+1).$tot
+	      do 4=0,9 {
+	         read dv_$3$4 $($4+1)
+	      }
+	   }
+	}
+
+	data $1_data_""$tot"".$tot
+	do 4=0,$max {
+	   read dv_$($tot-1)$4 $($4+1)
+	}
+
+	#-------------------------------------------------------------------
+	# readimasub
+	
+	if($tot >= 1) {
+	  foreach k (0 1 2 3 4 5 6 7 8 9) {
+	     echo * $k
+	     set dv_$k = dv_0$k
+	  }
+	} else {
+	  do k=0,$max {
+	     echo * $k
+	     set dv_$k = dv_0$k
+	  }
+	} 
+
+
+	#-------------------------------------------------------------------
+	# stophere
+
+	image($(dimen(dx)),$(dimen(dy))) $(daux[0]) $(daux[1]) $(daux[3]) $(daux[4]) 
+
+	define maxdeep (1)
+	define mindeep (0.5)
+
+	do 5=0,$(dimen(dx)-1) { 
+	  do 6=0,$(dimen(dy)-1) { 
+	    echo * [$5,$6]  $(dv_$5[$6])
+	    if(dv_$5[$6] > $maxdeep)                  {define maxdeep $(dv_$5[$6])}
+	    if(dv_$5[$6] < $mindeep && dv_$5[$6] > 0) {define mindeep $(dv_$5[$6])}
+	    set image($5,$6) = dv_$5[$6]
+ 	  }
+	}
+	echo * Minimum : $mindeep
+	echo * Maximum : $maxdeep
+
+	define min1 $(daux[0])
+	define max1 $(daux[1])
+	define min2 $(daux[3])
+	define max2 $(daux[4])
+
+#---------------------------------------------------------------------------

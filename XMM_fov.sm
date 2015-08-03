@@ -1,0 +1,271 @@
+#---------------------------------------------------------------------------
+# xmm_fov
+xmm_fov
+
+	window 1 1 1 1
+	location 6000 31000 6000 31000
+	ctype 2 
+	lweight 3
+
+	define zoomfac ? { Zoom factor ? }
+	define scale (14/$zoomfac)
+
+	limits $scale -$scale -$scale $scale
+	ticksize 0 0 0 0 
+	expand 1.5
+	box
+	xlabel "\Delta  R.A.     [arcmin]"
+	ylabel "\Delta  dec.    [arcmin]"
+
+	define x_off ? { Pointing RA-offset : }
+	define y_of  ? { Pointing DEC-offset : }
+	define y_off (-$y_of)
+	define rol   ? { Angle : }
+	define roll (-$rol/57.29578)
+
+	define target_ra  166.1138
+	define target_dec  38.2088
+
+	define wndsize ? { Size of the OM fast window ? [arcmin] }
+
+	echo ---------------------------------------------
+	echo  target RA  : $target_ra
+	echo  target dec : $target_dec
+	echo ---------------------------------------------
+	echo  Pointing RA  : $($target_ra+$x_off/60.)
+	echo  Pointing dec : $($target_dec-$y_off/60.)
+	echo  Total Offset : $(sqrt($x_off**2+$y_off**2))
+	echo ---------------------------------------------
+
+	# set field_src_ra  = < 166.13 166.183 >
+	# set field_src_dec = < 38.2413 38.2466 >
+	set field_src_ra  = < 166.13 >
+	set field_src_dec = < 38.2413 >
+	set field_src_ra  = (field_src_ra - $target_ra)*60
+	set field_src_dec = (field_src_dec - $target_dec)*60
+
+	ltype 1
+	circle $(field_src_ra[0]) $(field_src_dec[0]) 1
+	circle 0 0 1
+	ltype 0
+
+
+	expand 3 lweight 2.5
+	ptype 6 1  ctype 3 
+	points field_src_ra field_src_dec
+	ctype 2 
+	lweight 3
+
+	limits -$scale $scale -$scale $scale
+
+	define x1_wnd (-$wndsize/2 )
+	define x2_wnd ( $wndsize/2 )
+	define y1_wnd (-$wndsize/2 )
+	define y2_wnd ( $wndsize/2 )
+
+	define x1_wnd2 (-($wndsize+32.0/60.0)/2 )
+	define x2_wnd2 ( ($wndsize+32.0/60.0)/2 )
+	define y1_wnd2 (-($wndsize+32.0/60.0)/2 )
+	define y2_wnd2 ( ($wndsize+32.0/60.0)/2 )
+
+	define x1_mos (-5.45  )
+	define x2_mos ( 5.45  )
+	define y1_mos (-5.45  )
+	define y2_mos ( 5.45  )
+
+	define x1_pn  (-1.5  )
+	define x2_pn  (12.1  )
+	define y1_pn  (-1.5  )
+	define y2_pn  ( 2.9  )
+
+	define x1_om  (-2.12  )
+	define x2_om  ( 2.12  )
+	define y1_om  (-2.12  )
+	define y2_om  ( 2.12  )
+
+	define x1_rgs  (-3.   )
+	define x2_rgs  ( 3.   )
+	define y1_rgs  (-100  )
+	define y2_rgs  ( 100  )
+
+	relocate 0 0 
+	expand 3 lweight 4 ctype 3 angle 45
+	ptype 4 1 
+	dot
+	# expand 2.5 lweight 2.5 
+	# ptype 20 0 
+	# dot 
+	angle 0 ctype 2 lweight 3 expand 1.5
+
+	define xr1_wnd  (  $x1_wnd*cos($roll) + $y1_wnd*sin($roll) ) 
+ 	define yr1_wnd  ( -$x1_wnd*sin($roll) + $y1_wnd*cos($roll) ) 
+	define xr2_wnd  (  $x2_wnd*cos($roll) + $y2_wnd*sin($roll) ) 
+	define yr2_wnd  ( -$x2_wnd*sin($roll) + $y2_wnd*cos($roll) ) 
+	define xr3_wnd  (  $x2_wnd*cos($roll) + $y1_wnd*sin($roll) ) 
+ 	define yr3_wnd  ( -$x2_wnd*sin($roll) + $y1_wnd*cos($roll) ) 
+	define xr4_wnd  (  $x1_wnd*cos($roll) + $y2_wnd*sin($roll) ) 
+	define yr4_wnd  ( -$x1_wnd*sin($roll) + $y2_wnd*cos($roll) ) 
+
+	define xr1_wnd2  (  $x1_wnd2*cos($roll) + $y1_wnd2*sin($roll) ) 
+ 	define yr1_wnd2  ( -$x1_wnd2*sin($roll) + $y1_wnd2*cos($roll) ) 
+	define xr2_wnd2  (  $x2_wnd2*cos($roll) + $y2_wnd2*sin($roll) ) 
+	define yr2_wnd2  ( -$x2_wnd2*sin($roll) + $y2_wnd2*cos($roll) ) 
+	define xr3_wnd2  (  $x2_wnd2*cos($roll) + $y1_wnd2*sin($roll) ) 
+ 	define yr3_wnd2  ( -$x2_wnd2*sin($roll) + $y1_wnd2*cos($roll) ) 
+	define xr4_wnd2  (  $x1_wnd2*cos($roll) + $y2_wnd2*sin($roll) ) 
+	define yr4_wnd2  ( -$x1_wnd2*sin($roll) + $y2_wnd2*cos($roll) ) 
+
+	define xr1_mos  (  $x1_mos*cos($roll) + $y1_mos*sin($roll) - $x_off ) 
+ 	define yr1_mos  ( -$x1_mos*sin($roll) + $y1_mos*cos($roll) - $y_off ) 
+	define xr2_mos  (  $x2_mos*cos($roll) + $y2_mos*sin($roll) - $x_off ) 
+	define yr2_mos  ( -$x2_mos*sin($roll) + $y2_mos*cos($roll) - $y_off ) 
+	define xr3_mos  (  $x2_mos*cos($roll) + $y1_mos*sin($roll) - $x_off ) 
+ 	define yr3_mos  ( -$x2_mos*sin($roll) + $y1_mos*cos($roll) - $y_off ) 
+	define xr4_mos  (  $x1_mos*cos($roll) + $y2_mos*sin($roll) - $x_off ) 
+	define yr4_mos  ( -$x1_mos*sin($roll) + $y2_mos*cos($roll) - $y_off ) 
+
+	define xr1_pn  (  $x1_pn*cos($roll) + $y1_pn*sin($roll) - $x_off ) 
+ 	define yr1_pn  ( -$x1_pn*sin($roll) + $y1_pn*cos($roll) - $y_off ) 
+	define xr2_pn  (  $x2_pn*cos($roll) + $y2_pn*sin($roll) - $x_off ) 
+	define yr2_pn  ( -$x2_pn*sin($roll) + $y2_pn*cos($roll) - $y_off ) 
+	define xr3_pn  (  $x2_pn*cos($roll) + $y1_pn*sin($roll) - $x_off ) 
+ 	define yr3_pn  ( -$x2_pn*sin($roll) + $y1_pn*cos($roll) - $y_off ) 
+	define xr4_pn  (  $x1_pn*cos($roll) + $y2_pn*sin($roll) - $x_off ) 
+	define yr4_pn  ( -$x1_pn*sin($roll) + $y2_pn*cos($roll) - $y_off ) 
+
+	define xr1_om  (  $x1_om*cos($roll) + $y1_om*sin($roll) - $x_off ) 
+ 	define yr1_om  ( -$x1_om*sin($roll) + $y1_om*cos($roll) - $y_off ) 
+	define xr2_om  (  $x2_om*cos($roll) + $y2_om*sin($roll) - $x_off ) 
+	define yr2_om  ( -$x2_om*sin($roll) + $y2_om*cos($roll) - $y_off ) 
+	define xr3_om  (  $x2_om*cos($roll) + $y1_om*sin($roll) - $x_off ) 
+ 	define yr3_om  ( -$x2_om*sin($roll) + $y1_om*cos($roll) - $y_off ) 
+	define xr4_om  (  $x1_om*cos($roll) + $y2_om*sin($roll) - $x_off ) 
+	define yr4_om  ( -$x1_om*sin($roll) + $y2_om*cos($roll) - $y_off ) 
+
+	define xr1_rgs  (  $x1_rgs*cos($roll) + $y1_rgs*sin($roll) - $x_off ) 
+ 	define yr1_rgs  ( -$x1_rgs*sin($roll) + $y1_rgs*cos($roll) - $y_off ) 
+	define xr2_rgs  (  $x2_rgs*cos($roll) + $y2_rgs*sin($roll) - $x_off ) 
+	define yr2_rgs  ( -$x2_rgs*sin($roll) + $y2_rgs*cos($roll) - $y_off ) 
+	define xr3_rgs  (  $x2_rgs*cos($roll) + $y1_rgs*sin($roll) - $x_off ) 
+ 	define yr3_rgs  ( -$x2_rgs*sin($roll) + $y1_rgs*cos($roll) - $y_off ) 
+	define xr4_rgs  (  $x1_rgs*cos($roll) + $y2_rgs*sin($roll) - $x_off ) 
+	define yr4_rgs  ( -$x1_rgs*sin($roll) + $y2_rgs*cos($roll) - $y_off ) 
+
+	define mettolab ? { Put instrument labels ? [y/n] }
+	define colore   ? { Color or b/w ?  [1/2] }
+
+	connect (< $xr1_wnd $xr3_wnd $xr2_wnd $xr4_wnd $xr1_wnd >) (< $yr1_wnd $yr3_wnd $yr2_wnd $yr4_wnd $yr1_wnd >)
+	connect (< $xr1_wnd2 $xr3_wnd2 $xr2_wnd2 $xr4_wnd2 $xr1_wnd2 >) (< $yr1_wnd2 $yr3_wnd2 $yr2_wnd2 $yr4_wnd2 $yr1_wnd2 >)
+
+	expand 1.5
+	if ($colore == 1) {
+	    ctype 5 
+	    ltype 0 
+	} else {
+	    ctype 2 
+	    ltype 3 
+	}
+	connect (< $xr1_mos $xr3_mos $xr2_mos $xr4_mos $xr1_mos >) (< $yr1_mos $yr3_mos $yr2_mos $yr4_mos $yr1_mos >)
+	if ( substr('$mettolab',0,1) == 'y' ) { 
+	relocate $xr4_mos $yr4_mos
+	relocate  ( $($xp-450*cos(-$roll)) $($yp-450*sin(-$roll)) )
+	angle $($rol-90)
+	putlabel 6 MOS
+	lweight 3 
+	angle 0 
+	}
+
+	if ($colore == 1) {
+	    ctype 4 
+	    ltype 0 
+	} else {
+	    ctype 2 
+	    ltype 2 
+	}
+	connect (< $xr1_pn $xr3_pn $xr2_pn $xr4_pn $xr1_pn >) (< $yr1_pn $yr3_pn $yr2_pn $yr4_pn $yr1_pn >)
+	if ( substr('$mettolab',0,1) == 'y' ) { 
+	relocate $xr1_pn $yr1_pn
+	relocate  ( $($xp+450*cos(-$roll)) $($yp-450*sin(-$roll)) )
+	angle $rol
+	putlabel 6 pn
+	lweight 3 
+	angle 0 
+	}
+
+	if ($colore == 1) {
+	    ctype 7 
+	    ltype 0 
+	} else {
+	    ctype 2 
+	    ltype 5 
+	}
+	connect (< $xr1_om $xr3_om $xr2_om $xr4_om $xr1_om >) (< $yr1_om $yr3_om $yr2_om $yr4_om $yr1_om >)
+	if ( substr('$mettolab',0,1) == 'y' ) { 
+	relocate $xr1_om $yr1_om
+	relocate  ( $($xp+450*cos(-$roll)) $($yp-450*sin(-$roll)) )
+	angle $rol
+	putlabel 6 OM
+	lweight 3 
+	angle 0 
+	}
+
+	if ($colore == 1) {
+	    ctype 6 
+	    ltype 0 
+	} else {
+	    ctype 2 
+	    ltype 1 
+	}
+	connect (< $xr1_rgs $xr3_rgs $xr2_rgs $xr4_rgs $xr1_rgs >) (< $yr1_rgs $yr3_rgs $yr2_rgs $yr4_rgs $yr1_rgs >)
+
+	ltype 0
+
+	#
+	# Z-Y axis
+	#
+	relocate $(-$x_off) $(-$y_off)
+	angle $(45+$rol)
+	expand 3 ctype 2 
+	ptype 4 1 
+	dot
+	ctype 2 lweight 3 expand 1.5
+	relocate $(-$x_off) $(-$y_off)
+	draw   ( $($xp+6000*cos(-$roll)) $($yp+6000*sin(-$roll)) )
+	ptype 3 3 
+	angle $($rol-90) 
+	dot
+
+	relocate  ( $($xp+750*cos(-$roll)) $($yp-750*sin(-$roll)) )
+	angle $rol
+	putlabel 5 y
+	lweight 3 
+
+	relocate $(-$x_off) $(-$y_off)
+	draw   (  $($xp-6000*sin(-$roll)) $($yp+6000*cos(-$roll)) )
+	ptype 3 3 
+	angle $rol 
+	dot
+
+	relocate  ( $($xp-750*cos(-$roll)) $($yp-750*sin(-$roll)) )
+	angle $rol
+	putlabel 5 z
+	lweight 3 
+	angle 0 
+
+	ctype 2
+	relocate ( $gx1 $($gy2+650) ) 
+	putlabel 6 PA = $rol^o 
+
+#---------------------------------------------------------------------------
+# distance
+distance
+	cursor ax ay
+	cursor bx by
+	define a1 $(ax[0])
+	define a2 $(ay[0])
+	define b1 $(bx[0])
+	define b2 $(by[0])
+	define distance ( sqrt( ($a1-$b1)**2. + ($a2-$b2)**2. ) )
+	echo Distance is: $distance
+
+#---------------------------------------------------------------------------

@@ -1,0 +1,45 @@
+#---------------------------------------------------------------------------
+# wabs 101 : computes tau for absorption by neutral ISM
+#            NEEDS:
+#              + arrays lg_kev and kev storing the energies.
+#              + file morr_par.dat to read the parameters
+#            Can be called as:
+#                       wabs <nH>
+#            where <nH> is the column density in units of 10^20
+#            Returns arrays:
+#              + tau     : optical thickness at the energies lg_kev, kev
+#              + gal_abs : absorption to subtract from a log spectrum
+wabs 101	
+
+	echo "----------------------------------------------------------"
+	echo "- You called the WABS function.... "
+	echo "- Got energies vector having $(dimen(lg_kev)) components "
+	echo "- and ranging from $(kev[0]) to $(kev[$(dimen(kev)-1)]) "
+
+	if($?1){
+	   define n_h $1
+   	}else{
+	   define n_h   ? < Nh (in units of 10^20) :>
+   	}
+
+	set dimen(sigma) = $(dimen(lg_kev))
+
+	data morr_par.dat
+	read {e 1 a 2 b 3 c 4}
+
+	echo - Computing the absorbed fraction....wait...
+	do i=0,$(dimen(sigma)-1) {
+	  cycle
+	}
+	set tau = $n_h*sigma*1.e-4
+	set gal_abs= 0.43429*tau
+
+cycle
+	  do j=0,13 {
+	     if( kev[$i] < e[$j] ) {
+	     set sigma[$i] = (a[$j]+b[$j]*kev[$i]+c[$j]*kev[$i]**2.)/kev[$i]**3
+	     return
+ 	     }
+	  }
+
+#---------------------------------------------------------------------------

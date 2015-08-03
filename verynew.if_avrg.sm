@@ -1,0 +1,1573 @@
+##------------------------------------------------------------------------- 
+## help.if_avrg
+help.if_avrg
+
+        echo "----------------------------------------"
+        echo "* if_avrg5_menu"
+        echo "* pipeline"
+	echo "*"
+        echo "* if_nln5_all       [<band>] [<L_min>] [<L_max>]"
+        echo "* whoare            [<band>] [<L_min>] [<L_max>]"
+        echo "* "
+        echo "* if_avrg_d_l       [<band>] [<L_min>] [<L_max>]"
+        echo "* if_avrg_nlum5     [<band>] [<L_min>] [<L_max>] "
+        echo "* if_avrg_nlum6     [<band>] [<L_min>] [<L_max>] [<gamma-data>]"
+	echo "* if_avrg_nlum_ir   [<band>] [<L_min>] [<L_max>]"
+	echo "* if_avrg_nlum_mm   [<band>] [<L_min>] [<L_max>]"
+	echo "* if_avrg_nlum_iras [<band>] [<L_min>] [<L_max>]"
+        echo "*    (if_avrg_flux   4      )"
+        echo "*    (if_avrg_flux_5band  3 )"
+        echo "* "
+	echo "* if_avrg_norm_nlum1 [<L-to-avrg>] [<band>] [<L_min>] [<L_max>]"
+	echo "* if_avrg_norm_nlum5 [<band>] [<L_min>] [<L_max>]"
+	echo "* if_avrg_norm_nlum6 [<band>] [<L_min>] [<L_max>]"
+	echo "* if_avrg_iras4      [<band>] [<L_min>] [<L_max>]"
+        echo "* "
+        echo "* g_avrg_g_sample [<band>] [<L_min>] [<L_max>] [<sample-type>]"
+        echo "* g_avrg_true     [<band>] [<L_min>] [<L_max>] [<sample-type>]"
+        echo "* if_avrg_ax      [<band>] [<L_min>] [<L_max>]"
+        echo "* plot_avrg_nlum5"
+        echo "* plot_avrg_nlum6"
+        echo "* give_name"
+        echo "* "
+        echo "* print_avrg"
+        echo "* print_summary"
+        echo "----------------------------------------"
+
+##--------------------------------------------------------------------------
+## if_avrg_menu
+if_avrg_menu
+
+	echo --------------------------------------------------
+	echo              IF-AVERAGES Menu
+	echo --------------------------------------------------
+	echo * What would you like to average ?
+	echo * 
+	echo * [1] fluxes
+	echo * [2] luminosity distances
+	echo * [3] luminosities (radio-X-ray)
+	echo * [4] luminosities (radio-gamma-ray)
+	echo * [5] X-ray spectral index
+ 	echo *	
+	echo * ...or would you like to plot...
+	echo * [9] nu_L_nu (YES gamma)
+ 	echo *	
+	echo * ...or would you like to know 
+	echo * [10] who-are the sources within a certain L bin
+ 	echo *	
+	echo * [11] or rename your product files...
+	echo --------------------------------------------------
+	echo 
+	define if_what ? { Gimme the corresponding code number }
+
+	if($if_what == 1) { if_avrg_flux_5band }
+	if($if_what == 2) { if_avrg_d_l }
+	if($if_what == 3) { if_avrg_nlum5 }
+	if($if_what == 4) { if_avrg_nlum6 }
+	if($if_what == 5) { if_avrg_ax }
+	if($if_what == 6) { if_nln5_all }
+	if($if_what == 8) { plot_avrg_nlum5 }
+	if($if_what == 9) { plot_avrg_nlum6 }
+	if($if_what == 10){ whoare }
+	if($if_what == 11){ give_name }
+
+
+##--------------------------------------------------------------------------
+## pipeline
+pipeline
+
+	define suffix delete
+	define go "y"
+
+	echo *******************************************************
+	echo * FIRST STEP : averaging of radio-X-ray + Gamma data 
+	echo *
+	define go ? {* Let's perform it ? }
+	echo *******************************************************
+	if(substr('$go',0,1) == 'y') { if_avrg_norm_nlum6 }
+
+	echo *******************************************************
+	echo * SECOND STEP : averaging IRAS 12-100 micron data 
+	echo *
+	define go ? {* Let's perform it ? }
+	echo *******************************************************
+	if(substr('$go',0,1) == 'y') { if_avrg_iras4 }
+
+	echo *******************************************************
+	echo * THIRD STEP : renaming vectors with averages
+	echo *              of the Radio-to-X-ray + Gamma data
+	echo *
+	define go ? {* Let's perform it ? }
+	echo *******************************************************
+	if(substr('$go',0,1) == 'y') { give_name }
+
+	echo *******************************************************
+	echo * FOURTH STEP : renaming vectors with averages
+	echo *               of the IRAS 12-100 micron data
+	echo *
+	define go ? {* Let's perform it ? }
+	echo *******************************************************
+	if(substr('$go',0,1) == 'y') { give_name_iras }
+
+	echo *******************************************************
+	echo * FIFTH STEP : printing out vectors with averages
+	echo *              of the Radio-to-X-ray + Gamma data
+	echo *              and optionally also the IRAS data.
+	echo *                   [Data readable format]
+	echo *
+	define go ? {* Let's perform it ? }
+	echo *******************************************************
+	if(substr('$go',0,1) == 'y') { print_avrg }
+
+	echo *******************************************************
+	echo * SIXTH STEP : printing out vectors with averages
+	echo *              of the Radio-to-X-ray + Gamma data
+	echo *              and optionally also the IRAS data
+	echo *                   [Human readable format]
+	echo *
+	define go ? {* Let's perform it ? }
+	echo *******************************************************
+	if(substr('$go',0,1) == 'y') { print_summary }
+
+	echo *******************************************************
+	echo * SEVENTH STEP : plotting results
+	echo *
+	define go ? {* Radio-to-X-ray + Gamma ? }
+	if(substr('$go',0,1) == 'y') { redoit }
+	define go ? {* IRAS 12/25/60/100 microns ? }
+	if(substr('$go',0,1) == 'y') { redoiras }
+
+	echo *******************************************************
+
+##--------------------------------------------------------------------------
+## if_nln5_all [<which-L>] [<L_min>] [<L_max>]
+##	non disegna il punto gamma
+##
+if_nln5_all  03 
+
+	nln_frame empty
+
+	if($?1 == 0) {
+	   define oldband ? {Give me the band [radio/mm/opt/x] ?}
+	   define oldlmin ? {Minimum Luminosity ? }
+	   define oldlmax ? {Maximum Luminosity ? }
+	   define 1 $oldband
+	   define 2 $oldlmin
+	   define 3 $oldlmax
+	} 
+	define oldband $1
+	define oldlmin $2
+	define oldlmax $3
+
+	define maxind (dimen(f_radio)-1)
+
+   do i=0,$maxind {
+
+      ## if( $(mir[$i]) < 0.01 ) {
+      if( $(check_ir[$i]) ==  0 ) {
+        set vnl=<$(nl_radio[$i]) $(nl_mm[$i]) $(nl_opt[$i]) $(nl_x[$i])>
+	set vnu=<$nu5 $numm $nuopt $nux >
+      } else {
+	set vnl=<$(nl_radio[$i]) $(nl_mm[$i]) $(nl_ir[$i]) $(nl_opt[$i]) $(nl_x[$i]) >
+	set vnu=<$nu5 $numm $nuir $nuopt $nux >
+      }
+
+      define ratio  ( ($(nl_x[$i]) - $(nl_radio[$i])) - 7.685 ) 
+
+      if($(nl_$1[$i]) > $2 && $(nl_$1[$i]) < $3) { 
+	 echo * $(name[$i]) [L_$1 = $(nl_$1[$i])]  [L_x = $(nl_x[$i])]  
+	 echo |          [a_x = $(ax[$i])]     [F_x/F_r = $ratio]
+
+	 if( $(flag_x[$i]) > 0 ) { 
+	    define color ($i - 6*INT($i/6.)+2)
+	    ctype $color 
+	    ptype 4 3
+	    points  vnu vnl
+	    connect vnu vnl 
+
+	    if($(flag_x[$i]) == 3) {
+	      butterfly $(ax[$i]-1) err_ax_u[$i] err_ax_d[$i] 17.384 16.384 18.0
+	      set nl_btfly = btfly + $(nl_x[$i]) 
+	      connect nufly nl_btfly
+	    } else {
+	      echo ***> Source [$(name[$i])] has NOT a spectral index measure
+            }
+
+	 } else { 
+	    echo ***> Source [$(name[$i])] has NOT an X-ray flux measure
+
+	    ## if( $(mir[$i]) < 0.01 ) {
+	    if( $(check_ir[$i]) == 0 ) {
+              set vnl=<$(nl_radio[$i]) $(nl_mm[$i]) $(nl_opt[$i])>
+	      set vnu=<$nu5 $numm $nuopt >
+	    } else {
+	      set vnl=<$(nl_radio[$i]) $(nl_mm[$i]) $(nl_ir[$i]) $(nl_opt[$i])>
+	      set vnu=<$nu5 $numm $nuir $nuopt >
+	    }
+	    define color ($i - 6*INT($i/6.)+2)
+	    ctype $color 
+	    points  vnu vnl
+	    connect vnu vnl 
+
+	 }
+      }
+   }                     #--end do
+
+##--------------------------------------------------------------------------
+## whoare  [<which-L>] [<L_min>] [<L_max>] [<what>]
+whoare   04
+
+	if($?1 == 0) {
+	   define oldband ? {Give me the band [radio/mm/opt/x] ?}
+	   define oldlmin ? {Minimum Luminosity ? }
+	   define oldlmax ? {Maximum Luminosity ? }
+	   define oldwhat ? {Whih quantity do you like to see ? }
+	   define 1 $oldband
+	   define 2 $oldlmin
+	   define 3 $oldlmax
+	   define 4 $oldwhat
+	} 
+	define oldband $1
+	define oldlmin $2
+	define oldlmax $3
+	define oldwhat $4
+
+	define maxind (dimen(nl_radio)-1)
+	define num  (0)
+
+	echo ------------------------------------------------
+	do i=0,$maxind {
+	  if( nl_$1[$i] > $2 && nl_$1[$i] < $3 ) { 
+	     if( check_$1[$i] >= 1) {
+	        echo [$i] * $(name[$i])  [L_$1 = $(nl_$1[$i])] [$4 = $($4[$i])]
+	        define num  ($num + 1) 
+	     } else { 
+	        echo [$i]  ($(name[$i])) has NOT a $1 flux measure
+	     }
+	  } 
+	}                     #--end do
+	
+	echo --- L $1 ---------------------------------------
+	echo    Number of valid contributions : $num
+	echo ------------------------------------------------
+
+
+##--------------------------------------------------------------------------
+## if_avrg_d_l <which-L> <L_min> <L_max>
+if_avrg_d_l  03
+
+	define maxind (dimen(z)-1)
+	define zsum  (0.0)
+	define znum  (0)
+	define zsum2 (0.0)
+
+	if($?1 == 0) {
+	   define oldband ? {Give me the band [radio/mm/opt/x] ?}
+	   define oldlmin ? {Minimum Luminosity ? }
+	   define oldlmax ? {Maximum Luminosity ? }
+	   define 1 $oldband
+	   define 2 $oldlmin
+	   define 3 $oldlmax
+	} 
+	define oldband $1
+	define oldlmin $2
+	define oldlmax $3
+
+	do i=0,$maxind {
+	  if( $(nl_$1[$i]) > $2 && $(nl_$1[$i]) < $3 ) { 
+	     if($(z[$i]) < 100) { 
+	        define zsum  ($zsum  + $(d_l[$i])   )
+	        define zsum2 ($zsum2 + $(d_l[$i])**2)
+	        define znum  ($znum + 1) 
+	     } else { 
+		if('$verbose' == 'y') {
+	           echo $1 nada de nada, number is still $znum
+		}
+	     }
+	  }
+	}                     #--end do
+
+	echo --- D_l ----------------------------------------
+	echo    Number of valid contributions : $znum
+	echo    Sum of them : $zsum
+	echo    Sum of them squared : $zsum2
+
+	define avrg_d_l   ($zsum/$znum)
+	define sigma_d_l  (sqrt($zsum2/$znum - ($zsum/$znum)**2))
+	echo
+	echo    the average luminosity distance (log) is : $avrg_d_l
+	echo    the associated sigma is : $sigma_d_l
+	define sigma_d_l  ($sigma_d_l/sqrt($znum-1))
+	echo    the associated sigma is : $sigma_d_l
+	echo ------------------------------------------------
+
+	set avrg_d_l_vec = 0*avrg_flux_vec + $avrg_d_l
+	define num_d_l  ($znum)
+
+##--------------------------------------------------------------------------
+## if_avrg_flux <band-to-avrg> <which-L> <L_min> <L_max>
+##	Calcola la media di un singolo flusso, tenendo conto
+##	del constrain su una altra luminosita`.
+##
+if_avrg_flux   4
+
+	define maxind  (dimen(lg_kf_$!1)-1)
+	define sum     (0.0)
+	define num     (0)
+	define sum2    (0.0)
+	define uplimit (50000)
+	## set vnu = <$nu5 $numm  $nuopt $nux>
+
+	do i=0,$maxind {
+	  if( $(nl_$2[$i]) > $3 && $(nl_$2[$i]) < $4 ) { 
+	     if( check_$1[$i] > 0 ) {
+		if('$verbose' == 'y') {
+	            echo [$i] * $(name[$i])   [L_$1 = $(nl_$!1[$i])]
+		}
+	        define sum  ($sum  + $(lg_kf_$1[$i])   )
+	        define sum2 ($sum2 + $(lg_kf_$1[$i])**2)
+	        define num  ($num + 1) 
+	     } else { 
+		if('$verbose' == 'y') {
+	           echo [$i]  ($(name[$i])) has NOT a $1 flux measure
+		}
+	     }
+	  } 
+	}                     #--end do
+	
+	echo --- FLUX $1 ------------------------------------
+	echo    Number of valid contributions : $num
+	echo    Sum of them : $sum
+	echo    Sum of them squared : $sum2
+
+	if($num > 0 ) { 
+	   define avrg_lg_kf_$1   ($sum/$num)
+	   define sigma_lg_kf_$1  (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	   echo
+	   echo    the average flux is     : $avrg_lg_kf_$1
+	   echo    the associated sigma is : $sigma_lg_kf_$1
+	   if($num == 1){ define sigma_lg_kf_$1  ($sigma_lg_kf_$1/sqrt($num))}
+	   if($num >= 2){ define sigma_lg_kf_$1  ($sigma_lg_kf_$1/sqrt($num-1))}
+	   echo    the associated sigma is : $sigma_lg_kf_$1
+	   echo ------------------------------------------------
+	} else {
+	   echo  There are NO contributions to the average
+	   echo ------------------------------------------------
+	   define avrg_lg_kf_$1  (0)
+	   define sigma_lg_kf_$1 (0)
+	}
+
+##--------------------------------------------------------------------------
+## if_avrg_ax [<which-L>] [<L_min>] [<L_max>]
+if_avrg_ax 03 
+
+	define maxind (dimen(ax)-1)
+	define sum  (0.0)
+	define num  (0)
+	define sum2 (0.0)
+
+	if($?1 == 0) {
+	   define oldband ? {Give me the band [radio/mm/opt/x] ?}
+	   define oldlmin ? {Minimum Luminosity ? }
+	   define oldlmax ? {Maximum Luminosity ? }
+	   define 1 $oldband
+	   define 2 $oldlmin
+	   define 3 $oldlmax
+	} 
+	define oldband $1
+	define oldlmin $2
+	define oldlmax $3
+
+	do i=0,$maxind {
+	  if( $(nl_$1[$i]) > $2 && $(nl_$1[$i]) < $3 ) {
+	  if( $(flag_x[$i]) == 3) { 
+	      define sum  ($sum  + $(ax[$i])   )
+	      define sum2 ($sum2 + $(ax[$i])**2)
+	      define num  ($num + 1) 
+	  } else { 
+	      echo [$i] [$(name[$i])] has NOT a spectral index measure
+	  }
+	} else { 
+	    if('$verbose' == 'y') {
+	       echo [$i]                * [$(name[$i])] has not been included 
+	    }
+	}
+	}                     #--end do
+	
+	echo --- alpha_x -----------------------------------
+	echo    Number of valid contributions : $num
+	echo    Sum of them : $sum
+	echo    Sum of them squared : $sum2
+
+	if($num > 0) {
+	   define avrg_ax_vec   ($sum/$num)
+	   define sigma_ax_vec  (sqrt($sum2/$num - ($sum/$num)**2))
+	   echo
+	   echo    the average spectral index is : $avrg_ax_vec
+	   echo    the associated sigma is : $sigma_ax_vec
+	   if($num == 1){define sigma_ax_vec  ($sigma_ax_vec/sqrt($num))   }
+	   if($num >= 2){define sigma_ax_vec  ($sigma_ax_vec/sqrt($num-1)) }
+	   echo    the associated sigma is : $sigma_ax_vec
+	   echo ------------------------------------------------
+	} else {
+	   echo  There are NO contributions to the average
+	   echo ------------------------------------------------
+	   define avrg_ax_vec  (0)
+	   define sigma_ax_vec (0)
+	}
+
+	define num_ax  ($num)
+
+
+
+##--------------------------------------------------------------------------
+## if_avrg_nlum_iras1 <which-L> <L_min> <L_max>
+##	Calcola la media della luminosita` infrarossa, solo contando
+##      le sorgenti che hanno un flusso "vero".
+##	Tiene conto del constrain su una altra luminosita`.
+##
+if_avrg_nlum_iras1   3
+
+	define whatiras ? { What IRAS band [12/25/60/100] ?}
+	define 4 $whatiras
+
+	define maxind  (dimen(name)-1)
+	define sum     (0.0)
+	define num     (0)
+	define sum2    (0.0)
+	define uplimit (500)
+
+	do i=0,$maxind {
+	  if( $(nl_$1[$i]) > $2 && $(nl_$1[$i]) < $3 ) { 
+	     if( check_iras$4[$i] > 0 ) {
+		if('$verbose' == 'y') {
+	           echo [$i] * $(name[$i])   [L_$4 = $(nl_iras$4[$i])]
+		}
+	        define sum  ($sum  + $(nl_iras$4[$i])   )
+	        define sum2 ($sum2 + $(nl_iras$4[$i])**2)
+	        define num  ($num + 1) 
+	     } else { 
+		if('$verbose' == 'y') {
+	           echo [$i]  ($(name[$i])) has NOT a IRAS-$4 flux measure
+		}
+	     }
+	  } 
+	}                     #--end do
+	
+	echo --- Lum IRAS $whatiras -----------------------------
+	echo    Number of valid contributions : $num
+	echo    Sum of them : $sum
+	echo    Sum of them squared : $sum2
+
+	if($num > 0) {
+	   define avrg_nl_iras$4   ($sum/$num)
+	   define sigma_nl_iras$4  (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	   echo
+	   echo    the average IRAS-$4 Luminosity is : $avrg_nl_iras$4
+	   echo    the associated sigma is : $sigma_nl_iras$4
+	   if($num == 1) { define sigma_nl_iras$4 ($sigma_nl_iras$4/sqrt($num))}
+	   if($num >= 2) { define sigma_nl_iras$4 ($sigma_nl_iras$4/sqrt($num-1))}
+	   echo    the associated sigma is : $sigma_nl_iras$4
+	   echo ------------------------------------------------
+	} else {
+	   echo  There are NO contributions to the average
+	   echo ------------------------------------------------
+	   define avrg_nl_iras$4  (0)
+	   define sigma_nl_iras$4 (0)
+	}
+
+
+##--------------------------------------------------------------------------
+## if_avrg_nlum_ir <which-L> <L_min> <L_max>
+##	Calcola la media della luminosita` infrarossa, solo contando
+##      le sorgenti che hanno un flusso "vero".
+##	Tiene conto del constrain su una altra luminosita`.
+##
+if_avrg_nlum_ir   3
+
+	define maxind  (dimen(name)-1)
+	define sum     (0.0)
+	define num     (0)
+	define sum2    (0.0)
+	define uplimit (500)
+
+	do i=0,$maxind {
+	  if( $(nl_$1[$i]) > $2 && $(nl_$1[$i]) < $3 ) { 
+	     if( check_ir[$i] > 0 ) {
+		if('$verbose' == 'y') {
+	           echo [$i] * $(name[$i])   [L_ir = $(nl_ir[$i])]
+		}
+	        define sum  ($sum  + $(nl_ir[$i])   )
+	        define sum2 ($sum2 + $(nl_ir[$i])**2)
+	        define num  ($num + 1) 
+	     } else { 
+		if('$verbose' == 'y') {
+	           echo [$i]  ($(name[$i])) has NOT a InfraRed flux measure
+		}
+	     }
+	  } 
+	}                     #--end do
+	
+	echo --- Lum IR -------------------------------------
+	echo    Number of valid contributions : $num
+	echo    Sum of them : $sum
+	echo    Sum of them squared : $sum2
+
+	define avrg_nl_ir   ($sum/$num)
+	define sigma_nl_ir  (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	echo
+	echo    the average IR Luminosity is : $avrg_nl_ir
+	echo    the associated sigma is : $sigma_nl_ir
+	define sigma_nl_ir ($sigma_nl_ir/sqrt($num-1))
+	echo    the associated sigma is : $sigma_nl_ir
+	echo ------------------------------------------------
+
+
+##--------------------------------------------------------------------------
+## if_avrg_nlum_mm <which-L> <L_min> <L_max>
+##	Calcola la media della luminosita` millimetrica, solo contando
+##      le sorgenti che hanno un flusso "vero".
+##	Tiene conto del constrain su una altra luminosita`.
+##
+if_avrg_nlum_mm   3
+
+	define maxind  (dimen(name)-1)
+	define sum     (0.0)
+	define num     (0)
+	define sum2    (0.0)
+	define uplimit (10000)
+
+	do i=0,$maxind {
+	  if( $(nl_$1[$i]) > $2 && $(nl_$1[$i]) < $3 ) { 
+	     if( check_mm[$i] > 0 ) {
+		if('$verbose' == 'y') {
+	           echo [$i] * $(name[$i])   [L_mm = $(nl_mm[$i])]
+		}
+	        define sum  ($sum  + $(nl_mm[$i])   )
+	        define sum2 ($sum2 + $(nl_mm[$i])**2)
+	        define num  ($num + 1) 
+	     } else { 
+		if('$verbose' == 'y') {
+	           echo [$i]  ($(name[$i])) has NOT a Millimeter flux measure
+		}
+	     }
+	  } 
+	}                     #--end do
+	
+	echo --- Lum MM -------------------------------------
+	echo    Number of valid contributions : $num
+	echo    Sum of them : $sum
+	echo    Sum of them squared : $sum2
+
+	if($num > 0 ) {
+	   define avrg_nl_mm   ($sum/$num)
+	   define sigma_nl_mm  (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	   echo
+	   echo    the average MM Luminosity is : $avrg_nl_mm
+	   echo    the associated sigma is : $sigma_nl_mm
+	   if($num == 1) {define sigma_nl_mm ($sigma_nl_mm/sqrt($num))}
+	   if($num >= 2) {define sigma_nl_mm ($sigma_nl_mm/sqrt($num-1))}
+	   echo    the associated sigma is : $sigma_nl_mm
+	   echo ------------------------------------------------
+	} else {
+	   echo  There are NO contributions to the average
+	   echo ------------------------------------------------
+	   define avrg_nl_mm  (0)
+	   define sigma_nl_mm (0)
+	}
+
+
+##--------------------------------------------------------------------------
+## if_avrg_flux_5band  <which-L> <L_min> <L_max>
+##	Calcola il flusso medio per 5 frequenze (radio--X),
+##	utilizzando come subroutine:
+##         - if_avrg_flux  
+##
+if_avrg_flux_5band  3
+
+	foreach band (radio mm ir opt x ) { 
+	    echo ------------------------------------------------
+	    echo * Averaging $band FLUX *
+	    echo * according to limits on $1 between $2 $3 
+	    echo *
+	    if_avrg_flux $band $1 $2 $3 
+	    define num_$band ($num)
+	}
+	
+	set dimen(avrg_nu_vec)     = 6
+	set dimen(avrg_num_vec)    = 6
+	set dimen(avrg_flux_vec)   = 5
+	set dimen(sigma_flux_vec)  = 5
+	set dimen(avrg_nflux_vec)  = 5
+	set dimen(sigma_nflux_vec) = 5
+
+	set avrg_nu_vec[0] = $nu5
+	set avrg_nu_vec[1] = $numm
+	set avrg_nu_vec[2] = $nuir
+	set avrg_nu_vec[3] = $nuopt
+	set avrg_nu_vec[4] = $nux
+	set avrg_nu_vec[5] = 22.383
+
+	set avrg_num_vec[0] = $num_radio
+	set avrg_num_vec[1] = $num_mm
+	set avrg_num_vec[2] = $num_ir
+	set avrg_num_vec[3] = $num_opt
+	set avrg_num_vec[4] = $num_x
+	set avrg_num_vec[5] = 0
+
+	set avrg_flux_vec[0] = $avrg_lg_kf_radio 
+	set avrg_flux_vec[1] = $avrg_lg_kf_mm    
+	set avrg_flux_vec[2] = $avrg_lg_kf_ir
+	set avrg_flux_vec[3] = $avrg_lg_kf_opt   
+	set avrg_flux_vec[4] = $avrg_lg_kf_x     
+
+	set sigma_flux_vec[0] = $sigma_lg_kf_radio
+	set sigma_flux_vec[1] = $sigma_lg_kf_mm
+	set sigma_flux_vec[2] = $sigma_lg_kf_ir
+	set sigma_flux_vec[3] = $sigma_lg_kf_opt
+	set sigma_flux_vec[4] = $sigma_lg_kf_x
+
+	set avrg_nflux_vec[0] = $avrg_lg_kf_radio + $nu5
+	set avrg_nflux_vec[1] = $avrg_lg_kf_mm    + $numm 
+	set avrg_nflux_vec[2] = $avrg_lg_kf_ir    + $nuir
+	set avrg_nflux_vec[3] = $avrg_lg_kf_opt   + $nuopt
+	set avrg_nflux_vec[4] = $avrg_lg_kf_x     + $nux
+
+	set sigma_nflux_vec   = sigma_flux_vec
+
+###--------------------------------------------------------------------------
+## if_avrg_nlum5 [<which-L>] [<L_min>] [<L_max>]
+##	Calcola la luminosita` media per 5 frequenze (radio--X),
+##	utilizzando come subroutine: 
+##          - if_avrg_flux_5band
+##	    - if_avrg_d_l
+##
+if_avrg_nlum5   03
+
+	if($?1 == 0) {
+	   define oldband ? {Give me the band [radio/mm/opt/x] ?}
+	   define oldlmin ? {Minimum Luminosity ? }
+	   define oldlmax ? {Maximum Luminosity ? }
+	   define 1 $oldband
+	   define 2 $oldlmin
+	   define 3 $oldlmax
+	} 
+	define oldband $1
+	define oldlmin $2
+	define oldlmax $3
+
+	define verbose "n"
+	define verbose ? {Do you like to have full report of computations ? }
+	define verbose (substr('$verbose',0,1))
+
+	if_avrg_flux_5band  $1 $2 $3
+	if_avrg_d_l         $1 $2 $3 
+
+	set   avrg_lum_vec = 1.09920986 + 2.*$avrg_d_l + avrg_flux_vec 
+	set  sigma_lum_vec = sigma_flux_vec 
+	set  avrg_nlum_vec = 1.09920986 + 2.*$avrg_d_l + avrg_nflux_vec 
+	set sigma_nlum_vec = sigma_nflux_vec 
+
+	echo ** Re-computing the BEST average for mm luminosity 
+	if_avrg_nlum_mm $1 $2 $3
+	set   avrg_lum_vec[1] = $avrg_nl_mm - $numm
+	set  sigma_lum_vec[1] = $sigma_nl_mm 
+	set  avrg_nlum_vec[1] = $avrg_nl_mm
+	set sigma_nlum_vec[1] = $sigma_nl_mm
+
+	echo ** Re-computing the BEST average for IR luminosity 
+	if_avrg_nlum_ir $1 $2 $3
+	set   avrg_lum_vec[2] = $avrg_nl_ir - $nuir
+	set  sigma_lum_vec[2] = $sigma_nl_ir 
+	set  avrg_nlum_vec[2] = $avrg_nl_ir
+	set sigma_nlum_vec[2] = $sigma_nl_ir
+
+	define boh ? { Continue averaging X-ray spectral index ? [y/n] }
+	if('$boh' == 'y') { if_avrg_ax $1 $2 $3 }
+
+##--------------------------------------------------------------------------
+## if_avrg_nlum6 [<which-L>] [<L_min>] [<L_max>] [<sample>]
+##	Calcola la luminosita` media per 6 frequenze (radio--X+GAMMA),
+##	utilizzando come subroutine: 
+##         - if_avrg_flux_5band
+##         - g_avrg_g_sample
+##         - g_avrg_g_true
+##
+##	Per mediare il GAMMA chiede l'opzione tra i dati effettivi
+##	del campione che sta mediando oppure i dati 
+##	del "gamma-ray-detected" sample.
+##
+if_avrg_nlum6 04
+
+	if($?1 == 0) {
+	   define oldband ? {Give me the band [radio/mm/opt/x] ?}
+	   define oldlmin ? {Minimum Luminosity ? }
+	   define oldlmax ? {Maximum Luminosity ? }
+	   define oldsamp ? {Kind of Blazar ? [hpq=1/bll=2]}
+	   define 1 $oldband
+	   define 2 $oldlmin
+	   define 3 $oldlmax
+	   define 4 $oldsamp
+	} 
+	define oldband $1
+	define oldlmin $2
+	define oldlmax $3
+	define oldsamp $4
+
+	if_avrg_nlum5 $1 $2 $3 
+
+	define boh2 ? { Continue averaging Gamma-rays ? [y/n] }
+	if('$boh2' == 'y') { 
+	   define boh3 ? { ...from gamma-sample or from TRUE data ? [g/t] }
+	   if('$boh3' == 'g' ) {g_avrg_g_sample $1 $2 $3 $4 }
+	   if('$boh3' == 't' ) {g_avrg_true     $1 $2 $3 $4 }
+	   define num_g ($num)
+	}
+
+	set avrg_num_vec[5] = $num_g
+
+##--------------------------------------------------------------------------
+## if_avrg_norm_nlum1 <L-to-avrg> <which-L> <L_min> <L_max>
+##	Calcola la media di una luminosita`, solo contando
+##      le sorgenti che hanno un flusso "vero", ma facendola indirettamente,
+##      cioe` normalizzando sul radio e poi tornando indietro.
+##	Tiene conto del constrain su una altra luminosita`.
+##
+if_avrg_norm_nlum1   04
+
+	if($?1 == 0) {
+	  define avband  ? {Give me the band to average [radio/mm/iras/opt/x] ?}
+	  define oldband ? {Give me the contraint band [radio/mm/opt/x] ?}
+	  define oldlmin ? {Minimum Luminosity ? }
+	  define oldlmax ? {Maximum Luminosity ? }
+	  define 1 $avband
+	  define 2 $oldband
+	  define 3 $oldlmin
+	  define 4 $oldlmax
+	} 
+	define avband  $1
+	define oldband $2
+	define oldlmin $3
+	define oldlmax $4
+
+	define maxind  (dimen(name)-1)
+	define sum     (0.0)
+	define num     (0)
+	define sum2    (0.0)
+
+	do i=0,$maxind {
+
+	  if( $(nl_$2[$i]) > $3 && $(nl_$2[$i]) < $4 ) { 
+
+	     if( check_$1[$i] > 0 ) {
+		if('$verbose' == 'y') {
+	           echo [$i] * $(name[$i])   [L_$1 = $(nl_$1[$i])]
+		}
+	        define sum  ($sum  +  $(nl_$1[$i]) - $(nl_radio[$i])    )
+	        define sum2 ($sum2 + ($(nl_$1[$i]) - $(nl_radio[$i]))**2)
+	        define num  ($num + 1) 
+	     } else { 
+		if('$verbose' == 'y') {
+	           echo [$i]  ($(name[$i])) has NOT a $1 flux measure
+		}
+	     }
+
+	  } 
+	}                     #--end do
+	
+	echo --- Lum $1 -------------------------------------
+	echo    Number of valid contributions : $num
+	echo    Sum of them : $sum
+	echo    Sum of them squared : $sum2
+
+	if( $num > 0 ) {
+	    define avrg_nl_$1   ($sum/$num)
+	    define sigma_nl_$1  (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	    echo
+	    echo    the average $1 RELATIVE Luminosity is : $avrg_nl_$1
+	    echo    the associated sigma is : $sigma_nl_$1
+	    if($num==1) {define sigma_nl_$1 ($sigma_nl_$1/sqrt($num))}
+	    if($num>=2) {define sigma_nl_$1 ($sigma_nl_$1/sqrt($num-1))}
+	    echo    the associated sigma is : $sigma_nl_$1
+	    echo ------------------------------------------------
+	} else {
+	   echo  There are NO contributions to the average
+	   echo ------------------------------------------------
+	   define avrg_nl_$1  (0)
+	   define sigma_nl_$1 (0)
+	}
+
+	define num_$1 ($num)
+
+
+##--------------------------------------------------------------------------
+## if_avrg_norm_nlum5
+## 
+if_avrg_norm_nlum5 03
+
+	if($?1 == 0) {
+	   define oldband ? {Give me the band [radio/mm/opt/x] ?}
+	   define oldlmin ? {Minimum Luminosity ? }
+	   define oldlmax ? {Maximum Luminosity ? }
+	   define 1 $oldband
+	   define 2 $oldlmin
+	   define 3 $oldlmax
+	} 
+	define oldband $1
+	define oldlmin $2
+	define oldlmax $3
+
+	define verbose "n"
+	define verbose ? {Do you like to have full report of computations ? }
+	define verbose (substr('$verbose',0,1))
+
+	if_avrg_flux_5band  $1 $2 $3
+	if_avrg_d_l         $1 $2 $3 
+
+	#
+	# dopo queste subroutine si hanno i seguenti vettori: 
+	#
+	#  set dimen(avrg_um_vec)     = 6
+	#  set dimen(avrg_num_vec)    = 6
+	#  set dimen(avrg_flux_vec)   = 5
+	#  set dimen(sigma_flux_vec)  = 5
+	#  set dimen(avrg_nflux_vec)  = 5
+	#  set dimen(sigma_nflux_vec) = 5
+	#
+
+	echo ** computing the average RADIO luminosity 
+
+	define maxind  (dimen(name)-1)
+	define sum     (0.0)
+	define num     (0)
+	define sum2    (0.0)
+
+	do i=0,$maxind {
+	  if( $(nl_$1[$i]) > $2 && $(nl_$1[$i]) < $3 ) { 
+	     if('$verbose' == 'y') {
+	        echo [$i] * $(name[$i])   [L_radio = $(nl_radio[$i])]
+	     }
+	     define sum  ($sum  + $(nl_radio[$i])    )
+	     define sum2 ($sum2 + $(nl_radio[$i])**2 )
+	     define num  ($num + 1) 
+	  } 
+	}
+	
+	echo --- Lum radio -------------------------------------
+	echo    Number of valid contributions : $num
+	echo    Sum of them : $sum
+	echo    Sum of them squared : $sum2
+
+	if($num > 0 ) {
+	  define avrg_nl_radio  ($sum/$num)
+	  define sigma_nl_radio (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	  echo
+	  echo    the average RADIO Luminosity is : $avrg_nl_radio
+	  echo    the associated sigma is : $sigma_nl_radio
+	  if($num == 1) {define sigma_nl_radio ($sigma_nl_radio/sqrt($num))}
+	  if($num >= 2) {define sigma_nl_radio ($sigma_nl_radio/sqrt($num-1))}
+	  echo    the associated sigma is : $sigma_nl_radio
+	  echo ------------------------------------------------
+
+	  define ref_avrg_nl_radio  ($avrg_nl_radio)
+	  define ref_sigma_nl_radio ($sigma_nl_radio)
+
+	}else{
+	  echo  There are NO contributions to the RADIO average
+	  echo  
+	  echo  ****** Exiting the program .....
+	  echo ------------------------------------------------
+	  return
+	}
+
+	foreach band ( mm ir opt x ) { 
+	   echo ------------------------------------------------
+	   echo * Averaging $band (RELATIVE to RADIO) *
+	   echo * according to limits on $1 between $2 $3 
+	   echo *
+	   if_avrg_norm_nlum1 $band $1 $2 $3
+	}
+
+	set dimen(avrg_lum_vec)   = 5
+	set dimen(sigma_lum_vec)  = 5
+	set dimen(avrg_nlum_vec)  = 5
+	set dimen(sigma_nlum_vec) = 5
+
+	set avrg_lum_vec[0] = $avrg_nl_radio - $nu5 
+	set avrg_lum_vec[1] = $avrg_nl_radio - $numm  + $avrg_nl_mm
+	set avrg_lum_vec[2] = $avrg_nl_radio - $nuir  + $avrg_nl_ir
+	set avrg_lum_vec[3] = $avrg_nl_radio - $nuopt + $avrg_nl_opt
+	set avrg_lum_vec[4] = $avrg_nl_radio - $nux   + $avrg_nl_x
+
+	set sigma_lum_vec[0] = $sigma_nl_radio
+	set sigma_lum_vec[1] = sqrt($sigma_nl_mm**2. + $sigma_nl_radio**2.)
+	set sigma_lum_vec[2] = sqrt($sigma_nl_ir**2. + $sigma_nl_radio**2.)
+	set sigma_lum_vec[3] = sqrt($sigma_nl_opt**2.+ $sigma_nl_radio**2.)
+	set sigma_lum_vec[4] = sqrt($sigma_nl_x**2.  + $sigma_nl_radio**2.)
+
+	set avrg_nlum_vec[0] = $avrg_nl_radio 
+	set avrg_nlum_vec[1] = $avrg_nl_radio + $avrg_nl_mm
+	set avrg_nlum_vec[2] = $avrg_nl_radio + $avrg_nl_ir
+	set avrg_nlum_vec[3] = $avrg_nl_radio + $avrg_nl_opt
+	set avrg_nlum_vec[4] = $avrg_nl_radio + $avrg_nl_x
+
+	set sigma_nlum_vec   = sigma_lum_vec
+
+	define boh ? { Continue averaging X-ray spectral index ? [y/n] }
+	if('$boh' == 'y') { if_avrg_ax $1 $2 $3 }
+
+
+##--------------------------------------------------------------------------
+## if_avrg_norm_nlum6 [<which-L>] [<L_min>] [<L_max>] [<sample>]
+##	Calcola la luminosita` media per 6 frequenze (radio--X+GAMMA),
+##
+##	Per mediare il GAMMA chiede l'opzione tra i dati effettivi
+##	del campione che sta mediando oppure i dati 
+##	del "gamma-ray-detected" sample.
+##
+if_avrg_norm_nlum6   04
+
+	if($?1 == 0) {
+	   define oldband ? {Give me the band [radio/mm/opt/x] ?}
+	   define oldlmin ? {Minimum Luminosity ? }
+	   define oldlmax ? {Maximum Luminosity ? }
+	   define oldsamp ? {Kind of Blazar ? [hpq=1/bll=2]}
+	   define 1 $oldband
+	   define 2 $oldlmin
+	   define 3 $oldlmax
+	   define 4 $oldsamp
+	} 
+	define oldband $1
+	define oldlmin $2
+	define oldlmax $3
+	define oldsamp $4
+
+	if_avrg_norm_nlum5 $1 $2 $3 
+
+	define boh2 ? { Continue averaging Gamma-rays ? [y/n] }
+	if('$boh2' == 'y') { 
+	   define boh3 ? { ...from gamma-sample or from TRUE data ? [g/t] }
+	   if('$boh3' == 'g' ) {g_avrg_g_sample $1 $2 $3 $4 }
+	   if('$boh3' == 't' ) {g_avrg_true     $1 $2 $3 $4 }
+	}
+
+	set avrg_num_vec[5] = $num_g
+
+##--------------------------------------------------------------------------
+## if_avrg_iras4
+## 
+if_avrg_iras4 03 
+
+	if($?1 == 0) {
+	   define oldband ? {Give me the band [radio/mm/opt/x] ?}
+	   define oldlmin ? {Minimum Luminosity ? }
+	   define oldlmax ? {Maximum Luminosity ? }
+	   define 1 $oldband
+	   define 2 $oldlmin
+	   define 3 $oldlmax
+	} 
+	define oldband $1
+	define oldlmin $2
+	define oldlmax $3
+
+	define verbose "n"
+	define verbose ? {Do you like to have full report of computations ? }
+	define verbose (substr('$verbose',0,1))
+
+	foreach band ( iras100 iras60 iras25 iras12 ) {
+	   if_avrg_flux $band $1 $2 $3
+	   define num_$band ($num)
+	}
+
+	set dimen(avrg_iras_nu_vec)     = 4
+	set dimen(avrg_iras_num_vec)    = 4
+	set dimen(avrg_iras_flux_vec)   = 4
+	set dimen(sigma_iras_flux_vec)  = 4
+	set dimen(avrg_iras_nflux_vec)  = 4
+	set dimen(sigma_iras_nflux_vec) = 4
+
+	set avrg_iras_nu_vec[0] = $nu100
+	set avrg_iras_nu_vec[1] = $nu60
+	set avrg_iras_nu_vec[2] = $nu25
+	set avrg_iras_nu_vec[3] = $nu12
+	
+	set avrg_iras_num_vec[0] = $num_iras100
+	set avrg_iras_num_vec[1] = $num_iras60
+	set avrg_iras_num_vec[2] = $num_iras25
+	set avrg_iras_num_vec[3] = $num_iras12
+	
+	set avrg_iras_flux_vec[0] = $avrg_lg_kf_iras100 
+	set avrg_iras_flux_vec[1] = $avrg_lg_kf_iras60    
+	set avrg_iras_flux_vec[2] = $avrg_lg_kf_iras25
+	set avrg_iras_flux_vec[3] = $avrg_lg_kf_iras12  
+
+	set sigma_iras_flux_vec[0] = $sigma_lg_kf_iras100
+	set sigma_iras_flux_vec[1] = $sigma_lg_kf_iras60
+	set sigma_iras_flux_vec[2] = $sigma_lg_kf_iras25
+	set sigma_iras_flux_vec[3] = $sigma_lg_kf_iras12
+
+	set avrg_iras_nflux_vec[0] = $avrg_lg_kf_iras100 + $nu100
+	set avrg_iras_nflux_vec[1] = $avrg_lg_kf_iras60  + $nu60
+	set avrg_iras_nflux_vec[2] = $avrg_lg_kf_iras25  + $nu25
+	set avrg_iras_nflux_vec[3] = $avrg_lg_kf_iras12  + $nu12
+
+	set sigma_iras_nflux_vec = sigma_iras_flux_vec
+
+	echo ** computing the average RADIO luminosity 
+	echo ** to rescale IRAS data to real values
+
+	define maxind  (dimen(name)-1)
+	define sum     (0.0)
+	define num     (0)
+	define sum2    (0.0)
+
+	do i=0,$maxind {
+	  if( $(nl_$1[$i]) > $2 && $(nl_$1[$i]) < $3 ) { 
+	     if('$verbose' == 'y') {
+	        echo [$i] * $(name[$i])   [L_radio = $(nl_radio[$i])]
+	     }
+	     define sum  ($sum  + $(nl_radio[$i])    )
+	     define sum2 ($sum2 + $(nl_radio[$i])**2 )
+	     define num  ($num + 1) 
+	  } 
+	}
+	
+	echo --- Lum radio -------------------------------------
+	echo    Number of valid contributions : $num
+	echo    Sum of them : $sum
+	echo    Sum of them squared : $sum2
+
+	if($num > 0 ) {
+	  define avrg_nl_radio  ($sum/$num)
+	  define sigma_nl_radio (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	  echo
+	  echo    the average RADIO Luminosity is : $avrg_nl_radio
+	  echo    the associated sigma is : $sigma_nl_radio
+	  if($num == 1) {define sigma_nl_radio ($sigma_nl_radio/sqrt($num))}
+	  if($num >= 2) {define sigma_nl_radio ($sigma_nl_radio/sqrt($num-1))}
+	  echo    the associated sigma is : $sigma_nl_radio
+	  echo ------------------------------------------------
+
+	  define ref_avrg_nl_radio  ($avrg_nl_radio)
+	  define ref_sigma_nl_radio ($sigma_nl_radio)
+
+	}else{
+	  echo  There are NO contributions to the RADIO average
+	  echo  
+	  echo  ****** Exiting the program .....
+	  echo ------------------------------------------------
+	  return
+	}
+
+	foreach band ( iras100 iras60 iras25 iras12 ) { 
+	   echo ------------------------------------------------
+           echo * Averaging $band *
+	   echo *
+	   if_avrg_norm_nlum1 $band $1 $2 $3
+	}
+
+	set dimen(avrg_iras_lum_vec)   = 4
+	set dimen(sigma_iras_lum_vec)  = 4
+	set dimen(avrg_iras_nlum_vec)  = 4
+	set dimen(sigma_iras_nlum_vec) = 4
+
+	set avrg_iras_lum_vec[0] = $avrg_nl_radio - $avrg_nl_iras100 - $nu100
+	set avrg_iras_lum_vec[1] = $avrg_nl_radio - $avrg_nl_iras60  - $nu60
+	set avrg_iras_lum_vec[2] = $avrg_nl_radio - $avrg_nl_iras25  - $nu25
+	set avrg_iras_lum_vec[3] = $avrg_nl_radio - $avrg_nl_iras12  - $nu12
+
+       set sigma_iras_lum_vec[0]=sqrt($sigma_nl_iras100**2.+$sigma_nl_radio**2.)
+       set sigma_iras_lum_vec[1]=sqrt($sigma_nl_iras60**2.+$sigma_nl_radio**2.)
+       set sigma_iras_lum_vec[2]=sqrt($sigma_nl_iras25**2.+$sigma_nl_radio**2.)
+       set sigma_iras_lum_vec[3]=sqrt($sigma_nl_iras12**2.+$sigma_nl_radio**2.)
+
+	set avrg_iras_nlum_vec[0] = $avrg_nl_radio + $avrg_nl_iras100
+	set avrg_iras_nlum_vec[1] = $avrg_nl_radio + $avrg_nl_iras60
+	set avrg_iras_nlum_vec[2] = $avrg_nl_radio + $avrg_nl_iras25
+	set avrg_iras_nlum_vec[3] = $avrg_nl_radio + $avrg_nl_iras12
+
+	set sigma_iras_nlum_vec   = sigma_iras_lum_vec
+
+
+##--------------------------------------------------------------------------
+## g_avrg_g_sample <which-L> <L_min> <L_max> <sample>
+## 	Read and compute averages on the Gamma-ray-selected sample
+##	Uses subroutines:
+## 	   - read_g_sample
+## 	   - prepare_g
+## 	   - if_avrg_gamma_sample
+## 	 
+g_avrg_g_sample 4
+
+	foreach 5 {name gname z d_l f_radio lg_kf_radio l_radio nl_radio n_g l_g nl_g ag flag_g check_g } {
+	   set back_$5 = $5
+	}
+	#
+	# Deve fare questo "pasticcio" per non perdere i vettori con
+	# dentro tutte le quantita` relative al campione "vero", perche`
+	# nel frattempo deve leggere e caricare il campione GAMMA.
+	#
+
+	read_g_sample
+	prepare_g
+
+	# set check_g = flag_g-1
+	set name=gname
+
+	#
+	# Setting check_g vector 
+	#
+	do i=0,$(dimen(name)-1) {
+	  if(flag_g[$i] > 1) {
+	       set check_g[$i]=1
+	  } else {
+	       set check_g[$i]=0
+	  }
+	}  
+
+	echo * Plain [1] or "normalized" [2] averaging ?
+	echo * NOTE: have you already computed the right average L_radio ?
+	echo * <L_radio>= $ref_avrg_nl_radio
+	echo * computed for limits $oldlmin - $oldlmax
+	define pause ? {Plain [1] or "normalized" [2] averaging ?}
+
+	if($pause == 1) { if_avrg_gamma_sample $1 $2 $3 $4 }
+	if($pause == 2) { 
+	   if_avrg_norm_nlum1 g $1 $2 $3    
+	   define avrg_nl_g_vec  ($avrg_nl_g + $ref_avrg_nl_radio)
+	   define sigma_nl_g_vec (sqrt($sigma_nl_g**2. + $ref_sigma_nl_radio**2.))
+	   #------------------------------------------------------------
+	   # e vai con l'indice spettrale gamma
+	   #------------------------------------------------------------
+	   #
+	   define sum  (0.0)
+	   define num  (0)
+	   define sum2 (0.0)
+
+	   do i=0,$maxind {
+	      if( nl_$1[$i] > $2 && nl_$1[$i] < $3 && flag_g[$i] > 2) { 
+	         define sum  ($sum  + $(ag[$i])   )
+	         define sum2 ($sum2 + $(ag[$i])**2)
+	         define num  ($num + 1) 
+	      }
+	   }                     #--end do
+	
+	   echo --- alpha_g ------------------------------
+	   echo    Number of valid contributions : $num
+
+	   if($num > 0) {
+	      define avrg_ag    ($sum/$num)
+	      define sigma_ag   (sqrt($sum2/$num - ($sum/$num)**2))
+	      echo
+	      echo    the average spectral index is : $avrg_ag
+	      echo    the associated sigma is : $sigma_ag
+	      if($num == 1){define sigma_ag  ($sigma_ag/sqrt($num))}
+	      if($num >= 2){define sigma_ag  ($sigma_ag/sqrt($num-1))}
+	      echo    the associated sigma is : $sigma_ag
+	      echo ------------------------------------------------
+	   } else {
+	      echo    There are NO contributions to the average
+	      echo -----------------------------------------------
+	      define avrg_ag  (0)
+	      define sigma_ag (0)
+	   }
+
+	   define num_ag          $num
+	   define avrg_ag_vec     $avrg_ag
+	   define sigma_ag_vec    $sigma_ag
+
+	   echo   * <L_g>     = $avrg_nl_g_vec
+	   echo   * sigma_L_g = $sigma_nl_g_vec
+	   echo   * <a_g>     = $avrg_ag_vec
+	   echo   * sigma_a_g = $sigma_ag_vec
+	   echo -----------------------------------------------
+	}
+
+	set dimen(dum_avrg)  = 6
+	set dimen(dum_sigma) = 6
+	do i=0,4 {
+	   set dum_avrg[$i]  = avrg_nlum_vec[$i]
+	   set dum_sigma[$i] = sigma_nlum_vec[$i]
+	}
+	set dum_avrg[5]  = $avrg_nl_g_vec
+	set dum_sigma[5] = $sigma_nl_g_vec
+	set avrg_nlum_vec  = dum_avrg
+	set sigma_nlum_vec = dum_sigma
+
+	#
+	# rimetto a posto i vettori che erano stati alterati dalla
+	#  lettura del campione gamma.
+	#
+	foreach 5 {name gname z d_l f_radio lg_kf_radio l_radio nl_radio n_g l_g nl_g ag flag_g check_g } {
+	   set $5 = back_$5
+	   delete back_$5
+	}
+
+
+##--------------------------------------------------------------------------
+## g_avrg_true 4 <which-L> <L_min> <L_max> <sample>
+## 	Read and compute averages on the presently loaded sample.
+##	Uses subroutines:
+## 	   - prepare_g
+## 	   - if_avrg_gamma_sample
+##
+g_avrg_true 4
+
+	prepare_g
+
+	define pause ? {Plain [1] or "normalized" [2] averaging ?}
+	if($pause == 1) { if_avrg_gamma_sample $1 $2 $3 $4 }
+	if($pause == 2) { 
+
+	   echo ** computing the average RADIO luminosity 
+
+	   define maxind  (dimen(name)-1)
+	   define sum     (0.0)
+	   define num     (0)
+	   define sum2    (0.0)
+
+	   do i=0,$maxind {
+	     if( $(nl_$1[$i]) > $2 && $(nl_$1[$i]) < $3 ) { 
+	        define sum  ($sum  + $(nl_radio[$i])    )
+	        define sum2 ($sum2 + $(nl_radio[$i])**2 )
+	     define num  ($num + 1) 
+	     } 
+	   }
+	
+	   echo --- Lum radio -------------------------------------
+	   echo    Number of valid contributions : $num
+
+	   if($num > 0 ) {
+	     define avrg_nl_radio  ($sum/$num)
+	     define sigma_nl_radio (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	     echo
+	     echo    the average RADIO Luminosity is : $avrg_nl_radio
+	     echo    the associated sigma is : $sigma_nl_radio
+	     if($num == 1) {define sigma_nl_radio ($sigma_nl_radio/sqrt($num))}
+	     if($num >= 2) {define sigma_nl_radio ($sigma_nl_radio/sqrt($num-1))}
+	     echo    the associated sigma is : $sigma_nl_radio
+	     echo ------------------------------------------------
+	   }else{
+	     echo  There are NO contributions to the RADIO average
+	     echo  ****** Exiting the program .....
+	     echo ------------------------------------------------
+	     return
+	   }
+	
+	   if_avrg_norm_nlum1 g $1 $2 $3    
+	   define avrg_nl_g_vec  ($avrg_nl_g + $avrg_nl_radio)
+	   define sigma_nl_g_vec (sqrt($sigma_nl_g**2. + $sigma_nl_radio**2.))
+
+	   echo   * <L_g>     = $avrg_nl_g_vec
+	   echo   * sigma_L_g = $sigma_nl_g_vec
+	   echo   * <a_g>     = $avrg_ag_vec
+	   echo   * sigma_a_g = $sigma_ag_vec
+	   echo -----------------------------------------------
+	}
+
+	set dimen(dum_avrg)  = 6
+	set dimen(dum_sigma) = 6
+	do i=0,4 {
+	   set dum_avrg[$i]  = avrg_nlum_vec[$i]
+	   set dum_sigma[$i] = sigma_nlum_vec[$i]
+	}
+	set dum_avrg[5]  = $avrg_nl_g_vec
+	set dum_sigma[5] = $sigma_nl_g_vec
+	set avrg_nlum_vec  = dum_avrg
+	set sigma_nlum_vec = dum_sigma
+
+
+##--------------------------------------------------------------------------
+## plot_avrg_nlum5
+## 	Plotta 5 punti spettrali mediati (radio-X) chiedendo 
+## 	un "suffix" per il vettore in cui andare a prenderli, nel caso
+##	in cui fossero gia` "storati".
+##
+plot_avrg_nlum5
+
+	nln_frame empty  # frame without any points other than average
+	set vnu = <$nu5 $numm $nuir $nuopt $nux>
+
+	define color  ? { Color ?} 
+	define sample ? { Gimme the suffix of vector names }
+	define 1 $sample
+	if($(dimen(avrg_nlum_$1)) > 5) { 
+	   set dimen(tmp_avrg) = 5
+	   set dimen(tmp_sigma)= 5
+	   do i=0,4 {
+	      set tmp_avrg[$i]  = avrg_nlum_$1[$i]
+	      set tmp_sigma[$i] = sigma_nlum_$1[$i]
+	   }
+	} else { 
+	   set tmp_avrg  = avrg_nlum_$1
+	   set tmp_sigma = sigma_nlum_$1
+	}
+
+	ctype $color
+	ptype 4 3
+	expand 2.5
+	points  vnu tmp_avrg
+	lweight 3
+	expand 2.0
+	error_y vnu tmp_avrg tmp_sigma
+					# connect vnu tmp_avrg
+
+	lweight 1
+	butterfly $($avrg_ax_$1-1) $sigma_ax_$1 $sigma_ax_$1 17.384 16.384 18.0
+	set nl_btfly = btfly + $(avrg_nlum_$1[4])
+	connect nufly nl_btfly
+	expand 1.5
+	ctype 2
+
+
+##--------------------------------------------------------------------------
+## plot_avrg_nlum6
+## 	Plotta 5+1 (anche il punto GAMMA) punti spettrali mediati chiedendo 
+## 	un "suffix" per il vettore in cui andare a prenderli, nel caso
+##	in cui fossero gia` "storati".
+##
+plot_avrg_nlum6
+
+	nln_frame empty  # frame without any points other than average
+	set vnu = <$nu5 $numm $nuir $nuopt $nux $nug>
+
+	define color  ? { Color ?} 
+	define sample ? { Gimme the suffix of vector names }
+	define 1 $sample
+
+	if($(dimen(avrg_nlum_$1)) < 6) {
+	   echo  *** the averaged SED vector does NOT include Gamma-rays
+	   echo  *** Exiting the macro....
+	   echo ------------------------------------------------------------
+	   return
+	}
+
+	ctype $color
+	ptype 4 3
+	expand 2.5
+	ptype 4 3
+	points  vnu avrg_nlum_$1
+	lweight 3
+	expand 2.0
+	error_y vnu avrg_nlum_$1 sigma_nlum_$1
+	lweight 2
+	ltype 1
+	                          ## connect vnu avrg_nlum_$1
+	ltype 0
+	lweight 1
+
+	butterfly $($avrg_ax_$1-1) $sigma_ax_$1 $sigma_ax_$1 17.384 16.384 18.0
+	set nl_btfly = btfly + $(avrg_nlum_$1[4])
+	connect nufly nl_btfly
+
+	butterfly $($avrg_ag_$1-1) $sigma_ag_$1 $sigma_ag_$1 22.384 21.85 24.00
+	set nl_btfly = btfly + $(avrg_nlum_$1[5])
+	connect nufly nl_btfly
+
+	expand 1.5
+	ctype 2
+
+##-------------------------------------------------------------------------
+## give_name 
+give_name
+
+	define suffix ? { Give a suffix to add at the end of vector names }
+
+	echo  renaming scalar:   avrg_ax_vec
+	define avrg_ax_$suffix  ($avrg_ax_vec)
+
+	echo  renaming scalar:   sigma_ax_vec
+	define sigma_ax_$suffix  ($sigma_ax_vec)
+
+	echo  renaming scalar:   avrg_ag_vec
+	define avrg_ag_$suffix  ($avrg_ag_vec)
+
+	echo  renaming scalar:   sigma_ag_vec
+	define sigma_ag_$suffix  ($sigma_ag_vec)
+
+	echo  renaming vector:   avrg_nu_vec    
+	set avrg_nu_$suffix    = avrg_nu_vec 
+
+	echo  renaming vector:   avrg_num_vec    
+	set avrg_num_$suffix   = avrg_num_vec 
+
+	echo  renaming vector:   avrg_flux_vec    
+	set avrg_flux_$suffix  = avrg_flux_vec 
+
+	echo  renaming vector:   sigma_flux_vec
+	set sigma_flux_$suffix = sigma_flux_vec 
+
+	echo  renaming vector:   avrg_nflux_vec 
+	set avrg_nflux_$suffix = avrg_nflux_vec 
+
+	echo  renaming vector:   sigma_nflux_vec
+	set sigma_nflux_$suffix= sigma_nflux_vec 
+
+	echo  renaming vector:   avrg_lum_vec 
+	set avrg_lum_$suffix   = avrg_lum_vec 
+
+	echo  renaming vector:   sigma_lum_vec 
+	set sigma_lum_$suffix  = sigma_lum_vec 
+
+	echo  renaming vector:   avrg_nlum_vec 
+	set avrg_nlum_$suffix  = avrg_nlum_vec 
+
+	echo  renaming vector:   sigma_nlum_vec 
+	set sigma_nlum_$suffix = sigma_nlum_vec 
+
+	echo  renaming vector:   avrg_d_l_vec 
+	set avrg_d_l_$suffix   = avrg_d_l_vec 
+
+	prep_auxil
+	
+
+##-------------------------------------------------------------------------
+## give_name_iras
+give_name_iras
+
+	define suffix ? { Give a suffix to add at the end of vector names }
+
+	foreach 1 ( nu num flux nflux lum nlum ) {
+	    echo * renaming IRAS vector : avrg_$1
+	    set avrg_iras_$1_$suffix = avrg_iras_$1_vec
+	}
+
+	foreach 1 ( flux nflux lum nlum ) {
+	    echo * renaming IRAS vector : sigma_$1
+	    set sigma_iras_$1_$suffix = sigma_iras_$1_vec
+	}
+
+##---------------------------------------------------------------------------
+## prep_auxil [<suffix>]
+prep_auxil 01
+
+	# define suffix ? { Give a suffix to add at the end of vector names }
+
+	if($?1) { define suffix $1 }
+
+	echo  preparing the array "auxil"
+	set dimen(auxil) = 7
+	set auxil[0] = $(avrg_d_l_vec[0])
+	set auxil[1] = $avrg_ax_$suffix
+	set auxil[2] = $sigma_ax_$suffix
+	set auxil[3] = $avrg_ag_$suffix
+	set auxil[4] = $sigma_ag_$suffix
+	set auxil[5] = $oldlmin
+	set auxil[6] = $oldlmax
+	set auxil_$suffix = auxil
+
+##--------------------------------------------------------------------------
+## print_avrg
+##	scrive in un file un vettore contenente SED mediata
+##
+print_avrg
+
+	define suffix ? { Gimme the suffix of vector names }
+
+	print '  %7.4f  %7.4f  %7.4f  \n' < avrg_nu_$suffix avrg_nlum_$suffix sigma_nlum_$suffix > 
+	print '  %7.4f \n'  < auxil_$suffix >
+	print   avrg.info.$suffix '  %7.4f  %7.4f  %7.4f \n' < avrg_nu_$suffix avrg_nlum_$suffix sigma_nlum_$suffix >
+	print + avrg.info.$suffix '  %7.4f \n'  < auxil_$suffix >
+
+	define irasalso ? {Print IRAS average data ? }
+	if(substr('$irasalso',0,1) == 'y') {
+	   print '  %7.4f  %7.4f  %7.4f \n' < avrg_iras_nu_$suffix avrg_iras_nlum_$suffix sigma_iras_nlum_$suffix > 
+	   print + avrg.info.$suffix '  %7.4f  %7.4f  %7.4f \n' < avrg_iras_nu_$suffix avrg_iras_nlum_$suffix sigma_iras_nlum_$suffix >
+	}
+
+
+##--------------------------------------------------------------------------
+## print_summary
+##	scrive in un file un vettore contenente SED mediata
+##
+print_summary
+
+	echo ** Giving information on the content of vectors "vec" 
+
+	define suffixvec  $suffix
+	define suffixvec  ? { Gimme the suffix of vector names }
+	define 1          $suffixvec 
+	define suffixfile $suffixvec
+	define suffixfile ? { Gimme the suffix to add to output file name }
+
+	set vnu= < $nu5 $numm $nuir $nuopt $nux $nug >
+
+	set dimen(vec_description)=6.s
+	set vec_description[0]= 'radio '
+	set vec_description[1]= 'mm    '
+	set vec_description[2]= 'ir    '
+	set vec_description[3]= 'opt   '
+	set vec_description[4]= 'X     '
+	set vec_description[5]= 'gamma '
+
+	set dimen(aux1_description)=7.s
+	set aux1_description[0]= 'D_l        '
+	set aux1_description[1]= 'alpha_x    '
+	set aux1_description[2]= 'err_alpha_x'
+	set aux1_description[3]= 'alpha_g    '
+	set aux1_description[4]= 'err_alpha_g'
+	set aux1_description[5]= 'L_min      '
+	set aux1_description[6]= 'L_max      '
+
+	set dimen(aux2_description)=7
+	set aux2_description[0]= $num_d_l
+	set aux2_description[1]= $num_ax
+	set aux2_description[2]= $num_ax
+	set aux2_description[3]= $num_ag
+	set aux2_description[4]= $num_ag
+	set aux2_description[5]= 00
+	set aux2_description[6]= 00
+
+	print ' %s  %3g  %6.3f  %8.4f  %8.4f %8.4f  %8.4f \n' < vec_description avrg_num_$1 vnu avrg_flux_$1 avrg_lum_$1 avrg_nlum_$1 sigma_nlum_$1 > 
+
+	print ' %s   %3g  %8.4f \n' < aux1_description aux2_description auxil_$1 >
+
+	write avrg.info.summary.$suffixfile          num            Flux       Lum      nu_Lum     sigma \n
+
+	print + avrg.info.summary.$suffixfile ' %s   %3g  %6.3f  %8.4f  %8.4f  %8.4f  %8.4f \n' < vec_description avrg_num_$1 vnu avrg_flux_$1 avrg_lum_$1 avrg_nlum_$1 sigma_nlum_$1 >
+
+
+	define irasalso ? {Print IRAS average data ? }
+
+	if(substr('$irasalso',0,1) == 'y') {
+
+	   set dimen(vec_description)=4.s
+	   set vec_description[0]= 'iras100'
+	   set vec_description[1]= 'iras60 '
+	   set vec_description[2]= 'iras25 '
+	   set vec_description[3]= 'iras12 '
+
+	   print + avrg.info.summary.$suffixfile ' %s  %3g  %6.3f  %8.4f  %8.4f  %8.4f  %8.4f \n' < vec_description avrg_iras_num_$1 avrg_iras_nu_$1 avrg_iras_flux_$1 avrg_iras_lum_$1 avrg_iras_nlum_$1 sigma_iras_nlum_$1 >
+
+	}
+
+	print + avrg.info.summary.$suffixfile ' %s  %3g  %8.4f \n' < aux1_description aux2_description auxil_$1 >
+
+
+##--------------------------------------------------------------------------
+## redoiras
+redoiras
+
+	define suffix ? {Gimme the suffix of vector names }
+	define color  ? { Color ?}
+
+	data avrg.info.$suffix
+	lines 18 23 
+	read {irfreq 1 irnlum 2 irnlumerr 3 }
+
+	ctype $color
+	# expand 2.5
+	# ptype 3 3 
+	# points  irfreq irnlum 
+	expand 1.8
+	ptype 4 3 
+	points  irfreq irnlum 
+	lweight 3
+	expand 2.0
+	error_y irfreq irnlum irnlumerr 
+	expand 1.5
+	lweight 1
+
+#---------------------------------------------------------------------------
+
+

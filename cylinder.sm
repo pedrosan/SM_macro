@@ -1,0 +1,1622 @@
+#-------------------------------------------------------------------------------
+# area_cyl_diff (also compares two formulae)
+area_cyl_diff
+
+        reset_graph
+
+	# NOTE: 'z' is the running coordinate
+	define zstep ? < Size of step in z/R : >
+
+        set x=0,2,$zstep
+
+        set z1=pop(-1,x)
+        set z2=pop(1,x)
+
+        set hz=0.5*(z1+z2)
+        set area1 = 2*(atan(sqrt(z1/(2-z1))) + 0.5*(z1-1)*sqrt(2*z1 - z1*z1))/3.1415
+        set area2 = 2*(atan(sqrt(z2/(2-z2))) + 0.5*(z2-1)*sqrt(2*z2 - z2*z2))/3.1415
+        set darea = area2-area1
+
+        set area1b = (acos(1-z1) - (1-z1)*sqrt(2*z1 - z1*z1))/3.1415
+        set area2b = (acos(1-z2) - (1-z2)*sqrt(2*z2 - z2*z2))/3.1415
+        set dareab = area2b-area1b
+
+        echo $(sum(darea))
+        echo $(sum(dareab))
+
+	vecminmax darea a b
+        limits -0.06 2.06 $(-0.1*$b) $(1.1*$b)
+	box
+	xlabel z/R
+	ylabel (differential Area)/\pi R^2
+
+	ctype 3 
+        histogram hz darea 
+	ctype 5 
+        histogram hz dareab
+
+	# set smooth_darea = vsmooth(darea,20)
+
+#-------------------------------------------------------------------------------
+# area_cyl_int
+area_cyl_int
+
+        reset_graph
+
+	# NOTE: 'z' is the running coordinate
+	define zstep ? < Size of step in z/R : >
+
+        set x=0,2,$zstep
+
+        set z1=pop(-1,x)
+        set z2=pop(1,x)
+        set hz=0.5*(z1+z2)
+
+        set area1 = 2*(atan(sqrt(z1/(2-z1))) + 0.5*(z1-1)*sqrt(2*z1 - z1*z1))/3.1415
+        set area2 = 2*(atan(sqrt(z2/(2-z2))) + 0.5*(z2-1)*sqrt(2*z2 - z2*z2))/3.1415
+
+        set area2b = (acos(1-z2) - (1-z2)*sqrt(2*z2 - z2*z2))/3.1415
+
+        limits -0.06 2.06 -0.1 1.1
+	box
+	xlabel z/R
+	ylabel (Area Included)/\pi R^2
+
+	ctype 3
+        histogram hz area2
+	ctype 5 
+        histogram hz (area2b-0.02)
+
+	set smooth_area2  = vsmooth(area2,20)
+	set smooth_area2b = vsmooth(area2b,20)
+	ctype 3 
+	# connect hz smooth_area2
+	ctype 2
+
+#-------------------------------------------------------------------------------
+# area_sph_diff
+area_sph_diff
+
+        reset_graph
+
+	# NOTE: 'z' is the running coordinate
+	define zstep ? < Size of step in z/R : >
+
+        set x=0,1,$zstep
+
+        set z1=pop(-1,x)
+        set z2=pop(1,x)
+
+        set hz=0.5*(z1+z2)
+        set area1 = 0.25*z1*z1*(3-z1)
+        set area2 = 0.25*z2*z2*(3-z2)
+        set darea=area2-area1
+
+        echo $(sum(darea))
+
+	vecminmax darea a b
+        limits -0.06 1.06 $(-0.1*$b) $(1.1*$b)
+	box
+	xlabel z/R
+	ylabel (Differential Volume)/(\frac{4}{3}\pi R^3)
+
+	ctype 3 
+        histogram hz darea 
+	ctype 2 
+
+	set smooth_darea = vsmooth(darea,20)
+	ctype 3 
+	# connect hz smooth_darea
+	ctype 2
+
+
+#-------------------------------------------------------------------------------
+# area_sph_int
+area_sph_int
+
+        reset_graph
+
+	# NOTE: 'z' is the running coordinate
+	define zstep ? < Size of step in z/R : >
+
+        set x=0,1,$zstep
+
+        set z1=pop(-1,x)
+        set z2=pop(1,x)
+        set hz=0.5*(z1+z2)
+
+        set area1 = 0.25*z1*z1*(3-z1)
+        set area2 = 0.25*z2*z2*(3-z2)
+
+        limits -0.06 1.06 area2 
+	box
+	xlabel z/R
+	ylabel (Volume Enclosed)/(\frac{4}{3}\pi R^3)
+
+	ctype 3
+        histogram hz area2
+	ctype 2
+
+	set smooth_area2 = vsmooth(area2,20)
+	ctype 3 
+	# connect hz smooth_area2
+	ctype 2
+
+#-------------------------------------------------------------------------------
+# compare_area_diff : cylinder vs. sphere.
+compare_area_diff
+
+        reset_graph
+
+	define zstep ? < Step in z/R : >
+
+        set x=0,1,$zstep
+
+        set z1=pop(-1,x)
+        set z2=pop(1,x)
+
+        set hz=0.5*(z1+z2)
+        set area1_cyl = 2*(atan(sqrt(z1/(2-z1))) + 0.5*(z1-1)*sqrt(2*z1 - z1*z1))/3.1415
+        set area2_cyl = 2*(atan(sqrt(z2/(2-z2))) + 0.5*(z2-1)*sqrt(2*z2 - z2*z2))/3.1415
+        set darea_cyl = area2_cyl - area1_cyl
+
+        set area1_sph = 0.25*z1*z1*(3-z1)
+        set area2_sph = 0.25*z2*z2*(3-z2)
+        set darea_sph = area2_sph - area1_sph
+
+	set hz = < $(-0.5*$zstep) > CONCAT hz CONCAT < $(1+0.5*$zstep) >
+	set darea_cyl = < 0 > CONCAT darea_cyl CONCAT < 0 >
+	set darea_sph = < 0 > CONCAT darea_sph CONCAT < 0 >
+
+	set darea_temp = darea_cyl CONCAT darea_sph
+	vecminmax darea_temp a b
+        limits -0.06 1.06 $(-0.1*$b) $(1.1*$b)
+	box
+	xlabel z/R
+	ylabel (Differential Volume)/(Total Volume)
+
+	lweight 3 
+	ctype 3 histogram hz darea_cyl
+	ctype 5 histogram hz darea_sph
+	ctype 2
+	lweight 3 
+
+	relocate ( $gx1 $($gy2 + 1000) ) ctype 3 putlabel 6 cylinder
+	relocate ( $gx2 $($gy2 + 1000) ) ctype 5 putlabel 4 sphere
+
+	echo "------------------"
+	echo "  RED  : cylinder "
+	echo "  BLUE : sphere "
+	echo "------------------"
+
+
+#-------------------------------------------------------------------------------
+# compare_area_int : cylinder vs. sphere.
+compare_area_int
+
+        reset_graph
+
+	define zstep ? < Step in z/R : >
+
+        set x=0,1,$zstep
+
+        set z1=pop(-1,x)
+        set z2=pop(1,x)
+        set hz=0.5*(z1+z2)
+
+        set area1_cyl = 2*(atan(sqrt(z1/(2-z1))) + 0.5*(z1-1)*sqrt(2*z1 - z1*z1))/3.1415
+        set area2_cyl = 2*(atan(sqrt(z2/(2-z2))) + 0.5*(z2-1)*sqrt(2*z2 - z2*z2))/3.1415
+        set area1_sph = 0.25*z1*z1*(3-z1)
+        set area2_sph = 0.25*z2*z2*(3-z2)
+
+        limits -0.06 1.06 -0.06 0.56
+	box
+	xlabel z/R
+	ylabel (Enclosed Volume)/(Total Volume)
+
+	lweight 3 
+	ctype 3 histogram hz area2_cyl
+	ctype 5 histogram hz area2_sph
+	ctype 2
+	lweight 3
+
+	relocate ( $gx1 $($gy2 + 1000) ) ctype 3 putlabel 6 cylinder
+	relocate ( $gx2 $($gy2 + 1000) ) ctype 5 putlabel 4 sphere
+
+	echo "------------------"
+	echo "  RED  : cylinder "
+	echo "  BLUE : sphere "
+	echo "------------------"
+
+##-------------------------------------------------------------------------------
+## func_volume_tilted_cylinder_OLD <time>
+func_volume_tilted_cylinder_OLD 1
+
+	define tt local
+	define tt $1
+
+	#--------------------------------------------------
+	# REQUIRES/EXPECTS the following global variables:
+	#
+	#  LL, DD, RR, theta
+	#
+	# and the following ones, which could be computed from the above:
+	#
+	#  t1   $($LL*cosd($theta))
+	#  t2   $($DD*sind($theta))
+	#  tmax $($LL*cosd($theta) + $DD*sind($theta))
+	#--------------------------------------------------
+	
+	#-----------------------------------------------------------
+	# "regular" case, with h1 < h2
+	#-----------------------------------------------------------
+	if( $h1 <= $h2 ) {
+
+           if( $tt <= $h2 ) {
+
+              if( $tt <= $h1 ) {
+                 define x1  ( 0.0 ) 
+                 define x2 $( $tt/$RR/sind($theta) ) 
+              } else {
+                 #define x1 $( ($tt - $LL*cosd($theta))/sind($theta)/$RR ) 
+                 define x1 $( ($tt/$RR - $LL/$RR*cosd($theta))/sind($theta) ) 
+                 define x2 $(  $tt/$RR/sind($theta) ) 
+              }
+              define V_plus ( 0.0 )
+           
+           } else {
+
+	      if( $tt < $hmax ) { 
+                 define x1 $( ($tt/$RR - $LL/$RR*cosd($theta))/sind($theta) ) 
+                 define x2  ( 2.0 )
+                 define xV $( ($tt/$RR - 2.0*sind($theta))/cosd($theta) )
+                 #define x1 $( ($tt - $LL*cosd($theta))/sind($theta)/$RR ) 
+                 #define hV $( ($tt - $DD*sind($theta))/cosd($theta)/$RR )
+                 #define x2 $( $DD/$RR )
+                 #define hV $( ($tt - $DD*sind($theta))/cosd($theta) )
+                 define V_plus  $( 3.1415*$RR**3.0*$xV )
+	      } else {
+                 define V_plus  $( 3.1415*$RR**2.0*$LL )
+	      }
+           
+           }
+	}
+
+	#-----------------------------------------------------------
+	# "switched" case, with h1 > h2
+	#-----------------------------------------------------------
+	if( $h1 > $h2 ) {
+           if( $tt <= $h2 ) {
+              define x1  ( 0.0 ) 
+              define x2 $( $tt/$RR/sind($theta) ) 
+           
+              define V_plus  ( 0.0 )
+           
+           } else {
+
+              if( $tt <= $h1 ) {
+                 define x1 ( 0.0 ) 
+                 define x2 ( 2.0 )
+                 define xV $( ($tt/$RR - 2.0*sind($theta))/cosd($theta) )
+                 #define x2 $( $DD/$RR )
+                 #define hV $( ($tt - $DD*sind($theta))/cosd($theta)/$RR )
+                 #define hV $( ($tt - $DD*sind($theta))/cosd($theta) )
+              } else {
+                 define x1 $( ($tt/$RR - $LL/$RR*cosd($theta))/sind($theta) ) 
+                 define x2 ( 2.0 )
+                 define xV $( ($tt/$RR - 2.0*sind($theta))/cosd($theta) )
+                 #define x1 $( ($tt - $LL*cosd($theta))/sind($theta)/$RR ) 
+                 #define x2 $( $DD/$RR )
+                 #define hV $( ($tt - $DD*sind($theta))/cosd($theta)/$RR )
+                 #define hV $( ($tt - $DD*sind($theta))/cosd($theta) )
+              }
+           
+              define V_plus  $( 3.1415*$RR**3.0*$xV )
+           
+           }
+	}
+
+	# echo "func: "$x1 $x2 $(2.0*$x2 - $x2*$x2)
+
+        define V_t_theta_2 $( ( ($x2-1)*acos(1-$x2) + sqrt(2.0*$x2 - $x2*$x2)*(1 - (2*$x2 - $x2*$x2)/3.0) ) )
+        define V_t_theta_1 $( ( ($x1-1)*acos(1-$x1) + sqrt(2.0*$x1 - $x1*$x1)*(1 - (2*$x1 - $x1*$x1)/3.0) ) )
+        # define V_t_theta_2 $( ( ($x2-1)*acos(0.9999*(1-$x2)) + sqrt($x2*(2 - $x2))*(1 - (2*$x2 - $x2*$x2)/3.0) ) )
+        # define V_t_theta_1 $( ( ($x1-1)*acos(0.9999*(1-$x1)) + sqrt($x1*(2 - $x1))*(1 - (2*$x1 - $x1*$x1)/3.0) ) )
+
+        define V_t_theta   $( $RR**3.*tand($theta)*($V_t_theta_2 - $V_t_theta_1) + $V_plus )
+
+	set $0 = $V_t_theta
+
+##-------------------------------------------------------------------------------
+## func_volume_tilted_cylinder <time>
+func_volume_tilted_cylinder 1
+
+	define hh local
+	define hh $1
+
+	#--------------------------------------------------
+	# REQUIRES/EXPECTS the following global variables:
+	#
+	#  LL, DD, RR, theta
+	#
+	# and the following ones, which could be computed from the above:
+	#
+	#  h1   $($LL*cosd($theta))
+	#  h2   $($DD*sind($theta))
+	#  hmax $($LL*cosd($theta) + $DD*sind($theta))
+	#
+	# ALL already NORMALIZED to RR, i.e.
+	#--------------------------------------------------
+	
+	# temporary fudge, probably non necessary
+	define xLL $($LL/$RR)
+
+	#-----------------------------------------------------------
+	# "regular" case, with h1 < h2
+	#-----------------------------------------------------------
+	if( $hh < $hmax && $h1 <= $h2 ) {
+
+           if( $hh <= $h1 ) {
+	      define case "1A"
+              define x1      ( 0.0 ) 
+              define x2     $( $hh/sind($theta) ) 
+              define V_plus  ( 0.0 )
+           } 
+
+	   if( $hh > $h1 && $hh <= $h2 ) {
+	      define case "1B"
+              define x1     $( ($hh - $xLL*cosd($theta))/sind($theta) ) 
+              define x2     $( $hh/sind($theta) ) 
+              define V_plus  ( 0.0 )
+	   }
+           
+	   if( $hh > $h2 && $hh < $hmax ) {
+	      define case "1C"
+              define x1      $( ($hh - $xLL*cosd($theta))/sind($theta) ) 
+              define x2       ( 2.0 )
+              define xV      $( ($hh - 2.0*sind($theta))/cosd($theta) )
+              define V_plus  $( 3.1415*$RR**3.0*$xV )
+           } 
+	}
+
+	#-----------------------------------------------------------
+	# "switched" case, with h1 > h2
+	#-----------------------------------------------------------
+	if( $hh < $hmax && $h1 > $h2 ) {
+
+           if( $hh <= $h2 ) {
+	      define case "2A"
+              define x1      ( 0.0 ) 
+              define x2     $( $hh/sind($theta) ) 
+              define V_plus  ( 0.0 )
+	   }
+
+           if( $hh > $h2 && $hh <= $h1 ) {
+	      define case "2B"
+              define x1      ( 0.0 ) 
+              define x2      ( 2.0 )
+              define xV     $( ($hh - 2.0*sind($theta))/cosd($theta) )
+              define V_plus $( 3.1415*$RR**3.0*$xV )
+	   }
+
+           if( $hh > $h1 && $hh < $hmax ) {
+	      define case "2C"
+              define x1     $( ($hh - $xLL*cosd($theta))/sind($theta) ) 
+              define x2      ( 2.0 )
+              define xV     $( ($hh - 2.0*sind($theta))/cosd($theta) )
+              define V_plus $( 3.1415*$RR**3.0*$xV )
+	   }
+
+	}
+
+	#-----------------------------------------------------------
+	# If the vertical coordinate exceedes the cylinder size 
+	#   it simply returns the volume of the cylinder.
+	# Otherwise it computes the "active" volume according to the 
+	#   full formula.
+	#-----------------------------------------------------------
+        if( $hh >= $hmax ) {
+
+           define V_t_theta     $( 3.1415*$RR**3.0*$xLL )
+
+	} else {
+
+	   # echo " CASE: "$case" --- hh="$(sprintf('%.9f',$hh))" x1="$(sprintf('%.9f',float($x1)))" x2="$(sprintf('%.9f',float($x2)))" expr="$(2.0*$x2 - $x2*$x2)
+           define V_t_theta_2 $( ( ($x2-1)*acos(1-$x2) + sqrt(2.0*$x2 - $x2*$x2)*(1 - (2*$x2 - $x2*$x2)/3.0) ) )
+           define V_t_theta_1 $( ( ($x1-1)*acos(1-$x1) + sqrt(2.0*$x1 - $x1*$x1)*(1 - (2*$x1 - $x1*$x1)/3.0) ) )
+           # define V_t_theta_2 $( ( ($x2-1)*acos(0.9999*(1-$x2)) + sqrt($x2*(2 - $x2))*(1 - (2*$x2 - $x2*$x2)/3.0) ) )
+           # define V_t_theta_1 $( ( ($x1-1)*acos(0.9999*(1-$x1)) + sqrt($x1*(2 - $x1))*(1 - (2*$x1 - $x1*$x1)/3.0) ) )
+
+           define V_t_theta   $( $RR**3.*tand($theta)*($V_t_theta_2 - $V_t_theta_1) + $V_plus )
+	}
+
+
+
+	set $0 = $V_t_theta
+
+#-------------------------------------------------------------------------------
+# diagram_volume_tilted_cylinder
+diagram_volume_tilted_cylinder
+
+        reset_graph
+
+	define DD    (2.0)
+	define LL      ? <                              Length : >
+	define JOangle ? <                    Jet-to-obs angle : >
+
+	# define theta $( -1*atand(-sind($JOangle)/(1.0 + cosd($JOangle))) )
+	define theta $(0.5*$JOangle)
+	echo "+-----------------------------------------"
+	echo "| Apparent tilt of blob : "$theta
+
+	define RR $(0.5*$DD) 
+	define totVol $( 3.1415*$RR*$RR*$LL )
+
+	define zref1 $( $LL*cosd($theta) )
+	define zref2 $( $DD*sind($theta) )
+	define zrefM $( $zref1 + $zref2 )
+	echo "| h_1   : "$zref1 
+	echo "| h_2   : "$zref2 
+	echo "| h_max : "$zrefM 
+	echo "| half height : "$( $zrefM/2.0 ) 
+	echo "+-----------------------------------------"
+
+	# echo " Real T_max = "$($zrefM/cosd($theta))
+	echo " Real T_max = "$($zrefM*cosd($theta)*2.0)
+
+	# prepare box
+	define xspan $( $LL*sind($theta) + $DD*cosd($theta) )
+	define yspan $( $LL*cosd($theta) + $DD*sind($theta) )
+
+	reset_graph
+	limits $( -1.1*$LL*sind($theta) ) $(  1.1*$DD*cosd($theta) ) $( -0.1*$yspan ) $( 1.1*$yspan )
+	limits $( -1.1*$LL ) $( 1.1*$DD ) $( -0.1*($LL + $DD) ) $( 1.0*($LL + $DD) )
+	ticksize 0 0 0 0
+	box
+
+	ltype 0 
+	ctype 3 
+	relocate $fx1 0 
+	draw $fx2 0 
+
+	# draw shape
+	ltype 0 
+	ctype 2 
+	relocate 0 0 
+	draw $(        $DD*cosd($theta) ) $(        $DD*sind($theta) )
+	draw $( $uxp - $LL*sind($theta) ) $( $uyp + $LL*cosd($theta) )
+	draw $( $uxp - $DD*cosd($theta) ) $( $uyp - $DD*sind($theta) )
+	draw $( $uxp + $LL*sind($theta) ) $( $uyp - $LL*cosd($theta) )
+
+	ltype 0 
+	ctype 2
+
+	define h1   $($LL*cosd($theta))
+	define h2   $($DD*sind($theta))
+	define hmax $($LL*cosd($theta) + $DD*sind($theta))
+
+	define tau_active      ? <             tau active (units of R) : >
+	#define dt_slice $($tau_slice*cosd($theta))
+	define dh_slice  $( $tau_active/(2.0*cosd($theta)) )
+
+	#--- arrays ---#
+	define hstep $dh_slice
+
+	set hvec  = 0,$hmax,$hstep
+	set Vol_x = hvec*0
+
+	#define h1   $t1
+	#define h2   $t2
+	#define hmax $tmax
+	do 9=0,dimen(hvec)-1 {
+	   set Vol_x[$9] = func_volume_tilted_cylinder($(hvec[$9]))
+	   ltype 2 
+	   ctype 4 
+	   relocate $fx1 $(hvec[$9])
+	   draw     $fx2 $(hvec[$9])
+	}
+	ltype 0 ctype 2
+
+dummy1	
+        set h1v=pop(-1,hvec)
+        set h2v=pop(1,hvec)
+        set hhv=0.5*(h1v+h2v)
+        set vol1=pop(-1,Vol_x)
+        set vol2=pop(1,Vol_x)
+
+	set real_t1 = t1/sind($theta)
+	set real_t2 = t2/sind($theta)
+	set real_ht = ht/sind($theta)
+	set dVol_x=vol2-vol1
+
+dummy2
+
+        limits -0.06 1.06 -0.06 0.56
+	box
+	xlabel z/R
+	ylabel (Enclosed Volume)/(total Volume)
+
+	lweight 4 
+	ctype 3 histogram hz area2_cyl
+	ctype 5 histogram hz area2_sph
+	ctype 2
+	lweight 3
+
+	relocate ( $gx1 $($gy2 + 1000) ) ctype 3 putlabel 6 cylinder
+	relocate ( $gx2 $($gy2 + 1000) ) ctype 5 putlabel 4 sphere
+
+	echo "------------------"
+	echo "  RED  : cylinder "
+	echo "  BLUE : sphere "
+	echo "------------------"
+
+##-------------------------------------------------------------------------------
+## lc_volume_tilted_cylinder_ALT : SUPERSEDED BY 'lc_volume_tilted_cylinder'
+lc_volume_tilted_cylinder_ALT
+
+        if(!$(is_macro(SUB_find_peak))) {
+            echo "WARNING: this macro REQUIRES SUB_find_peak included in kk.sm"
+            myload kk
+        }
+
+        reset_graph
+	location 5500 30000 5500 28000
+
+	define RR (1.0)
+	define DD (2.0)
+	define LL             ? <                  Length (units of R) : >
+	define JOangle        ? <                     Jet-to-obs angle : >
+	define t_for_R_over_c ? <       Time corresponding to R/c [ks] : >
+
+	define tau_active     ? <     Slice thickness tau (units of R) : >
+
+	echo " "
+	echo " Good empirical values for F_base, T_drop and Drop_Scale "
+	echo "   SX : 0.2   0.2  4.0 "
+	echo "   HX : 0.15  0.0  2.5 "
+	define F_baseline     ? <         Observed Baseline Flux Level : > 
+	define T_start_drop   ? <  T_start for baseline component drop : > 
+	define tau_drop       ? <                   timescale for drop : > 
+
+	define F_baseline_r $($F_baseline/(1.0 - $F_baseline))
+
+	## define which_T_conv   ? <    Which t-to-T conversion [new|old] : >
+	define which_T_conv   "new"
+
+	define theta $( -1*atand(-sind($JOangle)/(1.0 + cosd($JOangle))) )
+	echo "------------------------------------------"
+	echo " Apparent tilt of blob : "$theta
+
+	define totVol $( 3.1415*$RR**3.0*$LL )
+
+	define h1   $($LL*cosd($theta))
+	define h2   $($DD*sind($theta))
+	define hmax $($h1 + $h2)
+
+	#define dt_slice $($tau_active*cosd($theta))
+	define dh_slice $( $tau_active/(2.0*cosd($theta)) )
+	#define dT_slice $( $tau_active*(1.0 + cosd($JOangle)) )
+	define dT_slice $( $tau_active )
+
+	if( substr('$which_T_conv',0,1) == 'n' ) {
+	   # These times take into account not only the time for the shock to reach
+	   #   a given "h" slice, but also the time for the signal to reach the OBSERVER.
+	   define T_1    $(       $h1*cosd($theta)*2.0 )
+	   define T_2    $(       $h2*cosd($theta)*2.0 )
+	   define T_max  $(     $hmax*cosd($theta)*2.0 )
+	   define T_half $( 0.5*$hmax*cosd($theta)*2.0 )
+	} else {
+	   define T_1    $(       $h1/cosd($theta) )
+	   define T_2    $(       $h2/cosd($theta) )
+	   define T_max  $(     $hmax/cosd($theta) )
+	   define T_half $( 0.5*$hmax/cosd($theta) )
+	}
+
+	echo "+--- Relevant Times -----------------------"
+	echo "|            h_1 : "$h1 
+	echo "|            h_2 : "$h2 
+	echo "|          h_max : "$hmax
+	echo "|  h_half_height : "$( $hmax/2.0 ) 
+	echo "| dh_slice/h_max : "$( $dh_slice/$hmax ) "("$( $hmax/$dh_slice )")"
+	echo "|"
+	echo "|    Real T_half : "$T_half
+	echo "|    Real  T_max : "$T_max
+	echo "+------------------------------------------"
+
+	# Time resolution
+	define hstep (0.005)
+
+	set hvec2 = 0,$hmax+$dh_slice,$hstep
+	set hvec1 = hvec2 - $dh_slice 
+	set Vol1  = fill(dimen(hvec1),0.0)
+	set Vol2  = fill(dimen(hvec2),0.0)
+
+	if( substr('$which_T_conv',0,1) == 'n' ) {
+	   set T_vec1 = hvec1*cosd($theta)*2.0
+	   set T_vec2 = hvec2*cosd($theta)*2.0
+	} else {
+	   set T_vec1 = hvec1/cosd($theta)
+	   set T_vec2 = hvec2/cosd($theta)
+	}
+
+	#----------------------------------------
+	# adjust bottom
+	set hdum=fill(dimen(hvec1),0)
+	set test_h = hvec1 > 0 
+	set hvec1b = test_h ? hvec1 : hdum
+	set hvec1  = hvec1b
+
+	#----------------------------------------
+	# adjust top
+	set hdum=fill(dimen(hvec2),$hmax)
+	set test_h = hvec2 <= $hmax
+	set hvec2b = test_h ? hvec2 : hdum
+	set hvec2  = hvec2b
+
+	delete hdum
+	delete hvec1b
+	delete hvec2b
+	#----------------------------------------
+
+	# h1, h2, hmax already defined
+	do 9=0,dimen(hvec1)-1 {
+	   set Vol1[$9] = func_volume_tilted_cylinder($(hvec1[$9]))
+	   set Vol2[$9] = func_volume_tilted_cylinder($(hvec2[$9]))
+	}
+	set Vol_slice = Vol2 - Vol1
+
+	# Preparing the baseline component, decaying.
+	set F_baseline_r   = fill(Vol_slice,$F_baseline_r)
+	set F_baseline_r_a = F_baseline_r
+	set F_baseline_r_b = F_baseline_r*exp(-(T_vec2 - $T_start_drop)/$tau_drop)
+	set F_baseline_r   = (T_vec2 <= $T_start_drop) ? F_baseline_r_a : F_baseline_r_b
+
+	# for plotting
+	set F_baseline     = F_baseline_r/(1.0 + F_baseline_r)
+
+	vecminmax Vol_slice Vmin Vmax
+	set Vol_slice = Vol_slice/$Vmax + F_baseline_r
+	vecminmax Vol_slice Vmin Vmax
+	set Vol_slice = Vol_slice/$Vmax
+
+	define plot_type ? <            LINEAR or LOG plot [1|2] : >
+
+	define rc_min (-0.2)
+	define rc_max ( 5.2)
+	define rc_max ( 4.5)
+
+        ticksize 2 10 0 0 
+        limits $($rc_min*$t_for_R_over_c) $($rc_max*$t_for_R_over_c) 0.091 2.1
+        box 4 4 1 4 
+	relocate ( $(0.5*($gx1+$gx2)) $($gy2+2500) )
+	putlabel 5 Time [ks]
+
+	if( $plot_type == 1 ) { 
+           ticksize 0.2 1 0 0 
+           limits $rc_min $rc_max 0.091 2.1
+           box 1 2 4 0
+           
+           ctype 3
+	   ltype 0 
+           connect T_vec2 Vol_slice
+           ctype 2
+	}
+	
+	if( $plot_type == 2 ) { 
+           ticksize 0.2 1 -0.2 1 
+           limits $rc_min $rc_max $(lg(0.091)) $(lg(2.1)) 
+           box 1 2 4 0
+	   xlabel Time [R/c]
+	   ylabel F/F_{max}
+	   
+           ctype 3
+           ltype 0
+           connect T_vec2 (lg(Vol_slice))
+	   ctype 7 ltype 1
+	   connect T_vec2 (lg(F_baseline))
+           ctype 2
+	}
+
+	SUB_find_peak T_vec2 (lg(Vol_slice)) tp_cyl b
+	echo "+------------------------------------------"
+	echo "|      Peak time : "$tp_cyl" R/c"
+	echo "+------------------------------------------"
+
+	#------------------------------------------------------------
+ 	# Plots lines marking reference times
+	#------------------------------------
+	define flag_plot_more_lines ? <    Plot extra Time-mark lines [0|1] : > 
+
+	ctype 4 
+	ltype 2 
+	relocate $T_half $fy1
+	draw     $T_half $fy2
+	relocate $T_max  $fy1
+	draw     $T_max  $fy2
+	if( $flag_plot_more_lines == 1 ) { 
+	   relocate $($T_max + $dT_slice) $fy1
+	   draw     $($T_max + $dT_slice) $fy2
+	}
+	ctype 5 
+	ltype 2 
+	relocate $T_1 $fy1
+	draw     $T_1 $fy2
+	if( $flag_plot_more_lines == 1 ) { 
+	   relocate $($T_1 + $dT_slice) $fy1
+	   draw     $($T_1 + $dT_slice) $fy2
+	}
+	relocate $T_2 $fy1
+	draw     $T_2 $fy2
+	if( $flag_plot_more_lines == 1 ) { 
+	   relocate $($T_2 + $dT_slice) $fy1
+	   draw     $($T_2 + $dT_slice) $fy2
+	}
+	ctype 7 
+	ltype 1 
+	relocate $DD $fy1
+	draw     $DD $fy2
+	relocate $LL $fy1
+	draw     $LL $fy2
+        
+	define fys2 ($fy2 - 750/($gy2-$gy1)*($fy2-$fy1))
+	define fys1 ($fy1 + 750/($gy2-$gy1)*($fy2-$fy1))
+	define dfy (500/($gy2-$gy1)*($fy2-$fy1))
+	ltype 0 
+	ctype 4 
+	expand 0.9
+	relocate 0.0     $($fys2 - 1*$dfy)
+	draw     $T_half $($fys2 - 1*$dfy)
+	putlabel 6 " "T_{HALF}
+	relocate 0.0     $($fys2 - 2*$dfy)
+	draw     $T_max  $($fys2 - 2*$dfy)
+	putlabel 6 " "T_{MAX}
+	ctype 7 
+	relocate 0.0     $($fys2 - 3*$dfy)
+	draw     $DD     $($fys2 - 3*$dfy)
+	putlabel 6 " "2R/c
+	relocate 0.0     $($fys2 - 4*$dfy)
+	draw     $LL     $($fys2 - 4*$dfy)
+	putlabel 6 " "L/c
+
+	ctype 5 
+	relocate 0.0     $($fys1 + 1*$dfy)
+	draw     $T_1    $($fys1 + 1*$dfy)
+	putlabel 6 " "T_{1}
+	relocate 0.0     $($fys1 + 2*$dfy)
+	draw     $T_2    $($fys1 + 2*$dfy)
+	putlabel 6 " "T_{2}
+	expand 1.5
+           
+	echo "+------------------------------------------"
+	echo "|   green lines: "
+	echo "|     T_half (dashed)"
+	echo "|     T_max  (dashed)"
+	echo "|   magenta lines: "
+	echo "|     D/c    (dotted)"
+	echo "|     L/c    (dotted)"
+	echo "|   blue lines: "
+	echo "|     T_1"
+	echo "|     T_2"
+	echo "+------------------------------------------"
+	#------------------------------------------------------------
+	
+#-------------------------------------------------------------------------------
+# lc_volume_tilted_cylinder [ <Jet-Obs angle> <tau_active> <F_base> <T_start_drop> <tau_drop> ]
+#                    It ASSUMES L=4/3 R, R/c=10.1
+#                    It can be run without command line parameters which will be prompted for.
+lc_volume_tilted_cylinder 05
+
+        if(!$(is_macro(SUB_find_peak))) {
+            echo "WARNING: this macro REQUIRES SUB_find_peak included in kk.sm"
+            myload kk
+        }
+
+        reset_graph
+	location 5500 30000 5500 28000
+
+	define RR             (1.0)
+	define DD             (2.0)
+
+	if( $?1 ) {
+	   define LL             (1.333333)
+	   define t_for_R_over_c (10.1)
+
+	   define JOangle      $1
+	   define tau_active   $2
+	   define F_baseline   $3
+	   define T_start_drop $4
+	   define tau_drop     $5
+	} else {
+	   echo " "
+	   echo " Good empirical values for F_base, T_drop and Drop_Scale "
+	   echo "   SX : 0.20  0.20  4.0 / 0.20 0.20 3.5 "
+	   echo "   HX : 0.15  0.00  2.5 / 0.20 0.20 3.5 "
+	   echo " " 
+	   define LL             ? <                  Length (units of R) : >
+	   define t_for_R_over_c ? <       Time corresponding to R/c [ks] : >
+
+	   define JOangle        ? <                     Jet-to-obs angle : >
+	   define tau_active     ? <     Slice thickness tau (units of R) : >
+	   define F_baseline     ? <         Observed Baseline Flux Level : > 
+	   define T_start_drop   ? <  T_start for baseline component drop : > 
+	   define tau_drop       ? <                   timescale for drop : > 
+	}
+
+	define F_baseline_r $($F_baseline/(1.0 - $F_baseline))
+
+	## define which_T_conv   ? <    Which t-to-T conversion [new|old] : >
+	define which_T_conv   "new"
+
+	#define theta $( -1*atand(-sind($JOangle)/(1.0 + cosd($JOangle))) )
+	define theta $(0.5*$JOangle)
+	echo "------------------------------------------"
+	echo " Apparent tilt of blob : "$theta
+
+	define totVol $( 3.1415*$RR**3.0*$LL )
+
+	define h1     $($LL*cosd($theta))
+	define h2     $($DD*sind($theta))
+	define hmax   $($h1 + $h2)
+
+	define dh_slice $( $tau_active/(2.0*cosd($theta)) )
+	define dT_slice $( $tau_active )
+
+	if( substr('$which_T_conv',0,1) == 'n' ) {
+	   # These times take into account not only the time for the shock to reach
+	   #   a given "h" slice, but also the time for the signal to reach the OBSERVER.
+	   define T_1    $(       $h1*cosd($theta)*2.0 )
+	   define T_2    $(       $h2*cosd($theta)*2.0 )
+	   define T_max  $(     $hmax*cosd($theta)*2.0 )
+	   define T_half $( 0.5*$hmax*cosd($theta)*2.0 )
+	} else {
+	   define T_1    $(       $h1/cosd($theta) )
+	   define T_2    $(       $h2/cosd($theta) )
+	   define T_max  $(     $hmax/cosd($theta) )
+	   define T_half $( 0.5*$hmax/cosd($theta) )
+	}
+
+	echo "+--- Relevant Times -----------------------"
+	echo "|            h_1 : "$h1 
+	echo "|            h_2 : "$h2 
+	echo "|          h_max : "$hmax
+	echo "|  h_half_height : "$( $hmax/2.0 ) 
+	echo "| dh_slice/h_max : "$( $dh_slice/$hmax ) "("$( $hmax/$dh_slice )")"
+	echo "|"
+	echo "|    Real T_half : "$T_half
+	echo "|    Real  T_max : "$T_max
+	echo "+------------------------------------------"
+
+	# Time resolution
+	define hstep (0.005)
+
+	set hvec2 = 0,$hmax+$dh_slice,$hstep
+	set hvec1 = hvec2 - $dh_slice 
+	set Vol1  = fill(dimen(hvec1),0.0)
+	set Vol2  = fill(dimen(hvec2),0.0)
+
+	if( substr('$which_T_conv',0,1) == 'n' ) {
+	   set T_vec1 = hvec1*cosd($theta)*2.0
+	   set T_vec2 = hvec2*cosd($theta)*2.0
+	} else {
+	   set T_vec1 = hvec1/cosd($theta)
+	   set T_vec2 = hvec2/cosd($theta)
+	}
+
+	#----------------------------------------
+	# adjust bottom
+	set hdum=fill(dimen(hvec1),0)
+	set test_h = hvec1 > 0 
+	set hvec1b = test_h ? hvec1 : hdum
+	set hvec1  = hvec1b
+
+	#----------------------------------------
+	# adjust top
+	set hdum=fill(dimen(hvec2),$hmax)
+	set test_h = hvec2 <= $hmax
+	set hvec2b = test_h ? hvec2 : hdum
+	set hvec2  = hvec2b
+
+	delete hdum
+	delete hvec1b
+	delete hvec2b
+	#----------------------------------------
+
+	# h1, h2, hmax already defined
+	do 9=0,dimen(hvec1)-1 {
+	   #echo "before : "$(hvec1[$9])  $(hvec2[$9])
+	   set Vol1[$9] = func_volume_tilted_cylinder($(hvec1[$9]))
+	   set Vol2[$9] = func_volume_tilted_cylinder($(hvec2[$9]))
+	}
+	set Vol_slice = Vol2 - Vol1
+
+	# Preparing the baseline component, decaying.
+	set F_baseline_r   = fill(Vol_slice,$F_baseline_r)
+	set F_baseline_r_a = F_baseline_r
+	set F_baseline_r_b = F_baseline_r*exp(-(T_vec2 - $T_start_drop)/$tau_drop)
+	set F_baseline_r   = (T_vec2 <= $T_start_drop) ? F_baseline_r_a : F_baseline_r_b
+
+	# for plotting
+	set F_baseline     = F_baseline_r/(1.0 + F_baseline_r)
+
+	vecminmax Vol_slice Vmin Vmax
+	set Vol_slice = Vol_slice/$Vmax + F_baseline_r
+	vecminmax Vol_slice Vmin Vmax
+	set Vol_slice = Vol_slice/$Vmax
+
+	if( $?1 ) { 
+	   define plot_type (2)
+	} else {
+	   define plot_type ? <            LINEAR or LOG plot [1|2] : >
+	}
+
+	define rc_min (-0.2)
+	define rc_max ( 5.2)
+	define rc_max ( 4.5)
+
+        ticksize 2 10 0 0 
+        limits $($rc_min*$t_for_R_over_c) $($rc_max*$t_for_R_over_c) 0.091 2.1
+        box 4 4 1 4 
+	relocate ( $(0.5*($gx1+$gx2)) $($gy2+2500) )
+	putlabel 5 Time [ks]
+
+	if( $plot_type == 1 ) { 
+           ticksize 0.2 1 0 0 
+           limits $rc_min $rc_max 0.091 2.1
+           box 1 2 4 0
+           
+           ctype 3
+	   ltype 0 
+           connect T_vec2 Vol_slice
+           ctype 2
+	}
+	
+	if( $plot_type == 2 ) { 
+           ticksize 0.2 1 -0.2 1 
+           limits $rc_min $rc_max $(lg(0.091)) $(lg(2.1)) 
+           box 1 2 4 2
+           #box 1 2 4 0
+	   xlabel Time [R/c]
+	   ylabel F/F_{max}
+	   
+	   # cheat to make faster plots for paper
+           if( $tau_active > 0.6 ) { 
+	      ctype 5 
+              ltype 0
+	   } else {
+	      ctype 3 
+              ltype 0
+	   }
+           if( $tau_active <= 0.01 ) { 
+	      ctype orange
+              ltype 3
+	   }
+           connect T_vec2 (lg(Vol_slice))
+	   # ctype 7
+	   ltype 1
+	   connect T_vec2 (lg(F_baseline))
+	}
+
+	#-------------------------------------------------
+	set tmp = T_vec2  if( Vol_slice >= 0.5 ) 
+	define thalf1 $(tmp[0])
+	define thalf2 $(tmp[dimen(tmp)-1])
+	define dthalf $($thalf2-$thalf1)
+
+	set tmp = T_vec2  if( Vol_slice >= 0.368 ) 
+	define tEE1 $(tmp[0])
+	define tEE2 $(tmp[dimen(tmp)-1])
+	define dtEE $($tEE2-$tEE1)
+
+	SUB_find_peak T_vec2 (lg(Vol_slice)) tp_cyl b
+	echo "+------------------------------------------"
+	echo "|      Peak time : "$tp_cyl" R/c"
+	echo "|      FW @1/2   : "$dthalf" R/c"
+	echo "|      FW @1/e   : "$dtEE" R/c"
+	echo "+------------------------------------------"
+
+	ptype 20 3 
+	relocate $tp_cyl 0 dot
+        ctype 2
+
+	SUB_reference_lines_paper
+
+SUB_reference_lines
+
+	#------------------------------------------------------------
+ 	# Plots lines marking reference times
+	#------------------------------------
+	if( $?1 ) { 
+	   define flag_plot_more_lines (0)
+	} else {
+	   define flag_plot_more_lines ? <    Plot extra Time-mark lines [0|1] : > 
+	}
+
+	ctype 4 
+	ltype 2 
+	relocate $T_half $fy1
+	draw     $T_half $fy2
+	relocate $T_max  $fy1
+	draw     $T_max  $fy2
+	if( $flag_plot_more_lines == 1 ) { 
+	   relocate $($T_max + $dT_slice) $fy1
+	   draw     $($T_max + $dT_slice) $fy2
+	}
+	ctype 5 
+	ltype 2 
+	relocate $T_1 $fy1
+	draw     $T_1 $fy2
+	if( $flag_plot_more_lines == 1 ) { 
+	   relocate $($T_1 + $dT_slice) $fy1
+	   draw     $($T_1 + $dT_slice) $fy2
+	}
+	relocate $T_2 $fy1
+	draw     $T_2 $fy2
+	if( $flag_plot_more_lines == 1 ) { 
+	   relocate $($T_2 + $dT_slice) $fy1
+	   draw     $($T_2 + $dT_slice) $fy2
+	}
+	ctype 7 
+	ltype 1 
+	relocate $DD $fy1
+	draw     $DD $fy2
+	relocate $LL $fy1
+	draw     $LL $fy2
+        
+	define fys2 ($fy2 - 750/($gy2-$gy1)*($fy2-$fy1))
+	define fys1 ($fy1 + 750/($gy2-$gy1)*($fy2-$fy1))
+	define dfy (500/($gy2-$gy1)*($fy2-$fy1))
+	ltype 0 
+	ctype 4 
+	expand 0.9
+	relocate 0.0     $($fys2 - 1*$dfy)
+	draw     $T_half $($fys2 - 1*$dfy)
+	putlabel 6 " "T_{HALF}
+	relocate 0.0     $($fys2 - 2*$dfy)
+	draw     $T_max  $($fys2 - 2*$dfy)
+	putlabel 6 " "T_{MAX}
+	ctype 7 
+	relocate 0.0     $($fys2 - 3*$dfy)
+	draw     $DD     $($fys2 - 3*$dfy)
+	putlabel 6 " "2R/c
+	relocate 0.0     $($fys2 - 4*$dfy)
+	draw     $LL     $($fys2 - 4*$dfy)
+	putlabel 6 " "L/c
+
+	ctype 5 
+	relocate 0.0     $($fys1 + 1*$dfy)
+	draw     $T_1    $($fys1 + 1*$dfy)
+	putlabel 6 " "T_{1}
+	relocate 0.0     $($fys1 + 2*$dfy)
+	draw     $T_2    $($fys1 + 2*$dfy)
+	putlabel 6 " "T_{2}
+	expand 1.5
+           
+	echo "+------------------------------------------"
+	echo "|   green lines: "
+	echo "|     T_half (dashed)"
+	echo "|     T_max  (dashed)"
+	echo "|   magenta lines: "
+	echo "|     D/c    (dotted)"
+	echo "|     L/c    (dotted)"
+	echo "|   blue lines: "
+	echo "|     T_1"
+	echo "|     T_2"
+	echo "+------------------------------------------"
+	#------------------------------------------------------------
+	
+SUB_reference_lines_paper
+
+	ctype 3 
+	ltype 1 
+	relocate $T_half $fy1
+	draw     $T_half $fy2
+
+	ctype grey50
+	ltype 3 
+	relocate $LL $fy1
+	draw     $LL $fy2
+
+	# ctype 7
+	# ltype 4 
+	# relocate $DD $fy1
+	# draw     $DD $fy2
+        
+	define fys2 ($fy2 - 750/($gy2-$gy1)*($fy2-$fy1))
+	define fys1 ($fy1 + 750/($gy2-$gy1)*($fy2-$fy1))
+	define dfy (500/($gy2-$gy1)*($fy2-$fy1))
+
+	expand 1.1
+	expand 1.0
+	ltype 0 
+
+	ctype 3 
+	relocate 0.0     $($fys2 - 1*$dfy)
+	draw     $T_half $($fys2 - 1*$dfy)
+	putlabel 6 " "T_{HALF}
+	
+	# ctype 7 
+	# relocate 0.0     $($fys2 - 3*$dfy)
+	# draw     $DD     $($fys2 - 3*$dfy)
+	# putlabel 6 " "2R/c
+
+	ctype grey50
+	relocate 0.0     $($fys2 - 5*$dfy)
+	draw     $LL     $($fys2 - 5*$dfy)
+	putlabel 6 " "L/c
+
+	# echo "+------------------------------------------"
+	# echo "|   green lines: "
+	# echo "|     T_half (dashed)"
+	# echo "|     T_max  (dashed)"
+	# echo "|   magenta lines: "
+	# echo "|     D/c    (dotted)"
+	# echo "|     L/c    (dotted)"
+	# echo "|   blue lines: "
+	# echo "|     T_1"
+	# echo "|     T_2"
+	# echo "+------------------------------------------"
+	
+#-------------------------------------------------------------------------------
+# plot_both
+plot_both
+
+	dev1 
+	erase
+	# lc_tilted_cylinder_slices
+        lc_volume_tilted_cylinder
+	page
+
+	dev2 
+	erase
+	diagram_volume_tilted_cylinder
+	page
+
+#-------------------------------------------------------------------------------
+# read_lc_data
+read_lc_data
+
+        if(!$(is_macro(SUB_find_peak))) {
+            echo "WARNING: this macro REQUIRES SUB_find_peak included in kk.sm"
+            myload kk
+        }
+
+	# 
+	data lc07_ev0_refmt.dat
+	read < time 1 lc_opt 2 lc_sx 3 lc_hx 4 lc_gev 7 lc_tev 8 >
+	set time = time/1e3
+
+	foreach 9 < opt sx hx gev tev > { 
+	   smooth lc_$9 lc_$9_s 5 
+	   vecminmax lc_$9 a b
+	   set lc_$9 = lc_$9 - $b
+	   vecminmax lc_$9_s a b
+	   set lc_$9_s = lc_$9_s - $b
+	}
+
+	foreach 9 < opt sx hx gev tev > { 
+	   SUB_find_peak time lc_$9_s tp_$9 b
+	}
+
+	echo "----------------------------------------"
+	echo " Loaded XC light curves "
+	echo " Arrays: "
+	echo "    time "
+	echo "    lc_* "
+	echo "    lc_*_s (scaled to F_max) "
+	echo " with *= opt, sx, hx, gev, tev "
+	echo " Variable storing flare peak time: "
+	echo "    tp_* "
+	echo "----------------------------------------"
+
+#-------------------------------------------------------------------------------
+# plot_lc_data
+plot_lc_data
+
+	define t_inj    ? { Time of start of injection [ks] : }
+	define R_over_c ? {  Time corresponding to R/c [ks] : }
+
+	expand 1.25
+	ctype darkorange
+	ctype red3
+	ptype 4 0 
+	points ((time-$t_inj)/$R_over_c) lc_hx_s
+	ctype darkgreen
+	ctype mediumblue
+	ptype 3 3 
+	points ((time-$t_inj)/$R_over_c) lc_sx_s
+	expand 1.5
+	ctype 2 
+
+##-------------------------------------------------------------------------------
+## equal_times : OLD, superseded by diagram_equal_times
+equal_times
+
+	reset_graph
+
+	define phi ? < Jet-to-obs angle : >
+
+	set x=-1,5,0.01
+	
+	set tt_vec = 0,8,0.5
+	do 9=0,dimen(tt_vec)-1 { 
+	   define tt $(tt_vec[$9])
+	   set y$9 = ($tt - x*sind($phi))/(1.0 + cosd($phi))
+	}
+	set yobs1 = x/tand($phi)
+	set yobs2 = -x*tand($phi)
+
+	define theta $( -1*atand(-sind($phi)/(1.0 + cosd($phi))) )
+	echo "----------------------------------------"
+	echo " Jet-to-Obs angle         : "$phi
+	echo " Tilt of equal-time lines : "$theta
+	echo "----------------------------------------"
+
+	limits -1 5 -1 5 
+	ticksize 0 0 0 0
+	box
+
+	define box_X (4)
+	define box_Y (2./3.*4)
+	draw_box 0 0 $box_X $box_Y
+
+	ctype 3 
+	do 9=0,dimen(tt_vec)-1 { 
+	   connect x y$9 if( x <= $box_X && x >= 0.0 && y$9 <= $box_Y && y$9 >= 0.0 ) 
+	}
+	ctype 4 
+	connect x yobs2  if( x <= $box_X && yobs2 <= $box_Y )
+	ctype 5 
+	connect x yobs1  if( x <= $box_X && yobs1 <= $box_Y )
+	ctype 2 
+
+#-------------------------------------------------------------------------------
+# diagram_equal_times
+diagram_equal_times
+
+	reset_graph
+
+	define LL         ? <                  Length (units of R) : >
+	define phi        ? <                     Jet-to-obs angle : >
+	define tau_active ? <              tau_active (units of R) : >
+
+	define theta     $( 0.5*$phi ) 
+
+	#define dh_slice  $( $tau_active*cosd($theta) )
+	#define dh_slice  $( $tau_active )
+	#define dh_slice  $( $tau_active/(2.0*cosd($theta)) )
+
+	define dh_slice  $( $tau_active*cosd($theta)/(1.0 + cosd($phi)) )
+	define dh_slice  $( $tau_active/(2.0*cosd($theta)) )
+
+	define dy_slice  $( $tau_active/(1.0 + cosd($phi)) )
+	define dt_slice  $tau_active
+
+	echo "----------------------------------------"
+	echo " Jet-to-Obs angle         : "$phi
+	echo " Tilt of equal-time lines : "$theta
+	echo " tau_active and dh        : "$tau_active" / "$dh_slice
+	echo "----------------------------------------"
+
+	# Needs a finer step for extreme inclinations
+	set x=-5.0,5.0,0.01
+
+        # set T_vec = 0.0,8.0,$dt_slice
+        # do 9=0,dimen(T_vec)-1 { 
+        #    define T $(T_vec[$9])
+        #    set y$9 = ($T - x*sind($phi))/(1.0 + cosd($phi))
+        # }
+	set y0_vec = 0.0,8.0,$dy_slice
+	do 9=0,dimen(y0_vec)-1 { 
+	   define y0 $(y0_vec[$9])
+	   set y$9 = $y0 - x*sind($phi)/(1.0 + cosd($phi))
+	}
+	set yobs1 =  x/tand($phi)
+	set yobs2 = -x*tand($phi)
+
+	set hh = 0.0,4.0,$dh_slice
+	set hx = hh*sind($theta)
+	set hy = hh*cosd($theta)
+
+	limits -0.9 2.5 -0.9 2.5
+	ticksize 0 0 0 0
+	# box
+	define gxor $( int(($gx2-$gx1)/($fx2-$fx1)*(0-$fx1) + $gx1) )
+	define gxll $( int(($gx2-$gx1)/($fx2-$fx1)*2) )
+	define gyor $( int(($gy2-$gy1)/($fy2-$fy1)*(0-$fy1) + $gy1) )
+	define gyll $( int(($gy2-$gy1)/($fy2-$fy1)*$LL) )
+
+	define flag_std_plot ? < Standard plot or for-paper [1|2] : >
+	if( $flag_std_plot == 1 ) { 
+           angle 0
+           axis 0   2 0.25 1 $gxor $gy1 $gxll 1 0 
+           angle 90
+           axis 0 $LL 0.25 1 $gx1 $gyor $gyll 2 1 
+           angle 0
+	} else { 
+           angle 0
+           axis 0   2 0.25 1 $gxor $($gyor+$gyll+2000) $gxll 1 1 
+           angle 90
+           axis 0 $LL 0.25 1 $($gxor+$gxll+2000) $gyor $gyll 2 0 
+           angle 0
+
+	   relocate ( $gx1 $($gyor+$gyll+2000) ) 
+	   expand 2.0
+	   putlabel 6 \varphi=$phi^o
+	   expand 1.5
+	   
+	   define _x1 $($gx1 - 500)
+	   define _x2 $($xp + 500)
+	   define _y1 $($yp - 600)
+	   #define _y2 $($gyor+$gyll+2000-500)
+	   define _y2 $($_y1+2000)
+	   relocate ( $_x1 $_y1 ) 
+	   draw ( $_x2 $_y1 )
+	   draw ( $_x2 $_y2 )
+	   draw ( $_x1 $_y2 )
+	   draw ( $_x1 $_y1 )
+	}
+
+	# box and jet direction arrow
+	define box_X (2)
+	define box_Y $($box_X*$LL/2.0)
+	lweight 6 
+	draw_box   0 0 $box_X $box_Y
+
+	if( $flag_std_plot == 1 ) { 
+	   draw_arrow 0 0 0 -0.666
+	} else {
+	   #lweight 3
+	   relocate 0  0 
+	   ltype 2 
+	   draw     0 -1
+	   ltype 0
+	   # draw_arrow 0 0 0 -1
+	}
+	lweight 3
+
+	#--------------------------------------------------
+	# Equal Arrival Time Lines
+	#--------------------------------------------------
+	ctype 3 
+	do 9=0,dimen(y0_vec)-1 { 
+	   if( $flag_std_plot == 1 ) { 
+	      lweight 1 
+	      ltype 1 
+	      connect x y$9 if( x <= $box_X && y$9 <= $box_Y )
+	   }
+	   lweight 1 
+	   ctype 3 
+	   ltype 0 
+	   connect x y$9 if( x <= $box_X && x >= 0.0 && y$9 <= $box_Y && y$9 >= 0.0 ) 
+	}
+
+	#--------------------------------------------------
+	# constant time fronts
+	#--------------------------------------------------
+	set b1x  = x
+	set b1y  = (b1x - $box_X)*tand(90.-$phi)
+
+	set b2x  = x
+	set b2ya = (b1x - 0.0   )*tand(90.-$phi) + $box_Y
+	set b2yb = fill(b2x,$box_Y)
+	set b2y  = (b2x >= 0) ? b2yb : b2ya
+
+	ltype 1 
+	ctype 4 
+	connect x b1y  if( x <= $box_X )
+	connect x b2y  if( x <= 0 )
+	ctype 2 
+	ltype 0
+
+	set shift=-2,4,0.25
+	set xshift = shift*sind($phi)
+	set yshift = shift*cosd($phi)
+
+	define xA $( $box_X*cosd($phi)*cosd($phi) ) 
+	define yA $( -1*$box_X*cosd($phi)*sind($phi) ) 
+	define xB $( -1*$box_Y*sind($phi)*cosd($phi) ) 
+	define yB $( $box_Y*sind($phi)*sind($phi) ) 
+
+	#relocate $xA $yA dot
+	#relocate $xB $yB dot
+
+	do 9=0,dimen(xshift)-1 { 
+	   ltype 1 
+	   set tmpx = x     + xshift[$9]
+	   set tmpy = yobs2 + yshift[$9]
+	   lweight 2 
+	   # ctype 4 connect tmpx tmpy  if( tmpx <= $box_X && tmpy <= $box_Y )
+	   # ctype 4 connect tmpx tmpy  if( tmpx <= $box_X && tmpy <= b2y && tmpy >= b1y )
+	   ctype 4 connect tmpx tmpy  if( tmpx <= $box_X && tmpy <= $($yB+yshift[$9]) && tmpy >= $($yA+yshift[$9]) && tmpy <= $box_Y )
+	   lweight 3 
+	}
+
+	ltype 0
+	#ctype 4 connect x yobs2  if( x <= $box_X && yobs2 <= $box_Y )
+	ctype 4 connect x yobs2  if( x <= $box_X && yobs2 <= $yB && yobs2 >= $yA && yobs2 <= $box_Y )
+
+	#--------------------------------------------------
+	if( $flag_std_plot == 1 ) { 
+	   ltype 1
+	   ctype 5 connect x yobs1  if( x <= $box_X && yobs1 <= $box_Y && x >= 0 && yobs1 >= 0 )
+	}
+
+	define l_arrow (1.0) 
+	ltype 0
+	lweight 4
+	draw_arrow 0 0 $(-$l_arrow*sind($phi)) $(-$l_arrow*cosd($phi))
+	ctype 2 
+	lweight 3
+
+	if( $flag_std_plot == 1 ) { 
+           ctype 2 
+           ltype 2
+           connect hx hy  if( hx <= $box_X && hx >= 0.0 && hy <= $box_Y && hy >= 0.0 ) 
+           ltype 0
+           ptype 4 3 
+           points  hx hy  if( hx <= $box_X && hx >= 0.0 && hy <= $box_Y && hy >= 0.0 ) 
+	}
+
+	# box and jet direction arrow
+	lweight 6 
+	draw_box   0 0 $box_X $box_Y
+
+	if( $flag_std_plot == 1 ) { 
+	   draw_arrow 0 0 0 -0.666
+	} else {
+	   #lweight 3
+	   relocate 0  0 
+	   ltype 2 
+	   draw     0 -1
+	   ltype 0
+	   # draw_arrow 0 0 0 -1
+	}
+	lweight 3
+
+draw_front
+
+	define yfront ? < Y-position : >
+
+	relocate 0      $yfront
+	ltype 2 
+	draw     $box_X $yfront
+	ltype 0
+
+	expand 0.80
+	draw_arrow $(0.25*$box_X) $yfront $(0.25*$box_X) $($yfront+0.2)
+	draw_arrow $(0.50*$box_X) $yfront $(0.50*$box_X) $($yfront+0.2)
+	draw_arrow $(0.75*$box_X) $yfront $(0.75*$box_X) $($yfront+0.2)
+	expand 1.5
+
+# draw_light_path
+draw_light_path
+
+	define ll ? <  path length : > 
+	define xx ? < x coordinate : >
+
+	define xxp $xx
+	define yyp $( ($ll - $xx*sind($phi))/(1.0 + cosd($phi)) )
+	define llp $( $xxp*sind($phi) + $yyp*cosd($phi) )
+
+	echo " X_p = "$xxp
+	echo " Y_p = "$yyp
+
+	define xxf $( $xxp - $llp*sind($phi) )
+	define yyf $( $yyp - $llp*cosd($phi) )
+
+	set xpath = < $xxp $xxp $xxf >
+	set ypath = <  0.0 $yyp $yyf >
+
+	ctype 5 
+	ltype 2 
+	connect xpath ypath
+	ltype 0 
+	ctype 2 
+
+#-------------------------------------------------------------------------------
+# make_lc_plots
+make_lc_plots
+
+        # device postencap cylinder_lc_tau=00_tau=40_tau=95_baselineNO_dataYES_FINAL.ps
+        device postencap cylinder_lc_tau=00_tau=40_tau=95_baselineNO_dataNO_FINAL.ps
+        lc_volume_tilted_cylinder 90 0.001 0.00001 0.0 3.5
+        lc_volume_tilted_cylinder 90 0.40  0.00001 0.0 3.5
+        lc_volume_tilted_cylinder 90 0.95  0.00001 0.0 3.5
+        # plot_lc_data
+        
+        device postencap cylinder_lc_tau=00_tau=40_tau=80_baselineNO_dataYES_FINAL.ps
+        lc_volume_tilted_cylinder 90 0.001 0.00001 0.0 3.5
+        lc_volume_tilted_cylinder 90 0.40  0.00001 0.0 3.5
+        lc_volume_tilted_cylinder 90 0.80  0.00001 0.0 3.5
+        plot_lc_data
+        
+        # device postencap cylinder_lc_tau=40_tau=95_baselineNO_dataYES_FINAL.ps
+        # lc_volume_tilted_cylinder 90 0.40 0.00001 0.0 3.5
+        # lc_volume_tilted_cylinder 90 0.95 0.00001 0.0 3.5
+        # plot_lc_data
+        
+        device postencap cylinder_lc_tau=40_tau=80_baselineNO_dataYES_FINAL.ps
+        lc_volume_tilted_cylinder 90 0.40 0.00001 0.0 3.5
+        lc_volume_tilted_cylinder 90 0.80 0.00001 0.0 3.5
+        plot_lc_data
+        
+        device postencap cylinder_lc_tau=40_tau=95_Tdrop=0.0_baselineYES_dataYES_FINAL.ps
+        lc_volume_tilted_cylinder 90 0.40 0.15 0.0 3.5
+        lc_volume_tilted_cylinder 90 0.95 0.20 0.0 3.5
+        plot_lc_data
+        
+        device postencap cylinder_lc_tau=40_tau=95_Tdrop=0.2_baselineYES_dataYES_FINAL.ps
+        lc_volume_tilted_cylinder 90 0.40 0.15 0.2 3.5
+        lc_volume_tilted_cylinder 90 0.95 0.20 0.2 3.5
+        plot_lc_data
+        device x11
+
+#-------------------------------------------------------------------------------
+# make_lc_plots_submitted
+make_lc_plots_submitted
+
+        device postencap cylinder_lc_tau=00_tau=44_tau=85_baseline=NO_data=NO_FINAL.ps
+        lc_volume_tilted_cylinder 90 0.001 0.00001 0.0 3.5
+        lc_volume_tilted_cylinder 90 0.44  0.00001 0.0 2.2
+        lc_volume_tilted_cylinder 90 0.85  0.00001 0.0 4.5
+        # plot_lc_data
+        
+        device postencap cylinder_lc_tau=00_tau=44_tau=85_baseline=NO_data=YES_FINAL.ps
+        lc_volume_tilted_cylinder 90 0.001 0.00001 0.0 3.5
+        lc_volume_tilted_cylinder 90 0.44  0.00001 0.0 2.2
+        lc_volume_tilted_cylinder 90 0.85  0.00001 0.0 4.5
+        plot_lc_data
+        
+        device postencap cylinder_lc_tau=44_tau=85_baseline=NO_data=YES_FINAL.ps
+        lc_volume_tilted_cylinder 90 0.44 0.00001 0.0 2.2
+        lc_volume_tilted_cylinder 90 0.85 0.00001 0.0 4.5
+        plot_lc_data
+        
+        device postencap cylinder_lc_tau=44_tau=85_Tdrop=0.0_baseline=YES_data=YES_FINAL.ps
+        lc_volume_tilted_cylinder 90 0.44 0.15 0.0 2.2
+        lc_volume_tilted_cylinder 90 0.85 0.20 0.0 4.5
+        plot_lc_data
+        
+        device postencap cylinder_lc_tau=44_tau=85_Tdrop=0.2_baseline=YES_data=YES_FINAL.ps
+        lc_volume_tilted_cylinder 90 0.44 0.15 0.2 2.2
+        lc_volume_tilted_cylinder 90 0.85 0.20 0.2 4.5
+        plot_lc_data
+        device x11
+
+#-------------------------------------------------------------------------------
+# make_lc_plots_new
+make_lc_plots_new
+
+        device postencap cylinder_lc_tau=00_tau=50_tau=100_baseline=NO_data=NO_FINAL.ps
+        lc_volume_tilted_cylinder 90 0.001 0.00001 0.0 3.5
+        lc_volume_tilted_cylinder 90 0.50  0.00001 0.0 2.2
+        lc_volume_tilted_cylinder 90 1.00  0.00001 0.0 4.5
+        # plot_lc_data
+        
+        device postencap cylinder_lc_tau=00_tau=50_tau=100_baseline=NO_data=YES_FINAL.ps
+        lc_volume_tilted_cylinder 90 0.001 0.00001 0.0 3.5
+        lc_volume_tilted_cylinder 90 0.50  0.00001 0.0 2.2
+        lc_volume_tilted_cylinder 90 1.00  0.00001 0.0 4.5
+        plot_lc_data
+        
+        device postencap cylinder_lc_tau=35_tau=65_baseline=NO_data=YES_FINAL.ps
+        # lc_volume_tilted_cylinder 90 0.44 0.00001 0.0 2.2
+        # lc_volume_tilted_cylinder 90 0.85 0.00001 0.0 4.5
+        lc_volume_tilted_cylinder 90 0.35 0.00001 0.0 1.9
+        lc_volume_tilted_cylinder 90 0.65 0.00001 0.0 3.5
+        plot_lc_data
+        
+        device postencap cylinder_lc_tau=35_tau=65_Tdrop=0.0_baseline=YES_data=YES_FINAL.ps
+        # lc_volume_tilted_cylinder 90 0.44 0.15 0.0 2.2
+        # lc_volume_tilted_cylinder 90 0.85 0.20 0.0 4.5
+        lc_volume_tilted_cylinder 90 0.35 0.15 0.0 1.9
+        lc_volume_tilted_cylinder 90 0.65 0.20 0.0 3.5
+        plot_lc_data
+        
+        #device postencap cylinder_lc_tau=44_tau=85_Tdrop=0.2_baseline=YES_data=YES_FINAL.ps
+        #lc_volume_tilted_cylinder 90 0.44 0.15 0.2 2.2
+        #lc_volume_tilted_cylinder 90 0.85 0.20 0.2 4.5
+        #plot_lc_data
+        device x11
+
+#-------------------------------------------------------------------------------

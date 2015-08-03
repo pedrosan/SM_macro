@@ -1,0 +1,32 @@
+#---------------------------------------------------------------------------
+# chitest <data> <errors> [<errors>] 
+chitest 23
+
+	if($?3) { 
+	   set w = 1./(0.5*$2 + 0.5*$3)**2.
+	} else {
+	   set w = 1./$2**2.
+	}
+
+	define dof $(dimen($1)-1)
+	stats  $1   ap b c
+	stats2 $1 w aw b c 
+
+	define chi2p ( sum( w*($1 - $ap)**2. ) )
+	define chi2w ( sum( w*($1 - $aw)**2. ) )
+
+	echo -------------------------------------------------------
+	echo   AVRG ERROR VECTOR is taken as uncertainty
+	echo -------------------------------------------------------
+	echo   Plain Avrg    = $ap
+	echo   Weighted Avrg = $aw
+	echo -------------------------------------------------------
+	prob_chisq $chi2p $dof pp
+	prob_chisq $chi2w $dof pw
+	
+	echo   Chi^2 Plain    = $chi2p   P($dof)=$($pp*100) [$((1-$pp)*100)]
+	echo   Chi^2 Weighted = $chi2w   P($dof)=$($pw*100) [$((1-$pw)*100)]
+	echo -------------------------------------------------------
+
+
+#---------------------------------------------------------------------------

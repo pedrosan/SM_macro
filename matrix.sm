@@ -1,0 +1,303 @@
+#---------------------------------------------------------------------------
+## -*-SM-*- Set SM-mode in emacs
+## Support for square 2-d matrices
+##
+## a matrix is defined as a collection of vectors
+## as a_0[] a_1[] a_2[] etc (supposed square ...)
+## The name of the matrix is given without the `_' , so
+## minv a inverts the matrix given by a_0[] a_1[] a_2[] ...
+matrix		# Introduction to matrix utilities
+		echo a matrix is defined as a collection of vectors
+		echo as a_0[] a_1[] a_2[] etc (supposed square ...)
+		echo The name of the matrix is given without the `_' , so
+		echo minv a inverts the matrix given by a_0[] a_1[] a_2[] ...
+		echo
+		echo   mprint A                 print A
+		echo   mdimen A                 print dimension of A
+		echo   mdeclare A N             make A an NxN matrix
+		echo   msetnum A real           A = \$real
+		echo   mset A B                 A = B
+		echo   madd A B C               A = B+C
+		echo   minv A                   A = A^{-1}
+		echo   mmult A B C              A = B*C
+		echo   mmult_c A B c            A = B*c  (c a scalar)
+		echo   mmult_v u A v            u = A*v  (v a vector)
+		echo   mmult_vT u v A           u = v^T*A (v a vector)
+
+#---------------------------------------------------------------------------
+# mdeclare_square  2
+mdeclare_square 2 # declare $1 to be a $2x$2 square matrix	
+
+		do 3=0,$($2-1) {
+		   set dimen($1_$3) = $2
+		}
+
+#---------------------------------------------------------------------------
+# mdeclare_rect  3
+mdeclare_rect 3	# declare $1 to be a $2 columns x $3 row matrix 
+
+		do 4=0,$($2-1) {
+		   set dimen($1_$4) = $3
+		}
+
+#---------------------------------------------------------------------------
+# mdeclare 2
+mdeclare 2	# declare $1 to be a $2x$2 square matrix
+
+		mdeclare_square $1 $2
+
+#---------------------------------------------------------------------------
+# mdelete  1
+mdelete	1	# delete the matrix $1 
+
+		define 2 (dimen($1_0))
+		do 3=0,$($2-1) {
+		      delete $1_$3
+		}
+
+#---------------------------------------------------------------------------
+# mdimen 1
+mdimen	1	# print matrix $1's dimension
+		echo $1: $(dimen($1_0))
+
+#---------------------------------------------------------------------------
+# pmatrix       : alias for mprint
+pmatrix		## alias for mprint
+		mprint
+
+#---------------------------------------------------------------------------
+# mprint  1
+mprint	1	# print the matrix $1  (given as $1_0 $1_1 etc -- see minv)
+		define 2 (dimen($1_0))
+		define 3 < $1_0>
+		define 4 <%11.6g>
+		if( $2 > 1 ) {
+		   do 5=1,($2-1) {
+		      define 3 <$3 $1_$5> 
+		      define 4 <$4 %11.6g>
+		   }
+		}
+		print '$4\n' { $!!3 }   
+
+#---------------------------------------------------------------------------
+# mprint_rect  2
+mprint_rect  2	# print the matrix $1 having $2 columns 
+
+		# define 2 (dimen($1_0))
+		define 3 < $1_0>
+		define 4 <%11.6g>
+		if( $2 > 1 ) {
+		   do 5=1,($2-1) {
+		      define 3 <$3 $1_$5> 
+		      define 4 <$4 %11.6g>
+		   }
+		}
+		print '$4\n' { $!!3 }   
+
+#---------------------------------------------------------------------------
+# msetnum 2
+msetnum 2
+    do 3=0,$(dimen($1_0)-1) {
+       set $1_$3 = $1_$3*0 + $2
+    }
+     
+#---------------------------------------------------------------------------
+# mset  2
+mset	2	# set matrix $1 equal to $2
+		do 3=0,dimen($2_0) - 1 {
+		   set $1_$3 = $2_$3
+		}
+
+#---------------------------------------------------------------------------
+# madd    3
+madd	3	# set matrix $1 equal to $2+$3
+
+		mdeclare $1 dimen($2_0)
+		do 4=0,dimen($2_0) - 1 {
+		   set $1_$4 = $2_$4+$3_$4
+		}
+
+#---------------------------------------------------------------------------
+# qminv
+qminv  		## matrix inverse, an alias for minv
+		minv
+
+#---------------------------------------------------------------------------
+# minv  1
+minv	1	# Quick matrix inversion, done in place.
+		# usage: minv matrix, where
+		# $1 is the matrix to be inverted (replaced by the inverse)
+
+		define _n_ (dimen($1_0) - 1)
+
+		do k=0,$_n_ {
+		   define aux1 $($1_$k[$k])
+		   set $1_$k = $1_$k/$aux1
+
+		   # echo OUT $k aux1 : $aux1
+		   # mprint $1
+
+		   do j=0,$_n_ {
+		      if( $j != $k ) {
+		         define aux2 $($1_$j[$k])
+		         set $1_$j = $1_$j - $aux2*$1_$k
+			 set $1_$j[$k] = -1*$aux2/$aux1
+
+		         # echo IN $j aux2 : $aux2
+			 # mprint $1
+		      }
+		   }
+		   set $1_$k[$k] = 1./$aux1
+		}
+
+		# mprint $1
+
+#---------------------------------------------------------------------------
+# mmult   3
+mmult	3	# set matrix $1 equal to $2*$3
+		define _n dimen($2_0)
+		set dimen(_tmp) = $_n
+		mdeclare $1 $_n
+		do 4=0,$_n - 1{
+		   do 5=0,$_n - 1{
+		      set _tmp[$5] = $2_$5[$4]
+		   }
+		   do 5=0,$_n - 1{
+		      set $1_$4[$5] = SUM(_tmp*$3_$5)
+		   }
+		}
+
+#---------------------------------------------------------------------------
+# mmult_c    3
+mmult_c	3	# set matrix $1 equal to $2*$3 where $3 is a scalar
+		mdeclare $1 dimen($2_0)
+		do 4=0,dimen($1_0) - 1 {
+		   set $1_$4 = $2_$4*$3
+		}
+
+#---------------------------------------------------------------------------
+# mmult_v  3
+mmult_v	3	# set vector $1 equal to $2*$3 where $3 is a vector
+		define _n dimen($2_0)
+		set dimen($1) = $_n
+		set dimen(_tmp) = $_n
+		do 4=0,$_n - 1{
+		   do 5=0,$_n - 1{
+		      set _tmp[$5] = $2_$5[$4]
+		   }
+		   set $1[$4] = SUM($3*_tmp)
+		}
+
+#---------------------------------------------------------------------------
+# mmult_vT 3
+mmult_vT 3	# set vector $1 equal to $2^T*$3 where $2 is a vector
+		define _n dimen($3_0)
+		set dimen($1) = $_n
+		do 4=0,$_n - 1{
+		   set $1[$4] = SUM($2*$3_$4)
+		}
+
+#---------------------------------------------------------------------------
+# matinv    1
+matinv    1
+
+    define   norder $(dimen($1_0))
+    define   maxidx $($norder-1)
+    mdeclare array  $norder
+
+    set dimen(ik) = $norder
+    set dimen(jk) = $norder
+
+    define det 1.0
+
+    do k=0,$maxidx{
+       
+       define amax 0.0
+
+       sub_amax
+
+       #--------------------------------------------------
+       # interchange rows and columns to AMAX in array(k,k)
+       #
+       while { } {
+
+       if($amax == 0) {
+	  define det 0.0
+	  return
+       }
+
+       define i $(ik[$k])
+
+       if($i < $k) {
+	  sub_amax
+       }
+       
+       if($i > $k) {
+	  do j=0,$maxidx {
+	     define save $(array_$i[$j])
+	     set array_$k[$j] = array_$i[$j]
+	     set array_$i[$j] = -1*$save
+	  }
+       }
+
+       define j $(jk[$k])
+
+       if($j < $k) { 
+	  sub_amax
+       }
+
+       if($j > $k) { 
+	  do i=0,$maxidx {
+	     define save $(array_$i[$j])
+	     set array_$i[$k] = array_$i[$j]
+	     set array_$i[$j] = -1*$save
+	  }
+       }
+
+       }
+       # end of while loop
+       #----
+
+       #--------------------------------------------------
+       # accumulate elements of inverse matrix
+       #
+       do i=0,$maxidx {
+	  if($i != $k) { 
+	     set array_$i[$k] = -array_$i[$k]/$amax
+          }
+       }
+
+       do i=0,$maxidx {
+          do j=0,$maxidx {
+	     if($i != $k && $j != $k) {
+		set array_$i[$j] = array_$i[$j]+array_$i[$k]*array_$k[$j]
+	     }
+	  }
+       }
+
+       do j=0,$maxidx {
+	  if($j != $k) {
+	     set array_$k[$j] = array_$k[$j]/$amax
+	  }
+       }
+
+       set array_$k[$k] = 1./$amax
+
+    }
+
+
+sub_amax
+
+       do i=$k,$maxidx{
+          do j=$k,$maxidx{
+	     if(abs($amax) <= abs(array_$i[$j])) {
+		define amax $(array_$i[$j])
+		set ik[$k] = $i
+		set jk[$k] = $j
+	     }
+	  }
+       }
+
+
+
+#---------------------------------------------------------------------------

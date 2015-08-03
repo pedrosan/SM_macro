@@ -1,0 +1,3378 @@
+#------------------------------------------------------------------------------
+# kn_cs : the K-N cross-section
+kn_cs
+
+	reset_graph
+	define a1 ? < *  x min (log) : >
+	define a2 ? < *  x max (log) : >
+	set lg_alpha=$a1,$a2,0.01
+	set alpha=10.0**lg_alpha
+
+	#--- two approx from Rybicki&Ligtman ---#
+	define th_cs 1
+	set kn_cs_1=$th_cs*(1 - 2*alpha + 5.2*alpha**2. - 13.3*alpha**3.)   # non-relativistic regime: x<0.1
+	set kn_cs_2=3./8.*$th_cs/alpha*(ln(2.*alpha) + 0.5)                 # ultra-relavistic regime: x>10
+
+	set kn_cs_full = $th_cs*0.75*((1+alpha)/alpha**3.*(2.*alpha*(1+alpha)/(1+2*alpha)-ln(1+2*alpha))\
+	                        + ln(1+2*alpha)/(2*alpha) - (1+3*alpha)/(1+2*alpha)**2)
+
+	#limits lg_alpha -3.5 0.1
+	#ticksize -1 0 -1 0 
+	limits lg_alpha -0.1 1.1
+	ticksize -1 0 0 0 
+	ctype 2 
+	expand 1.5
+	box
+	expand 2
+	xlabel x=\epsilon/m_e c^2
+	ylabel \sigma_{KN}/\sigma_{T}
+
+	#--- two references energies 1/4, 3/4, GREEN ---#
+	ltype 1
+	ctype 4
+	relocate $(lg(0.25)) -0.2 draw $(lg(0.25))  1.2 
+	relocate $(lg(0.75)) -0.2 draw $(lg(0.75))  1.2 
+	grid 0 2 
+
+	#--- two approx for K-N cross section, RED ---#
+	ctype 3
+	ltype 1
+	connect lg_alpha kn_cs_1     if( kn_cs_1 > 1e-6 )
+	ltype 2
+	connect lg_alpha kn_cs_2     if( kn_cs_2 > 1e-6 )
+
+	#--- Real K-N cross section, BLUE ---#
+	ctype 5
+	ltype 0
+	connect lg_alpha kn_cs_full  if( kn_cs_full > 1e-6 )
+	ctype 2
+
+#------------------------------------------------------------------------------
+# kn  : the good one, with graphics
+kn
+
+	# define_physical_constants
+
+	echo "--------------------------------------------------"
+	define B       ? <     B : >
+	define doppler ? < Delta : >
+	define n1 ?      <   n_1 : >
+	define n2 ?      <   n_2 : >
+	echo "--------------------------------------------------"
+	echo " [1]  nu_crit = 1.29e6"
+	echo " [2]  nu_crit = 2.80e6"
+	echo " [3]  nu_crit = 3.70e6"
+	define  howsyncpeak ? < What choice for sync. emission critical nu : >
+	echo "--------------------------------------------------"
+	if( $howsyncpeak == 1 ) { define nucrit 1.29e6 } 
+	if( $howsyncpeak == 2 ) { define nucrit 2.80e6 } 
+	if( $howsyncpeak == 3 ) { define nucrit 3.70e6 } 
+
+	# g*e < 3/4 mc^2
+	# g*e < 1/4 mc^2  BG70
+	define knconst ? < *** Numerical factor for K-N limit [1/4,3/4] : >
+
+	set lg_gmax = 3,7,0.01
+	set lg_gmax = 3.3,6.3,0.01
+	set gmax    = 10.0**lg_gmax
+	set epeak   = $nucrit*gmax**2.*$B/2.418e14 
+	
+	set checkKN = gmax*epeak/($knconst*511e3)    
+	set dum2 = lg(epeak)        if( checkKN >= 1 )
+	set dum3 = lg(gmax)         if( checkKN >= 1 )
+	define esoglia $(dum2[0])
+	define gsoglia $(dum3[0])
+
+	echo " "
+	echo "---------------------------------------------------------------"
+	echo " Max photons energy for Thomson scattering with g_max=10^"$(lg_gmax[dimen(lg_gmax)-1])":"
+	echo "    e_ph_thres. = "$( sprintf('%10.4f',$(10.0**$esoglia)) ) " eV [intr.]"
+	echo "    e_ph_thres. = "$( sprintf('%10.4f',$(10.0**$esoglia*$doppler)) ) " eV [obs.]"
+	echo "---------------------------------------------------------------"
+
+	set lg_epeak_obs_keV = lg(epeak*$doppler/1.e3)
+
+	# max photon energy for Thomson scattering with g_max
+	set eKN  = $knconst*511e3/gmax 
+
+	# observed max. photon energy for Thomson scattering
+	set lg_eKN_obs_keV = lg( eKN/1e3*$doppler )
+
+	# max electron energy for Thomson scattering with photons at e_peak   [NOT RELEVANT]
+	## set gKN  = $knconst*511e3/epeak 
+
+	# sync. photon energy emitted by .... gKN electrons   [NOT RELEVANT]
+	## set egKN = $nucrit*gKN**2.0*$B/2.418e14 
+
+	set eIC_th =(4./3.)*gmax**2.0*epeak*$doppler/1e9     # obs. IC peak energy in Thomson regime [GeV]
+	set eIC_kn =(4./3.)*gmax*$knconst*511e3*$doppler/1e9 # obs. IC peak energy in KN regime [GeV]
+
+	g_a1a2 0.6 1.75
+	g_a1a2 $(0.5*($n1-1)) $(0.5*($n2-1))
+	set eIC_fab = gmax*511e3*$doppler*$gaa/1e9
+
+	reset_graph
+	location 5500 27000 5500 28000
+
+	#-----------------------------------------------------------------
+	# in RED: max sync. energy for Thomson scattering with gamma_peak
+	#
+	relocate ( 2500 31500 )
+	ctype 3 
+	expand 0.9
+	putlabel 6 "Max photon energy for Thomson scattering with \gamma_{peak}, for a given \epsilon_{IC,peak}"
+	ctype 2
+	expand 1.5
+	#
+	notation -1 1 -1 2
+	limits -2 6 lg_epeak_obs_keV
+	ticksize -1 0 -1 0
+	box 4 4 4 2
+	ctype 3  #RED
+	ltype 2 lweight 2 connect (lg(eIC_th)) lg_eKN_obs_keV  if( checkKN <  1 )   
+	ltype 0 lweight 4 connect (lg(eIC_th)) lg_eKN_obs_keV  if( checkKN >= 1 )
+
+	relocate $($fx1+0.2) 1
+	lweight 3
+	putlabel 6 "\epsilon_{ph,KN}"
+	##ctype 4
+	##ltype 2 
+	##relocate 3 0 draw 7 0
+	##ltype 0 
+	##ctype 2
+
+	lweight 3
+	relocate ( $($gx2+4200) $( 0.5*($gy1+$gy2) ) )
+	angle 90
+	ctype 6
+	putlabel 5 "\epsilon_{sync,peak} [keV]"
+	angle 0
+	ctype 2
+
+	#-----------------------------------------------------------------
+	#  g_max vs. IC peak
+	#
+	notation 1 1 1 1 
+	lweight 3
+	#limits -2 6 lg_gmax 
+	limits -1 5 lg_gmax 
+	ticksize -1 0 -1 0 
+	box 1 2 0 4
+	ctype 5 
+	xlabel \epsilon_{IC,peak}  [GeV]
+	ctype 2
+	ylabel \gamma_{peak}
+
+	relocate ( $gx1 $( $gy2+800) )
+	expand 1.1
+	putlabel 6 "B="$(sprintf('%4.2f',$B))";  \delta="$doppler
+	expand 1.5
+
+	#--- IC peak: Thomson regime ---
+	ctype 7  #MAGENTA
+	ltype 0 lweight 4 connect (lg(eIC_th)) lg_gmax  if( checkKN <  1 )
+	ltype 2 lweight 2 connect (lg(eIC_th)) lg_gmax  if( checkKN >= 1 )
+	lweight 3
+	ctype 5  #BLUE
+	ltype 0 lweight 3 connect (lg(eIC_th)-0.1) lg_gmax  if( checkKN <  1 )
+
+	ctype 7
+	relocate ( $gx1 $( $gy1+2300) )
+	#putlabel 5 "\epsilon_{sync,peak}\cdot \gamma_{peak}^2"
+	putlabel 5 "\epsilon_{IC,peak,Th}"
+
+	ctype 6  #CYAN
+	ltype 0 lweight 4 connect (lg(eIC_th)+0.1) lg_gmax  
+
+	#--- IC peak: KN regime ---
+	ctype 5  #BLUE
+	ltype 2 lweight 2 connect (lg(eIC_kn))  lg_gmax  if( checkKN <  1 )
+	ltype 0 lweight 4 connect (lg(eIC_kn))  lg_gmax  if( checkKN >= 1 )
+	#TMP# ltype 1 lweight 3 connect (lg(eIC_fab)) lg_gmax  if( checkKN >= 1 )
+	relocate ( $gx2 $( $gy2+800) )
+	lweight 3
+	putlabel 4 "\epsilon_{ph,KN}\cdot \gamma_{peak}^2"
+
+	#-----------------------------------------------------------------
+	# in CYAN: sync. peak energy for gamma_peak
+	#
+	relocate ( 2500 30700 )
+	ctype 6
+	expand 0.9
+	putlabel 6 "Sync. peak energy for \gamma_{peak}"
+	ctype 2
+	expand 1.5
+	#-----------------------------------------------------------------
+	# in BLUE: max sync. energy for Thomson scattering with gamma_peak
+	#
+	relocate ( 2500 29900 )
+	ctype 5 
+	expand 0.9
+	putlabel 6 "IC peak energy for Thomson/KN scattering with \gamma_{peak}"
+	ctype 2
+	expand 1.5
+	#-------------------------------------------------------
+	ctype 2
+	ltype 2 
+	relocate -3 $gsoglia draw 7 $gsoglia
+	ltype 0 
+	expand 0.9
+	relocate $( $fx1+0.2 ) $($gsoglia-0.10) putlabel 6 "Thomson"
+	relocate $( $fx1+0.2 ) $($gsoglia+0.15) putlabel 6 "Klein-Nishina"
+	expand 1.5
+
+	##ctype 4
+	##ltype 1
+	##relocate  3 1 draw 3 9
+	##ltype 0
+	##ctype 2
+
+	notation -4 4 -4 4
+
+	define loop 1
+
+	while { $loop } {
+	   define test_peak ? < *** E_sync_peak [keV] [0=exit]: >
+	   if( $test_peak == 0 ) {
+	      define loop 0
+	   } else {
+	      mark_epeak $test_peak
+	      define test_peak 0
+	   }
+	}
+
+
+mark_epeak 1
+
+	define test_lg_g (0.5*lg($1*2.418e17/$doppler/$B/$nucrit))
+	define prefactor $( 10.0**($test_lg_g-int($test_lg_g)) )
+	echo " >> gamma(E_peak) = "$(sprintf('%4.2f',$prefactor))" x 10^"$(int($test_lg_g))"   lg(gamma(E_peak)) = "$(sprintf('%5.3f',$test_lg_g))
+	echo "    -----------------"
+	#echo "gamma(E_peak) = 10^"$(sprintf('%5.3f',$test_lg_g))
+
+	set dumSync = lg_gmax
+	set dumICkn = lg(eIC_kn)
+	set dumICth = lg(eIC_th)
+	set dumcheck= checkKN
+	sort < dumSync dumICkn dumICth dumcheck >
+	set dumICkn  = dumICkn    if(dumSync >= $test_lg_g)
+	set dumICth  = dumICth    if(dumSync >= $test_lg_g)
+	set dumcheck = dumcheck   if(dumSync >= $test_lg_g)
+	set dumSync  = dumSync    if(dumSync >= $test_lg_g)
+
+	ltype 2 
+	ctype 4 
+	relocate     7       $test_lg_g
+	if( dumcheck[0] >= 1 ) {
+   	   draw     $(dumICkn[0]) $test_lg_g
+	} else {
+   	   draw     $(dumICth[0]) $test_lg_g
+	}
+	ltype 0
+	ptype 4 3 
+	ltype 2
+	dot
+	if( dumcheck[0] >= 1 ) {
+   	   draw     $(dumICkn[0]) 2
+	} else {
+   	   draw     $(dumICth[0]) 2
+	}
+	ctype 2 
+
+#------------------------------------------------------------------------------
+# kn_rev  : the good one, with graphics
+#           Revised and improved version (in progress 2003.10.29)
+kn_rev
+
+	# define_physical_constants
+
+	echo "-------------------------------------------------- "
+	define B       ? <     B : >
+	define doppler ? < Delta : >
+	define n1 ?      <   n_1 : >
+	define n2 ?      <   n_2 : >
+	echo "-------------------------------------------------- "
+	echo " [1]  nu_crit = 1.29e6 "
+	echo " [2]  nu_crit = 2.80e6 "
+	echo " [3]  nu_crit = 3.70e6 "
+	define  howsyncpeak ? < What choice for sync. emission critical nu : >
+	echo "-------------------------------------------------- "
+	if( $howsyncpeak == 1 ) { define nucrit 1.29e6 } 
+	if( $howsyncpeak == 2 ) { define nucrit 2.80e6 } 
+	if( $howsyncpeak == 3 ) { define nucrit 3.70e6 } 
+
+	# g*e < 3/4 mc^2
+	# g*e < 1/4 mc^2  BG70
+	define knconst ? < *** Numerical factor for K-N limit [1/4,3/4] : >
+
+	set lg_gmax = 3. ,7. ,0.01
+	set lg_gmax = 4.0,6.3,0.01
+	set lg_gmax = 3.0,6.3,0.01
+	set gmax    = 10.0**lg_gmax
+	set epeak   = $nucrit*gmax**2.*$B/$nu_eV
+	
+	set checkKN = gmax*epeak/($knconst*511e3)    
+
+	set dum2 = lg(epeak)        if( checkKN >= 1 )
+	set dum3 = lg(gmax)         if( checkKN >= 1 )
+	define esoglia $(dum2[0])
+	define gsoglia $(dum3[0])
+
+	echo "--------------------------------------------------------------- "
+	#echo " Max photons energy for Thomson scattering with g_max=10^$(lg_gmax[dimen(lg_gmax)-1]): "
+	echo " Limits of applicability of Thomson scattering regime:  "
+	echo "    lg(gamma_e) = "$( sprintf('%10.4f',$($gsoglia)) )
+	echo "    e_ph_thres. = "$( sprintf('%10.4f',$(10.0**$esoglia)) )" eV [intr.] "
+	echo "    e_ph_thres. = "$( sprintf('%10.4f',$(10.0**$esoglia*$doppler)) )" eV [obs.] "
+	echo "--------------------------------------------------------------- "
+
+	set lg_epeak_obs_keV = lg(epeak*$doppler/1.e3)
+
+	# max photon energy for Thomson scattering with gmax
+	set eKN  = $knconst*511e3/gmax 
+
+	# observed max. photon energy for Thomson scattering
+	set lg_eKN_obs_keV = lg( eKN/1e3*$doppler )
+
+	set eIC_th =(4./3.)*gmax**2.0*epeak*$doppler/$GeV     # obs. IC peak energy in Thomson regime [GeV]
+	set eIC_kn =(4./3.)*gmax*$knconst*511e3*$doppler/$GeV # obs. IC peak energy in KN regime [GeV]
+
+	#g_a1a2 0.6 1.75
+	define a1 (0.5*($n1-1))
+	define a2 (0.5*($n2-1))
+	g_a1a2 $a1 $a2
+
+	define use_gaa ? < *         Use g(a1,a2) [n/ft/gf] : >
+	if( substr('$use_gaa',0,1) == 'n' ) {
+	    define gaa 1
+	} else {
+	    echo " Using proper expression for g(a1,a2), with a1="$a1" and a2="$a2
+	    g_a1a2 $a1 $a2
+	    if( substr('$use_gaa',0,1) == 'f' ) {
+	       define gaa $gaa
+	    } else {
+	       define gaa $gaa_GF0
+	    }
+	}
+
+	set eIC_fab= eIC_kn*$gaa
+
+	define numerical ? < * Compute the sync-IC peak path [y/n] : >
+	if( substr('$numerical',0,1) == 'y' ) {
+	    #systemcall loop_ic_split.pl -b $B -d $doppler --n1 $n1 --n2 $n2 -n 200 # -v FT
+	    systemcall "/home/gfossati/Science/Mkn421/2001/Temporal/PROVA/loop_ic_split.pl" -b $B -d $doppler --n1 $n1 --n2 $n2 -n 200 # -v FT
+	    data IC.output
+	    read < lg_xs_keV 3 lg_gg 4 lg_xc 5 > 
+	    set lg_xc_th = lg_xs_keV + lg(4./3.) + 2.*lg_gg
+	    set lg_xc_nu = lg_xc
+	    set num_lg_xs = lg_xs_keV - lg($nu_keV)
+	    set num_lg_xc = lg_xc     - lg($nu_GeV)
+	}
+
+	#-----------------------------------------------------------------
+	reset_graph
+	location 5500 27000 5500 28000
+
+	#-----------------------------------------------------------------
+	#-----------------------------------------------------------------
+	# in RED: max sync. energy for Thomson scattering with gamma_peak
+	#
+	relocate ( 2500 31500 )
+	ctype 3 
+	expand 0.9
+	putlabel 6 "Max photon energy for Thomson scattering with \gamma_{peak}, for a given \epsilon_{IC,peak}"
+	ctype 2
+	expand 1.5
+	
+	notation -1 1 -1 2
+	limits -3  1.5 lg_gmax
+	ticksize -1 0 -1 0
+	box 1 2 0 4
+	ylabel \gamma_{peak}
+	ctype 7
+	xlabel \epsilon_{sync,peak} [keV]
+	ctype 2
+
+	relocate ( $gx1 $( $gy2+800) )
+	expand 1.1
+	putlabel 6 "B="$(sprintf('%4.2f',$($B*1.0001)))";  \delta="$doppler 
+	expand 1.5
+
+	#--- target photon energy in KN regime ---#
+	ctype 3  #RED
+	ltype 0 lweight 3 connect lg_epeak_obs_keV  (lg_gmax+0.06) if( checkKN <  1 )   
+	ltype 0 lweight 4 connect lg_eKN_obs_keV     lg_gmax       if( checkKN >= 1 )
+
+	relocate ( $($gx1+600) $(0.9*$gy2) )
+	lweight 3
+	putlabel 6 "\epsilon_{ph,KN}"
+	ctype 2 
+
+	#-----------------------------------------------------------------
+	#-----------------------------------------------------------------
+	#  sync peak vs. IC peak
+	#
+	notation 1 1 1 1 
+	lweight 3
+	limits -3 1.5 (lg(eIC_th))
+	ticksize -1 0 -1 0 
+	box 4 4 4 2
+
+	lweight 3
+	relocate ( $($gx2+4200) $( 0.5*($gy1+$gy2) ) )
+	angle 90
+	ctype 5 
+	putlabel 5 "\epsilon_{IC,peak} [GeV]"
+	angle 0
+	ctype 2
+
+	#--- IC peak: Thomson regime ---#
+	ctype 5  
+	ltype 2 lweight 4 connect lg_epeak_obs_keV (lg(eIC_th))       if( checkKN >= 1 )
+	ltype 0 lweight 4 connect lg_epeak_obs_keV (lg(eIC_th)-0.05)  if( checkKN <  1 )
+	#--- IC peak: KN regime ---
+	ltype 0 lweight 4 connect lg_epeak_obs_keV (lg(eIC_kn))       if( checkKN >= 1 )
+	ltype 0 lweight 4 connect lg_epeak_obs_keV (lg(eIC_fab))      if( checkKN >= 1 )
+
+	#--- Sync. peak ---#
+	ctype 7  
+	ltype 0 
+	lweight 4 
+	connect lg_epeak_obs_keV (lg(eIC_th)+0.1)   
+	if( substr('$numerical',0,1) == 'y' ) {
+	    ltype 2 ctype 6 lweight 10 connect num_lg_xs num_lg_xc
+	}
+	lweight 4 
+	ctype 2 
+	ltype 0
+
+	#-----------------------------------------------------------------
+	# in MAGENTA: sync. peak energy for gamma_peak
+	#
+	relocate ( 2500 30700 )
+	ctype 7
+	expand 0.9
+	putlabel 6 "Sync. peak energy for \gamma_{peak}"
+	ctype 2
+	expand 1.5
+	#-----------------------------------------------------------------
+	# in BLUE: max sync. energy for Thomson scattering with gamma_peak
+	#
+	relocate ( 2500 29900 )
+	ctype 5 
+	expand 0.9
+	putlabel 6 "IC peak energy for Thomson/KN scattering with \gamma_{peak}"
+	expand 1.5
+	#-------------------------------------------------------
+	ctype 2
+	ltype 2 
+	limits lg_epeak_obs_keV lg_gmax
+	limits -3 1.5 lg_gmax
+	relocate -6 $gsoglia draw 7 $gsoglia
+	ltype 0 
+	expand 0.9
+	# relocate $( $fx1+0.2 ) $($gsoglia-0.05) putlabel 6 "Thomson"
+	# relocate $( $fx1+0.2 ) $($gsoglia+0.08) putlabel 6 "Klein-Nishina"
+	relocate $( $fx1+0.2 ) $($gsoglia-0.05) putlabel 6 "Thomson"
+	relocate $( $fx1+0.2 ) $($gsoglia+0.08) putlabel 6 "K-N"
+	expand 1.5
+
+	limits lg_epeak_obs_keV (lg(eIC_th))
+	limits -3 1.5 (lg(eIC_th))
+
+	notation -4 4 -4 4
+
+	define loop 1
+
+	while { $loop } {
+	   define test_peak ? < *** E_sync_peak [keV] [0=exit]: >
+	   if( $test_peak == 0 ) {
+	      define loop 0
+	   } else {
+	      mark_epeak_rev $test_peak
+	      define test_peak 0
+	   }
+	}
+
+
+mark_epeak_rev 1
+
+	define lg_test_epeak $(lg($1))
+	define test_lg_g (0.5*lg($1*2.418e17/$doppler/$B/$nucrit))
+	define emaxth  $($knconst*511e3/10.**$test_lg_g*$doppler)
+
+	echo "------------------------------------------------------------"
+	echo " >>>                         gamma(E_peak) :   10^"$(sprintf('%5.3f',$test_lg_g))
+	echo " >>> Max E_ph before K-N for gamma(E_peak) : " $( sprintf('%6.4f',$($emaxth)) ) " eV [obs.] "
+	echo "------------------------------------------------------------"
+
+	set dumSync = lg_epeak_obs_keV
+	set dumICkn = lg(eIC_kn)
+	set dumICth = lg(eIC_th)
+	set dum_eKN = lg_eKN_obs_keV
+	set dumcheck= checkKN
+	sort < dumSync dumICkn dumICth dumcheck >    #is this redundant?
+	set dumICkn  = dumICkn    if(dumSync >= $lg_test_epeak)
+	set dumICth  = dumICth    if(dumSync >= $lg_test_epeak)
+	set dum_eKN  = dum_eKN    if(dumSync >= $lg_test_epeak)
+	set dumcheck = dumcheck   if(dumSync >= $lg_test_epeak)
+	set dumSync  = dumSync    if(dumSync >= $lg_test_epeak)
+
+	ltype 2 
+	ctype 4 
+	if( dumcheck[0] >= 1 ) {
+	   ltype 1 
+	   ctype 4 
+	   relocate  $lg_test_epeak  -6
+   	   draw   $lg_test_epeak $(dumICth[0])
+   	   draw   4 $(dumICth[0])
+	   ltype 2
+	   ctype 5 
+	   relocate $lg_test_epeak  -6
+   	   draw     $lg_test_epeak $(dumICkn[0])
+	   ltype 0
+	   ptype 4 3 
+   	   dot
+	   ltype 2
+	   ctype 5 
+   	   draw   4 $(dumICkn[0])
+	   define ICpeak $(dumICkn[0])
+	} else {
+	   ltype 2
+	   ctype 4 
+	   relocate $lg_test_epeak  -6
+   	   draw     $lg_test_epeak $(dumICth[0])
+   	   draw     4 $(dumICth[0])
+	   define ICpeak $(dumICth[0])
+	}
+	echo " >>>                  lg(sync peak)= "  $(sprintf('%6.3f',$($lg_test_epeak+17.384))) "[Hz]" 
+	if( $ICpeak > 2. ) {
+	   echo " >>>                    lg(IC peak)= "  $(sprintf('%6.3f',$($ICpeak+9+14.384))) "[Hz] ["$(sprintf('%9.3f',$(10.**$ICpeak/1e3)))" TeV]"
+	} else {
+	   echo " >>>                    lg(IC peak)= "  $(sprintf('%6.3f',$($ICpeak+9+14.384))) "[Hz] ["$(sprintf('%9.3f',$(10.**$ICpeak)))" GeV]"
+	}
+	echo " >>> Peaks \"Distance\" / lg(IC/sync)= "  $(sprintf('%6.3f',$($ICpeak+9.-$lg_test_epeak-3.))) "[Hz]" 
+	echo "------------------------------------------------------------"
+	ltype 0
+	ptype 4 3 
+	ltype 2
+	dot
+
+	#--- target photon energy ---#
+	ctype 4 
+	ltype 1
+	##if( dumcheck[0] >= 1 ) {
+   	##   relocate $lg_test_epeak $(dumICkn[0])
+	##} else {
+   	##   relocate $lg_test_epeak $(dumICth[0])
+	##}
+   	##draw $lg_test_epeak $(dumICth[0])
+   	##draw $(dum_eKN[0]) $(dumICth[0])
+	if( dumcheck[0] >= 1 ) {
+   	    relocate $(dum_eKN[0]) $(dumICth[0])
+	    dot
+   	    draw $(dum_eKN[0]) -6 
+	} else {
+   	    relocate $lg_test_epeak $(dumICth[0])
+	    dot
+   	    draw $lg_test_epeak -6 
+	}
+	ltype 0
+	ctype 2 
+
+#------------------------------------------------------------------------------
+# bdelta_plot  [outdev=PS|x11]
+bdelta_plot 01 
+
+	if($?1) {
+	    parsing $1
+	} else {
+	    define outdev "x11"
+	}
+
+	# define_physical_constants
+
+	add_ctype kn_color       80 180   0
+	add_ctype cooling_color 228 165  32
+
+	#---------------------------------------------------------------------
+	# Preliminary checking 
+	#---------------------------------------------------------------------
+	if(!$(is_macro(lumdist))) {
+	    echo "WARNING: this macro REQUIRES 'lumdist' included in astro_tools.sm"
+	    return
+	}
+
+	#---------------------------------------------------------------------
+
+	define epeakS   ? <**        Synchrotron Peak Energy [keV] : >
+	define epeakIC  ? <**    Inverse Compton Peak Energy [TeV] : >
+	define redshift ? <**                             Redshift : >
+	# lumdist 70.0 0.0 $redshift
+	systemcall cosmo_calculator.py $redshift | egrep -v Age >!  /tmp/lumdist
+	data "/tmp/lumdist"
+	define lumdist read 1 3 
+
+	define fDl ( 2.*$lumdist + lg(4.*$pi) -10 )
+	              echo "  NOTE: at this distance a 1e-10 flux ==> L="$(sprintf('%5.2f',$fDl))
+		      echo ""
+	define lgLpeakS  ? <**    Synchrotron Peak Luminosity (log): >
+	define lgLpeakIC ? <**Inverse Compton Peak Luminosity (log): >
+
+	              echo "**  Variability Timescale [s]...OR...  "
+	define t_var    ?  <       dimension of the blob R_blob [cm]: >
+	define t_cool   ?  <**                Cooling Timescale [s] : >
+	define t_lag    ?  <**              Intraband X-ray lag [s] : >
+
+	#define a1 (0.60)
+	#define a2 (1.75)
+	define n1 (2.2)
+	define n2 (4.2)
+	define a1 $(0.5*($n1-1)) 
+	define a2 $(0.5*($n2-1))
+
+	echo " Spectral index : "$n1"==>"$a1
+	echo " Spectral index : "$n2"==>"$a2
+
+	f_a1a2 $a1 $a2
+
+	define use_gaa ? < *         Use g(a1,a2) [n/ft/gf] : >
+	if( substr('$use_gaa',0,1) == 'n' ) {
+	    define gaa 1
+	} else {
+	    echo " Using proper expression for g(a1,a2), with a1="$a1" and a2="$a2
+	    g_a1a2 $a1 $a2
+	    if( substr('$use_gaa',0,1) == 'f' ) {
+	       define gaa $gaa
+	    } else {
+	       define gaa $gaa_GF0
+	    }
+	}
+
+	define knconst ? < *** Numerical factor for K-N limit [1/4,3/4] : >
+
+	define nu_peakS  $(  $epeakS*$nu_keV )
+	define nu_peakIC $( $epeakIC*$nu_TeV )
+	define LpeakS    $( 10.**$lgLpeakS )
+	define LpeakIC   $( 10.**$lgLpeakIC )
+
+	#-----------------------------------------------------------
+	# look up the B-delta path computed with the "real" SED.
+	#
+	lookup_xs $(lg($nu_peakS)) $(lg($nu_peakIC)) 0.15
+	set _B1 = _B
+	set _d1 = _d
+	lookup_xs $(lg($nu_peakS)) $(lg($nu_peakIC)) 0.07
+	set _B2 = _B
+	set _d2 = _d
+	#
+	# returns: _B _d _xs _xc 
+	#-----------------------------------------------------------
+
+	set doppler = -1,3,0.002
+	set doppler = 10.**doppler
+
+	#define Rblob ( 1e16 )
+	if( $t_var > 1e10 ) { 
+	    define Rblob $t_var
+	    set t_var = ($Rblob/$c)*(1+$redshift)/doppler
+	} else { 
+	    set t_var = fill(doppler,$t_var) 
+	}
+
+	#--- eq.(13)  ---#
+	define dopplerKN  ( sqrt(3./4.*$nu_peakS*$nu_peakIC/($knconst*$nu_e)**2.)*(1+$redshift)/sqrt($gaa) )
+
+	#-----------------------------------------------------------
+	# PEAK DISTANCE
+	# eq.(4) [A]
+	#-----------------------------------------------------------
+	set B1   = 4./3.*(1+$redshift)*$nu_peakS**2./($nu_crit*$nu_peakIC)/doppler
+
+	# eq.(16) [A-kn] 
+	set B1kn = (16./9)*$nu_peakS*($knconst*$nu_e)**2./($nu_crit*$nu_peakIC**2.)/(1+$redshift)*$gaa**2.*doppler
+
+	set B1th       = B1        if( doppler >= $dopplerKN )
+	set B1kn       = B1kn      if( doppler <  $dopplerKN )
+	set doppler_th = doppler   if( doppler >= $dopplerKN )
+	set doppler_kn = doppler   if( doppler <  $dopplerKN )
+	
+	#do 1=0,dimen(doppler)-1 { 
+	#    if( doppler[$1] <= $dopplerKN ) {
+	#       set B1[$1] = B1kn[$1]
+	#    }
+	#}
+
+	#-----------------------------------------------------------
+	# LUMINOSITY RATIO, and T_var
+	# eq.(11) [B] 
+	#   T_var enters as a "proxy" for R, and it sets an upper limit to R.
+	#   Therefore this relationship sets a lower limit on B for a given delta.
+	#   Parameter space ABOVE the line is GOOD.
+	#   B2corr is the ratio between eq.22 and eq.11.
+	#-----------------------------------------------------------
+	if( substr('$use_gaa',0,1) == 'n' ) {
+	   set B2corr = doppler*0 + 1
+	} else {
+	   set B2corr = ($knconst*doppler/(1+$redshift))**(1-$a1)*( $gaa*$nu_e**2./($nu_peakS*$nu_peakIC) )**(0.5*(1-$a1))
+	}
+	set B2 = B2corr*(1+$redshift)*sqrt( 2*$LpeakS**2.*$faa/($c**3.*t_var**2.*$LpeakIC) )/doppler**3.
+
+	#-----------------------------------------------------------
+	# critical B-doppler locus separating KN and Thomson regime 
+	# [CRIT] 
+	#-----------------------------------------------------------
+	set B_crit = $nu_peakS**3./($nu_crit*($knconst*$nu_e)**2.)*(1+$redshift)**3./doppler**3.
+
+	#-----------------------------------------------------------
+	# T_cool 
+	# eqs.(24-27) 
+	#   Shorter T_cool push the wedge up-left.
+	#   Shorter T_cool are allowed above the wedge. The region enclosed by the wedge is "prohibited".
+	#-----------------------------------------------------------
+	# synchrotron cooling dominates: eq.25&27
+	define CCa local
+	define CCa ( 6.*$pi*$mec2/$sigmaT/$c )
+	set B_cool_sync = ( ($CCa/$t_cool)*sqrt((1+$redshift)*$nu_crit/$nu_peakS/doppler) )**(2./3.) 
+
+	# Compton cooling dominates: eq.26&27
+	define CCb local
+	define CCb ( $sigmaT/(3.*$pi*$mec2*$c**2.) )
+	set B_cool_comp = ($CCb*$faa*$LpeakS)**2.*($t_cool/t_var**2.)**2.*($nu_peakS/$nu_crit)*(1+$redshift)**3./doppler**11.
+
+	foreach vec < test testX testY > { set $vec local }
+	set test  = abs(B_cool_sync - B_cool_comp)
+	set testX = doppler
+	set testY = B_cool_sync
+	sort < test testX testY >
+	set B_cool_comp = B_cool_comp   if( doppler >= testX[0] )
+	set B_cool_sync = B_cool_sync   if( doppler >= testX[0] )
+	set doppler_cool= doppler       if( doppler >= testX[0] )
+	set t_var_cool  = t_var         if( doppler >= testX[0] )
+
+	#-----------------------------------------------------------
+	# Ub=Urad line.
+	#-----------------------------------------------------------
+	set Beq = sqrt(2.*$faa*$LpeakS/$c**3./t_var**2. )*(1+$redshift)/doppler**3.
+
+	#-----------------------------------------------------------
+	# x-ray intraband lags ( lower limit )
+	#-----------------------------------------------------------
+	# synchrotron cooling dominates:
+	define nulag1 (  3.1*$nu_keV ) 
+	define nulag2 (  6.8*$nu_keV )
+	define nulag2 ( 11.0*$nu_keV )
+	set Blag = ( (6.*$mec2*$pi/($sigmaT*$c))**2.*((1+$redshift)/doppler)*(sqrt($nu_crit/$nulag1)-sqrt($nu_crit/$nulag2))**2. )**(1./3.)
+	set Blag = Blag/($t_lag**(2./3.))
+
+	#===========================================================
+	reset_graph
+	#limits 1 2 -2 2            # FT fig.3
+	#ticksize 0.05 0.2 0.2 1    # FT fig.3
+	limits   -0.1 3 -2.1 1.3
+	limits    0.3 3 -2.5 0.5
+	# limits    1.3 3 -1.5 0.5   # focus on top right corner
+	limits    0.3 3 -2.1 0.9
+	limits    $(lg(3)) $(lg(300)) $(lg(0.03)) $(lg(3))   # 2dex for paper
+	limits    $(lg(5)) $(lg(500)) $(lg(0.05)) $(lg(5))   # 2dex for paper
+	limits    0.3 3 -3.1 0.9
+	ticksize -1 0 -1 0
+	box
+	xlabel \delta
+	# ylabel B [gauss]
+	ylabel B [G]
+
+	#--- top labels ---#
+	expand 1.01
+	relocate (   $gx1       $($gy2+1600) ) putlabel 6 E_{sync}=$(sprintf('%5.2f',$($epeakS*1.0001))) keV 
+	relocate ( $($gx1+7000) $($gy2+1600) ) putlabel 6 E_{IC}=$(sprintf('%5.2f',$($epeakIC*1.0001))) TeV 
+	relocate ( $gx2 $($gy2+1600) )
+	if( $t_var < 1e10 ) {
+	    putlabel 4 t_{var}=$(sprintf('%6.0f',$(t_var/1.00001))) s 
+	} else {
+	    define r_exp ( int(lg($Rblob)) )
+	    define r_dec ( $Rblob/10.**$r_exp )
+	    # putlabel 4 t_{var}(R)=$(sprintf('%.1f',$($r_dec/1.0001)))\cdot 10^{$(sprintf('%2d',$r_exp))}/c/\delta
+	    putlabel 4 R=$(sprintf('%.1f',$($r_dec/1.0001)))\times 10^{$(sprintf('%2d',$r_exp))} cm
+	}
+	relocate (   $gx1        $($gy2+700) ) putlabel 6 L_{sync}=$(sprintf('%5.2f',$($lgLpeakS*1.0001))) 
+	relocate ( $($gx1+ 7000) $($gy2+700) ) putlabel 6 L_{IC}=$(sprintf('%5.2f',$($lgLpeakIC*1.0001))) 
+	relocate ( $($gx1+13000) $($gy2+700) ) putlabel 6 t_{X,lag}=$(sprintf('%4.0f',$($t_lag*1.0001))) s
+	relocate ( $gx2 $($gy2+700) )
+	putlabel 4 t_{cool}=$(sprintf('%6.0f',$($t_cool/1.00001))) s 
+	expand 1.5
+
+	#-----------------------------------------------------------
+	# loads and plots B-delta relationship [A] computed numerically.
+	#-----------------------------------------------------------
+	if( substr('$outdev',0,1) == 'P' || substr('$outdev',0,1) == 'p' ) {
+	   # expand 2.2 ptype 7 3 ctype grey80
+	   expand 2.2 ptype 7 3 ctype grey91
+	   points (lg(_d1)) (lg(_B1))  if( (lg(_d1)) > $($fx1 + 0.02*($fx2-$fx1)) && (lg(_d1)) < $($fx2 - 0.02*($fx2-$fx1)) )
+	   # expand 2.2 ptype 7 3 ctype grey55
+	   expand 2.2 ptype 7 3 ctype grey82
+	   points (lg(_d2)) (lg(_B2))  if( (lg(_d2)) > $($fx1 + 0.02*($fx2-$fx1)) && (lg(_d2)) < $($fx2 - 0.02*($fx2-$fx1)) )
+	} else {
+	   expand 1.2 ptype 4 0 ctype 2
+	   points (lg(_d2)) (lg(_B2))  if( (lg(_d2)) > $($fx1 + 0.02*($fx2-$fx1)) && (lg(_d2)) < $($fx2 - 0.02*($fx2-$fx1)) )
+	}
+	expand 1.5
+
+	#--- separation between Thomson (above) and KN (below) regions 
+	#    (with some :shade: because it is a lower limit for Thomson regime.)
+	# GREEN
+	lweight 4
+	ctype kn_color ltype 0 connect (lg(doppler)) (lg(B_crit))
+	#lweight 1
+	#ltype 2 connect (lg(doppler)) (lg(B_crit)+0.2)
+	#ltype 1 connect (lg(doppler)) (lg(B_crit)+0.4)
+
+	#--- FT constraints ---#
+	ltype 0
+	lweight 4
+	ctype 3 ltype 0 connect (lg(doppler_th))   (lg(B1th))
+	ctype 3 ltype 0 connect (lg(doppler_kn))   (lg(B1kn))
+	ctype 5 ltype 0 connect (lg(doppler))      (lg(B2))
+	ctype cooling_color ltype 2 connect (lg(doppler_cool)) (lg(B_cool_sync))
+	ctype cooling_color ltype 2 connect (lg(doppler_cool)) (lg(B_cool_comp))
+	ctype 7 ltype 4 connect (lg(doppler))      (lg(Beq))
+	ctype 2 ltype 2 connect (lg(doppler))      (lg(Blag))
+
+	lweight 3
+	define saveexpand $expand
+	expand 1.1
+	set dum1 local
+	set dum2 local
+	#--- labeling the Thomson-KN dividing line ---#
+	set dum1 = doppler   if( (lg(B_crit)) < $($fy2- 0.03*($fy2-$fy1)) )
+	if( $( lg($(dum1[0])) )  > $fx1 ) {
+	   relocate $( lg($(dum1[0]))+0.02*($fx2-$fx1) ) $( $fy2 - 0.03*($fy2-$fy1) )
+	   ctype kn_color putlabel 6 Thomson
+	   relocate $( lg($(dum1[0]))-0.02*($fx2-$fx1) ) $( $fy2 - 0.03*($fy2-$fy1) )
+	   ctype kn_color putlabel 4 K-N
+	}
+
+	# GF: CHEAT FOR PAPER 
+	# ctype kn_color
+	# relocate $(lg(170)) $(lg(0.2)) angle -70 putlabel 5 Thomson
+	# relocate $(lg(130)) $(lg(0.2)) angle -70 putlabel 5 K-N
+	# angle 0
+	# ctype 2 
+	# GF: CHEAT FOR PAPER 
+
+	#--- labeling the Equipartition line ---#
+	set dum1 = lg(doppler)   if( (lg(Beq))     < $($fy2 - 0.07*($fy2-$fy1)) )
+	set dum2 = lg(Beq)       if( (lg(doppler)) > $($fx1 + 0.01*($fx2-$fx1)) )
+	if( dum1[0] > $( $fx1 + 0.01*($fx2-$fx1) ) ) {
+	    relocate $( dum1[0]+0.01*($fx2-$fx1) ) $( $fy2 - 0.03*($fy2-$fy1) )
+	    ctype 7 putlabel 6 Equipartition
+	} else {
+	    relocate $( $fx1 + 0.02*($fx2-$fx1) )  $( dum2[0]+0.02*($fy2-$fy1) )
+	    ctype 7 putlabel 6 Equipartition
+	}
+	#ctype 2
+	expand $saveexpand
+
+	#--- labeling the T_x,lag line ---#
+	# set dum1 = lg(Blag)      if( (lg(doppler)) < $($fx2 - 0.02*($fx2-$fx1)) )
+	# relocate $($fx2 - 0.02*($fx2-$fx1)) $( dum1[dimen(dum1)-1] - 0.02*($fy2-$fy1))
+	# ctype 2 putlabel 4 T_{X,lags}
+	set dum1 = lg(Blag)      if( (lg(doppler)) > $($fx1 + 0.02*($fx2-$fx1)) )
+	relocate $($fx1 + 0.02*($fx2-$fx1)) $( dum1[0] - 0.045*($fy2-$fy1))
+	ctype 2 putlabel 6 t_{X,lags}
+
+	#--- labeling the Tcool line ---#
+	set dum1 = lg(Blag)      if( (lg(doppler)) > 2 )
+	relocate $(lg(100)) $( dum1[0] - 0.065*($fy2-$fy1) )
+	ctype cooling_color putlabel 5 t_{cool}
+
+	ctype 2
+	expand $saveexpand
+
+	#===========================================================
+	# adding a little SPREAD around some relationships.
+	#-----------------------------------------------------------
+	# peak/peak relationship
+	#
+	define spreadfactor ? < * Uncertainty spread factor : >
+	if( $spreadfactor > 1 ) {
+	   define spreadstep   (2.*lg($spreadfactor)/7.)
+	   set spread=$(lg(1./$spreadfactor)),$(lg($spreadfactor)),$spreadstep
+	} else { 
+	   set spread=< $(lg($spreadfactor)) >
+	}
+
+	lweight 1
+	ctype 3
+	foreach vec < tmp_B1th d_th tmp_B1kn d_kn tmp_nu_peakS tmp_nu_peakIC  > {
+	   set $vec local
+	} 
+	set tmp_nu_peakS  = $nu_peakS*10.**(0*spread)
+	set tmp_nu_peakS  = < $nu_peakS > 
+	set tmp_nu_peakIC = $nu_peakIC*10.**spread
+	foreach 1 tmp_nu_peakS {
+	   foreach 2 tmp_nu_peakIC {
+	      define tmp_nu_peakS ( $nu_peakS*10.**$1 )
+	      define dopplerKN    ( sqrt(3./4.*$1*$2/($knconst*$nu_e)**2.)*(1+$redshift)/sqrt($gaa) )
+
+	      set tmp_B1th = 4./3.*(1+$redshift)*$1**2./($nu_crit*$2)/doppler
+	      set tmp_B1kn = (16./9.)*$1*($knconst*$nu_e)**2./($nu_crit*$2**2.)/(1+$redshift)*$gaa**2.*doppler
+	      set tmp_B1th = tmp_B1th    if( doppler >= $dopplerKN )
+	      set tmp_B1kn = tmp_B1kn    if( doppler <  $dopplerKN )
+	      set d_th     = doppler     if( doppler >= $dopplerKN )
+	      set d_kn     = doppler     if( doppler <  $dopplerKN )
+
+	      # ltype 0 connect (lg(d_th)) (lg(tmp_B1th)) 
+	      # ltype 0 connect (lg(d_kn)) (lg(tmp_B1kn)) 
+	   }
+	}
+	ltype 0
+
+	#-----------------------------------------------------------
+	# Tx,lag and T_cool relationships are lower limits.
+	define spreadfactor2 (4.)
+	define spreadfactor2 $spreadfactor
+	define spreadstep   (lg($spreadfactor2)/5.)
+	set spread=$(lg(1./$spreadfactor2)),0,$spreadstep
+	
+	ctype cooling_color
+	lweight 2 
+	set tmpB5a local
+	set tmpB5b local
+	define tc local
+	foreach 1 spread {
+	    define tc ( $t_cool*10.**($1/2.) )
+	    set tmpB5a = ( ($CCa/$tc)*sqrt((1+$redshift)*$nu_crit/$nu_peakS/doppler_cool) )**(2./3.) 
+	    define tc ( $t_cool*10.**($1/2.) )
+	    set tmpB5b = ($CCb*$faa*$LpeakS)**2.*($tc/t_var_cool**2.)**2.*($nu_peakS/$nu_crit)*(1+$redshift)**3./doppler_cool**11.
+	    ltype 1 connect (lg(doppler_cool)) (lg(tmpB5a))    if(tmpB5a >= B_cool_comp)
+	    ltype 1 connect (lg(doppler_cool)) (lg(tmpB5b))    if(tmpB5b <= B_cool_sync)
+	}
+
+	ctype 2 
+	lweight 2 
+	set tmpBlag0 local
+	set tmpBlag  local
+	define tl local
+	set tmpBlag0 = ( (6.*$mec2*$pi/($sigmaT*$c))**2.*((1+$redshift)/doppler)*(sqrt($nu_crit/$nulag1)-sqrt($nu_crit/$nulag2))**2. )**(1./3.)
+	foreach 1 spread {
+	    define tl ( $t_lag*10.**($1/2.) )
+    	    set tmpBlag = tmpBlag0/($tl**(2./3.))
+	    ltype 1 connect (lg(doppler)) (lg(tmpBlag))
+	}
+
+	#-----------------------------------------------------------
+	# L/L, t_var relationship is a lower limit... or not.
+	set spread=$(lg(1./$spreadfactor2)),$(lg($spreadfactor2)),$spreadstep
+
+	ctype 5
+	lweight 2 
+	set tmpB2 local
+	set tv local
+	foreach 1 spread {
+	    set tv = t_var*10.**($1/2.)
+	    set tmpB2 = B2corr*(1+$redshift)*sqrt( 2*$LpeakS**2.*$faa/($c**3.*(tv)**2.*$LpeakIC) )/doppler**3.
+	    ltype 1 connect (lg(doppler)) (lg(tmpB2))
+	}
+	#-----------------------------------------------------------
+
+	ctype 2
+	lweight 3
+	# box 3 3 3 3 
+	box 1 2 0 0 
+
+
+#------------------------------------------------------------------------------
+# compare_abs_models
+compare_abs_models 01
+
+	if($?1) {
+	    parsing $1
+	} else {
+	    define outdev "x11"
+	}
+
+	# define_physical_constants
+
+	#---------------------------------------------------------------------
+	# Preliminary checking 
+	#---------------------------------------------------------------------
+	if(!$(is_macro(lumdist))) {
+	    echo "WARNING: this macro REQUIRES 'lumdist' included in astro_tools.sm"
+	    return
+	}
+
+	#---------------------------------------------------------------------
+
+	define epeakS   ? <**        Synchrotron Peak Energy [keV] : >
+	define epeakIC  ? <**    Inverse Compton Peak Energy [TeV] : >
+	define redshift ? <**                             Redshift : >
+	# lumdist 70.0 0.0 $redshift
+	systemcall cosmo_calculator.py $redshift | egrep -v Age >!  /tmp/lumdist
+	data "/tmp/lumdist"
+	define lumdist read 1 3 
+
+	define fDl ( 2.*$lumdist + lg(4.*$pi) -10 )
+	              echo "  NOTE: at this distance a 1e-10 flux ==> L="$(sprintf('%5.2f',$fDl))
+		      echo ""
+	define lgLpeakS  ? <**          Synchrotron Peak Luminosity : >
+	define lgLpeakIC ? <**      Inverse Compton Peak Luminosity : >
+
+	define nu_peakS  $(  $epeakS*$nu_keV )
+	define nu_peakIC $( $epeakIC*$nu_TeV )
+	define LpeakS    $( 10.**$lgLpeakS )
+	define LpeakIC   $( 10.**$lgLpeakIC )
+
+	#-----------------------------------------------------------
+	# look up the B-delta path computed with the "real" SED.
+	#
+	lookup_xs $(lg($nu_peakS)) $(lg($nu_peakIC)) 0.10
+	set _B1 = _B
+	set _d1 = _d
+	## lookup_xs $(lg($nu_peakS)) $(lg($nu_peakIC)) 0.05
+	## set _B2 = _B
+	## set _d2 = _d
+	#
+	# returns: _B _d _xs _xc 
+	#-----------------------------------------------------------
+
+	#===========================================================
+	reset_graph
+	#limits 1 2 -2 2            # FT fig.3
+	#ticksize 0.05 0.2 0.2 1    # FT fig.3
+	limits   -0.1 3 -2.1 1.3
+	limits    0.3 3 -2.5 0.5
+	limits   -0.1 3.1 $(lg(0.005)) $(lg(100.0))
+	# limits    1.3 3 -1.5 0.5   # focus on top right corner
+	ticksize -1 0 -1 0
+	box
+	xlabel \delta
+	# ylabel B [gauss]
+	ylabel B [G]
+
+	#--- top labels ---#
+	expand 1.01
+	relocate (   $gx1       $($gy2+1600) ) putlabel 6 E_{sync}=$(sprintf('%5.2f',$($epeakS*1.0001))) keV 
+	relocate ( $($gx1+7000) $($gy2+1600) ) putlabel 6 E_{IC}=$(sprintf('%5.2f',$($epeakIC*1.0001))) TeV 
+	relocate ( $gx2 $($gy2+1600) )
+
+	relocate (   $gx1        $($gy2+700) ) putlabel 6 L_{sync}=$(sprintf('%5.2f',$($lgLpeakS*1.0001))) 
+	relocate ( $($gx1+ 7000) $($gy2+700) ) putlabel 6 L_{IC}=$(sprintf('%5.2f',$($lgLpeakIC*1.0001))) 
+	#relocate ( $($gx1+12000) $($gy2+700) ) putlabel 6 t_{X,lag}=$(sprintf('%4.0f',$($t_lag*1.0001))) s
+	relocate ( $gx2 $($gy2+700) )
+	#putlabel 4 t_{cool}=$(sprintf('%6.0f',$($t_cool/1.00001))) s 
+	expand 1.5
+
+	#-----------------------------------------------------------
+	# plots B-delta relationship computed numerically.
+	#-----------------------------------------------------------
+	if( substr('$outdev',0,1) == 'P' || substr('$outdev',0,1) == 'p' ) {
+	   expand 2.2 ptype 7 3 ctype grey80
+	   points (lg(_d1)) (lg(_B1))  if( (lg(_d1)) > $($fx1 + 0.02*($fx2-$fx1)) && (lg(_d1)) < $($fx2 - 0.02*($fx2-$fx1)) )
+	   expand 2.2 ptype 7 3 ctype grey55
+	   points (lg(_d2)) (lg(_B2))  if( (lg(_d2)) > $($fx1 + 0.02*($fx2-$fx1)) && (lg(_d2)) < $($fx2 - 0.02*($fx2-$fx1)) )
+	} else {
+	   expand 1.2 ptype 4 0 ctype 2
+	   points (lg(_d2)) (lg(_B2))  if( (lg(_d2)) > $($fx1 + 0.02*($fx2-$fx1)) && (lg(_d2)) < $($fx2 - 0.02*($fx2-$fx1)) )
+	}
+	expand 1.5
+
+
+##------------------------------------------------------------------------------
+## f_a1a2 [<alpha_1>] [<alpha_2>]
+## 	Formula from Tavecchio et al. 1998
+f_a1a2 02
+
+	if($?1) {
+	   define a1 $1
+	   define a2 $2
+	} else {
+	   define a1 ? < alpha_1 : >
+	   define a2 ? < alpha_2 : >
+	}
+
+	define faa $( 1./(1-$a1) + 1./($a2-1) )
+
+	##echo g(a1,a2) = $gaa
+
+##------------------------------------------------------------------------------
+## g_a1a2 [<alpha_1>] [<alpha_2>]
+## 	Formula from Tavecchio et al. 1998
+g_a1a2 02
+
+	if($?1) {
+	   define a1 $1
+	   define a2 $2
+	} else {
+	   define a1 ? < alpha_1 : >
+	   define a2 ? < alpha_2 : >
+	}
+
+	define gaa     $(exp(1./($a1-1) + 1./($a2-$a1)/2))
+	define gaa_GF0 $(exp(1./($a1-1) + 1./($a2-$a1) ))
+	define gaa_GF1 $(exp(1./($a1-1) + 2./($a2-$a1) ))
+	define gaa_GF2 $(exp(1./($a2-1) - 2./($a2-$a1) ))
+
+	define gaa_Cl  $(exp(1./($a1-1) + 2./($a2-$a1) ))
+	define gaa_Ch  $(exp(1./($a2-1) - 2./($a2-$a1) ))
+
+	##echo g(a1,a2) = $gaa
+
+#------------------------------------------------------------------------------
+# plot_gaa
+plot_gaa
+
+	reset_graph
+
+	#define a1 ? < * alpha_1 : >
+	define a2 ? < * alpha_2 : >
+
+	set a1 = 0.2,1.0,0.02
+	set a1 = a1-0.001
+
+	set gaa    = exp( 1./(a1  - 1) + 1./($a2 - a1)/2.)  #  Fabrizio's
+	set gaa_GF = exp( 1./(a1  - 1) + 1./($a2 - a1))
+
+	set gaa_GF1= exp( 1./(a1  - 1) + 2./($a2 - a1))   # C_L case (see notes)
+	set gaa_GF2= exp( 1./($a2 - 1) - 2./($a2 - a1))   # C_H case (see notes)
+
+	limits a1 -0.02 1.3
+	ticksize 0 0 0 0 
+	box
+	xlabel \alpha_1
+	ylabel g(\alpha_1,$a2)
+
+	ctype 5 connect a1 gaa
+	#ctype 3 connect a1 gaa_GF
+	ltype 1 ctype 3 connect a1 gaa_GF1
+	ltype 2 ctype 3 connect a1 gaa_GF2
+	ctype 2
+	ltype 0
+
+	echo "--------------------------------------------"
+	echo " [blue]  : Fabrizio "
+	echo " [.....] : C_L case "
+	echo " [- - -] : C_H case "
+	echo "--------------------------------------------"
+
+	##echo g(a1,a2) = $gaa
+	
+#------------------------------------------------------------------------------
+# constraints_ic_split
+constraints_ic_split
+
+	# define_physical_constants
+	reset_graph
+	
+	echo " FT examples: n1=2.2 n2=4.5 nupeak=1e15"
+	echo  "Electron spectrum parameters "
+	define n1 ?         <               n_1 : >
+	define n2 ?         <               n_2 : >
+	# define gb ?       <       gamma_break : >
+	define g1 ?         <         gamma_min : >
+	define g2 ?         <         gamma_max : >
+	# define K1 ?       <               K_e : >
+	define nu_s_b_obs ? < nu_peak obs. [Hz or keV] : >
+	define B  ?         <           B field : >
+	define doppler ?    <             delta : >
+
+	if( $nu_s_b_obs < 1e9 ) { define nu_s_b_obs $($nu_s_b_obs*2.418e17) }
+	
+	define knconst ? < *** Numerical factor for K-N limit [1/4,3/4] : >
+
+	define nu_s_b  ( $nu_s_b_obs/$doppler )
+	define gb      ( sqrt($nu_s_b/$nu_crit/$B) )
+	# define B     ( $nu_b/$nu_crit/$gb**2. )
+
+	define nu_s_1 ( $nu_crit*$g1**2.*$B )
+	define nu_s_2 ( $nu_crit*$g2**2.*$B )
+
+	define lg_nu_s_1 ( lg($nu_s_1) )
+	define lg_nu_s_b ( lg($nu_s_b) )
+	define lg_nu_s_2 ( lg($nu_s_2) )
+
+	set lg_nu_s  = $lg_nu_s_1,$lg_nu_s_2,0.01
+	set lg_nu_c_1 = lg(4./3.) + 2.*lg($g1) + lg_nu_s
+	set lg_nu_c_b = lg(4./3.) + 2.*lg($gb) + lg_nu_s
+	set lg_nu_c_2 = lg(4./3.) + 2.*lg($g2) + lg_nu_s
+	set lg_nu_c_kn= lg($knconst) + 2.*lg($nu_e) - lg_nu_s
+
+	define lg_nu_c_11 $(lg_nu_c_1[0])
+	define lg_nu_c_b1 $(lg_nu_c_b[0])
+	define lg_nu_c_21 $(lg_nu_c_2[0])
+	define lg_nu_c_1b  ( $lg_nu_c_11 + 2.*lg($gb/$g1) )
+	define lg_nu_c_bb  ( $lg_nu_c_b1 + 2.*lg($gb/$g1) )
+	define lg_nu_c_2b  ( $lg_nu_c_21 + 2.*lg($gb/$g1) )
+	define lg_nu_c_12  ( $lg_nu_c_11 + 2.*lg($g2/$g1) )
+	define lg_nu_c_b2  ( $lg_nu_c_b1 + 2.*lg($g2/$g1) )
+	define lg_nu_c_22  ( $lg_nu_c_21 + 2.*lg($g2/$g1) )
+
+	set dum local
+	set dum = lg_nu_c_1 CONCAT lg_nu_c_2
+
+	set dumx =  7,20,1
+	set dumy =  8,35,1
+
+	reset_graph
+	location 5000 28000 6000 29000
+	limits (lg_nu_s + lg($doppler)) (dum + lg($doppler))
+	# Observed frequencies 
+	limits (dumx + lg($doppler)) (dumy + lg($doppler))
+	box 1 2 4 4 
+	#ltype 1 ctype 6 relocate $fx1 $(lg(1.0*$nu_MeV)) draw $fx2 $(lg(1.0*$nu_MeV))
+	#ltype 1 ctype 6 relocate $fx1 $(lg(1.0*$nu_GeV)) draw $fx2 $(lg(1.0*$nu_GeV))
+	##ltype 1 ctype 4 relocate $fx1 $(lg(0.1*$nu_TeV)) draw $fx2 $(lg(0.1*$nu_TeV)) 
+	##ltype 1 ctype 4 relocate $fx1 $(lg(1.0*$nu_TeV)) draw $fx2 $(lg(1.0*$nu_TeV))
+	##ltype 1 ctype 4 relocate $fx1 $(lg(10.*$nu_TeV)) draw $fx2 $(lg(10.*$nu_TeV))
+	define mypeak 23.5
+	define mypeak 26.3
+	set tev_ref_lines = < 0.4 1 10 > 
+	foreach mypeak tev_ref_lines {
+	    ltype 1 ctype 4 relocate $fx1 $(lg($mypeak*$nu_TeV)) draw $fx2 $(lg($mypeak*$nu_TeV))
+	    # ltype 1 ctype 4 relocate $fx1 $mypeak      draw $fx2 $mypeak
+	    # ltype 1 ctype 4 relocate $fx1 $($mypeak+1) draw $fx2 $($mypeak+1)
+	}
+	ltype 0 ctype 2 
+	relocate ( $( 0.5*($gx1+$gx2) ) $($gy2 + 2200) )
+	putlabel 5 log(\\nu\'_{sync}) [Hz]
+	relocate ( $($gx2 + 2800) $( 0.5*($gy1+$gy2) ) )
+	angle -90
+	putlabel 5 log(\\nu\'_{IC}) [Hz]
+
+	angle 0
+
+	limits lg_nu_s dum
+	limits dumx dumy
+	ticksize 0 0 0 0 
+	#box 1 2 4 4 
+	box 4 4 1 2 
+	xlabel log(\\nu_{sync,OBS}) [Hz]
+	ylabel log(\\nu_{IC,OBS}) [Hz]
+
+	relocate ( $gx1 $($gy1-4500) )
+	expand 1.3
+	putlabel 6 \\nu_{p,obs}=$nu_s_b_obs   B=$B   \delta=$doppler 
+
+	foreach 1 < 1 2 > {
+	     ltype 1 ctype 4 relocate $lg_nu_s_$1 $fy1         draw $lg_nu_s_$1 $lg_nu_c_1$1 
+	     ltype 0 ctype 3 relocate $lg_nu_s_$1 $lg_nu_c_1$1 draw $lg_nu_s_$1 $lg_nu_c_2$1
+	     ltype 1 ctype 4 relocate $lg_nu_s_$1 $lg_nu_c_2$1 draw $lg_nu_s_$1 $fy2
+	}
+	foreach 1 < b > {
+	     ltype 1 ctype 4 relocate $lg_nu_s_$1 $fy1         draw $lg_nu_s_$1 $lg_nu_c_1$1 
+	     ltype 0 ctype 3 relocate $lg_nu_s_$1 $lg_nu_c_1$1 draw $lg_nu_s_$1 $lg_nu_c_2$1
+	     ltype 1 ctype 4 relocate $lg_nu_s_$1 $lg_nu_c_2$1 draw $lg_nu_s_$1 $fy2
+	}
+	ltype 2 ctype 5 connect lg_nu_s lg_nu_c_kn
+	ltype 0 ctype 3 connect lg_nu_s lg_nu_c_1
+	ltype 0 ctype 3 connect lg_nu_s lg_nu_c_b
+	ltype 0 ctype 3 connect lg_nu_s lg_nu_c_2
+
+	ptype 4 3
+	foreach 1 < 1 b 2 > {
+	   foreach 2 < 1 b 2 > {
+	      #echo    $1 $2  lg_nu_s_$1 lg_nu_c_$2$1 $lg_nu_s_$1 $lg_nu_c_$2$1 
+	      relocate $lg_nu_s_$1 $lg_nu_c_$2$1 
+	      dot
+	   }
+	}
+
+	ltype 0 
+	ctype 2
+
+
+#------------------------------------------------------------------------------
+# ic_split
+#  Computes the splitting of the IC component.
+#  Output arrays: 
+#    lg_I** & lg_nuI** for 11,12,21,22
+#
+ic_split
+
+	# define_physical_constants
+
+	if($?1) {
+	   define n1 $1
+	   define n2 $2
+	   define gb $3
+	   define g2 $4
+	   define Ke $5
+	   define B  $6
+	} else {
+	   echo " FT examples: n1=2.2 n2=4.5 nupeak=1e15"
+	   echo  "Electron spectrum parameters "
+	   define n1 ?           <                              n_1 : >
+	   define n2 ?           <                              n_2 : >
+	   # define gb ?         <                      gamma_break : >
+	   define g1 ?           <                        gamma_min : >
+	   define g2 ?           <                        gamma_max : >
+	   #define nu_b_obs_Hz ?  <                nu_peak obs. [Hz] : >
+	   define nu_peak_obs_keV ? <               nu_peak obs. [keV] : >
+	   define B               ? <                          B field : >
+	   define doppler         ? <                            delta : >
+	   define knconst         ? <*** KN numerical factor [1/4,3/4] : >
+	}
+	define F0 1
+	define K1 1
+
+	define a1     ( 0.5*($n1-1) )
+	define a2     ( 0.5*($n2-1) )
+	define da1a2  ( $a1 - $a2 )
+	define da2a1  ( $a2 - $a1 )
+
+	# define nu_b        ( $nu_b_obs_Hz/$doppler )
+	define nu_peak_obs ( $nu_peak_obs_keV*$nu_keV )
+	define nu_peak     ( $nu_peak_obs_keV*$nu_keV/$doppler )
+	define gb          ( sqrt($nu_peak/$nu_crit/$B) )
+	define Ke ( $K1 )
+	define K2 ( $K1*$gb**($n2-$n1) )
+
+	#---- synchrotron cooling timescale ---#
+	define t_cool ( 6.*$pi*$mec2/$sigmaT/$c/$gb/$B )
+	
+	define lg_g1 (lg($g1))
+	define lg_g2 (lg($g2))
+	define lg_gb (lg($gb))
+	set lg_g_l = $lg_g1,$lg_gb,0.01
+	set lg_g_h = $lg_gb,$lg_g2,0.01
+	set lg_g = lg_g_l concat lg_g_h
+
+	echo "--------------------------------------"
+	echo " * Synchrotron Peak (obs.) :" $nu_peak_obs_keV "[keV]"
+	echo " * Magnetic field          :" $B
+	echo " * gamma_peak              :" $gb
+	echo "--------------------------------------"
+	echo " * T_cool (sync) intr.     :" $t_cool "[s]"
+	echo " * T_cool (sync) obs.      :" $($t_cool/$doppler) "[s]"
+	echo "--------------------------------------"
+
+	set lg_xs = (lg($nu_crit) + 2.*lg_g + lg($B)) - lg($nu_e)
+	set lg_xc = lg(4./3.)     + 2.*lg_g + lg_xs
+	#vecminmax lg_xc dum lg_xc2
+
+	define nu_cut ( 0.1*$nu_eV/$doppler )
+	define lg_xs1  ( (lg($nu_crit) + 2.*$lg_g1 + lg($B)) - lg($nu_e) )
+	#define lg_xsb  (  lg($nu_cut)                        - lg($nu_e) )
+	define lg_xsb  ( (lg($nu_crit) + 2.*$lg_gb + lg($B)) - lg($nu_e) )
+	define lg_xs2  ( (lg($nu_crit) + 2.*$lg_g2 + lg($B)) - lg($nu_e) )
+
+	foreach vec < x1 x1a x1b x2 x2a x2b x2c > {
+	    #echo " Initializing vector : lg_"$vec
+	    set dimen(lg_$vec) = $(dimen(lg_xs))
+	}
+
+	#set lg_nus = lg($nu_e) + lg_xs
+	#set lg_nuc = lg($nu_e) + lg_xc
+	#set lg_nu1 = lg($nu_e) + lg_x1
+	#set lg_nu2 = lg($nu_e) + lg_x2
+
+	#-----------------------------------------------------------
+	# case: 1,1
+	#-----------------------------------------------------------
+	define C11 ( (4./3.)**(-$a1)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )   # FT
+	define C11 ( (3./4.)**(-$a1)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )   # GF
+
+	set lg_x1a = fill(lg_x1a,$lg_xs1)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xsb)
+	set lg_x2b = lg(3./4.)    + lg_xc - 2.*$lg_g1 
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+	
+	verbose 0
+	set lg_I11   = lg($C11*$K1*$F0) - $a1*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+	set lg_nuI11 = lg_xc + lg_I11
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 1,2
+	#-----------------------------------------------------------
+	define C12 ( $C11 )
+	set lg_x1a = fill(lg_x1a,$lg_xsb)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	#set lg_x2c = fill(lg_x2c,$lg_xc2)
+	set lg_x2c = fill(lg_x2c,$lg_xs2)
+	set lg_x2a = lg(3./4.)    + lg_xc - 2.*$lg_g1  
+	set lg_x2b = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I12   = lg($C11*$K1*$F0) - $a1*lg_xc + $a2*$lg_xsb - lg($a2-$a1) + lg(10.**($da1a2*lg_x1) - 10.**($da1a2*lg_x2))
+	set lg_nuI12 = lg_xc + lg_I12
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 2,1
+	#-----------------------------------------------------------
+	define C21 ( (4./3.)**(-$a2)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )   # FT
+	define C21 ( (3./4.)**(-$a2)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )   # GF
+	set lg_x1a = fill(lg_x1a,$lg_xs1)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xsb)
+	set lg_x2b = lg(3./4.)    + lg_xc -  2.*$lg_gb
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I21  = lg($C21*$K2*$F0) - $a2*lg_xc + $a1*$lg_xsb - lg($a2-$a1) + \
+	              lg(10.**($da2a1*lg_x2) - 10.**($da2a1*lg_x1))
+	set lg_nuI21 = lg_xc + lg_I21
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 2,2
+	#-----------------------------------------------------------
+	define C22 ( $C21 )
+	set lg_x1a = fill(lg_x1a,$lg_xsb)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	#set lg_x2a = fill(lg_x2a,$lg_xc2)
+	set lg_x2a = fill(lg_x2a,$lg_xs2)
+	set lg_x2b = lg(3./4.)    + lg_xc -  2.*$lg_gb
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I22   = lg($C22*$K2*$F0) - $a2*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+	set lg_nuI22 = lg_xc + lg_I22
+	verbose 1
+
+	define icsplitname ? < Suffix for the IC split spectra arrays : >
+	set lg_xc_$icsplitname = lg_xc
+	set lg_nu_$icsplitname = lg_xc + lg(511) + 17.384 + lg($doppler)
+	foreach 1 < 11 12 21 22 > {
+	    set lg_nuI$1_$icsplitname = lg_nuI$1
+	}
+	# echo "  adhoc E : "$adhoc_e
+
+#------------------------------------------------------------------------------
+# plot_ic_split [withcut=y|n]
+#   Plots the following *assumed* arrays (default output of ic_split)
+#     lg_nuI11  /  lg_nuI12  /  lg_nuI21  /  lg_nuI22
+#
+plot_ic_split 101
+
+	define withcut "n"
+	# define z       0.031
+
+	if($?1) {
+	   if( substr('$1',0,2) == '-h' ) {
+              echo " plot_ic_split: "
+	      echo " "
+              echo " USAGE: "
+              echo "    > plot_ic_split [sed=<data suffix>] [withcut=y|n] [z=#.##]"
+	      echo " "
+	   } else {
+	      define silentparsing 0
+              mparsep $1
+	      define silentparsing 0
+	      define icsplitsfx $sed
+	   }
+	} else {
+	    define icsplitsfx ? < Suffix for the IC split spectra to plot : >
+	}
+
+	if(!$(is_macro(tau_stecker_array))) {
+	    echo "WARNING: this macro REQUIRES stecker.sm"
+	    return
+	}
+
+	#--- test for redshift ---#
+	define _test $(whatis(z))
+	echo $_test
+	if( $_test > 1 ) {
+	   echo " > Redshift : "$z
+	} else {
+	   define z ? < Redshift : >
+	}
+
+	echo "-----------------------------"
+	echo " What IR bkg absorption :"
+	echo " [0] none"
+	echo " [1] Stecker 1999, low IIRF"
+	echo " [2] Stecker 1999, high IIRF"
+	echo " [3] de Jager & Stecker 2002, baseline model"
+	echo " [4] de Jager & Stecker 2002, fast-evolution model"
+
+	define what_debra_abs ? < Pick one : >
+	if( $what_debra_abs == 0 ) { 
+	  set abs_frac = 1 + 0*lg_xc
+	} else {
+	  local set myTeV= lg_xc + lg(511*2.418e17) + lg($doppler) - 26.384
+	  if( $what_debra_abs == 1 ) { 
+	     echo "Computing DEBRA absorption...: Stecker 1999, low IIRF"
+	     tau_stecker_array 1 $z myTeV
+	  }
+	  if( $what_debra_abs == 2 ) { 
+	     echo "Computing DEBRA absorption...: Stecker 1999, high IIRF"
+	     tau_stecker_array 2 $z myTeV
+	  }
+	  if( $what_debra_abs == 3 ) { 
+	     echo "Computing DEBRA absorption...: de Jager & Stecker 2002, baseline model"
+	     tau_stecker_array 3 $z myTeV
+	  }
+	  if( $what_debra_abs == 4 ) { 
+	     echo "Computing DEBRA absorption...: de Jager & Stecker 2002, fast-evolution model"
+	     tau_stecker_array 4 $z myTeV
+	  }
+	}
+
+	# define_physical_constants
+
+	#-----------------
+	set lg_xc  = lg_xc_$icsplitsfx
+	set nuItot = lg_xc*0
+	foreach 1 < 11 12 21 22 > { 
+	   set lg_nuI$1 = lg_nuI$1_$icsplitsfx
+	   set nuItot   = nuItot + 10.**lg_nuI$1 
+	}
+	set lg_nuItot = lg(nuItot)  
+	vecminmax lg_nuItot dum top
+
+	echo " Top of the SED is at nFn flux : "$top
+	define top ? <* Peak Flux to rescale to : >
+	foreach 1 < tot 11 12 21 22 > { set resc_lg_nuI$1 = lg_nuI$1 - $top }
+	#-----------------
+
+	location 6000 28400 5600 28000
+	ctype 2 
+	ltype 0 
+	limits -2 7.5 -2.5 0.4
+	limits  1 7.5 -2.5 0.4
+	   #define xw1tev ( 0.06)
+	   define xw1tev ( 0.006)
+	   define xw2tev (12.00)
+	   define xw1  $(lg($xw1tev) + 26.384 - 20.0916) # 4.0 #5.0
+	   define xw2  $(lg($xw2tev) + 26.384 - 20.0916) # 4.0 #5.0
+
+	limits $xw1 $xw2 -2.5 0.4 
+	limits $xw1 $xw2 -2.0 0.3 
+	ticksize 0.5 1 -1 0 
+	box 3 2 3 0
+	ylabel log(\\nu F_\\nu)  [arb. units]
+	relocate ( $(0.5*($gx1+$gx2)) $($gy2+2500) )
+	putlabel 5 Energy [TeV]
+
+	ctype 4
+	ltype 1
+	define band1 0.4
+	define band2 4.0
+	relocate $(lg($band1) + 26.384 - 20.0916)  $(0.99*$fy2)
+	draw     $(lg($band1) + 26.384 - 20.0916)  $(1.01*$fy1)
+	relocate $(lg($band2) + 26.384 - 20.0916)  $(0.99*$fy2)
+	draw     $(lg($band2) + 26.384 - 20.0916)  $(1.01*$fy1)
+	ltype 0
+	ctype 2
+
+	define saveexp $expand
+	expand 1.1
+	define mygx1 ( $gx1 - 4000 )
+	define mygy2 ( $gy2 + 2500 )
+	relocate ( $($mygx1-   0) $($mygy2+   0) ) ltype 1 draw ( $($mygx1+3000) $($mygy2+   0) ) putlabel 6 " 1,1"
+	relocate ( $($mygx1-   0) $($mygy2+1000) ) ltype 3 draw ( $($mygx1+3000) $($mygy2+1000) ) putlabel 6 " 2,1"
+	relocate ( $($mygx1+5500) $($mygy2+   0) ) ltype 2 draw ( $($mygx1+8500) $($mygy2+   0) ) putlabel 6 " 1,2"
+	relocate ( $($mygx1+5500) $($mygy2+1000) ) ltype 5 draw ( $($mygx1+8500) $($mygy2+1000) ) putlabel 6 " 2,2"
+	expand $saveexp
+
+	# ?? mistery ??
+	# for now comments out the plot of C_all (see below)
+	compute_xFx $a1 $a2
+	set lg_C_all = lg(C_all)
+	define xxic_theo ( 4./3.*$gb**2*$nu_peak_obs )
+	set lg_xxic = lg(xxic) + lg($xxic_theo) - 20.09186
+
+	#-----------------------------------------------------------
+	# Partial xFx
+	if( substr('$withcut',0,1) == 'n' ) { ctype 2 }
+	if( substr('$withcut',0,1) == 'y' ) { ctype 6 }
+	ltype 1 connect (lg_xc+lg($doppler)) (resc_lg_nuI11 + lg(abs_frac))
+	ltype 2 connect (lg_xc+lg($doppler)) (resc_lg_nuI12 + lg(abs_frac))
+	ltype 3 connect (lg_xc+lg($doppler)) (resc_lg_nuI21 + lg(abs_frac))
+	ltype 5 connect (lg_xc+lg($doppler)) (resc_lg_nuI22 + lg(abs_frac))
+	lweight 3 
+	#-----------------------------------------------------------
+	
+	#-----------------------------------------------------------
+	# Total xFx
+	if( substr('$withcut',0,1) == 'n' ) { ctype 3 }
+	if( substr('$withcut',0,1) == 'y' ) { ctype 5 }
+	ltype 0 connect (lg_xc+lg($doppler)) (resc_lg_nuItot+0.02 + lg(abs_frac))
+
+	set lg_ene_$icsplitsfx = lg_xc + lg(511e3) - 12 + lg($doppler)
+	set ene_$icsplitsfx    = 10.0**lg_xc_$icsplitsfx
+	set sed_$icsplitsfx    = resc_lg_nuItot
+	#-----------------------------------------------------------
+
+	# ctype 5
+	# ltype 1 connect lg_xxic lg_C_all
+	# lweight 3
+	ctype 2
+
+	# marks the peak only if withcut=n
+	if( substr('$withcut',0,1) == 'n' ) { 
+            set dumx local
+            set dumy local
+            set dumx = lg_xc + lg($doppler)
+            set nux  = lg_xc + lg($doppler) + 20.09186
+            set dumy = resc_lg_nuItot
+            sort < dumy dumx >
+            define ix $(dimen(dumx)-1)
+            relocate $(dumx[$ix]) 0.03 
+            ptype 3 3 angle 180 dot angle 0
+	}
+
+	echo "---------------------------------------------"
+	echo " Getting the IC peak..."
+	echo "              lg(x) = "$(dumx[$ix])  "[for I="$(dumy[$ix])"]"
+	define nux (20.09186+dumx[$ix])
+	if( $nux > 25.383 ) { 
+	    echo "    ===> lg(nu_obs) = "$nux"   ["$(10.**($nux-26.383))" TeV]"
+	} else {
+	    echo "    ===> lg(nu_obs) = "$nux"   ["$(10.**($nux-23.383))" GeV]"
+	}
+	echo " Remember that..."
+	echo "            Doppler = "$doppler
+
+	echo "---------------------------------------------"
+	echo "  [1,1] : dotted"
+	echo "  [1,2] : dashed"
+	echo "  [2,1] : long dashed"
+	echo "  [2,2] : dot-dashed"
+	echo "---------------------------------------------"
+
+	define nu1 $($fx1 + 20.0916)
+	define nu2 $($fx2 + 20.0916)
+	limits $nu1 $nu2 $fy2 $fy2
+	ticksize 0.25 1 0 0 
+	notation -2 4 -4 4 
+	box 1 3 3 3 
+	xlabel log(\\nu)  [Hz]  (observed)
+
+	define nu1 $($fx1 - 26.384)
+	define nu2 $($fx2 - 26.384)
+	limits $nu1 $nu2 $fy1 $fy2
+	ticksize -1 100 0 0 
+	notation -2 4 -4 4 
+	box 3 3 1 3 
+
+	relocate ( $($gx1-2000) $($gy1-4200) )
+	putlabel 6 \\nu_{p,obs}=$nu_peak_obs_keV keV    B=$B   \delta=$doppler   \gamma_b=$(sprintf('%.1t',$(1.0001*$gb)))
+
+	define saveexp $expand
+	expand 1.1
+	relocate ( $($gx2+1500) $gy1 )
+	angle 90
+	putlabel 6 n_{1}=$n1   n_{2}=$n2   \gamma_1=$(sprintf('%.1t',$(1.0001*$g1)))   \gamma_2=$(sprintf('%.1t',$g2)) 
+	angle 0
+	expand $saveexp
+
+	#print ICcontrol.tmp ' %12.5f  %12.5f  %12.5f  %12.5f  %12.5f  %12.5f\n' < nux lg_nuI11 lg_nuI12 lg_nuI21 lg_nuI22 lg_nuItot>
+
+#------------------------------------------------------------------------------
+# ic_split_split_boh
+#  Computes the splitting of the IC component while also keeping track
+#     of the IC emission off a selected range of seed photon energies.
+#  Output arrays: 
+#    lg_I** & lg_nuI** for 11,12,21,22
+#    lg_I12a  (sub-component of I11 that in fact goes added to I12)
+#    lg_I22a  (sub-component of I21 that in fact goes added to I22)
+#         ??? This is because there is a redefinition of the splitting point.
+ic_split_split_boh
+
+	echo " FT examples: n1=2.2 n2=4.5 nupeak=1e15"
+	echo " Electron spectrum parameters "
+	define n1 ?              <                  n_1 : >
+	define n2 ?              <                  n_2 : >
+	define g1 ?              <            gamma_min : >
+	define g2 ?              <            gamma_max : >
+	define nu_peak_obs_keV ? <   nu_peak obs. [keV] : >
+	define nu_cut_obs1 ?     <  nu_cut 1 obs. [ eV] : >
+	define nu_cut_obs2 ?     <  nu_cut 2 obs. [ eV] [0 for none]: >
+	define B  ?              <              B field : >
+	define doppler ?         <                delta : >
+	define knconst ?         <* KN factor [1/4,3/4] : >
+	
+	define F0 1
+	define K1 1
+
+	define a1     ( 0.5*($n1-1) )
+	define a2     ( 0.5*($n2-1) )
+	define da1a2  ( $a1 - $a2 )
+	define da2a1  ( $a2 - $a1 )
+
+	define nu_cut1 ( $nu_cut_obs1*$nu_eV/$doppler )
+	define nu_cut2 ( $nu_cut_obs2*$nu_eV/$doppler )
+	define nu_peak ( $nu_peak_obs_keV*$nu_keV/$doppler )
+	define gb      ( sqrt($nu_peak/$nu_crit/$B) )
+	define K2      ( $K1*$gb**($n2-$n1) )
+
+	#---- synchrotron cooling timescale ---#
+	define t_cool ( 6.*$pi*$mec2/$sigmaT/$c/$gb/$B )
+	
+	define lg_g1 (lg($g1))
+	define lg_g2 (lg($g2))
+	define lg_gb (lg($gb))
+	set lg_g_l = $lg_g1,$lg_gb,0.01
+	set lg_g_h = $lg_gb,$lg_g2,0.01
+	set lg_g = lg_g_l concat lg_g_h
+
+	echo "--------------------------------------"
+	echo " * Synchrotron Peak (obs.) :" $nu_b_obs_keV "[keV]"
+	echo " * Magnetic field          :" $B
+	echo " * gamma_peak              :" $gb
+	echo "--------------------------------------"
+	echo " * T_cool (sync) intr.     :" $t_cool "[s]"
+	echo " * T_cool (sync) obs.      :" $($t_cool/$doppler) "[s]"
+	echo "--------------------------------------"
+
+	set lg_xs = (lg($nu_crit) + 2.*lg_g + lg($B)) - lg($nu_e)
+	set lg_xc = lg(4./3.)     + 2.*lg_g + lg_xs
+	#vecminmax lg_xc dum lg_xc2
+
+	define lg_xs1  ( (lg($nu_crit) + 2.*$lg_g1 + lg($B)) - lg($nu_e) )
+	define lg_xsb  ( (lg($nu_crit) + 2.*$lg_gb + lg($B)) - lg($nu_e) )
+	define lg_xs2  ( (lg($nu_crit) + 2.*$lg_g2 + lg($B)) - lg($nu_e) )
+	define lg_xsc1 (  lg($nu_cut1)                       - lg($nu_e) )
+	if( $nu_cut_obs2 > 0 )  {
+	    define lg_xsc2 (  lg($nu_cut2) - lg($nu_e) )
+	    define lg_xs1   $lg_xsc1
+	    define lg_xs2   $lg_xsc2
+	    define lg_xsc1  $lg_xsb
+	} 
+
+	foreach vec < x1 x1a x1b x2 x2a x2b x2c > {
+	    set dimen(lg_$vec) = $(dimen(lg_xs))
+	}
+
+	#-----------------------------------------------------------
+	define C11 ( (3./4.)**(-$a1)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )  
+	define C12 ( $C11 )
+	define C21 ( (3./4.)**(-$a2)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )
+	define C22 ( $C21 )
+
+	#-----------------------------------------------------------
+	# case: 1,1 (i)
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xs1)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xsc1)
+	set lg_x2b = lg(3./4.)    + lg_xc - 2.*$lg_g1  
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I11   = lg($C11*$K1*$F0) - $a1*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+	set lg_nuI11 = lg_xc + lg_I11 
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 1,1 (ii)(the one going with 1,2, call it I12a)
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xsc1)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xsb)
+	set lg_x2b = lg(3./4.)    + lg_xc - 2.*$lg_g1  
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I12a   = lg($C11*$K1*$F0) - $a1*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 1,2
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xsb)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2c = fill(lg_x2c,$lg_xs2)
+	set lg_x2a = lg(3./4.)    + lg_xc - 2.*$lg_g1 
+	set lg_x2b = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I12   = lg($C11*$K1*$F0) - $a1*lg_xc + $a2*$lg_xsb - lg($a2-$a1) + lg(10.**($da1a2*lg_x1) - 10.**($da1a2*lg_x2))
+	set lg_I12   = lg(10.**lg_I12 + 10.**lg_I12a)
+	set lg_nuI12 = lg_xc + lg_I12
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 2,1 (i)
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xs1)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xsc1)
+	set lg_x2b = lg(3./4.)    + lg_xc -  2.*$lg_gb
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I21  = lg($C21*$K2*$F0) - $a2*lg_xc + $a1*$lg_xsb - lg($a2-$a1) + \
+	              lg(10.**($da2a1*lg_x2) - 10.**($da2a1*lg_x1))
+	set lg_nuI21 = lg_xc + lg_I21
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 2,1 (ii) (the one going with 2,2, call it I22a
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xsc1)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xsb)
+	set lg_x2b = lg(3./4.)    + lg_xc -  2.*$lg_gb
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I22a = lg($C21*$K2*$F0) - $a2*lg_xc + $a1*$lg_xsb - lg($a2-$a1) + \
+	              lg(10.**($da2a1*lg_x2) - 10.**($da2a1*lg_x1))
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 2,2
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xsb)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xs2)
+	set lg_x2b = lg(3./4.)    + lg_xc -  2.*$lg_gb
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I22   = lg($C22*$K2*$F0) - $a2*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+	set lg_I22   = lg( 10.**lg_I22a + 10.**lg_I22) 
+	set lg_nuI22 = lg_xc + lg_I22
+	verbose 1
+
+	define icsplitname ? < Suffix for the IC split spectra arrays : >
+	set lg_xc_$icsplitname = lg_xc
+	set lg_nu_$icsplitname = lg_xc + lg(511) + 17.384 + lg($doppler)
+	foreach 1 < 11 12 21 22 > {
+	    set lg_nuI$1_$icsplitname = lg_nuI$1
+	}
+	# echo "  adhoc E : "$adhoc_e
+
+#------------------------------------------------------------------------------
+# ic_split_split_old
+#  Computes the splitting of the IC component while also keeping track
+#     of the IC emission off a selected range of seed photon energies.
+#  Output arrays: 
+#    lg_I** & lg_nuI** for 11,12,21,22
+#    lg_I12a  (sub-component of I11 that in fact goes added to I12)
+#    lg_I22a  (sub-component of I21 that in fact goes added to I22)
+#             This is because there is a redefinition of the splitting point.
+ic_split_split_old
+
+	echo " FT examples: n1=2.2 n2=4.5 nupeak=1e15"
+	echo " Electron spectrum parameters "
+	define n1 ?              <                            n_1 : >
+	define n2 ?              <                            n_2 : >
+	define g1 ?              <                      gamma_min : >
+	define g2 ?              <                      gamma_max : >
+	define nu_peak_obs_keV ? <             nu_peak obs. [keV] : >
+	define nu_cut_obs1     ? {  nu_cut_1 obs. < nu_peak [ eV] : }
+	#define nu_cut_obs2 ?  <  nu_cut 2 obs. [ eV] [0 for none]: >
+	define B  ?              <                        B field : >
+	define doppler ?         <                          delta : >
+	define knconst ?         <            KN factor [1/4,3/4] : >
+	
+	define F0 1
+	define K1 1
+
+	define a1     ( 0.5*($n1-1) )
+	define a2     ( 0.5*($n2-1) )
+	define da1a2  ( $a1 - $a2 )
+	define da2a1  ( $a2 - $a1 )
+
+	define nu_peak_obs ( $nu_peak_obs_keV*$nu_keV )
+	define nu_peak     ( $nu_peak_obs_keV*$nu_keV/$doppler )
+	define nu_cut1     ( $nu_cut_obs1*$nu_eV/$doppler )
+	##define nu_cut2 ( $nu_cut_obs2*$nu_eV/$doppler )
+	define gb          ( sqrt($nu_peak/$nu_crit/$B) )
+	define K2          ( $K1*$gb**($n2-$n1) )
+
+	#---- synchrotron cooling timescale ---#
+	define t_cool ( 6.*$pi*$mec2/$sigmaT/$c/$gb/$B )
+	
+	define lg_g1 (lg($g1))
+	define lg_g2 (lg($g2))
+	define lg_gb (lg($gb))
+	set lg_g_l = $lg_g1,$lg_gb,0.01
+	set lg_g_h = $lg_gb,$lg_g2,0.01
+	set lg_g = lg_g_l concat lg_g_h
+
+	echo "--------------------------------------"
+	echo " * Synchrotron Peak (obs.) :" $nu_peak_obs_keV "[keV]"
+	echo " * Magnetic field          :" $B
+	echo " * gamma_peak              :" $gb
+	echo "--------------------------------------"
+	echo " * T_cool (sync) intr.     :" $t_cool "[s]"
+	echo " * T_cool (sync) obs.      :" $($t_cool/$doppler) "[s]"
+	echo "--------------------------------------"
+
+	set lg_xs = (lg($nu_crit) + 2.*lg_g + lg($B)) - lg($nu_e)
+	set lg_xc = lg(4./3.)     + 2.*lg_g + lg_xs
+	#vecminmax lg_xc dum lg_xc2
+
+	define lg_xs1  ( (lg($nu_crit) + 2.*$lg_g1 + lg($B)) - lg($nu_e) )
+	define lg_xsc  (  lg($nu_cut1)                       - lg($nu_e) )
+	define lg_xsb  ( (lg($nu_crit) + 2.*$lg_gb + lg($B)) - lg($nu_e) )
+	define lg_xs2  ( (lg($nu_crit) + 2.*$lg_g2 + lg($B)) - lg($nu_e) )
+        ## if( $nu_cut_obs2 > 0 )  {
+        ##     define lg_xsc2 (  lg($nu_cut2) - lg($nu_e) )
+        ##     define lg_xs1   $lg_xsc
+        ##     define lg_xs2   $lg_xsc2
+        ##     define lg_xsc   $lg_xsb
+        ## }
+
+	echo " gamma_1 = " $lg_g1"  "$(sprintf('%8.0f',$(10.0**$lg_g1)))"    xs_1 = " $(511e3*10.0**$lg_xs1)" eV"
+	echo " gamma_b = " $lg_gb"  "$(sprintf('%8.0f',$(10.0**$lg_gb)))"    xs_b = " $(511e3*10.0**$lg_xsb)" eV"
+	echo " gamma_2 = " $lg_g2"  "$(sprintf('%8.0f',$(10.0**$lg_g2)))"    xs_2 = " $(511e3*10.0**$lg_xs2)" eV"
+
+	foreach vec < x1 x1a x1b x2 x2a x2b x2c > {
+	    set dimen(lg_$vec) = $(dimen(lg_xs))
+	}
+
+	#-----------------------------------------------------------
+	define C11 ( (3./4.)**(-$a1)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )  
+	define C12 ( $C11 )
+	define C21 ( (3./4.)**(-$a2)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )
+	define C22 ( $C21 )
+
+	#-----------------------------------------------------------
+	# case: 1,1 (i)
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xs1)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xsc)
+	set lg_x2b = lg(3./4.)    + lg_xc - 2.*$lg_g1  
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I11   = lg($C11*$K1*$F0) - $a1*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+	set lg_nuI11 = lg_xc + lg_I11 
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 1,1 (ii)(the one going with 1,2, call it I12a)
+	#    This is because the split in seed photons is effectively
+	#    moved to nu_cut1, and the "new" (1,2) must include the
+	#    piece of (1,1) that is truncated at nu_cut1
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xsc)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xsb)
+	set lg_x2b = lg(3./4.)    + lg_xc - 2.*$lg_g1  
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I12a   = lg($C11*$K1*$F0) - $a1*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 1,2
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xsb)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2c = fill(lg_x2c,$lg_xs2)
+	set lg_x2a = lg(3./4.)    + lg_xc - 2.*$lg_g1 
+	set lg_x2b = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I12   = lg($C11*$K1*$F0) - $a1*lg_xc + $a2*$lg_xsb - lg($a2-$a1) + lg(10.**($da1a2*lg_x1) - 10.**($da1a2*lg_x2))
+	set lg_I12   = lg(10.**lg_I12 + 10.**lg_I12a)
+	set lg_nuI12 = lg_xc + lg_I12
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 2,1 (i)
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xs1)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xsc)
+	set lg_x2b = lg(3./4.)    + lg_xc -  2.*$lg_gb
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I21  = lg($C21*$K2*$F0) - $a2*lg_xc + $a1*$lg_xsb - lg($a2-$a1) + \
+	              lg(10.**($da2a1*lg_x2) - 10.**($da2a1*lg_x1))
+	set lg_nuI21 = lg_xc + lg_I21
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 2,1 (ii) (the one going with 2,2, call it I22a)
+	#    This is because the split in seed photons is effectively
+	#    moved to nu_cut1, and the "new" (2,2) must include the
+	#    piece of (2,1) that is truncated at nu_cut1
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xsc)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xsb)
+	set lg_x2b = lg(3./4.)    + lg_xc -  2.*$lg_gb
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I22a = lg($C21*$K2*$F0) - $a2*lg_xc + $a1*$lg_xsb - lg($a2-$a1) + \
+	              lg(10.**($da2a1*lg_x2) - 10.**($da2a1*lg_x1))
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 2,2
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xsb)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xs2)
+	set lg_x2b = lg(3./4.)    + lg_xc -  2.*$lg_gb
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I22   = lg($C22*$K2*$F0) - $a2*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+	set lg_I22   = lg( 10.**lg_I22a + 10.**lg_I22) 
+	set lg_nuI22 = lg_xc + lg_I22
+	verbose 1
+
+	define icsplitname ? < Suffix for the IC split spectra arrays : >
+	set lg_xc_$icsplitname = lg_xc
+	set lg_nu_$icsplitname = lg_xc + lg(511) + 17.384 + lg($doppler)
+	foreach 1 < 11 12 21 22 > {
+	    set lg_nuI$1_$icsplitname = lg_nuI$1
+	}
+	# echo "  adhoc E : "$adhoc_e
+
+#------------------------------------------------------------------------------
+# ic_split_split
+#  Computes the splitting of the IC component while also keeping track
+#     of the IC emission off a selected range of seed photon energies.
+#  Output arrays: 
+#    lg_I** & lg_nuI** for 11,12,21,22
+#    lg_I12a  (sub-component of I11 that in fact goes added to I12)
+#    lg_I22a  (sub-component of I21 that in fact goes added to I22)
+#        ??? This is because there is a redefinition of the splitting point.
+ic_split_split
+
+	echo " FT examples: n1=2.2 n2=4.5 nupeak=1e15"
+	echo " Electron spectrum parameters "
+	define n1 ?              <                  n_1 : >
+	define n2 ?              <                  n_2 : >
+	define g1 ?              <            gamma_min : >
+	define g2 ?              <            gamma_max : >
+	define nu_peak_obs_keV ? <   nu_peak obs. [keV] : >
+	define nu_cut_obs1 ?     <  nu_cut 1 obs. [ eV] : >
+	define nu_cut_obs2 ?     <  nu_cut 2 obs. [ eV] [0 for none]: >
+	define B  ?              <              B field : >
+	define doppler ?         <                delta : >
+	define knconst ?         <* KN factor [1/4,3/4] : >
+	
+	define F0 1
+	define K1 1
+
+	define a1     ( 0.5*($n1-1) )
+	define a2     ( 0.5*($n2-1) )
+	define da1a2  ( $a1 - $a2 )
+	define da2a1  ( $a2 - $a1 )
+
+	define nu_peak_obs ( $nu_peak_obs_keV*$nu_keV )
+	define nu_peak     ( $nu_peak_obs_keV*$nu_keV/$doppler )
+	define nu_cut1     ( $nu_cut_obs1*$nu_eV/$doppler )
+	define nu_cut2     ( $nu_cut_obs2*$nu_eV/$doppler )
+	define gb          ( sqrt($nu_peak/$nu_crit/$B) )
+	define K2          ( $K1*$gb**($n2-$n1) )
+
+	#---- synchrotron cooling timescale ---#
+	define t_cool ( 6.*$pi*$mec2/$sigmaT/$c/$gb/$B )
+	
+	define lg_g1 (lg($g1))
+	define lg_g2 (lg($g2))
+	define lg_gb (lg($gb))
+	set lg_g_l = $lg_g1,$lg_gb,0.01
+	set lg_g_h = $lg_gb,$lg_g2,0.01
+	set lg_g = lg_g_l concat lg_g_h
+
+	echo "--------------------------------------"
+	echo " * Synchrotron Peak (obs.) :" $nu_peak_obs_keV "[keV]"
+	echo " * Magnetic field          :" $B
+	echo " * gamma_peak              :" $gb
+	echo "--------------------------------------"
+	echo " * T_cool (sync) intr.     :" $t_cool "[s]"
+	echo " * T_cool (sync) obs.      :" $($t_cool/$doppler) "[s]"
+	echo "--------------------------------------"
+
+	set lg_xs = (lg($nu_crit) + 2.*lg_g + lg($B)) - lg($nu_e)
+	set lg_xc = lg(4./3.)     + 2.*lg_g + lg_xs
+
+	define lg_xs1  ( (lg($nu_crit) + 2.*$lg_g1 + lg($B)) - lg($nu_e) )
+	define lg_xsb  ( (lg($nu_crit) + 2.*$lg_gb + lg($B)) - lg($nu_e) )
+	define lg_xs2  ( (lg($nu_crit) + 2.*$lg_g2 + lg($B)) - lg($nu_e) )
+	if( $nu_cut_obs1 > 0 )  {
+	    define lg_xsc1 (  lg($nu_cut1) - lg($nu_e) )
+	    define lg_xs1   $lg_xsc1
+	}
+	if( $nu_cut_obs2 > 0 )  {
+	    define lg_xsc2 (  lg($nu_cut2) - lg($nu_e) )
+	    define lg_xs2   $lg_xsc2
+	} 
+
+	foreach vec < x1 x1a x1b x1c  x2 x2a x2b x2c x2d > {
+	    set dimen(lg_$vec) = $(dimen(lg_xs))
+	}
+
+	#-----------------------------------------------------------
+	define C11 ( (3./4.)**(-$a1)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )  
+	define C12 ( $C11 )
+	define C21 ( (3./4.)**(-$a2)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )
+	define C22 ( $C21 )
+
+	#-----------------------------------------------------------
+	# case: 1,1 (i)
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xs1)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xs2)
+	set lg_x2b = fill(lg_x2b,$lg_xsb)
+	set lg_x2c = lg(3./4.)    + lg_xc - 2.*$lg_g1  
+	set lg_x2d = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c,lg_x2d)
+
+	verbose 0
+	set lg_I11   = lg($C11*$K1*$F0) - $a1*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+	set lg_nuI11 = lg_xc + lg_I11 
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 1,1 (ii)(the one going with 1,2, call it I12a)
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xs1)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xs2)
+	set lg_x2b = fill(lg_x2b,$lg_xsb)
+	set lg_x2c = lg(3./4.)    + lg_xc - 2.*$lg_g1  
+	set lg_x2d = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c,lg_x2d)
+
+	verbose 0
+	set lg_I12a  = lg($C11*$K1*$F0) - $a1*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 1,2
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xsb)
+	set lg_x1b = fill(lg_x1b,$lg_xs1)
+	set lg_x1c = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = setmax(lg_x1a,lg_x1b,lg_x1c)
+
+	set lg_x2a = fill(lg_x2a,$lg_xs2)
+	set lg_x2b = lg(3./4.)    + lg_xc - 2.*$lg_g1 
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I12   = lg($C11*$K1*$F0) - $a1*lg_xc + $a2*$lg_xsb - lg($a2-$a1) + lg(10.**($da1a2*lg_x1) - 10.**($da1a2*lg_x2))
+	#OBS# set lg_I12   = lg(10.**lg_I12 + 10.**lg_I12a)
+	set lg_nuI12 = lg_xc + lg_I12
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 2,1 (i)
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xs1)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xs2)
+	set lg_x2b = fill(lg_x2b,$lg_xsb)
+	set lg_x2c = lg(3./4.)    + lg_xc -  2.*$lg_gb
+	set lg_x2d = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c,lg_x2d)
+
+	verbose 0
+	set lg_I21  = lg($C21*$K2*$F0) - $a2*lg_xc + $a1*$lg_xsb - lg($a2-$a1) + \
+	              lg(10.**($da2a1*lg_x2) - 10.**($da2a1*lg_x1))
+	set lg_nuI21 = lg_xc + lg_I21
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 2,1 (ii) (the one going with 2,2, call it I22a)
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xs1)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xs2)
+	set lg_x2b = fill(lg_x2b,$lg_xsb)
+	set lg_x2c = lg(3./4.)    + lg_xc -  2.*$lg_gb
+	set lg_x2d = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c,lg_x2d)
+
+	verbose 0
+	set lg_I22a = lg($C21*$K2*$F0) - $a2*lg_xc + $a1*$lg_xsb - lg($a2-$a1) + \
+	              lg(10.**($da2a1*lg_x2) - 10.**($da2a1*lg_x1))
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 2,2
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xsb)
+	set lg_x1b = fill(lg_x1b,$lg_xs1)
+	set lg_x1c = lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = setmax(lg_x1a,lg_x1b,lg_x1c)
+
+	set lg_x2a = fill(lg_x2a,$lg_xs2)
+	set lg_x2b = lg(3./4.)    + lg_xc -  2.*$lg_gb
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I22   = lg($C22*$K2*$F0) - $a2*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+	#OBS# set lg_I22   = lg( 10.**lg_I22a + 10.**lg_I22) 
+	set lg_nuI22 = lg_xc + lg_I22
+	verbose 1
+
+	#-----------------------------------------------------------
+	define icsplitname ? < Suffix for the IC split spectra arrays : >
+	set lg_xc_$icsplitname = lg_xc
+	set lg_nu_$icsplitname = lg_xc + lg(511) + 17.384 + lg($doppler)
+	foreach 1 < 11 12 21 22 > {
+	    set lg_nuI$1_$icsplitname = lg_nuI$1
+	}
+	# echo "  adhoc E : "$adhoc_e
+
+#------------------------------------------------------------------------------
+# ic_split_split_new
+#  Computes the splitting of the IC component while also keeping track
+#     of the IC emission off a selected range of seed photon energies.
+#  Output arrays: 
+#    lg_I** & lg_nuI** for 11,12,21,22
+ic_split_split_new
+
+	echo " FT examples: n1=2.2 n2=4.5 nupeak=1e15"
+	echo " Electron spectrum parameters "
+	define n1 ?                   <                  n_1 : >
+	define n2 ?                   <                  n_2 : >
+	define g1 ?                   <            gamma_min : >
+	define g2 ?                   <            gamma_max : >
+	define nu_peak_obs_keV      ? <   nu_peak obs. [keV] : >
+	define nu_break_ph_obs_eV   ? < nu_cut photons [ eV] : >
+	define nu_break_el_obs_keV  ? <   nu_cut elec. [keV] : > 
+	define B  ?                   <              B field : >
+	define doppler ?              <                delta : >
+	define knconst ?              <* KN factor [1/4,3/4] : >
+	
+	define F0 1
+	define K1 1
+
+	define a1     ( 0.5*($n1-1) )
+	define a2     ( 0.5*($n2-1) )
+	define da1a2  ( $a1 - $a2 )
+	define da2a1  ( $a2 - $a1 )
+
+	define nu_peak_obs ( $nu_peak_obs_keV*$nu_keV )
+	define nu_peak     ( $nu_peak_obs_keV*$nu_keV/$doppler )
+	define nu_break_ph ( $nu_break_ph_obs_eV*$nu_eV/$doppler )
+	define nu_break_el ( $nu_break_el_obs_keV*$nu_keV/$doppler )
+	define gpeak       ( sqrt($nu_peak    /$nu_crit/$B) )
+	define gb          ( sqrt($nu_break_el/$nu_crit/$B) )
+	define K2          ( $K1*$gpeak**($n2-$n1) )
+
+	#---- synchrotron cooling timescale ---#
+	define t_cool ( 6.*$pi*$mec2/$sigmaT/$c/$gpeak/$B )
+	
+	define lg_g1    (lg($g1))
+	define lg_g2    (lg($g2))
+	define lg_gpeak (lg($gpeak))
+	define lg_gb    (lg($gb))
+	set lg_g_l = $lg_g1,$lg_gb,0.01
+	set lg_g_h = $lg_gb,$lg_g2,0.01
+	set lg_g = lg_g_l concat lg_g_h
+
+	echo "--------------------------------------"
+	echo " * Synchrotron Peak (obs.) :" $nu_peak_obs_keV "[keV]"
+	echo " * Magnetic field          :" $B
+	echo " * gamma_peak              :" $gpeak
+	echo " * gamma_split_electrons   :" $gb
+	echo "--------------------------------------"
+	echo " * T_cool (sync) intr.     :" $t_cool "[s]"
+	echo " * T_cool (sync) obs.      :" $($t_cool/$doppler) "[s]"
+	echo "--------------------------------------"
+
+	set lg_xs = (lg($nu_crit) + 2.*lg_g + lg($B)) - lg($nu_e)
+	set lg_xc = lg(4./3.)     + 2.*lg_g + lg_xs
+
+	define lg_xs1     ( lg($nu_crit) + 2.*$lg_g1    + lg($B) - lg($nu_e) )
+	define lg_xs2     ( lg($nu_crit) + 2.*$lg_g2    + lg($B) - lg($nu_e) )
+	define lg_xspeak  ( lg($nu_crit) + 2.*$lg_gpeak + lg($B) - lg($nu_e) )
+	define lg_xsb     ( lg($nu_break_ph)                     - lg($nu_e) )
+
+	set lg_xeb = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_xe1 = lg(3./4.) + lg_xc - 2.*$lg_g1 
+	set lg_xe2 = lg(3./4.) + lg_xc - 2.*$lg_g2 
+
+	echo " gamma_1 = " $lg_g1"  "$(sprintf('%8.0f',$(10.0**$lg_g1)))"    xs_1 = " $(511e3*10.0**$lg_xs1)" eV"
+	echo " gamma_b = " $lg_gb"  "$(sprintf('%8.0f',$(10.0**$lg_gb)))"    xs_b = " $(511e3*10.0**$lg_xsb)" eV"
+	echo " gamma_2 = " $lg_g2"  "$(sprintf('%8.0f',$(10.0**$lg_g2)))"    xs_2 = " $(511e3*10.0**$lg_xs2)" eV"
+
+	foreach vec < x1 x1a x1b x1c  x2 x2a x2b x2c x2d > {
+	    set dimen(lg_$vec) = $(dimen(lg_xs))
+	}
+
+	#-----------------------------------------------------------
+	define C11 ( (3./4.)**(-$a1)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )  
+	define C12 ( $C11 )
+	define C21 ( (3./4.)**(-$a2)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )
+	define C22 ( $C21 )
+
+	if( $nu_break_ph < $nu_peak ) {
+           #-----------------------------------------------------------
+           # case: 1,1
+           #-----------------------------------------------------------
+           set lg_x1a = fill(lg_x1a,$lg_xs1)
+           set lg_x1b = lg_xeb
+           set lg_x1  = setmax(lg_x1a,lg_x1b)
+           
+           set lg_x2a = fill(lg_x2a,$lg_xsb)
+           set lg_x2b = lg_xe1
+           set lg_x2c = lg($knconst) - lg_xc
+           set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+           
+           verbose 0
+           set lg_I11   = lg($C11*$K1*$F0) - $a1*(lg_xc - $lg_xspeak) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+           set lg_nuI11 = lg_xc + lg_I11 
+           verbose 1
+           
+           #-----------------------------------------------------------
+           # case: 1,1 ==> 1,2(b) : slice between nu_break_ph and nu_peak to add to (1,2)
+           #-----------------------------------------------------------
+           set lg_x1a = fill(lg_x1a,$lg_xsb)
+           set lg_x1b = lg_xeb
+           set lg_x1  = setmax(lg_x1a,lg_x1b)
+           
+           set lg_x2a = fill(lg_x2a,$lg_xspeak)
+           set lg_x2b = lg_xe1
+           set lg_x2c = lg($knconst) - lg_xc
+           set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+           
+           verbose 0
+           set lg_I11b  = lg($C11*$K1*$F0) - $a1*(lg_xc - $lg_xspeak) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+           ##set lg_nuI11 = lg_xc + lg_I11 
+           verbose 1
+           
+           #-----------------------------------------------------------
+           # case: 1,2 aka 1,2(a) + added with (1,2)b
+           #-----------------------------------------------------------
+           set lg_x1a = fill(lg_x1a,$lg_xspeak)
+           set lg_x1b = lg_xeb
+           set lg_x1  = setmax(lg_x1a,lg_x1b)
+           
+           set lg_x2a = fill(lg_x2a,$lg_xs2)
+           set lg_x2b = lg_xe1
+           set lg_x2c = lg($knconst) - lg_xc
+           set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+           
+           verbose 0
+           set lg_I12   = lg($C11*$K1*$F0) - $a1*lg_xc + $a2*$lg_xspeak - lg($a2-$a1) + lg(10.**($da1a2*lg_x1) - 10.**($da1a2*lg_x2))
+           set lg_I12   = lg(10.0**lg_I12 + 10.0**lg_I11b)
+           set lg_nuI12 = lg_xc + lg_I12
+           verbose 1
+           
+           #-----------------------------------------------------------
+           # case: 2,1 
+           #-----------------------------------------------------------
+           set lg_x1a = fill(lg_x1a,$lg_xs1)
+           set lg_x1b = lg_xe2
+           set lg_x1  = setmax(lg_x1a,lg_x1b)
+           
+           set lg_x2a = fill(lg_x2a,$lg_xsb)
+           set lg_x2b = lg_xeb
+           set lg_x2c = lg($knconst) - lg_xc
+           set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+           
+           verbose 0
+           set lg_I21  = lg($C21*$K2*$F0) - $a2*lg_xc + $a1*$lg_xspeak - lg($a2-$a1) + \
+                         lg(10.**($da2a1*lg_x2) - 10.**($da2a1*lg_x1))
+           set lg_nuI21 = lg_xc + lg_I21
+           verbose 1
+           
+           #-----------------------------------------------------------
+           # case: 2,1 ==> 2,2(b) : slice between nu_break_ph and nu_peak to add to (2,2)
+           #-----------------------------------------------------------
+           set lg_x1a = fill(lg_x1a,$lg_xsb)
+           set lg_x1b = lg_xe2
+           set lg_x1  = setmax(lg_x1a,lg_x1b)
+           
+           set lg_x2a = fill(lg_x2a,$lg_xspeak)
+           set lg_x2b = lg_xeb
+           set lg_x2c = lg($knconst) - lg_xc
+           set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+           
+           verbose 0
+           set lg_I21b = lg($C21*$K2*$F0) - $a2*lg_xc + $a1*$lg_xspeak - lg($a2-$a1) + \
+                         lg(10.**($da2a1*lg_x2) - 10.**($da2a1*lg_x1))
+           verbose 1
+           
+           #-----------------------------------------------------------
+           # case: 2,2 aka 2,2(a) + added with (2,1)b
+           #-----------------------------------------------------------
+           set lg_x1a = fill(lg_x1a,$lg_xspeak)
+           set lg_x1b = lg_xe2
+           set lg_x1  = setmax(lg_x1a,lg_x1b)
+           
+           set lg_x2a = fill(lg_x2a,$lg_xs2)
+           set lg_x2b = lg_xeb
+           set lg_x2c = lg($knconst) - lg_xc
+           set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+           
+           verbose 0
+           set lg_I22   = lg($C22*$K2*$F0) - $a2*(lg_xc - $lg_xspeak) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+           set lg_I22   = lg(10.0**lg_I22 + 10.0**lg_I21b)
+           set lg_nuI22 = lg_xc + lg_I22
+           verbose 1
+	} 
+
+	if( $nu_break_ph >= $nu_peak ) {
+           #-----------------------------------------------------------
+           # case: 1,2 ==> 1,1(b)
+           #-----------------------------------------------------------
+           set lg_x1a = fill(lg_x1a,$lg_xspeak)
+           set lg_x1b = lg_xeb
+           set lg_x1  = setmax(lg_x1a,lg_x1b)
+           
+           set lg_x2a = fill(lg_x2a,$lg_xsb)
+           set lg_x2b = lg_xe1
+           set lg_x2c = lg($knconst) - lg_xc
+           set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+           
+           verbose 0
+           set lg_I11b  = lg($C11*$K1*$F0) - $a1*lg_xc + $a2*$lg_xspeak - lg($a2-$a1) + lg(10.**($da1a2*lg_x1) - 10.**($da1a2*lg_x2))
+           verbose 1
+           
+           #-----------------------------------------------------------
+           # case: 1,1
+           #-----------------------------------------------------------
+           set lg_x1a = fill(lg_x1a,$lg_xs1)
+           set lg_x1b = lg_xeb
+           set lg_x1  = setmax(lg_x1a,lg_x1b)
+           
+           set lg_x2a = fill(lg_x2a,$lg_xspeak)
+           set lg_x2b = lg_xe1
+           set lg_x2c = lg($knconst) - lg_xc
+           set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+           
+           verbose 0
+           set lg_I11   = lg($C11*$K1*$F0) - $a1*(lg_xc - $lg_xspeak) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+           set lg_I11   = lg(10.0**lg_I11b + 10.0**lg_I11)
+           set lg_nuI11 = lg_xc + lg_I11 
+           verbose 1
+           
+           #-----------------------------------------------------------
+           # case: 1,2
+           #-----------------------------------------------------------
+           set lg_x1a = fill(lg_x1a,$lg_xsb)
+           set lg_x1b = lg_xeb
+           set lg_x1  = setmax(lg_x1a,lg_x1b)
+           
+           set lg_x2a = fill(lg_x2a,$lg_xs2)
+           set lg_x2b = lg_xe1
+           set lg_x2c = lg($knconst) - lg_xc
+           set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+           
+           verbose 0
+           set lg_I12   = lg($C11*$K1*$F0) - $a1*lg_xc + $a2*$lg_xspeak - lg($a2-$a1) + lg(10.**($da1a2*lg_x1) - 10.**($da1a2*lg_x2))
+           set lg_nuI12 = lg_xc + lg_I12
+           verbose 1
+           
+           #-----------------------------------------------------------
+           # case: 2,2 ==> 2,1(b)
+           #-----------------------------------------------------------
+           set lg_x1a = fill(lg_x1a,$lg_xspeak)
+           set lg_x1b = lg_xe2
+           set lg_x1  = setmax(lg_x1a,lg_x1b)
+           
+           set lg_x2a = fill(lg_x2a,$lg_xsb)
+           set lg_x2b = lg_xeb
+           set lg_x2c = lg($knconst) - lg_xc
+           set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+           
+           verbose 0
+           set lg_I21b  = lg($C22*$K2*$F0) - $a2*(lg_xc - $lg_xspeak) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+           verbose 1
+
+           #-----------------------------------------------------------
+           # case: 2,1(a)
+           #-----------------------------------------------------------
+           set lg_x1a = fill(lg_x1a,$lg_xs1)
+           set lg_x1b = lg_xe2
+           set lg_x1  = setmax(lg_x1a,lg_x1b)
+           
+           set lg_x2a = fill(lg_x2a,$lg_xspeak)
+           set lg_x2b = lg_xeb
+           set lg_x2c = lg($knconst) - lg_xc
+           set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+           
+           verbose 0
+           set lg_I21  = lg($C21*$K2*$F0) - $a2*lg_xc + $a1*$lg_xspeak - lg($a2-$a1) + \
+                         lg(10.**($da2a1*lg_x2) - 10.**($da2a1*lg_x1))
+           set lg_I21  = lg(10.0**lg_I21b + 10.0**lg_I21)
+           set lg_nuI21 = lg_xc + lg_I21
+           verbose 1
+           
+           #-----------------------------------------------------------
+           # case: 2,2
+           #-----------------------------------------------------------
+           set lg_x1a = fill(lg_x1a,$lg_xsb)
+           set lg_x1b = lg_xe2
+           set lg_x1  = setmax(lg_x1a,lg_x1b)
+           
+           set lg_x2a = fill(lg_x2a,$lg_xs2)
+           set lg_x2b = lg_xeb
+           set lg_x2c = lg($knconst) - lg_xc
+           set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+           
+           verbose 0
+           set lg_I22   = lg($C22*$K2*$F0) - $a2*(lg_xc - $lg_xspeak) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+           set lg_nuI22 = lg_xc + lg_I22
+           verbose 1
+	}
+
+	#-----------------------------------------------------------
+	define icsplitname ? < Suffix for the IC split spectra arrays : >
+	set lg_xc_$icsplitname = lg_xc
+	set lg_nu_$icsplitname = lg_xc + lg(511) + 17.384 + lg($doppler)
+	foreach 1 < 11 12 21 22 > {
+	    set lg_nuI$1_$icsplitname = lg_nuI$1
+	}
+
+#------------------------------------------------------------------------------
+# ic_split_split_xnew
+#  Computes the splitting of the IC component while also keeping track
+#     of the IC emission off a selected range of seed photon energies.
+#  Output arrays: 
+#    lg_I** & lg_nuI** for 11,12,21,22
+ic_split_split_xnew
+
+	echo " FT examples: n1=2.2 n2=4.5 nupeak=1e15"
+	echo " Electron spectrum parameters "
+	define n1 ?                   <                  n_1 : >
+	define n2 ?                   <                  n_2 : >
+	define g1 ?                   <            gamma_min : >
+	define g2 ?                   <            gamma_max : >
+	define nu_peak_obs_keV      ? <   nu_peak obs. [keV] : >
+	define nu_break_ph_obs_eV   ? < nu_cut photons [ eV] : >
+	define nu_break_el_obs_keV  ? <   nu_cut elec. [keV] : > 
+	define B  ?                   <              B field : >
+	define doppler ?              <                delta : >
+	define knconst ?              <* KN factor [1/4,3/4] : >
+	
+	define F0 1
+	define K1 1
+
+	define a1     ( 0.5*($n1-1) )
+	define a2     ( 0.5*($n2-1) )
+	define da1a2  ( $a1 - $a2 )
+	define da2a1  ( $a2 - $a1 )
+
+	define nu_peak_obs ( $nu_peak_obs_keV*$nu_keV )
+	define nu_peak     ( $nu_peak_obs_keV*$nu_keV/$doppler )
+	define nu_break_ph ( $nu_break_ph_obs_eV*$nu_eV/$doppler )
+	define nu_break_el ( $nu_break_el_obs_keV*$nu_keV/$doppler )
+	define gp          ( sqrt($nu_peak    /$nu_crit/$B) )
+	define gb          ( sqrt($nu_break_el/$nu_crit/$B) )
+	define K2          ( $K1*$gp**($n2-$n1) )
+
+	#---- synchrotron cooling timescale ---#
+	define t_cool ( 6.*$pi*$mec2/$sigmaT/$c/$gp/$B )
+	
+	define lg_g1 (lg($g1))
+	define lg_g2 (lg($g2))
+	define lg_gp (lg($gp))
+	define lg_gb (lg($gb))
+	set lg_g_l = $lg_g1,$lg_gb,0.01
+	set lg_g_h = $lg_gb,$lg_g2,0.01
+	set lg_g = lg_g_l concat lg_g_h
+
+	echo "--------------------------------------"
+	echo " * Synchrotron Peak (obs.) :" $nu_peak_obs_keV "[keV]"
+	echo " * Magnetic field          :" $B
+	echo " * gamma_peak              :" $gp
+	echo " * gamma_split_electrons   :" $gb
+	echo "--------------------------------------"
+	echo " * T_cool (sync) intr.     :" $t_cool "[s]"
+	echo " * T_cool (sync) obs.      :" $($t_cool/$doppler) "[s]"
+	echo "--------------------------------------"
+
+	set lg_xs = (lg($nu_crit) + 2.*lg_g + lg($B)) - lg($nu_e)
+	set lg_xc = lg(4./3.)     + 2.*lg_g + lg_xs
+
+	define lg_xs1  ( lg($nu_crit) + 2.*$lg_g1 + lg($B) - lg($nu_e) )
+	define lg_xs2  ( lg($nu_crit) + 2.*$lg_g2 + lg($B) - lg($nu_e) )
+	define lg_xsp  ( lg($nu_crit) + 2.*$lg_gp + lg($B) - lg($nu_e) )
+	define lg_xsb  ( lg($nu_break_ph)                  - lg($nu_e) )
+
+	set lg_xep = lg(3./4.) + lg_xc - 2.*$lg_gp
+	set lg_xeb = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_xe1 = lg(3./4.) + lg_xc - 2.*$lg_g1 
+	set lg_xe2 = lg(3./4.) + lg_xc - 2.*$lg_g2 
+
+	echo " gamma_1 = " $lg_g1"  "$(sprintf('%8.0f',$(10.0**$lg_g1)))"    xs_1 = " $(511e3*10.0**$lg_xs1)" eV"
+	echo " gamma_b = " $lg_gb"  "$(sprintf('%8.0f',$(10.0**$lg_gb)))"    xs_b = " $(511e3*10.0**$lg_xsb)" eV"
+	echo " gamma_p = " $lg_gp"  "$(sprintf('%8.0f',$(10.0**$lg_gp)))"    xs_p = " $(511e3*10.0**$lg_xsp)" eV"
+	echo " gamma_2 = " $lg_g2"  "$(sprintf('%8.0f',$(10.0**$lg_g2)))"    xs_2 = " $(511e3*10.0**$lg_xs2)" eV"
+
+	foreach vec < x1 x1a x1b x1c  x2 x2a x2b x2c x2d > {
+	    set dimen(lg_$vec) = $(dimen(lg_xs))
+	}
+
+	#-----------------------------------------------------------
+	define C11 ( (3./4.)**(-$a1)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )  
+	define C12 ( $C11 )
+	define C21 ( (3./4.)**(-$a2)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )
+	define C22 ( $C21 )
+
+        verbose 0
+	if( $nu_break_ph < $nu_peak ) {
+           sub_compute_11 s1 eb sb e1 11
+           sub_compute_11 sb eb sp e1 12a
+           sub_compute_12 sp eb s2 e1 12b
+           sub_compute_21 s1 e2 sb eb 21
+           sub_compute_21 sb e2 sp eb 22a
+           sub_compute_22 sp e2 s2 eb 22b
+
+           set lg_I12   = lg(10.0**lg_I12a + 10.0**lg_I12b)
+           set lg_nuI12 = lg_xc + lg_I12
+           set lg_I22   = lg(10.0**lg_I22a + 10.0**lg_I22b)
+           set lg_nuI22 = lg_xc + lg_I22
+	}
+
+	if( $nu_break_ph >= $nu_peak ) {
+           sub_compute_11 s1 eb sp e1  11a
+           sub_compute_12 sp eb sb e1  11b
+           sub_compute_12 sb eb s2 e1  12
+           sub_compute_21 s1 e2 sp eb  21a
+           sub_compute_22 sp e2 sb eb  21b
+           sub_compute_22 sb e2 s2 eb  22
+
+           set lg_I11   = lg(10.0**lg_I11a + 10.0**lg_I11b)
+           set lg_nuI11 = lg_xc + lg_I11
+           set lg_I21   = lg(10.0**lg_I21a + 10.0**lg_I21b)
+           set lg_nuI21 = lg_xc + lg_I21
+	}
+        verbose 1
+
+	#-----------------------------------------------------------
+	define icsplitname ? < Suffix for the IC split spectra arrays : >
+	set lg_xc_$icsplitname = lg_xc
+	set lg_nu_$icsplitname = lg_xc + lg(511) + 17.384 + lg($doppler)
+	foreach 1 < 11 12 21 22 > {
+	    set lg_nuI$1_$icsplitname = lg_nuI$1
+	}
+
+#------------------------------------------------------------------------------
+# ic_split_split_xnew_dble
+#  Computes the splitting of the IC component while also keeping track
+#     of the IC emission off a selected range of seed photon energies.
+#  Output arrays: 
+#    lg_I** & lg_nuI** for 11,12,21,22
+ic_split_split_xnew_dble
+
+	echo " FT examples: n1=2.2 n2=4.5 nupeak=1e15"
+	echo " Electron spectrum parameters "
+	define n1 ?                   <                  n_1 : >
+	define n2 ?                   <                  n_2 : >
+	define g1 ?                   <            gamma_min : >
+	define g2 ?                   <            gamma_max : >
+	define nu_peak_obs_keV      ? <   nu_peak obs. [keV] : >
+	define nu_break_ph_obs_eV   ? < nu_cut photons [ eV] : >
+	define nu_break_el_obs_keV  ? <   nu_cut elec. [keV] : > 
+	define B  ?                   <              B field : >
+	define doppler ?              <                delta : >
+	define knconst ?              <* KN factor [1/4,3/4] : >
+	
+	define F0 1
+	define K1 1
+
+	define a1     ( 0.5*($n1-1) )
+	define a2     ( 0.5*($n2-1) )
+	define da1a2  ( $a1 - $a2 )
+	define da2a1  ( $a2 - $a1 )
+
+	define nu_peak_obs ( $nu_peak_obs_keV*$nu_keV )
+	define nu_peak     ( $nu_peak_obs_keV*$nu_keV/$doppler )
+	define nu_break_ph ( $nu_break_ph_obs_eV*$nu_eV/$doppler )
+	define nu_break_el ( $nu_break_el_obs_keV*$nu_keV/$doppler )
+	define gp          ( sqrt($nu_peak    /$nu_crit/$B) )
+	define gb          ( sqrt($nu_break_el/$nu_crit/$B) )
+	define K2          ( $K1*$gp**($n2-$n1) )
+
+	#---- synchrotron cooling timescale ---#
+	define t_cool ( 6.*$pi*$mec2/$sigmaT/$c/$gp/$B )
+	
+	define lg_g1 (lg($g1))
+	define lg_g2 (lg($g2))
+	define lg_gp (lg($gp))
+	define lg_gb (lg($gb))
+	set lg_g_l = $lg_g1,$lg_gb,0.01
+	set lg_g_h = $lg_gb,$lg_g2,0.01
+	set lg_g = lg_g_l concat lg_g_h
+
+	echo "--------------------------------------"
+	echo " * Synchrotron Peak (obs.) :" $nu_peak_obs_keV "[keV]"
+	echo " * Magnetic field          :" $B
+	echo " * gamma_peak              :" $gp
+	echo " * gamma_split_electrons   :" $gb
+	echo "--------------------------------------"
+	echo " * T_cool (sync) intr.     :" $t_cool "[s]"
+	echo " * T_cool (sync) obs.      :" $($t_cool/$doppler) "[s]"
+	echo "--------------------------------------"
+
+	set lg_xs = (lg($nu_crit) + 2.*lg_g + lg($B)) - lg($nu_e)
+	set lg_xc = lg(4./3.)     + 2.*lg_g + lg_xs
+
+	define lg_xs1  ( lg($nu_crit) + 2.*$lg_g1 + lg($B) - lg($nu_e) )
+	define lg_xs2  ( lg($nu_crit) + 2.*$lg_g2 + lg($B) - lg($nu_e) )
+	define lg_xsp  ( lg($nu_crit) + 2.*$lg_gp + lg($B) - lg($nu_e) )
+	define lg_xsb  ( lg($nu_break_ph)                  - lg($nu_e) )
+
+	set lg_xep = lg(3./4.) + lg_xc - 2.*$lg_gp
+	set lg_xeb = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_xe1 = lg(3./4.) + lg_xc - 2.*$lg_g1 
+	set lg_xe2 = lg(3./4.) + lg_xc - 2.*$lg_g2 
+
+	echo " gamma_1 = " $lg_g1"  "$(sprintf('%8.0f',$(10.0**$lg_g1)))"    xs_1 = " $(511e3*10.0**$lg_xs1)" eV"
+	echo " gamma_b = " $lg_gb"  "$(sprintf('%8.0f',$(10.0**$lg_gb)))"    xs_b = " $(511e3*10.0**$lg_xsb)" eV"
+	echo " gamma_p = " $lg_gp"  "$(sprintf('%8.0f',$(10.0**$lg_gp)))"    xs_p = " $(511e3*10.0**$lg_xsp)" eV"
+	echo " gamma_2 = " $lg_g2"  "$(sprintf('%8.0f',$(10.0**$lg_g2)))"    xs_2 = " $(511e3*10.0**$lg_xs2)" eV"
+
+	foreach vec < x1 x1a x1b x1c  x2 x2a x2b x2c x2d > {
+	    set dimen(lg_$vec) = $(dimen(lg_xs))
+	}
+
+	#-----------------------------------------------------------
+	define C11 ( (3./4.)**(-$a1)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )  
+	define C12 ( $C11 )
+	define C21 ( (3./4.)**(-$a2)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )
+	define C22 ( $C21 )
+
+        verbose 0
+	if( $nu_break_ph <= $nu_peak && $nu_break_el <= $nu_peak ) {
+           sub_compute_11 s1 eb sb e1 11
+
+           sub_compute_11 sb eb sp e1 12a
+           sub_compute_12 sp eb s2 e1 12b
+
+           sub_compute_11 s1 ep sb eb 21a
+           sub_compute_21 s1 e2 sb eb 21b
+
+           sub_compute_11 sb ep sp eb 22a
+           sub_compute_21 sb e2 sp ep 22b
+           sub_compute_12 sp ep s2 eb 22c
+           sub_compute_22 sp e2 s2 ep 22d
+
+           set lg_I12   = lg(10.0**lg_I12a + 10.0**lg_I12b)
+           set lg_nuI12 = lg_xc + lg_I12
+
+           set lg_I21   = lg(10.0**lg_I21a + 10.0**lg_I21b)
+           set lg_nuI21 = lg_xc + lg_I21
+
+           set lg_I22   = lg(10.0**lg_I22a + 10.0**lg_I22b + 10.0**lg_I22c + 10.0**lg_I22d)
+           set lg_nuI22 = lg_xc + lg_I22
+	}
+
+	if( $nu_break_ph <= $nu_peak && $nu_break_el >  $nu_peak ) {
+
+           sub_compute_11 s1 ep sb e1 11a
+           sub_compute_21 s1 eb sb ep 11b
+
+           sub_compute_11 sb ep sp e1 12a
+           sub_compute_12 sp ep s2 e1 12b
+           sub_compute_21 sb eb sp ep 12c
+           sub_compute_22 sp eb s2 ep 12d
+
+           sub_compute_21 s1 e2 sb eb 21 
+
+           sub_compute_21 sb e2 sp eb 22a
+           sub_compute_22 sp e2 s2 eb 22b
+
+           set lg_I11   = lg(10.0**lg_I11a + 10.0**lg_I11b)
+           set lg_nuI11 = lg_xc + lg_I11
+
+           set lg_I12   = lg(10.0**lg_I12a + 10.0**lg_I12b + 10.0**lg_I12c + 10.0**lg_I12d)
+           set lg_nuI12 = lg_xc + lg_I12
+
+           set lg_I22   = lg(10.0**lg_I22a + 10.0**lg_I22b)
+           set lg_nuI22 = lg_xc + lg_I22
+	}
+
+	if( $nu_break_ph >  $nu_peak && $nu_break_el <= $nu_peak ) {
+
+           sub_compute_11 s1 eb sp e1 11a
+           sub_compute_12 sp eb sb e1 11b
+
+           sub_compute_12 sb eb s2 e1 12
+
+           sub_compute_11 s1 ep sp eb 21a
+           sub_compute_21 s1 e2 sp ep 21b
+           sub_compute_22 sp e2 sb ep 21c
+           sub_compute_12 sp ep sb eb 21d
+
+           sub_compute_12 sb ep s2 eb 22a
+           sub_compute_22 sb e2 s2 ep 22b
+
+           set lg_I12   = lg(10.0**lg_I12a + 10.0**lg_I12b)
+           set lg_nuI12 = lg_xc + lg_I12
+
+           set lg_I21   = lg(10.0**lg_I21a + 10.0**lg_I21b + 10.0**lg_I21c + 10.0**lg_I21d)
+           set lg_nuI21 = lg_xc + lg_I21
+
+           set lg_I22   = lg(10.0**lg_I22a + 10.0**lg_I22b)
+           set lg_nuI22 = lg_xc + lg_I22
+	}
+
+	if( $nu_break_ph >  $nu_peak && $nu_break_el >  $nu_peak ) {
+
+           sub_compute_11 s1 ep sp e1 11a
+           sub_compute_21 s1 eb sp ep 11b
+           sub_compute_22 sp eb sb ep 11c
+           sub_compute_12 sp ep sb e1 11d
+
+           sub_compute_21 s1 e2 sp eb 21a
+           sub_compute_22 sp e2 sb eb 21b
+
+           sub_compute_22 sb e2 s2 eb 22
+
+           sub_compute_12 sb ep s2 e1 12a
+           sub_compute_22 sb eb s2 ep 12b
+
+           set lg_I11   = lg(10.0**lg_I11a + 10.0**lg_I11b + 10.0**lg_I11c + 10.0**lg_I11d)
+           set lg_nuI11 = lg_xc + lg_I11
+
+           set lg_I12   = lg(10.0**lg_I12a + 10.0**lg_I12b)
+           set lg_nuI12 = lg_xc + lg_I12
+
+           set lg_I21   = lg(10.0**lg_I21a + 10.0**lg_I21b)
+           set lg_nuI21 = lg_xc + lg_I21
+	}
+
+        verbose 1
+
+	#-----------------------------------------------------------
+	define icsplitname ? < Suffix for the IC split spectra arrays : >
+	set lg_xc_$icsplitname = lg_xc
+	set lg_nu_$icsplitname = lg_xc + lg(511) + 17.384 + lg($doppler)
+	foreach 1 < 11 12 21 22 > {
+	    set lg_nuI$1_$icsplitname = lg_nuI$1
+	}
+
+sub_compute_11 5
+           #-----------------------------------------------------------
+           # case: 1,1
+           #-----------------------------------------------------------
+           set lg_x1a = fill(lg_x1a,$lg_x$1)
+           set lg_x1b = lg_x$2
+           
+           set lg_x2a = fill(lg_x2a,$lg_x$3)
+           set lg_x2b = lg_x$4
+
+           set lg_x2c = lg($knconst) - lg_xc
+
+           set lg_x1  = setmax(lg_x1a,lg_x1b)
+           set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+           
+           set lg_I$5   = lg($C11*$K1*$F0) - $a1*(lg_xc - $lg_xsp) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+           set lg_nuI$5 = lg_xc + lg_I$5 
+           
+sub_compute_12 5
+           #-----------------------------------------------------------
+           # case: 1,2
+           #-----------------------------------------------------------
+           set lg_x1a = fill(lg_x1a,$lg_x$1)
+           set lg_x1b = lg_x$2
+           
+           set lg_x2a = fill(lg_x2a,$lg_x$3)
+           set lg_x2b = lg_x$4
+           set lg_x2c = lg($knconst) - lg_xc
+
+           set lg_x1  = setmax(lg_x1a,lg_x1b)
+           set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+           
+           set lg_I$5   = lg($C11*$K1*$F0) - $a1*lg_xc + $a2*$lg_xsp - lg($a2-$a1) + lg(10.**($da1a2*lg_x1) - 10.**($da1a2*lg_x2))
+           set lg_nuI$5 = lg_xc + lg_I$5
+           
+sub_compute_21 5
+           #-----------------------------------------------------------
+           # case: 2,1 
+           #-----------------------------------------------------------
+           set lg_x1a = fill(lg_x1a,$lg_x$1)
+           set lg_x1b = lg_x$2
+           
+           set lg_x2a = fill(lg_x2a,$lg_x$3)
+           set lg_x2b = lg_x$4
+           set lg_x2c = lg($knconst) - lg_xc
+
+           set lg_x1  = setmax(lg_x1a,lg_x1b)
+           set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+           
+           set lg_I$5  = lg($C21*$K2*$F0) - $a2*lg_xc + $a1*$lg_xsp - lg($a2-$a1) + \
+                         lg(10.**($da2a1*lg_x2) - 10.**($da2a1*lg_x1))
+           set lg_nuI$5 = lg_xc + lg_I$5
+          
+sub_compute_22 5
+           #-----------------------------------------------------------
+           # case: 2,2
+           #-----------------------------------------------------------
+           set lg_x1a = fill(lg_x1a,$lg_x$1)
+           set lg_x1b = lg_x$2
+           
+           set lg_x2a = fill(lg_x2a,$lg_x$3)
+           set lg_x2b = lg_x$4
+           set lg_x2c = lg($knconst) - lg_xc
+
+           set lg_x1  = setmax(lg_x1a,lg_x1b)
+           set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+           
+           set lg_I$5   = lg($C22*$K2*$F0) - $a2*(lg_xc - $lg_xsp) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+           set lg_nuI$5 = lg_xc + lg_I$5
+
+
+#------------------------------------------------------------------------------
+# ic_split_split2
+##  Computes the splitting of the IC component while also keeping track
+##     of the IC emission off a selected range of seed photon energies.
+##  Output arrays: 
+##    lg_I** & lg_nuI** for 11,12,21,22
+##    lg_I12a  (sub-component of I11 that in fact goes added to I12)
+##    lg_I22a  (sub-component of I21 that in fact goes added to I22)
+##             This is because there is a redefinition of the splitting point.
+#  !!!APPARENTLY INCOMPLETELY DEVELOPED!!!
+ic_split_split2
+
+	# define_physical_constants
+
+	echo " FT examples: n1=2.2 n2=4.5 nupeak=1e15"
+	echo " Electron spectrum parameters "
+	define n1 ?              <                  n_1 : >
+	define n2 ?              <                  n_2 : >
+	define g1 ?              <            gamma_min : >
+	define g2 ?              <            gamma_max : >
+	define nu_peak_obs_keV ? <   nu_peak obs. [keV] : >
+	define nu_split_keV    ? <  nu_split obs. [keV] : >
+	define nu_cut_obs1     ? <  nu_cut 1 obs. [ eV] : >
+	define nu_cut_obs2     ? <  nu_cut 2 obs. [ eV] [0 for none]: >
+	define B               ? <              B field : >
+	define doppler         ? <                delta : >
+	define knconst         ? <* KN factor [1/4,3/4] : >
+	
+	define F0 1
+	define K1 1
+
+	define a1     ( 0.5*($n1-1) )
+	define a2     ( 0.5*($n2-1) )
+	define da1a2  ( $a1 - $a2 )
+	define da2a1  ( $a2 - $a1 )
+
+	define nu_peak_obs ( $nu_peak_obs_keV*$nu_keV )
+	define nu_peak     ( $nu_peak_obs_keV*$nu_keV/$doppler )
+	define nu_cut1     ( $nu_cut_obs1*$nu_eV/$doppler )
+	define nu_cut2     ( $nu_cut_obs2*$nu_eV/$doppler )
+	define nu_split    ( $nu_split_keV*$nu_keV/$doppler )
+	define gb          ( sqrt($nu_peak/$nu_crit/$B) )
+	define gsplit      ( sqrt($nu_split/$nu_crit/$B) )
+	define K2          ( $K1*$gb**($n2-$n1) )
+
+	#---- synchrotron cooling timescale ---#
+	define t_cool ( 6.*$pi*$mec2/$sigmaT/$c/$gb/$B )
+	
+	define lg_g1 (lg($g1))
+	define lg_g2 (lg($g2))
+	define lg_gb (lg($gb))
+	define lg_gs (lg($gsplit))
+	set lg_g_l = $lg_g1,$lg_gb,0.01
+	set lg_g_h = $lg_gb,$lg_g2,0.01
+	set lg_g = lg_g_l concat lg_g_h
+
+	echo "--------------------------------------"
+	echo " * Synchrotron Peak (obs.) :" $nu_peak_obs_keV "[keV]"
+	echo " * Magnetic field          :" $B
+	echo " * gamma_peak              :" $gb
+	echo "--------------------------------------"
+	echo " * T_cool (sync) intr.     :" $t_cool "[s]"
+	echo " * T_cool (sync) obs.      :" $($t_cool/$doppler) "[s]"
+	echo "--------------------------------------"
+
+	set lg_xs = (lg($nu_crit) + 2.*lg_g + lg($B)) - lg($nu_e)
+	set lg_xc = lg(4./3.)     + 2.*lg_g + lg_xs
+	#vecminmax lg_xc dum lg_xc2
+
+	define lg_xs1  ( (lg($nu_crit) + 2.*$lg_g1 + lg($B)) - lg($nu_e) )
+	define lg_xsc  (  lg($nu_cut1)                       - lg($nu_e) )
+	define lg_xsb  ( (lg($nu_crit) + 2.*$lg_gb + lg($B)) - lg($nu_e) )
+	define lg_xs2  ( (lg($nu_crit) + 2.*$lg_g2 + lg($B)) - lg($nu_e) )
+	define lg_xss  ( (lg($nu_crit) + 2.*$lg_gs + lg($B)) - lg($nu_e) )
+
+	if( $nu_cut_obs2 > 0 )  {
+	    define lg_xsc2 (  lg($nu_cut2) - lg($nu_e) )
+	    define lg_xs1   $lg_xsc
+	    define lg_xs2   $lg_xsc2
+	    define lg_xsc   $lg_xsb
+	}
+	#define lg_xc2 $lg_xs2
+
+	foreach vec < x1 x1a x1b x2 x2a x2b x2c > {
+	    set dimen(lg_$vec) = $(dimen(lg_xs))
+	}
+
+	#-----------------------------------------------------------
+	define C11 ( (3./4.)**(-$a1)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )  
+	define C12 ( $C11 )
+	define C21 ( (3./4.)**(-$a2)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )
+	define C22 ( $C21 )
+
+	#-----------------------------------------------------------
+	# case: 1,1 (i)
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xs1)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xsc)
+	set lg_x2b = lg(3./4.)    + lg_xc - 2.*$lg_g1  
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I11   = lg($C11*$K1*$F0) - $a1*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+	set lg_nuI11 = lg_xc + lg_I11 
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 1,1 (ii)(the one going with 1,2, call it I12a)
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xsc)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xsb)
+	set lg_x2b = lg(3./4.)    + lg_xc - 2.*$lg_g1  
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I12a   = lg($C11*$K1*$F0) - $a1*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 1,2
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xsb)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2c = fill(lg_x2c,$lg_xs2)
+	set lg_x2a = lg(3./4.)    + lg_xc - 2.*$lg_g1 
+	set lg_x2b = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I12   = lg($C11*$K1*$F0) - $a1*lg_xc + $a2*$lg_xsb - lg($a2-$a1) + lg(10.**($da1a2*lg_x1) - 10.**($da1a2*lg_x2))
+	set lg_I12   = lg(10.**lg_I12 + 10.**lg_I12a)
+	set lg_nuI12 = lg_xc + lg_I12
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 2,1 (i)
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xs1)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xsc)
+	set lg_x2b = lg(3./4.)    + lg_xc -  2.*$lg_gb
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I21  = lg($C21*$K2*$F0) - $a2*lg_xc + $a1*$lg_xsb - lg($a2-$a1) + \
+	              lg(10.**($da2a1*lg_x2) - 10.**($da2a1*lg_x1))
+	set lg_nuI21 = lg_xc + lg_I21
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 2,1 (ii) (the one going with 2,2, call it I22a
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xsc)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xsb)
+	set lg_x2b = lg(3./4.)    + lg_xc -  2.*$lg_gb
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I22a = lg($C21*$K2*$F0) - $a2*lg_xc + $a1*$lg_xsb - lg($a2-$a1) + \
+	              lg(10.**($da2a1*lg_x2) - 10.**($da2a1*lg_x1))
+	verbose 1
+
+	#-----------------------------------------------------------
+	# case: 2,2
+	#-----------------------------------------------------------
+	set lg_x1a = fill(lg_x1a,$lg_xsb)
+	set lg_x1b = lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = setmax(lg_x1a,lg_x1b)
+
+	set lg_x2a = fill(lg_x2a,$lg_xs2)
+	set lg_x2b = lg(3./4.)    + lg_xc -  2.*$lg_gb
+	set lg_x2c = lg($knconst) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c)
+
+	verbose 0
+	set lg_I22   = lg($C22*$K2*$F0) - $a2*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+	set lg_I22   = lg( 10.**lg_I22a + 10.**lg_I22) 
+	set lg_nuI22 = lg_xc + lg_I22
+	verbose 1
+
+	define icsplitname ? < Suffix for the IC split spectra arrays : >
+	set lg_xc_$icsplitname = lg_xc
+	set lg_nu_$icsplitname = lg_xc + lg(511) + 17.384 + lg($doppler)
+	foreach 1 < 11 12 21 22 > {
+	    set lg_nuI$1_$icsplitname = lg_nuI$1
+	}
+	# echo "  adhoc E : "$adhoc_e
+
+#------------------------------------------------------------------------------
+# test_xFx
+test_xFx
+
+	define a1 ? < a1 : >
+	define a2 ? < a2 : >
+
+	compute_xFx $a1 $a2
+
+	echo "--------------------------------"
+	echo ">>> C- peak = "$Cl_peak
+	echo ">>> C+ peak = "$Ch_peak
+	echo "--------------------------------"
+
+	reset_graph
+	limits -3 3 -2 0.5
+	box
+
+	ltype 1 
+	ctype 4 relocate $Cl_peak $fy1 draw $Cl_peak $fy2 ctype 3 relocate $Cl_peak 0 dot
+	ctype 4 relocate $Ch_peak $fy1 draw $Ch_peak $fy2 ctype 5 relocate $Ch_peak 0 dot
+	ltype 1 ctype 3 connect (lg(xxic)) (lg(Cl)) if( xxic >  1 )
+	ltype 1 ctype 5 connect (lg(xxic)) (lg(Ch)) if( xxic <= 1 )
+	ltype 0 ctype 3 connect (lg(xxic)) (lg(Cl)) if( xxic <= 1 )
+	ltype 0 ctype 5 connect (lg(xxic)) (lg(Ch)) if( xxic >  1 )
+	ltype 0
+
+	ctype 2
+
+##---------------
+compute_xFx 2
+
+	foreach vec < _Cl _Ch  > {
+	   set $vec local
+	}
+	set xxic=-5,3,0.01
+	set xxic= 10.**xxic
+
+	# these are already xFx-ed
+	set Cl = xxic**(1.-$1)*(2./($2-$1) - ln(xxic)) 
+	set Ch = xxic**(1.-$2)*(2./($2-$1) + ln(xxic)) 
+
+	define Cl_peak (lg(exp( 2./($2-$1) + 1./($1-1)  )))
+	define Ch_peak (lg(exp( 1./($2-1)  - 2./($2-$1) )))
+
+	define PtoP_Ch ( ($2-$1)/2./($2-1)/exp($2*(1./($2-1) - 2./($2-$1))) )
+
+	set C_all = Cl concat Ch
+	vecminmax C_all dum top
+	set Cl = Cl/$top
+	set Ch = Ch/$top
+	set _Cl = Cl    if( xxic <= 1 )
+	set _Ch = Ch    if( xxic >  1 )
+	set C_all = _Cl concat _Ch
+	#set C_all = C_all
+
+#------------------------------------------------------------------------------
+# lookup_xs  [<X_s>] [<X_c>] [<dXc>]
+#   searches in the database for all entries having X_s and X_c within dXc
+#   of the input values.
+#   It returns the results in four arrays:  _d _B _xs _xc 
+lookup_xs 03
+
+	if($?3) { 
+	   define xs2lookup $1
+	   define xc2lookup $2
+	   define delta_xc  $3
+	} else {
+	   define xs2lookup ? <*       X_s [log] : >
+	   define xc2lookup ? <*       X_c [log] : >
+	   define delta_xc  ? <* dX_c for search : >
+	}
+
+	define repo local
+	define repoDB local
+
+	define xs1  14.0
+	define xs2  18.8451
+	# define Nxs  200
+	# define NNxs 12500
+
+	verbose 0
+	echo "----------------------------------------"
+	echo " Infrared Background TeV attenuation "
+	echo "  [B] no IR bkg absorption "
+	echo "  [0] no IR bkg absorption (new)"
+	echo "  [2] Stecker 1999 high IIRF "
+	define repo ? < What scenario : >
+
+	if( substr('$repo',0,1) == 'B' ) { 
+	    define Nxs  200
+	    define NNxs 12500
+	    define xccol 4
+	} else { 
+	    define Nxs  200
+	    define NNxs 24800
+	    define xccol 5
+	}
+
+	echo "   xs2lookup = " $xs2lookup
+	echo "   xc2lookup = " $xc2lookup
+	define r_good ( ($Nxs - 1)*($xs2lookup-$xs1)/($xs2-$xs1) + 1 ) 
+	define i_good ( int($r_good) )
+	#echo $i_good $r_good
+	if( $($r_good-$i_good) > 0.5 ) {
+	   define i_good ( $i_good + 1 )
+	} 
+ 
+	echo " Searching in the SED database for matching x_s ... "
+	echo " Index of search x_s : "$i_good
+
+	# define repoDB "/home/gfossati/Science/Mkn421/2001/Temporal/PROVA/Repository$!repo/B_d_xs_xc_DB.dat"
+	define repoDB "/home/gfossati/Science/Mkn421/2001/Temporal/PROVA/Repository$!repo/B_d_xs_xc_abs$!repo.dat"
+	data "$!repoDB"
+
+	lines $( ($i_good-1)*$NNxs + 1 ) $( $i_good*$NNxs ) 
+	read < _B 1 _d 2 _xs 3 _xc $xccol >
+	verbose 1
+
+	set check = abs(_xc - $xc2lookup)
+
+	foreach 1 < _B _d _xs _xc > {
+	   set $1 = $1 if( check < $delta_xc ) 
+	}
+	set check = check if( check < $delta_xc ) 
+
+	echo " Dimension of selected arrays : "$(dimen(_xc))
+
+	sort < _d _B _xs _xc >
+
+#------------------------------------------------------------------------------
+#  REMEMBER: 
+#    * Load macro file "tools.sm"
+#    * Load macro file "astro_tools.sm"
+#------------------------------------------------------------------------------
+## comtot
+comtot    	
+
+	define tcomp (1000)
+	define sigthom (0.665)
+	
+	set alf = alpha   # after running kn_cs
+
+        set alf21a = 0.032507 + 59.9954*alf - 186.572*alf**2
+	set alf21b = 0.14912*(89.6552*alf**0.1324 - 40.9714)
+	set alf21 = alf21b
+	do i=0,dimen(alf)-1 { 
+	   if( alf[$i] <= 100 ) { set alf21[$i] = alf21a[$i] }}
+	}
+
+	set alf22  = 2.07114*(1.0 - exp(-10.161*alf))**1.0885
+	set alf1   = 1.0 - 12.986*alf + 14.2996*alf**0.9809
+
+	set alf2 = 1.0 + alf21*($tcomp/5000.) - alf22*($tcomp/5000.)**2.0
+
+	set cosigth = $sigthom/(alf1*alf2)
+	
+comtot_corr
+
+	#-----------------------------------------------------------
+	# additional odd correction factors
+	#-----------------------------------------------------------
+	# gbar_nth(j,k) ==> gbar_nth
+	# p_nth(j,k)    ==> p_nth
+	#
+	# xnuc is photon energy in keV
+	#
+	define tcomp (1000)
+
+	set xnuc = 0,1000,0.1
+	set xnuc[0] = 0.001
+	set lg_xnuc = lg(xnuc)
+
+	set lg_xnuc = -3,3,0.01
+	set xnuc = 10.0**lg_xnuc
+
+	# define gbar_nth ( 1000.0 ) 
+	# define p_nth    ( 1.9 ) 
+	define tcomp    ? {  T_comp : }
+	define gbar_nth ? { <gamma> : }
+	define p_nth    ? {       p : }
+	set sigma_corr_nth = 1.0 - 0.48*(0.66*lg($gbar_nth) - 1.5*exp(-1.9*$p_nth))*(exp(-60/(xnuc**1.5))*xnuc**0.11 + exp(-sqrt(xnuc/$gbar_nth)))
+
+	set sigma_corr_th  = 1.0 - $tcomp*xnuc/(47703.0 + xnuc*637.69)
+
+	reset_graph
+
+	limits lg_xnuc sigma_corr_th
+	limits lg_xnuc -1.1 1.1
+	ticksize -1 0 0 0 
+	box
+	xlabel E_{photon} [keV]
+	ylabel \sigma
+
+	ctype 3 connect lg_xnuc sigma_corr_th
+	ctype 5 connect lg_xnuc sigma_corr_nth
+
+	ctype 2
+
+##------------------------------------------------------------------------------

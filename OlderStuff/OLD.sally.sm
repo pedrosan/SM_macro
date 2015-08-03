@@ -1,0 +1,145 @@
+#---------------------------------------------------------------------------
+# read_sally
+read_sally
+
+	data sally_all.dat
+	read {name 1.s z 2 fr 3 mo 4 fxband 5 }
+	#
+	# X are in 0.1-2.4 band units of 10^-12
+	#
+	# radio are in milliJy
+	#
+
+	set fx = fxband/9.013   # converte a monocromatico ad 1 keV (muJy)
+	set fr = fr/1000.       # con il fattore che corrisponde ad
+	set lgfx = lg(fx)       # un indice spettrale 1.2 tra 0.1-2.4 keV
+	set lgfr = lg(fr)
+
+	do i=0,$(dimen(z)-1) {
+	   if(z[$i] < 4) {set z[$i] = z[$i]} else {set z[$i] = 0.16 }
+	}
+
+	set ratio_xr = lg(fx/fr) - 6.
+	set a_rx     = ratio_xr/7.685
+
+	define ax (1.2)
+	define ar (0.0)
+
+	set lgkfx = lgfx + ($ax - 1)*lg(1+z)
+	set lgkfr = lgfr + ($ar - 1)*lg(1+z)
+
+	set ratio_kxr = lgkfx - lgkfr - 6.
+	set a_krx     = ratio_kxr/7.685
+	
+#---------------------------------------------------------------------------
+# read_complete
+read_complete
+
+	data sally_complete.dat
+	read {name 1.s z 2 f_radio 3 mopt 4 f_x 5 }
+	#
+	# X are monochromatic @ 1keV, in nanoJy
+	#
+	# radio are CORE, in milliJy
+	#
+
+	set f_x     = f_x/1000.
+	set f_radio = f_radio/1000. 
+	set lg_f_x     = lg(f_x)
+	set lg_f_radio = lg(f_r)
+
+	do i=0,$(dimen(z)-1) {
+	   if(z[$i] < 4) {set z[$i] = z[$i]} else {set z[$i] = 0.16 }
+	}
+
+	set ratio_xr = lg(f_x/f_radio) - 6.
+	set a_rx     = ratio_xr/7.685
+
+	define a_x     (1.2)
+	define a_radio (0.0)
+
+	set lg_kf_x     = lg_f_x     + ($a_x - 1)*lg(1+z)
+	set lg_kf_radio = lg_f_radio + ($a_radio - 1)*lg(1+z)
+
+	set ratio_kxr = lg_kf_x - lg_kf_radio - 6.
+	set a_krx     = ratio_kxr/7.685
+	
+#---------------------------------------------------------------------------
+# read_area1
+read_area1
+
+
+##     RA   (J2000)  Dec     Peak Flux Int. Flux Flux Dist1 alpha  Ecl Emag Ocl Omag  Color Dist2a Dist2b Class        Notes
+##                             (20cm)    (20cm) (6cm)
+##    (FIRST POSITION)        (mJy)     (mJy)  (mJy)  (")   (radio)     (mag)    (mag)  (mag)  (")  (") 
+## ------------ ------------- --------- -------- ----- ----- ------ --- ----- -- ----- ------ ----- ---- ----- -----------------
+## 1  2  3        4  5  6             7        8     9    10     11  12    13 14    15     16    17   18
+## ------------ ------------- --------- -------- ----- ----- ------ --- ----- -- ----- ------ ----- ---- ----- -----------------
+## 00 01 21.522  -00 11 40.75     39.38    80.62    49  27.8   0.18  -1 19.22 -1 20.83   1.61  0.89 1.04
+## 00 02 57.196  -00 24 47.51    124.90   159.13   139  15.0   0.09  -1 19.19 -1 20.85   1.66  0.33 0.54 Galaxy? (z unknown)
+
+	data sally_area1.sample
+	read { ra_h 1 ra_m 2 ra_s 3 dec_d 4 dec_m 5 dec_s 6 f14peak 7 f14tot 8 f5 9 }
+	read { ecl 12 emag 13 ocl 14 omag 15 }
+
+	set ra  = (ra_h + ra_m/60.  + ra_s/3600.)*15.
+	set dec = dec_d   + dec_m/60. + dec_s/3600. 
+
+
+#---------------------------------------------------------------------------
+# read_area2
+read_area2
+
+
+##     RA   (J2000)  Dec     Peak Flux Int. Flux Flux Dist1 alpha  Ecl Emag Ocl Omag  Color Dist2a Dist2b Class        Notes
+##                             (20cm)    (20cm) (6cm)
+##    (FIRST POSITION)        (mJy)     (mJy)  (mJy)  (")   (radio)     (mag)    (mag)  (mag)  (")  (") 
+## ------------ ------------- --------- -------- ----- ----- ------ --- ----- -- ----- ------ ----- ---- ----- -----------------
+## 1  2  3        4  5  6             7        8     9    10     11  12    13 14    15     16    17   18
+## ------------ ------------- --------- -------- ----- ----- ------ --- ----- -- ----- ------ ----- ---- ----- -----------------
+## 00 01 21.522  -00 11 40.75     39.38    80.62    49  27.8   0.18  -1 19.22 -1 20.83   1.61  0.89 1.04
+## 00 02 57.196  -00 24 47.51    124.90   159.13   139  15.0   0.09  -1 19.19 -1 20.85   1.66  0.33 0.54 Galaxy? (z unknown)
+
+	data sally_area2.sample
+	read { ra_h 1 ra_m 2 ra_s 3 dec_d 4 dec_m 5 dec_s 6 f14peak 7 f14tot 8 f5 9 }
+	read { ecl 12 emag 13 ocl 14 omag 15 }
+
+	set ra  = (ra_h + ra_m/60.  + ra_s/3600.)*15.
+	set dec = dec_d   + dec_m/60. + dec_s/3600. 
+
+
+#---------------------------------------------------------------------------
+# my_aitoffgrid
+my_aitoffgrid
+
+	define min_ra_deg    ? { Min RA, in deg ? }
+	define max_ra_deg    ? { Max RA, in deg ? }
+	define step_ra_deg   ? { Step RA, in deg ? }
+	define min_dec_deg   ? { Min DEC, in deg ? }
+	define max_dec_deg   ? { Max DEC, in deg ? }
+	define step_dec_deg  ? { Step DEC, in deg ? }
+
+	limits $($min_ra_deg-5) $($max_ra_deg+5) $($min_dec_deg-5) $($max_dec_deg+5)
+
+	define i local
+	foreach i (_l _b _x _y) {
+	   set $i local
+	}
+
+	ctype 2
+
+	set _l = $min_ra_deg,$max_ra_deg
+	do i = $min_dec_deg,$max_dec_deg,$step_dec_deg {
+	   set _b = $i
+	   aitoff _l _b _x _y
+	   connect _x _y
+	}
+
+	set _b = $min_dec_deg,$max_dec_deg
+	do i = $min_ra_deg,$max_ra_deg,$step_ra_deg {
+	   set _l = $i
+	   aitoff _l _b _x _y
+	   connect _x _y
+	}
+
+#---------------------------------------------------------------------------

@@ -1,0 +1,74 @@
+#------------------------------------------------------------------------------
+# tanihata
+tanihata
+
+	define a0    0.38
+	define a1    0.36
+	define phi0 -9.57
+	define phi1 -9.50
+	define xp0  17.05
+	define xp1  17.15
+
+	set x=16,19,0.01
+
+	set f0= $phi0 - $a0*(x - $xp0)**2.0
+	set f1= $phi1 - $a1*(x - $xp1)**2.0
+	set df= f1 - f0
+
+	ctype 2 
+	lweight 3 
+	ltype 0
+	expand 1.5
+	limits 16 19 -12 -9
+	box
+
+
+	ctype 3 
+	connect x f0
+	ctype 5
+	connect x f1
+
+	ctype 4 
+	ltype 2
+	relocate 16 -11
+	draw     19 -11
+	ltype 0
+	connect x (df - 11)
+#------------------------------------------------------------------------------
+# tanihata2
+tanihata2 
+
+	define a0   ? <      a0 : >
+	define a1   ? <      a1 : >
+	define phi0 ? <    phi0 : >
+	define phi1 ? <    phi1 : >
+	define xp0  ? < Epeak_0 : >
+	define xp1  ? < Epeak_1 : >
+
+	set x=16,19,0.01
+
+	set f0= $phi0 - $a0*(x - $xp0)**2.0
+	set f1= $phi1 - $a1*(x - $xp1)**2.0
+	set df= f1 - f0
+
+	ctype 2 
+	lweight 3 
+	ltype 0
+	expand 1.5
+	limits 16 19 -12 -9
+	box
+
+
+	ctype 3 
+	connect x f0
+	ctype 5
+	connect x f1
+
+	ctype 4 
+	ltype 2
+	relocate 16 -11
+	draw     19 -11
+	ltype 0
+	connect x (df - 11)
+
+#------------------------------------------------------------------------------

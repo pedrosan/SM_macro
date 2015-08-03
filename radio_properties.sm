@@ -1,0 +1,224 @@
+#-------------------------------------------------------------------------------
+# complexity_space	
+complexity_space	
+
+	reset_graph
+
+	location 5500 28500 5500 28500
+
+	# limits -0.06 0.51 -1 $(lg(3.5)) 
+	limits $(lg(0.88)) $(lg(3.1)) $(lg(0.15)) $(lg(2.5)) 
+	ticksize -0.2 1 -1 10 
+	box 1 2 4 4 
+	ticksize 0 0 0 0 
+	box 4 4 1 2
+        
+	xlabel F_{int}/F_{peak}
+        ylabel F_{FIRST,int}/F_{NVSS}
+
+        ctype 3 ltype 0 points lg_t2 ratio_first_nvss
+        ctype 5 ltype 2 relocate 0.05 $fy1 draw 0.05 $fy2
+        ctype 5 ltype 2 relocate $fx1 -0.14 draw  $fx2 -0.14
+        
+	ltype 0
+        ctype 4 points lg_t2 ratio_first_nvss  if( f_first_int > (0.1*f_wenss_int) && f_wenss_int > 0 )
+        ctype 6 points lg_t2 ratio_first_nvss  if( f_first_int > (0.3*f_wenss_int) && f_wenss_int > 0 )
+        ctype 5 points lg_t2 ratio_first_nvss  if( f_first_int > (0.3*f_wenss_int) && f_wenss_int > 0 )
+        ctype 6 points lg_t2 ratio_first_nvss  if( f_first_int > (1.0*f_wenss_int) && f_wenss_int > 0 )
+        ctype 7 points lg_t2 ratio_first_nvss  if( f_first_int > (3.0*f_wenss_int) && f_wenss_int > 0 )
+	ctype 2
+
+#-------------------------------------------------------------------------------
+# complexity_space_colored
+complexity_space_colored	
+
+	reset_graph
+
+	location 5500 28500 5500 28500
+
+	limits $(lg(0.88)) $(lg(3.1)) $(lg(0.15)) $(lg(2.5)) 
+	ticksize -0.2 1 -1 10 
+	box 1 2 4 4 
+	ticksize 0 0 0 0 
+	box 4 4 4 2
+        
+	xlabel F_{int}/F_{peak}
+        ylabel F_{FIRST,int}/F_{NVSS}
+
+	set colorvec local
+	set c_vec    local
+	set x_vec    local
+	set y_vec    local
+
+	set colorvec = lg(f_first_int/f_wenss_int)
+	set c_vec = colorvec           if( f_wenss_int > 0.0 )
+	set x_vec = lg_t2              if( f_wenss_int > 0.0 )
+	set y_vec = ratio_first_nvss   if( f_wenss_int > 0.0 )
+
+	sort < c_vec x_vec y_vec >
+
+	plot_shaded_dots x_vec y_vec c_vec 0.75
+
+	ltype 2 
+        ctype 5 relocate 0.05  $fy1 draw 0.05  $fy2
+        ctype 5 relocate $fx1 -0.14 draw $fx2 -0.14
+
+	ctype 2
+
+	relocate ( $( 0.5*($gx1+$gx2) )  $($gy2 + 2750) )
+	putlabel 5 log(F_{20cm}/F_{92cm})
+
+#-------------------------------------------------------------------------------
+# wenss_vs_first  : integrated fluxes
+wenss_vs_first
+
+	ctype 2 
+	ltype 0 
+	limits 1.2 4.5 0.8 5 
+	ticksize -1 0 -1 0 
+	box
+	
+	xlabel F_{FIRST,int}
+        ylabel F_{WENSS,int}
+
+        ctype 3 
+	points lg_f_first_int lg_f_wenss_int
+
+	ctype 5
+        ltype 2 relocate 0  0     draw 7 7
+        ltype 1 relocate 0 -0.523 draw 7 6.523
+        ltype 1 relocate 0  1     draw 7 8
+        ltype 1 relocate 0  0.477 draw 7 7.477
+
+	ctype 2 
+	ltype 0 
+
+#-------------------------------------------------------------------------------
+# wenss_vs_nvss  : integrated fluxes
+wenss_vs_nvss
+
+	ctype 2 
+	ltype 0 
+	limits 1.2 4.5 0.8 5 
+	ticksize -1 0 -1 0 
+	box
+	
+	xlabel F_{NVSS}
+        ylabel F_{WENSS,int}
+
+        ctype 3 
+	points (lg_f_nvss + 26.) lg_f_wenss_int
+
+	ctype 5
+        ltype 2 relocate 0  0     draw 7 7
+        ltype 1 relocate 0 -0.523 draw 7 6.523
+        ltype 1 relocate 0  0.477 draw 7 7.477
+
+	ctype 2 
+	ltype 0 
+
+#-------------------------------------------------------------------------------
+# histo_ratio_first_nvss 
+histo_ratio_first_nvss
+
+	 define hstep ? < Histogram X bin width : >
+	 define hmax  ? < Max of vertical scale : >
+
+         ctype 2 
+	 limits $(-1.12/(-2.5)) $(1.12/(-2.5)) -6 $hmax
+	 ticksize 0 0 0 0 
+	 box 4 4 1 4 
+	 limits -1.12 1.12 -6 $hmax
+	 ticksize 0 0 0 0 
+	 box 1 2 4 0
+	 xlabel log(F_{FIRST,int}/F_{NVSS})
+
+         set xxr = -1.0-0.5*$hstep,1.0+0.5*$hstep,$hstep
+         set hr = histogram(ratio_first_nvss:xxr)
+
+         ctype 4 
+	 ltype 2 
+	 define cut $(-0.35/2.5)
+	 relocate $cut $fy1 draw $cut $fy2
+
+         ctype 3 
+	 ltype 0 
+	 histogram xxr hr 
+	 
+	 ctype 2
+	
+
+
+#-------------------------------------------------------------------------------
+# histo_ratio_int_peak 
+histo_ratio_int_peak 
+
+	 define hstep ? < Histogram X bin width : >
+	 define hmax  ? < Max of vertical scale : >
+
+         ctype 2 
+	 # limits -1.12 1.12 -6 $hmax
+	 limits -0.16 0.86 -6 $hmax
+	 ticksize 0 0 0 0 
+	 box 
+	 xlabel log(F_{FIRST,int}/F_{FIRST,peak})
+	 # xlabel log(\theta^2)
+
+         set lg_t2=2.*lg(theta_first)
+
+         set xxt = -1.0-0.5*$hstep,1.0+0.5*$hstep,$hstep
+         set ht  = histogram(lg_t2:xxr)
+
+         ctype 4 
+	 ltype 2 
+	 define cut $(0.05)
+	 relocate $cut $fy1 draw $cut $fy2
+
+         ctype 3 
+	 ltype 0 
+	 histogram xxt ht 
+	 
+	 ctype 2
+	
+#-------------------------------------------------------------------------------
+# alpha_radio_high_vs_low
+#          computed using WENSS_int, NVSS, GB6  [NOT FIRST]
+alpha_radio_high_vs_low
+
+
+         ctype 2 
+	 ltype 0 
+	 limits -1.55 1.55 -1.55 1.55 
+	 ticksize 0 0 0 0 
+	 box
+         xlabel \alpha_{92-20cm}
+         ylabel \alpha_{20-6cm}
+
+         ctype 3 ltype 0 points a_92_20 a_20_6
+         ctype 5 ltype 2 relocate $fx1   $fy1      draw $fx2   $fy2
+         ctype 5 ltype 2 relocate $fx1 $($fy1+0.5) draw $fx2 $($fy2+0.5)
+         ctype 5 ltype 2 relocate $fx1 $($fy1-0.5) draw $fx2 $($fy2-0.5)
+
+	 ctype 2 ltype 0 
+
+#-------------------------------------------------------------------------------
+# alpha_radio_high_vs_all
+#          computed using WENSS_int, NVSS, GB6  [NOT FIRST]
+alpha_radio_high_vs_all
+
+         ctype 2 
+	 ltype 0 
+	 limits -1.55 1.55 -1.55 1.55 
+	 ticksize 0 0 0 0 
+	 box
+         xlabel \alpha_{92-20cm}
+         ylabel \alpha_{92-6cm}
+
+         ctype 3 ltype 0 points a_92_20 a_92_6
+         ctype 5 ltype 2 relocate $fx1   $fy1      draw $fx2   $fy2
+         ctype 5 ltype 2 relocate $fx1 $($fy1+0.5) draw $fx2 $($fy2+0.5)
+         ctype 5 ltype 2 relocate $fx1 $($fy1-0.5) draw $fx2 $($fy2-0.5)
+
+	 ctype 2 ltype 0 
+
+#-------------------------------------------------------------------------------

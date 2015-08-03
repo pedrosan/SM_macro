@@ -1,0 +1,2150 @@
+##--------------------------------------------------------------------------
+define_new_ptypes
+
+	define plus1        {{m 150 50 150 -50 50 -50 50 -150 -50 -150 -50 -50 -150 -50 -150 50 -50 50 -50 150 50 150 50 50 150 50 }}
+	define plus2        {{m 150 60 150 -60 60 -60 60 -150 -60 -150 -60 -60 -150 -60 -150 60 -60 60 -60 150 60 150 60 60 150 60 }}
+	define upper        {{m -10 0 10 0 m 0 0 0 -2000 -200 -1700 0 -1850 200 -1700 0 -2000 }}
+	define upper        {{m -10 0 10 0 m 0 0 0 -2000 -200 -1700 0 -1700 200 -1700 0 -2000 }}
+	define upper        {{m -10 0 10 0 m 0 0 0 -2000 -200 -1700 0 -1850 200 -1700 0 -2000 }}
+	define upper        {{m -10 0 10 0 m 0 0 0 -2000 -200 -1700 0 -2000 200 -1700 0 -2000 }}
+	define upper_short  {{m -10 0 10 0 m 0 0 0 -1500 -200 -1200 0 -1500 200 -1200 0 -1500 }}
+	define upper_xshort {{m -10 0 10 0 m 0 0 0 -1000 -100  -700 0 -1000 100  -700 0 -1000 }}
+
+##--------------------------------------------------------------------------
+## write an id to the top right hand corner of screen
+myid 
+
+        RELOCATE ( 32000 32400 )
+        if($?TeX_strings) {
+           define 1 {\-2\t }
+        } else {
+           DEFINE 1 {\\-2\\t}
+        }
+        define 2 " "
+        if($?x_col) {
+           if('$x_col' != '.') {
+              define 2 <$2""X: $x_col >
+           }
+        }
+        if($?y_col) {
+           if('$y_col' != '.') {
+              define 2 <$2""Y: $y_col >
+           }
+        }
+        
+        putlabel 4 $(substr('$!date',0,12) + substr('$!date',15,0))
+
+##--------------------------------------------------------------------------
+## post 1
+post   1
+                dev postencap $1
+
+##--------------------------------------------------------------------------
+## postl 1
+postl   1
+                dev postlandencap $1
+
+
+#--------------------------------------------------------------------------
+# devx11 02 [<howmany_dev>] [<size>]
+devx11 02
+
+	if(!$?1) {
+	   define ndevs ? < How many X11 devices [1/2] : >
+	   define size  ? <            Size of windows : >
+	} else {
+	   if( $?1 && !$?2 ) {
+	       define ndevs $1
+	       define size ? <            Size of windows : >
+	   } else {
+	       define ndevs $1
+	       define size  $2
+	   }
+	}
+
+	if( $ndevs >= 4 ) {
+	   echo " WARNING: number of devices greater than 4 "
+	   echo "          Resetting to 4 "
+	   define ndevs (4)
+	}
+
+	do 2=1,$ndevs,1 {
+	    device x11 -fg black -bg white -g "$!size"x$size \
+	 	       -ndevice $ndevs -device $2 -name $2 -title $2
+	    gsave $2
+	}
+
+	prompt "#####<$!ndevs>"
+	define size delete
+
+	if( $ndevs > 1 ) {
+	   echo "-------------------------------------------------------"
+	   echo " If there are "$ndevs" devices, you can now use the commands:"
+	   echo "      * dev1"
+	   echo "      * dev2"
+	   echo "      * dev#"
+	   echo " to move between them."
+	   echo "-------------------------------------------------------"
+	}
+
+##--------------------------------------------------------------------------
+# realgsave [-q]
+realgsave 1
+	
+	#fullgsave
+	define realgrestore "window 1 1 1 1 "
+	define realgrestore " "
+	define realgrestore "$!realgrestore location $!gx1 $!gx2 $!gy1 $!gy2 "
+	define realgrestore "$!realgrestore limits $!fx1 $!fx2 $!fy1 $!fy2 "
+	define realgrestore "$!realgrestore expand $!expand "
+	define realgrestore "$!realgrestore ctype $!ctype "
+	define realgrestore "$!realgrestore ptype $!ptype "
+	define realgrestore "$!realgrestore lweight $!lweight "
+	define realgrestore "$!realgrestore ltype $!ltype "
+
+	if( $?1 ) { 
+	   if( substr('$1',1,1) == 'q' ) {
+	      # echo "nice" 
+	      echo " * Executed 'realgsave' "
+	      return
+	   }
+	} else {
+	   echo " * Executed 'realgsave', saved the following configurations: "
+	   echo "   "$realgrestore
+	}
+
+	
+##--------------------------------------------------------------------------
+# fullgsave <-quiet>
+fullgsave 01
+	
+	define fullgrestore "window 1 1 1 1 "
+	define fullgrestore " "
+	#define fullgrestore "$!fullgrestore location $!gx1 $!gx2 $!gy1 $!gy2 "
+	define fullgrestore "$!fullgrestore limits $!fx1 $!fx2 $!fy1 $!fy2 "
+	define fullgrestore "$!fullgrestore expand $!expand "
+	define fullgrestore "$!fullgrestore ctype $!ctype "
+	define fullgrestore "$!fullgrestore ptype $!ptype "
+	define fullgrestore "$!fullgrestore lweight $!lweight "
+	define fullgrestore "$!fullgrestore ltype $!ltype "
+
+	if( $?1 ) { 
+	   if( substr('$1',1,1) == 'q' ) {
+	      # echo "nice" 
+	      return
+	   }
+	} else {
+	   echo " * Executed 'fullgsave' "
+	   echo "   "$fullgrestore
+	}
+
+##--------------------------------------------------------------------------
+# realgrestore
+realgrestore 
+	
+	$realgrestore
+
+##--------------------------------------------------------------------------
+# fullgrestore
+fullgrestore 
+	
+	$fullgrestore
+	
+##--------------------------------------------------------------------------
+# gsave 1
+gsave 1
+	
+	# define grestore$1 "location $!gx1 $!gx2 $!gy1 $!gy2 limits $!fx1 $!fx2 $!fy1 $!fy2 "
+	echo " Entering 'gsave' "
+	define grestore_p1_$1 "window 1 1 1 1 location $!gx1 $!gx2 $!gy1 $!gy2 limits $!fx1 $!fx2 $!fy1 $!fy2 "
+	define grestore_p2_$1 "expand $!expand lweight $!lweight ltype $!ltype ctype $!ctype"
+	echo " Leaving 'gsave' "
+
+##--------------------------------------------------------------------------
+# dev1  : switch to DEV-1, saving settings of DEV-2
+dev1 
+
+	if($?grestore_p1_1) { 
+	   echo "Using existing saved configuration for dev-1"
+	   echo "Config: "$grestore_p1_1 
+	   echo "        "$grestore_p2_1
+	}
+
+	gsave 2
+	echo "SAVED dev-2 config: "$grestore_p1_2 
+	echo "                    "$grestore_p2_2 
+
+	device x11 -device 1
+	if($?grestore1) { 
+	    echo "Restoring dev-1 config: "$grestore_p1_1
+	    echo "                        "$grestore_p2_1
+	    $grestore_p1_1 
+	    $grestore_p2_1 
+	} else { 
+	    echo "---[ There is NOT a SAVED Conf-1 ]---"
+	}
+	prompt "#####<1>"
+
+##--------------------------------------------------------------------------
+# dev2  : switch to DEV-2, saving settings of DEV-1
+dev2
+
+	if($?grestore_p1_2) { 
+	   echo "Using existing saved configuration for dev-2"
+	   echo "Config: "$grestore_p1_2 
+	   echo "        "$grestore_p2_2
+	}
+	
+	gsave 1
+	echo "SAVED dev-1 config: "$grestore_p1_1 
+	echo "                    "$grestore_p2_1 
+	
+	device x11 -device 2
+	if($?grestore2) { 
+	    echo "Restoring dev-2 config: "$grestore_p1_2
+	    echo "                        "$grestore_p2_2
+	    $grestore_p1_2 
+	    $grestore_p2_2 
+	} else { 
+	    echo "---[ There is NOT a SAVED Conf-2 ]---"
+	}
+	prompt "#####<2>"
+
+##--------------------------------------------------------------------------
+# resize
+resize
+        location 5500 31000 5500 31000
+
+
+##--------------------------------------------------------------------------
+# devnull  : switch to DEV-NULL, saving settings of DEV-1 or -2
+devnull
+
+	if($?grestore2) { 
+	   echo "Using existing saved configuration for dev-2"
+	   echo "Config: "$grestore2
+	}
+	
+	gsave 1
+	echo "SAVED dev-1 config: "$grestore1
+	
+	device x11 -device 2
+	if($?grestore2) { 
+	    echo "Restoring dev-2 config: "$grestore2
+	    $grestore2 
+	} else { 
+	    echo "---[ There is NOT a SAVED Conf-2 ]---"
+	}
+	prompt "#####<2>"
+
+##---------------------------------------------------------------------------
+# reset_graph
+reset_graph
+
+	range 0 0 
+	angle 0
+	expand 1.5
+	lweight 3 
+	ltype 0
+	ctype 2
+	window 1 1 1 1
+	notation -4 4 -4 4
+	ticksize 0 0 0 0 
+	location 5500 30000 5500 30000
+
+#---------------------------------------------------------------------------
+# plot_verynice [<expand-factor>]
+#                     | it assumes that the following arrays already exist:
+#                     | X : _x _ex_u _ey_d 
+#                     | Y : _y _ey_u _ey_d
+plot_verynice 01
+
+	local define saveexp $expand
+	if($?1) { 
+	   define expf $1 
+	} else {
+	   define expf 1
+	}
+	echo "-----------------------------------"
+	echo " [1] BLACK circles"
+	echo " [2] white circles"
+	echo " [3] ***   circles"
+	echo " [4] BLACK triangles"
+	echo " [5] white triangles"
+	echo " [6] BLACK squares"
+	echo " [7] white squares"
+	echo " [8] ***   squares"
+	echo " [9] white diamonds"
+	echo "-----------------------------------"
+	define howplot ? { Which DOT style ? }
+
+	if( $howplot == 1 ) {
+	    #------------------------------------
+	    # black circles
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar _x _y _ey_u  2
+            errorbar _x _y _ey_d  4
+            errorbar _x _y _ex_u  1
+            errorbar _x _y _ex_d  3
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 20 3 
+	    points _x _y 
+	}
+	if( $howplot == 2 ) {
+	    #------------------------------------
+	    # White Circles
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar _x _y _ey_u  2
+            errorbar _x _y _ey_d  4
+            errorbar _x _y _ex_u  1
+            errorbar _x _y _ex_d  3
+	    expand $($expf*2.4)
+	    ctype 1 
+	    ptype 20 3
+	    points _x _y 
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 20 0 
+	    points _x _y 
+        }
+	if( $howplot == 3) {
+	    #------------------------------------
+	    # Starred circles
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar _x _y _ey_u  2
+            errorbar _x _y _ey_d  4
+            errorbar _x _y _ex_u  1
+            errorbar _x _y _ex_d  3
+	    expand $($expf*2.4)
+	    ctype 1 
+	    ptype 20 3
+	    points _x _y 
+	    ctype 2 
+	    ptype 4 1 
+	    points _x _y 
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 20 0 
+	    points _x _y 
+	}
+	if( $howplot == 4) {
+	    #------------------------------------
+	    # Black Triangles
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar _x _y _ey_u  2
+            errorbar _x _y _ey_d  4
+            errorbar _x _y _ex_u  1
+            errorbar _x _y _ex_d  3
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 3 3 
+	    points _x _y 
+	}
+	if( $howplot == 5 ) {
+	    #------------------------------------
+	    # White Triangles
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar _x _y _ey_u  2
+            errorbar _x _y _ey_d  4
+            errorbar _x _y _ex_u  1
+            errorbar _x _y _ex_d  3
+	    expand $($expf*2.4)
+	    ctype 1 
+	    ptype 3 3 
+	    points _x _y 
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 3 0 
+	    points _x _y 
+        }
+	if( $howplot == 6 ) {
+	    #------------------------------------
+	    # Black Squares
+            ctype 2
+	    ctype grey70
+            lweight 3
+            expand $($expf*2.0)
+            errorbar _x _y _ey_u  2
+            errorbar _x _y _ey_d  4
+            errorbar _x _y _ex_u  1
+            errorbar _x _y _ex_d  3
+	    expand $($expf*2.5)
+	    ctype 1 
+	    ptype 4 3 
+	    points _x _y 
+            ctype 2 
+	    ctype grey70
+            expand $($expf*3.0)
+            ptype 4 3 
+	    points _x _y 
+        }
+	if( $howplot == 7 ) {
+	    #------------------------------------
+	    # White Squares
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar _x _y _ey_u  2
+            errorbar _x _y _ey_d  4
+            errorbar _x _y _ex_u  1
+            errorbar _x _y _ex_d  3
+	    expand $($expf*2.5)
+	    ctype 1 
+	    ptype 4 3 
+	    points _x _y 
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 4 0 
+	    points _x _y 
+        }
+	if( $howplot == 8 ) {
+	    #------------------------------------
+	    # Starred Squares
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar _x _y _ey_u  2
+            errorbar _x _y _ey_d  4
+            errorbar _x _y _ex_u  1
+            errorbar _x _y _ex_d  3
+	    expand $($expf*2.5)
+	    ctype 1 
+	    ptype 4 3 
+	    points _x _y 
+            expand $($expf*3.0)
+	    ctype 2 
+	    ptype 4 1 
+	    points _x _y 
+            ptype 4 0 
+	    points _x _y 
+        }
+	if( $howplot == 9 ) {
+	    #------------------------------------
+	    # White diamonds 
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar _x _y _ey_u  2
+            errorbar _x _y _ey_d  4
+            errorbar _x _y _ex_u  1
+            errorbar _x _y _ex_d  3
+	    expand $($expf*2.5)
+	    angle 45
+	    ctype 1 
+	    ptype 4 3 
+	    points _x _y 
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 4 0 
+	    points _x _y 
+	    angle 0
+        }
+
+	expand $($expf*1.5)
+	ctype 2 
+
+	echo "-------------------------------- "
+	echo " Plot label ? "
+	echo "  [0] NO "
+	echo "  [1] top left "
+	echo "  [2] bottom left  "
+	define golabel ? { Plot label ? [0/1/2] }
+
+	if( $golabel > 0 ) {
+	  if( $golabel == 1 ) { define poslab "TOP" }
+	  if( $golabel == 2 ) { define poslab "BOTTOM" }
+	  echo $poslab
+	  define ypos ? { Which position from $!!poslab ? [1-7] }
+	  if( $golabel == 1 ) {
+	     relocate ( $($gx1+1600) $($gy2-1250*$ypos) ) 
+	  }
+	  if( $golabel == 2 ) {
+	     relocate ( $($gx1+1600) $($gy1+1250*$ypos) ) 
+	  }
+	  if( $howplot == 1 ) {
+	    # black circle
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 20 3 
+	    dot
+	  }
+	  if( $howplot == 2 ) {
+	    # White Circles
+	    expand $($expf*2.4)
+	    ctype 1 
+	    ptype 20 3
+	    dot
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 20 0 
+            dot
+          }
+	  if( $howplot == 3) {
+	    # Starred circles
+	    expand $($expf*2.4)
+	    ctype 2 
+	    ptype 4 1 
+	    dot
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 20 0 
+            dot
+	  }
+  	  if( $howplot == 4) {
+	    # Black Triangles
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 3 3 
+            dot
+	  }
+	  if( $howplot == 5 ) {
+	    # White Triangles
+	    expand $($expf*2.4)
+	    ctype 1 
+	    ptype 3 3 
+	    dot
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 3 0 
+            dot
+          }
+	  if( $howplot == 6 ) {
+	    # Black Squares
+	    expand $($expf*2.5)
+	    ctype 1 
+	    ptype 4 3 
+	    dot
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 4 3 
+            dot
+          }
+	  if( $howplot == 7 ) {
+	    # White Squares
+	    expand $($expf*2.5)
+	    ctype 1 
+	    ptype 4 3 
+	    dot
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 4 0 
+            dot
+          }
+	  if( $howplot == 8 ) {
+	    # Starred Squares
+	    expand $($expf*2.5)
+	    ctype 1 
+	    ptype 4 3 
+	    dot
+            expand $($expf*3.0)
+	    ctype 2 
+	    ptype 4 1 
+	    dot
+            ptype 4 0 
+            dot
+          }
+	  if( $howplot == 9 ) {
+	    # White diamonds 
+	    expand $($expf*2.5)
+	    angle 45
+	    ctype 1 
+	    ptype 4 3 
+	    dot
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 4 0 
+            dot
+	    angle 0
+          }
+	  define labstr ? { Label ? }
+	  expand $($expf*1.3)
+	  putlabel 6 " "$labstr
+	}
+	expand $saveexp
+
+
+#------------------------------------------------------------------------------
+# cpoints 23  [<ltype>] <x> <y>
+#   plot points and connects them 
+#   If no <ltype> is given, it does not connect the points.
+cpoints 23
+
+        if($?3 == 0) { 
+           # echo " Line type for connection not defined "
+           # echo " Not connecting the points, just plain plot"
+           ltype 0 
+           points $1 $2
+           # define 3 $2 
+           # define 2 $1 
+           # define 1 2
+        } else {
+           ltype $1
+           connect $2 $3
+           ltype 0 
+           points $2 $3
+	} 
+
+#------------------------------------------------------------------------------
+# mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d> <expand>
+## GF 2005.07.28: if color_in is -1, use empty symbols
+mypoints 08
+
+	# if('$1' == '-h' || '$1' == '?' || '$1' == '-help') {
+	if(!$?1) {
+	    echo "usage: mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d> <expand>"
+	    return
+	}
+	if('$1' == '-h' || '$1' == '?' || '$1' == '-help') {
+	    echo "usage: mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d> <expand>"
+	    return
+	}
+	set _x       local
+	set _y       local
+	set _err_y_u local
+	set _err_y_d local
+	define pty   local
+	define cty_i local
+	define cty_o local
+	define exp   local
+
+	define pty     $1
+	define cty_o   $2
+	define cty_i   $3
+	set _x       = $4
+	set _y       = $5
+	set _err_y_u = $6
+	set _err_y_d = $7
+	define exp     $8
+
+	define oldlwe $lweight
+	define oldcty $ctype
+	define oldpty "$ptype"
+	define oldexp $expand
+
+	ctype $cty_o
+	errorbar _x _y _err_y_u 2
+	errorbar _x _y _err_y_d 4
+	if( $cty_i > 0 ) { 
+	   expand $($exp*1.8) ctype $cty_i ptype $pty 3 
+	   points _x _y 
+	}
+	expand $($exp*2.1) ctype $cty_o ptype $pty 0
+	points _x _y 
+
+	ptype   $oldpty
+	ctype   $oldcty
+	lweight $oldlwe
+	expand  $oldexp
+
+#------------------------------------------------------------------------------
+# mypoints2 <ptype> <color_out> <color_in> <x> <y> <expand>
+#                  : IT ASSUMES THAT THE ERROR ARRAYS ARE NAMED AS FOLLOWS
+#                  : for X: err_<x>_u   err_<x>_d
+#                  : for Y: err_<y>_u   err_<y>_d
+## GF 2005.07.28: if color_in is -1, use empty symbols
+##              + changed a bit the expand for the plot and overplot of points
+mypoints2 06
+
+	# if('$1' == '-h' || '$1' == '?' || '$1' == '-help') {
+	if(!$?1) {
+	    echo "usage: mypoints <ptype> <color_out> <color_in> <x> <y> <expand>"
+	    echo ""
+	    echo "     it assumes that the error arrays are named as follows"
+	    echo "     for X: err_<x>_u   err_<x>_d"
+	    echo "     for Y: err_<y>_u   err_<y>_d"
+	    return
+	}
+	if('$1' == '-h' || '$1' == '?' || '$1' == '-help') {
+	    echo "usage: mypoints <ptype> <color_out> <color_in> <x> <y> <expand>"
+	    echo ""
+	    echo "     it assumes that the error arrays are named as follows"
+	    echo "     for X: err_<x>_u   err_<x>_d"
+	    echo "     for Y: err_<y>_u   err_<y>_d"
+	    return
+	}
+	set _x       local
+	set _y       local
+	set _err_x_u local
+	set _err_x_d local
+	set _err_y_u local
+	set _err_y_d local
+	define pty   local
+	define cty_i local
+	define cty_o local
+	define exp   local
+
+	define pty     $1
+	define cty_o   $2
+	define cty_i   $3
+	set _x       = $4
+	set _y       = $5
+	set _err_x_u = err_$4_u
+	set _err_x_d = err_$4_d
+	set _err_y_u = err_$5_u
+	set _err_y_d = err_$5_d
+	define exp     $6
+
+	define oldlwe $lweight
+	define oldcty $ctype
+	define oldpty "$ptype"
+	define oldexp $expand
+
+	ctype $cty_o
+	expand $($exp*0.8) 
+	errorbar _x _y _err_x_u 1
+	errorbar _x _y _err_x_d 3
+	errorbar _x _y _err_y_u 2
+	errorbar _x _y _err_y_d 4
+	if( $cty_i > 0 ) { 
+	   expand $($exp*1.8) ctype $cty_i ptype $pty 3 
+	   points _x _y 
+	}
+	# expand $($exp*1.8) ctype $cty_i ptype $pty 3 
+	# points _x _y 
+	expand $($exp*1.6) ctype $cty_o ptype $pty 0
+	points _x _y 
+
+	ptype   $oldpty
+	ctype   $oldcty
+	lweight $oldlwe
+	expand  $oldexp
+
+#------------------------------------------------------------------------------
+# mypoints_upper <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d> <threshold> <expand>
+mypoints_upper 09
+
+	# if('$1' == '-h' || '$1' == '?' || '$1' == '-help') {
+	if(!$?1) {
+	    echo "usage: mypoints_upper <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d> <threshold> <expand>"
+	    return
+	}
+	if('$1' == '-h' || '$1' == '?' || '$1' == '-help') {
+	    echo "usage: mypoints_upper <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d> <threshold> <expand>"
+	    return
+	}
+
+	foreach name < x xtmp1 xtmp2 > {
+	  set _$name       local
+	} 
+	foreach name < y ytmp1 ytmp2 err_y_u err_y_d err_ytmp1_u err_ytmp1_d err_ytmp2_u err_ytmp2_d > {
+	  set _$name       local
+	} 
+
+	#set _x       local
+	#set _y       local
+	#set _xtmp1   local
+	#set _ytmp1   local
+	#set _err_y_u local
+	#set _err_y_d local
+	define pty   local
+	define cty_i local
+	define cty_o local
+	define exp   local
+
+	define pty     $1
+	define cty_o   $2
+	define cty_i   $3
+	set _x       = $4
+	set _y       = $5
+	set _err_y_u = $6
+	set _err_y_d = $7
+	define limit   $8
+	define exp     $9
+
+	define oldlwe $lweight
+	define oldcty $ctype
+	define oldpty "$ptype"
+	define oldexp $expand
+
+	define upper {{m -10 0 10 0 m 0 0 0 -2000 -200 -1700 0 -1850 200 -1700 0 -2000 }}
+
+	set _xtmp1       = _x        if(  (_y - _err_y_d) >  $limit ) 
+	set _ytmp1       = _y        if(  (_y - _err_y_d) >  $limit ) 
+	set _err_ytmp1_u = _err_y_u  if(  (_y - _err_y_d) >  $limit ) 
+	set _err_ytmp1_d = _err_y_d  if(  (_y - _err_y_d) >  $limit ) 
+	set _xtmp2       = _x        if(  (_y - _err_y_d) <= $limit ) 
+	set _ytmp2       = _y        if(  (_y - _err_y_d) <= $limit ) 
+	set _err_ytmp2_u = _err_y_u  if(  (_y - _err_y_d) <= $limit ) 
+	set _err_ytmp2_d = _err_y_d  if(  (_y - _err_y_d) <= $limit ) 
+
+	ctype $cty_o
+	errorbar _xtmp1 _ytmp1 _err_ytmp1_u 2
+	errorbar _xtmp1 _ytmp1 _err_ytmp1_d 4
+
+	# upper limits 
+	expand $($exp*1.2) ptype $upper
+	points _xtmp2 _ytmp2
+
+	expand $($exp*1.8) ctype $cty_i ptype $pty 3 
+	points _xtmp1 _ytmp1 
+	expand $($exp*2.1) ctype $cty_o ptype $pty 0
+	points _xtmp1 _ytmp1 
+
+	expand $($exp*1.8) ctype $cty_i ptype $pty 3 
+	points _xtmp2 _ytmp2 
+	expand $($exp*2.1) ctype $cty_o ptype $pty 0
+	points _xtmp2 _ytmp2 
+
+	ptype   $oldpty
+	ctype   $oldcty
+	lweight $oldlwe
+	expand  $oldexp
+
+#---------------------------------------------------------------------------
+# myload :  load macros in (second) default directory
+myload 1
+
+        define macro2 :
+        
+        DEFINE macro2 <$macro2>
+
+        if( substr('$1',-3,3) == '.sm' ) {
+              echo " myload: good "
+              define 2 "$1"
+        } else {
+              echo " myload: adding .sm extension to macro name"
+              define 2 "$1.sm"
+              echo $2
+        }
+
+        IF($?macro2) {
+           MACRO READ "$!macro2"$2
+        } ELSE {
+           echo " Directory macro2 is not defined"
+        }
+
+#---------------------------------------------------------------------------
+# mylsm :  list macros in a file in second macro directory
+mylsm 1
+
+        define macro2 :
+        DEFINE macro2 <$macro2>
+
+        if( substr('$1',-3,3) == '.sm' ) {
+              echo " Good"
+              define 2 "$1"
+        } else {
+              echo " Adding .sm extension to macro name"
+              define 2 "$1.sm"
+              # echo $2
+        }
+
+        if($?macro2) {
+           !egrep '^[\\\#]' "$!macro2"$2 | egrep -v \\\#\\\# | less
+        } else {
+           echo " Directory macro2 is not defined"
+        }
+
+##---------------------------------------------------------------------------
+## COLORS STUFF
+##---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+# restore_default_colors
+restore_default_colors
+
+	restore_colors_default
+	
+#---------------------------------------------------------------------------
+# restore_colors_default
+restore_colors_default
+	
+        set xr= {0   255 0   255 0   0   0   255 255}
+        set xg= {0   255 0   0   255 0   255 0   255}
+        set xb= {0   255 0   0   0   255 255 255 0  }
+
+	set dimen(cn) = 9.s
+	set cn= {default white black red green blue cyan magenta yellow}
+                
+	echo " Re-setting standard eight color " 
+        ctype = xr + xg*256 + xb*256*256
+	ctype = cn 
+
+	define NCOLORS 9
+	set colortot = xr + xg*256 + xb*256*256
+	set coldum = colortot
+
+	delete xr
+	delete xg
+	delete xb
+	delete cn 
+
+	echo " Adding more colors "
+	define_even_more_colors
+
+#---------------------------------------------------------------------------
+# soft_colors
+soft_colors
+	
+        set xr= {0   255 0   255 120 120 180 255 255 }
+        set xg= {0   255 0    70 255 120 255 120 207 }
+        set xb= {0   255 0    70 120 255 255 255   0 }
+
+	set dimen(cn) = 9.s
+	set cn= {default white black red green blue cyan magenta yellow}
+                
+        ctype = xr + xg*256 + xb*256*256
+	ctype = cn 
+
+	define NCOLORS 9
+	set colortot = xr + xg*256 + xb*256*256
+	set coldum = colortot
+
+	delete xr
+	delete xg
+	delete xb
+	delete cn 
+
+#---------------------------------------------------------------------------
+# color_map [<N_colors>] [<which map>]
+color_map 12
+
+	define NCOLORS $1
+	#---------------------------------------------
+	# Color stuff
+	#
+        set colours = CTYPE()
+        set cnames  = CTYPE(STRING)
+
+	if($?1) { 
+           set c1dum = 0,255,$(1024/$1)
+           set c2dum = c1dum*0 + 255
+           set c3dum = c1dum*0 
+	} else {
+	   define 1
+           set c1dum = 0,255,$(1024/$1)
+           set c2dum = c1dum*0 + 255
+           set c3dum = c1dum*0 
+	}
+
+	if(!$?2) { 
+	    echo "-----------------------------------"
+	    echo "** Available color palettes:  "
+	    echo "[-1] B&W   ( high is white ) "
+	    echo " [0] B&W   ( high is black ) "
+	    echo " [1] rainbow (black--->yellow) "
+	    echo " [2] rainbow (yellow--->black) "
+	    echo " [3] 'heat' "
+	    echo " [4] cyan-->blue "
+	    echo " [9] MORE "
+	    define mappa ? < Which Palette : >
+	} else {
+	    define mappa $2 
+	} 
+
+	#---- B&W  ( high is white ) ----#
+	#
+	if ( $mappa == -1 ) {
+	   set coldum = 0,255,$(256/$1)
+           ctype = (1 + 256 + 256*256)*coldum
+	   set colortot = (1 + 256 + 256*256)*coldum
+	}
+
+	#---- B&W   ( high is black ) ----#
+	#
+	if ( $mappa == 0 ) {
+	   set coldum = 0,255,$(256/$1)
+           ctype = (1 + 256 + 256*256)*(255-coldum)
+	   set colortot = (1 + 256 + 256*256)*(255-coldum)
+	}
+
+	#---- rainbow (black---->black) ----#
+	#
+	if ( $mappa == 1 ) {
+           set blue  = c1dum       CONCAT (255-c1dum) CONCAT c3dum       CONCAT c1dum
+           set green = c3dum       CONCAT c3dum       CONCAT c1dum       CONCAT c2dum
+           set red   = c3dum       CONCAT c1dum       CONCAT c2dum       CONCAT c2dum 
+        
+           ctype    = red + 256*green + 256*256*blue
+           set cvec = red + 256*green + 256*256*blue
+	   set colortot = cvec
+
+           set coldum = red
+	}
+
+	#---- rainbow (yellow--->black) ----#
+	#
+	if ( $mappa == 2 ) {
+           set blue  = (255-c1dum) CONCAT c3dum       CONCAT c1dum       CONCAT (255-c1dum)
+           set green = c2dum       CONCAT (255-c1dum) CONCAT c3dum       CONCAT c3dum
+           set red   = c2dum       CONCAT c2dum       CONCAT (255-c1dum) CONCAT c3dum 
+        
+           ctype    = red + 256*green + 256*256*blue
+           set cvec = red + 256*green + 256*256*blue
+	   set colortot = cvec
+
+           set coldum = red
+	}
+
+	#---- HEAT ----#
+	#
+	if ( $mappa == 3 ) {
+	   set coldum = 0,255,$(256/$1)
+           ctype = 255 + 256*(255-coldum)
+	   set colortot = 255 + 256*(255-coldum)
+	}
+
+	#---- cyan-->blue ----#
+	#
+	if ( $mappa == 4 ) {
+	   set coldum = 0,255,$(256/$1)
+           ctype = 0 + 256*(255-coldum) + 256*256*255
+	   set colortot = 0 + 256*(255-coldum) + 256*256*255
+	}
+
+	if ( $mappa == 9 ) {
+	   rainbow_mod $1
+	   set coldum = colortot
+           ctype = colortot
+	}
+
+	#---- red --> blue ----#
+	#
+	if ( $mappa == 5 ) {
+	   set coldum = 0,255,$(256/$1)
+           set red   = (255-coldum)
+           set green = coldum*0 + 25
+           set blue  = coldum
+        
+           ctype    = red + 256*green + 256*256*blue
+           set cvec = red + 256*green + 256*256*blue
+	   set colortot = cvec
+
+           set coldum = red
+	}
+
+	#---- 
+	#
+	if ( $mappa == 6 ) {
+           set red   = (255-c1dum) CONCAT c2dum       CONCAT c3dum       CONCAT c3dum 
+           set green = c3dum       CONCAT c1dum       CONCAT (255-c1dum) CONCAT c3dum
+           set blue  = c3dum       CONCAT c3dum       CONCAT c1dum       CONCAT c1dum
+        
+           ctype    = red + 256*green + 256*256*blue
+           set cvec = red + 256*green + 256*256*blue
+	   set colortot = cvec
+
+           set coldum = red
+	}
+
+
+#------------------------------------------------------------------------------
+# rainbow_mod  <#N-colors>
+rainbow_mod 1 
+
+	### echo ------------------------------------------------------
+	### echo First of all give 3 reference values:
+	### echo They need to be:
+	### echo   * yellow-green transition 
+	### echo   * green -blue  transition 
+	### echo   * blue  -black/red/cyan transition 
+	### echo ------------------------------------------------------
+
+	### define sepvar ? <                  Give 3 dividing values : >
+	### set _test = < $sepvar >
+	### if( $(dimen(_test)) != 3 ) {
+	###    echo ERROR: you gave $(dimen(_test)) values!
+	###    define sepvar ?  <                  Give 3 dividing values : >
+	### }
+
+	set sep = < 0 0.25 0.5 0.75 1 >
+
+	echo "---------------------------------------------------------- "
+	echo " *** NOTE: use negative number for inverted color scale "
+	echo "               [1] Green--Blue--black (normal) "
+	echo "               [2] Green--Blue--red "
+	echo "               [3] Green--Blue--cyan "
+	echo "               [4] Green--Magenta--Blue "
+	define whatend ? <             What End of the color scale : >
+
+	define nco $1
+	# define softness ? < Softening parameter : >
+	define softness 0
+
+	define ncoint $($nco/4)
+
+	define dnu1   $($(sep[1])-$(sep[0]))
+	define dnu2   $($(sep[2])-$(sep[1]))
+	define dnu3   $($(sep[3])-$(sep[2]))
+	define dnu4   $($(sep[4])-$(sep[3]))
+	define cstep1 ($dnu1/$ncoint)
+	define cstep2 ($dnu2/$ncoint)
+	define cstep3 ($dnu3/$ncoint)
+	define cstep4 ($dnu4/$ncoint)
+
+	set cdum1=$($(sep[0])+$cstep1),$(sep[1]),$cstep1 
+	set cdum2=$($(sep[1])+$cstep2),$(sep[2]),$cstep2 
+	set cdum3=$($(sep[2])+$cstep3),$(sep[3]),$cstep3 
+	set cdum4=$($(sep[3])+$cstep4),$(sep[4]),$cstep4 
+
+	set c1r = 0*cdum1 + 255
+	set c1g = int((255-$softness)*((cdum1-$(sep[0]))/$dnu1)**0.7)+$softness
+	set c1b = 0*cdum1 + $softness
+
+	set c2r = int((255-$softness)*(($(sep[2])-cdum2)/$dnu2)**0.7)+$softness
+	set c2g = 0*cdum2 + 255
+	set c2b = 0*cdum2 + $softness
+
+	if( $(abs($whatend)) < 4 ) {
+	   set c3r = 0*cdum3 + $softness
+	   set c3g = int((255-$softness)*(($(sep[3]) - cdum3)/$dnu3))+$softness
+	   set c3b = int((255-$softness)*((cdum3 - $(sep[2]))/$dnu3))+$softness
+	}
+
+	if( $(abs($whatend)) == 4 ) {
+	   set c3r = int((255-$softness)*((cdum3 - $(sep[2]))/$dnu3))+$softness
+	   set c3g = int((255-$softness)*(($(sep[3]) - cdum3)/$dnu3))+$softness
+	   set c3b = int((255-$softness)*((cdum3 - $(sep[2]))/$dnu3))+$softness
+	}
+
+	##  given color INcreases
+	## set VEC = int(255*((cdum4 - $(sep[3]))/$dnu4))
+	##
+	##  given color DEcreases
+	## set VEC = int(255*(($(sep[3]) - cdum3)/$dnu3))
+
+	#--- normal end: blue to black ---#
+	if( $(abs($whatend)) == 1 ) {
+	   set c4r = 0*cdum4  
+	   set c4g = 0*cdum4
+	   set c4b = int(255*(($(sep[4]) - cdum4)/$dnu4))
+	}
+
+	#--- RED end: blue to red ---#
+	if( $(abs($whatend)) == 2 ) {
+	   set c4r = int(255*((cdum4 - $(sep[3]))/$dnu4))
+	   set c4g = 0*cdum4
+	   set c4b = int(255*(($(sep[4]) - cdum4)/$dnu4))
+	}
+
+	#--- CYAN end: blue to cyan ---#
+	if( $(abs($whatend)) == 3 ) {
+	   set c4r = 0*cdum4
+	   set c4g = int(255*((cdum4 - $(sep[3]))/$dnu4))
+	   set c4b = 0*cdum4 + 255  ## int(255*(($(sep[4]) - cdum4)/$dnu4))
+	}
+
+	#--- magenta to blue ---#
+	if( $(abs($whatend)) == 4 ) {
+	   set c4r = int(255*(($(sep[4]) - cdum4)/$dnu4)**0.7)
+	   set c4g = 0*cdum4
+	   set c4b = 0*cdum4 + 255  ## int(255*(($(sep[4]) - cdum4)/$dnu4))
+	}
+
+	set ctr = c1r concat c2r concat c3r concat c4r
+	set ctg = c1g concat c2g concat c3g concat c4g
+	set ctb = c1b concat c2b concat c3b concat c4b
+
+	# set color1=255 + 256*int(255*((cdum1-$(sep[0]))/$dnu1))
+	# set color2=int(255*(($(sep[2])-cdum2)/$dnu2)) + 256*255
+	# set color3=256*255*int(($(sep[3])-cdum3)/$dnu3) + 256*256*int(255*((cdum3-$(sep[2]))/$dnu3))
+
+	set cdum     = cdum1  concat cdum2  concat cdum3  concat cdum4
+	# set colortot = color1 concat color2 concat color3 
+
+	set colortot = ctr +256*ctg + 256*256*ctb
+	
+	if( $whatend < 0 ) { 
+	   set _colortot = reverse(colortot)
+	   set colortot = _colortot
+	   delete _colortot
+	}
+
+	# ctype = colortot 
+
+#---------------------------------------------------------------------------
+# old_plot_shaded_dots <x> <y> <color-coding-vec> <expand>
+#         OLD GOOD ONE (TO USE vs. that in 'color_shades.sm')
+old_plot_shaded_dots 34
+
+	if( $even_more_colors_flag ) { 
+	   define even_more_colors_flag (0)
+	   define restore_even_more_colors (1)
+	} else {
+	   define restore_even_more_colors (0)
+	}
+
+	#---------------------------------------------
+	# defining color palette
+	#
+	define ncolpalette ? < Number of colors in the palette : >
+	color_map $ncolpalette
+
+	define save_exp_factor local
+	define save_exp_factor $expand
+
+	if($?4) { define myexp $4 } else { define myexp 1 }
+
+	vecminmax $3 min_for_col max_for_col
+
+	define min_for_col ? <  Minimum value of color coding vector :  >
+	define max_for_col ? <  Maximum value of color coding vector :  >
+
+	#
+	# drawing itself 
+	#
+	echo "---------------------------------------------------------------------- "
+	echo "Now select an exponent to be used in the \$value-color conversion."
+	echo "  eta > 1 : more colors used for the TOP    of the range of \$value"
+	echo "  eta < 1 :                          BOTTOM  "
+	define expo ? { Exponent used in color-mapping ? }
+	set colv = int( (dimen(coldum)-1)*(($3 - $min_for_col)/($max_for_col - $min_for_col))**$expo )
+	echo "colv (color array) DONE"
+
+	lweight 3 
+	do 4=0,$(dimen($1)-1) {
+	    if( $(colv[$4]) <= $(dimen(coldum)-1) ){
+	       ctype $(colv[$4])
+	    } else {
+	       ctype $(dimen(coldum)-1)
+	    }
+
+	    ptype 4 3 expand $(2.0*$myexp) relocate $($1[$4]) $($2[$4]) dot 
+	}
+
+	#---------------------------------------------
+	# Restoring ColorMap
+	#
+	### delete coldum
+        ### echo Restoring ColorMap
+	### restore_colors_default
+
+	### define border "n"
+	### define border ? { Draw dot-borders [y/n] : }
+	### if( substr('$border',0,1) == 'y' ) {
+	### lweight 1
+	### do 4=0,$(dimen($1)-1) {
+	###     ctype 2
+	###     ptype 4 0 expand $(2.1*$myexp) relocate $($1[$4]) $($2[$4]) dot 
+	### }
+	### lweight 3
+	### }
+
+	#---------------------------------------------
+	#
+	#
+	### echo Re-Defining color palette
+	# color_map $ncolpalette $mappa
+	echo " Drawing color scale  "
+
+	## print_scala 4500 29000 $($gy2 +  500) $($gy2 + 1500)
+	print_scala $gx1 $gx2 $($gy2 +  0) $($gy2 + 1000)
+
+	#---------------------------------------------
+	# Restoring ColorMap
+	#
+
+	delete colours
+	delete cnames
+
+	ctype 2 
+
+	define border "n"
+	define border ? < Draw dot-borders [y/n] : >
+	if( substr('$border',0,1) == 'y' ) {
+	lweight 1
+	do 4=0,$(dimen($1)-1) {
+	    ctype 2
+	    ptype 4 0 expand $(2.1*$myexp) relocate $($1[$4]) $($2[$4]) dot 
+	}
+	lweight 3
+	}
+
+	echo " Resetting expand factor... "
+	expand $save_exp_factor 
+
+	if( $restore_even_more_colors ) {
+	   echo " Restoring the extended color map "
+	   define_even_more_colors
+	} 
+
+#---------------------------------------------------------------------------
+# plot_shaded_dots <x> <y> <color-coding-vec> <expand>
+#          NEW GOOD ONE TO USE vs. that in 'color_shades.sm'
+plot_shaded_dots 34
+
+	if( $even_more_colors_flag ) { 
+	   define even_more_colors_flag (0)
+	   define restore_even_more_colors (1)
+	} else {
+	   define restore_even_more_colors (0)
+	}
+
+	#---------------------------------------------
+	# defining color palette
+	#
+	define ncolpalette ? < Number of colors in the palette : >
+	define NCOLORS $ncolpalette
+
+	# gets the current CTYPEs back as vectors for values and strings
+        set colours = CTYPE()
+        set cnames  = CTYPE(STRING)
+
+	#-----------------------------------------------------------
+	# Color stuff
+	# - asks for LUT family and name
+	# - return arrays r,g,b
+	load_lut 
+
+	echo " Remapping LUT to "$ncolpalette" colors "
+	remap_lut $ncolpalette
+
+        set cvec = r + 256*g + 256*256*b
+	set colortot = cvec
+	set coldum = r 
+        ctype = colortot
+
+	#-----------------------------------------------------------
+	define save_exp_factor local
+	define save_exp_factor $expand
+
+	if( $?4 ) { 
+	   define myexp $4 
+	} else {
+	   define myexp 1 
+	}
+
+	vecminmax $3 min_for_col max_for_col
+
+	define min_for_col ? <  Minimum value of color coding vector :  >
+	define max_for_col ? <  Maximum value of color coding vector :  >
+
+	#-----------------------------------------------------------
+	# drawing section
+	#
+	echo "---------------------------------------------------------------------- "
+	echo " * Exponent to be used in the \$value-color conversion."
+	echo "    eta > 1 : more colors used for the TOP    of the range of \$value"
+	echo "    eta < 1 :                          BOTTOM  "
+	define expo ?        <        Exponent used in color-mapping : > 
+
+	set colv = int( (dimen(coldum)-1)*(($3 - $min_for_col)/($max_for_col - $min_for_col))**$expo )
+	echo " * colv (color array) DONE"
+
+	lweight 3 
+	do 4=0,$(dimen($1)-1) {
+	    if( colv[$4] <= $(dimen(coldum)-1) ){
+	       ctype $(colv[$4])
+	    } else {
+	       ctype $(dimen(coldum)-1)
+	    }
+
+	    ptype 4 3 expand $(2.0*$myexp) relocate $($1[$4]) $($2[$4]) dot 
+	}
+
+	#---------------------------------------------
+	echo " Drawing color scale  "
+	define want_color_scale ? <  Plotting color scale [0|1] : >
+	if( $want_color_scale ) { 
+	   print_scala $gx1 $gx2 $($gy2 - 750) $($gy2 + 1000)
+	}
+
+	#---------------------------------------------
+	# Restoring ColorMap
+	#
+	delete colours
+	delete cnames
+
+	ctype 2 
+
+	define border "n"
+	define border ? < Draw dot-borders [y/n] : >
+	if( substr('$border',0,1) == 'y' ) {
+	lweight 1
+	do 4=0,$(dimen($1)-1) {
+	    ctype 2
+	    ptype 4 0 expand $(2.1*$myexp) relocate $($1[$4]) $($2[$4]) dot 
+	}
+	lweight 3
+	}
+
+	echo " Resetting expand factor... "
+	expand $save_exp_factor 
+
+	# It includes 'even_more_colors'
+	restore_colors_default 
+
+	#if( $restore_even_more_colors ) {
+	#   echo " Restoring the extended color map "
+	#   define_even_more_colors
+	#} 
+
+##------------------------------------------------------------------------------
+## print_scala <how much over the boxes in steps of 500>
+## print_scala x1 x2 y1 y2
+print_scala 4
+
+	define saveloc "location $!gx1 $!gx2 $!gy1 $!gy2 limits $!fx1 $!fx2 $!fy1 $!fy2 "
+	echo $saveloc
+
+        expand 1.1
+	ptype 4 3
+
+	location $1 $2 $3 $4
+
+	limits $min_for_col $max_for_col 0 1
+	set by = < 0 0 1 1 0 >
+
+	if($?expo) { define expon $expo }
+
+	set ydum  =$min_for_col,$max_for_col,$(($max_for_col-$min_for_col)/$($NCOLORS))
+	set colv3 =int( (dimen(coldum))*((ydum- $min_for_col)/($max_for_col-$min_for_col))**$expon ) 
+	do i=0,$(dimen(ydum)-2)  {
+	   ctype $i
+	   ctype $(colv3[$i])
+	   define x1 $(ydum[$i])
+	   define x2 $(ydum[$i+1])
+	   set bx = < $x1 $x2 $x2 $x1 $x1 >
+	   shade 5 bx by 
+	}
+
+	restore_colors_default
+	
+	ctype 2
+	ticksize 0 0 0 0 
+	box 0 3 1 3
+
+	echo " Restoring location "
+	$saveloc
+
+#------------------------------------------------------------------------------
+# print_palette
+print_palette
+
+	window 1 1 1 1 
+        expand 1.1
+	ptype 4 3
+
+	define where ? <                 Location [1-5] from top : >
+
+	if($?min_for_col) { 
+	   echo $min_for_col
+	} else {
+	   define min_for_col 0
+	}
+	if($?max_for_col) { 
+	   echo $max_for_col
+	} else {
+	   define max_for_col 1
+	}
+	location 6000 30000 $(30000 - 5000*$where) $(35000 - 5000*$where)
+	limits $min_for_col $max_for_col 0 1
+	set by = < 0 0 1 1 0 >
+
+	if($?expo) { define expon $expo }
+	define expon ? <  Exponent used in data-color conversion : >
+
+	set ydum  =$min_for_col,$max_for_col,$(($max_for_col-$min_for_col)/$($NCOLORS))
+	set colv3 =int( (dimen(coldum))*((ydum- $min_for_col)/($max_for_col-$min_for_col))**$expon ) 
+	do i=0,$(dimen(ydum)-2)  {
+	   ctype $i
+	   ctype $(colv3[$i])
+	   define x1 $(ydum[$i])
+	   define x2 $(ydum[$i+1])
+	   set bx = < $x1 $x2 $x2 $x1 $x1 >
+	   shade 5 bx by 
+	}
+
+	define i y
+	define i ?      <                       Restore colourmap : >
+	if('$i' != 'n') {
+	   restore_colors_default
+	}
+	ctype 2
+	ticksize 0 0 0 0 
+	box 0 3 1 3
+	foreach var sep { 
+	    ltype 2 
+	    relocate $var 0 
+	    draw     $var 1 
+	    ltype 0
+	}
+
+	location 5000 31000 5000 31000
+	ctype 0
+
+#---------------------------------------------------------------------------
+# grelocate <frac-x> <frac-y> : 
+#                   : relocates inside the window at fractional position
+grelocate 2
+
+	relocate (  $($gx1 + $1*($gx2 - $gx1))  $($gy1 + $2*($gy2 - $gy1)) )
+
+#---------------------------------------------------------------------------
+# toplabel
+toplabel 101
+
+	define saveexp local
+	define saveexp $expand
+	relocate ( $(0.5*($gx1+$gx2)) $($gy2 + 750) ) 
+	expand 1.5
+	putlabel 5 $1
+	expand $saveexp
+
+#---------------------------------------------------------------------------
+# fdraw   <frac-x> <frac-y> : 
+#                           : draws segment to fractional position
+fdraw 2
+
+	draw $($fx1 + $1*($fx2 - $fx1))  $($fy1 + $2*($fy2 - $fy1))
+
+#---------------------------------------------------------------------------
+# gdraw_angle <angle> [<length>] 
+#             : draws segment to angle, length as fraction of diagonal box size
+gdraw_angle 12
+
+	if(!$?2) { 
+	   define 2 0.1
+	} 
+	define ll local
+	define ll $( sqrt(($gx2-$gx1)**2+($gy2-$gy1)**2)*$2 )
+	# echo "length : "$ll 
+
+	draw ( $( $xp+cosd($1)*$ll ) $( $yp+sind($1)*$ll ) )
+	
+#---------------------------------------------------------------------------
+# define_even_more_colors
+#   It defines a variable $even_more_colors_flag to flag "its existence"
+define_even_more_colors
+
+	add_ctype snow                 255 250 250
+	add_ctype snow1                255 250 250
+	add_ctype snow2                238 233 233
+	add_ctype snow3                205 201 201
+	add_ctype snow4                139 137 137
+	add_ctype ghostwhite           248 248 255
+	add_ctype whitesmoke           245 245 245
+	add_ctype gainsboro            220 220 220
+	add_ctype floralwhite          255 250 240
+	add_ctype oldlace              253 245 230
+	add_ctype linen                250 240 230
+	add_ctype antiquewhite         250 235 215
+	add_ctype antiquewhite1        255 239 219
+	add_ctype antiquewhite2        238 223 204
+	add_ctype antiquewhite3        205 192 176
+	add_ctype antiquewhite4        139 131 120
+	add_ctype papayawhip           255 239 213
+	add_ctype blanchedalmond       255 235 205
+	add_ctype bisque               255 228 196
+	add_ctype bisque1              255 228 196
+	add_ctype bisque2              238 213 183
+	add_ctype bisque3              205 183 158
+	add_ctype bisque4              139 125 107
+	add_ctype peachpuff            255 218 185
+	add_ctype peachpuff1           255 218 185
+	add_ctype peachpuff2           238 203 173
+	add_ctype peachpuff3           205 175 149
+	add_ctype peachpuff4           139 119 101
+	add_ctype navajowhite          255 222 173
+	add_ctype navajowhite1         255 222 173
+	add_ctype navajowhite2         238 207 161
+	add_ctype navajowhite3         205 179 139
+	add_ctype navajowhite4         139 121  94
+	add_ctype moccasin             255 228 181
+	add_ctype cornsilk             255 248 220
+	add_ctype cornsilk1            255 248 220
+	add_ctype cornsilk2            238 232 205
+	add_ctype cornsilk3            205 200 177
+	add_ctype cornsilk4            139 136 120
+	add_ctype ivory                255 255 240
+	add_ctype ivory1               255 255 240
+	add_ctype ivory2               238 238 224
+	add_ctype ivory3               205 205 193
+	add_ctype ivory4               139 139 131
+	add_ctype lemonchiffon         255 250 205
+	add_ctype lemonchiffon1        255 250 205
+	add_ctype lemonchiffon2        238 233 191
+	add_ctype lemonchiffon3        205 201 165
+	add_ctype lemonchiffon4        139 137 112
+	add_ctype seashell             255 245 238
+	add_ctype seashell1            255 245 238
+	add_ctype seashell2            238 229 222
+	add_ctype seashell3            205 197 191
+	add_ctype seashell4            139 134 130
+	add_ctype honeydew             240 255 240
+	add_ctype honeydew1            240 255 240
+	add_ctype honeydew2            224 238 224
+	add_ctype honeydew3            193 205 193
+	add_ctype honeydew4            131 139 131
+	add_ctype mintcream            245 255 250
+	add_ctype azure                240 255 255
+	add_ctype aliceblue            240 248 255
+	add_ctype lavender             230 230 250
+	add_ctype lavenderblush        255 240 245
+	add_ctype mistyrose            255 228 225
+	add_ctype darkslategrey         47  79  79
+	add_ctype dimgrey              105 105 105
+	add_ctype slategrey            112 128 144
+	add_ctype lightslategrey       119 136 153
+	add_ctype grey                 192 192 192
+	add_ctype lightgray            211 211 211
+	add_ctype midnightblue          25  25 112
+	add_ctype navyblue               0   0 128
+	add_ctype cornflowerblue       100 149 237
+	add_ctype darkslateblue         72  61 139
+	add_ctype slateblue            106  90 205
+	add_ctype mediumslateblue      123 104 238
+	add_ctype lightslateblue       132 112 255
+	add_ctype mediumblue             0   0 205
+	add_ctype royalblue             65 105 225
+	add_ctype dodgerblue            30 144 255
+	add_ctype deepskyblue            0 191 255
+	add_ctype skyblue              135 206 235
+	add_ctype steelblue             70 130 180
+	add_ctype lightsteelblue       176 196 222
+	add_ctype lightblue            173 216 230
+	add_ctype powderblue           176 224 230
+	add_ctype paleturquoise        175 238 238
+	add_ctype darkturquoise          0 206 209
+	add_ctype mediumturquoise       72 209 204
+	add_ctype turquoise             64 224 208
+	add_ctype lightcyan            224 255 255
+	add_ctype cadetblue             95 158 160
+	add_ctype mediumaquamarine     102 205 170
+	add_ctype aquamarine           127 255 212
+	add_ctype darkgreen              0 100   0
+	add_ctype darkolivegreen        85 107  47
+	add_ctype darkseagreen         143 188 143
+	add_ctype seagreen              46 139  87
+	add_ctype mediumseagreen        60 179 113
+	add_ctype lightseagreen         32 178 170
+	add_ctype palegreen            152 251 152
+	add_ctype springgreen            0 255 127
+	add_ctype lawngreen            124 252   0
+	add_ctype chartreuse           127 255   0
+	add_ctype mediumspringgreen      0 250 154
+	add_ctype greenyellow          173 255  47
+	add_ctype limegreen             50 205  50
+	add_ctype yellowgreen          154 205  50
+	add_ctype forestgreen           34 139  34
+	add_ctype olivedrab            107 142  35
+	add_ctype darkkhaki            189 183 107
+	add_ctype khaki                240 230 140
+	add_ctype palegoldenrod        238 232 170
+	add_ctype lightgoldenrodyellow 250 250 210
+	add_ctype lightyellow          255 255 224
+	add_ctype gold                 255 215   0
+	add_ctype lightgoldenrod       238 221 130
+	add_ctype goldenrod            218 165  32
+	add_ctype darkgoldenrod        184 134  11
+	add_ctype rosybrown            188 143 143
+	add_ctype indianred            205  92  92
+	add_ctype saddlebrown          139  69  19
+	add_ctype sienna               160  82  45
+	add_ctype peru                 205 133  63
+	add_ctype burlywood            222 184 135
+	add_ctype beige                245 245 220
+	add_ctype wheat                245 222 179
+	add_ctype sandybrown           244 164  96
+	add_ctype tan                  210 180 140
+	add_ctype chocolate            210 105  30
+	add_ctype firebrick            178  34  34
+	add_ctype brown                165  42  42
+	add_ctype darksalmon           233 150 122
+	add_ctype salmon               250 128 114
+	add_ctype lightsalmon          255 160 122
+	add_ctype orange               255 165   0
+	add_ctype darkorange           255 140   0
+	add_ctype coral                255 127  80
+	add_ctype lightcoral           240 128 128
+	add_ctype tomato               255  99  71
+	add_ctype orangered            255  69   0
+	add_ctype hotpink              255 105 180
+	add_ctype deeppink             255  20 147
+	add_ctype pink                 255 192 203
+	add_ctype lightpink            255 182 193
+	add_ctype palevioletred        219 112 147
+	add_ctype maroon               176  48  96
+	add_ctype mediumvioletred      199  21 133
+	add_ctype violetred            208  32 144
+	add_ctype violet               238 130 238
+	add_ctype plum                 221 160 221
+	add_ctype orchid               218 112 214
+	add_ctype mediumorchid         186  85 211
+	add_ctype darkorchid           153  50 204
+	add_ctype darkviolet           148   0 211
+	add_ctype blueviolet           138  43 226
+	add_ctype purple               160  32 240
+	add_ctype mediumpurple         147 112 219
+	add_ctype thistle              216 191 216
+	add_ctype lavenderblush1       255 240 245
+	add_ctype lavenderblush2       238 224 229
+	add_ctype lavenderblush3       205 193 197
+	add_ctype lavenderblush4       139 131 134
+	add_ctype mistyrose1           255 228 225
+	add_ctype mistyrose2           238 213 210
+	add_ctype mistyrose3           205 183 181
+	add_ctype mistyrose4           139 125 123
+	add_ctype azure1               240 255 255
+	add_ctype azure2               224 238 238
+	add_ctype azure3               193 205 205
+	add_ctype azure4               131 139 139
+	add_ctype slateblue1           131 111 255
+	add_ctype slateblue2           122 103 238
+	add_ctype slateblue3           105  89 205
+	add_ctype slateblue4            71  60 139
+	add_ctype royalblue1            72 118 255
+	add_ctype royalblue2            67 110 238
+	add_ctype royalblue3            58  95 205
+	add_ctype royalblue4            39  64 139
+	add_ctype blue2                  0   0 238
+	add_ctype blue3                  0   0 205
+	add_ctype blue4                  0   0 139
+	add_ctype dodgerblue1           30 144 255
+	add_ctype dodgerblue2           28 134 238
+	add_ctype dodgerblue3           24 116 205
+	add_ctype dodgerblue4           16  78 139
+	add_ctype steelblue1            99 184 255
+	add_ctype steelblue2            92 172 238
+	add_ctype steelblue3            79 148 205
+	add_ctype steelblue4            54 100 139
+	add_ctype deepskyblue1           0 191 255
+	add_ctype deepskyblue2           0 178 238
+	add_ctype deepskyblue3           0 154 205
+	add_ctype deepskyblue4           0 104 139
+	add_ctype skyblue1             135 206 255
+	add_ctype skyblue2             126 192 238
+	add_ctype skyblue3             108 166 205
+	add_ctype skyblue4              74 112 139
+	add_ctype lightskyblue1        176 226 255
+	add_ctype lightskyblue2        164 211 238
+	add_ctype lightskyblue3        141 182 205
+	add_ctype lightskyblue4         96 123 139
+	add_ctype slategray1           198 226 255
+	add_ctype slategray2           185 211 238
+	add_ctype slategray3           159 182 205
+	add_ctype slategray4           108 123 139
+	add_ctype lightsteelblue1      202 225 255
+	add_ctype lightsteelblue2      188 210 238
+	add_ctype lightsteelblue3      162 181 205
+	add_ctype lightsteelblue4      110 123 139
+	add_ctype lightblue1           191 239 255
+	add_ctype lightblue2           178 223 238
+	add_ctype lightblue3           154 192 205
+	add_ctype lightblue4           104 131 139
+	add_ctype lightcyan1           224 255 255
+	add_ctype lightcyan2           209 238 238
+	add_ctype lightcyan3           180 205 205
+	add_ctype lightcyan4           122 139 139
+	add_ctype paleturquoise1       187 255 255
+	add_ctype paleturquoise2       174 238 238
+	add_ctype paleturquoise3       150 205 205
+	add_ctype paleturquoise4       102 139 139
+	add_ctype cadetblue1           152 245 255
+	add_ctype cadetblue2           142 229 238
+	add_ctype cadetblue3           122 197 205
+	add_ctype cadetblue4            83 134 139
+	add_ctype turquoise1             0 245 255
+	add_ctype turquoise2             0 229 238
+	add_ctype turquoise3             0 197 205
+	add_ctype turquoise4             0 134 139
+	add_ctype cyan2                  0 238 238
+	add_ctype cyan3                  0 205 205
+	add_ctype cyan4                  0 139 139
+	add_ctype darkslategray1       151 255 255
+	add_ctype darkslategray2       141 238 238
+	add_ctype darkslategray3       121 205 205
+	add_ctype darkslategray4        82 139 139
+	add_ctype aquamarine1          127 255 212
+	add_ctype aquamarine2          118 238 198
+	add_ctype aquamarine3          102 205 170
+	add_ctype aquamarine4           69 139 116
+	add_ctype darkseagreen1        193 255 193
+	add_ctype darkseagreen2        180 238 180
+	add_ctype darkseagreen3        155 205 155
+	add_ctype darkseagreen4        105 139 105
+	add_ctype seagreen1             84 255 159
+	add_ctype seagreen2             78 238 148
+	add_ctype seagreen3             67 205 128
+	add_ctype seagreen4             46 139  87
+	add_ctype palegreen1           154 255 154
+	add_ctype palegreen2           144 238 144
+	add_ctype palegreen3           124 205 124
+	add_ctype palegreen4            84 139  84
+	add_ctype springgreen1           0 255 127
+	add_ctype springgreen2           0 238 118
+	add_ctype springgreen3           0 205 102
+	add_ctype springgreen4           0 139  69
+	add_ctype green2                 0 238   0
+	add_ctype green3                 0 205   0
+	add_ctype green4                 0 139   0
+	add_ctype green5                 0  90   0
+	add_ctype chartreuse1          127 255   0
+	add_ctype chartreuse2          118 238   0
+	add_ctype chartreuse3          102 205   0
+	add_ctype chartreuse4           69 139   0
+	add_ctype olivedrab1           192 255  62
+	add_ctype olivedrab2           179 238  58
+	add_ctype olivedrab3           154 205  50
+	add_ctype olivedrab4           105 139  34
+	add_ctype darkolivegreen1      202 255 112
+	add_ctype darkolivegreen2      188 238 104
+	add_ctype darkolivegreen3      162 205  90
+	add_ctype darkolivegreen4      110 139  61
+	add_ctype khaki1               255 246 143
+	add_ctype khaki2               238 230 133
+	add_ctype khaki3               205 198 115
+	add_ctype khaki4               139 134  78
+	add_ctype lightgoldenrod1      255 236 139
+	add_ctype lightgoldenrod2      238 220 130
+	add_ctype lightgoldenrod3      205 190 112
+	add_ctype lightgoldenrod4      139 129  76
+	add_ctype lightyellow1         255 255 224
+	add_ctype lightyellow2         238 238 209
+	add_ctype lightyellow3         205 205 180
+	add_ctype lightyellow4         139 139 122
+	add_ctype yellow2              238 238   0
+	add_ctype yellow3              205 205   0
+	add_ctype yellow4              139 139   0
+	add_ctype gold1                255 215   0
+	add_ctype gold2                238 201   0
+	add_ctype gold3                205 173   0
+	add_ctype gold4                139 117   0
+	add_ctype goldenrod1           255 193  37
+	add_ctype goldenrod2           238 180  34
+	add_ctype goldenrod3           205 155  29
+	add_ctype goldenrod4           139 105  20
+	add_ctype darkgoldenrod1       255 185  15
+	add_ctype darkgoldenrod2       238 173  14
+	add_ctype darkgoldenrod3       205 149  12
+	add_ctype darkgoldenrod4       139 101   8
+	add_ctype rosybrown1           255 193 193
+	add_ctype rosybrown2           238 180 180
+	add_ctype rosybrown3           205 155 155
+	add_ctype rosybrown4           139 105 105
+	add_ctype indianred1           255 106 106
+	add_ctype indianred2           238  99  99
+	add_ctype indianred3           205  85  85
+	add_ctype indianred4           139  58  58
+	add_ctype sienna1              255 130  71
+	add_ctype sienna2              238 121  66
+	add_ctype sienna3              205 104  57
+	add_ctype sienna4              139  71  38
+	add_ctype burlywood1           255 211 155
+	add_ctype burlywood2           238 197 145
+	add_ctype burlywood3           205 170 125
+	add_ctype burlywood4           139 115  85
+	add_ctype wheat1               255 231 186
+	add_ctype wheat2               238 216 174
+	add_ctype wheat3               205 186 150
+	add_ctype wheat4               139 126 102
+	add_ctype tan1                 255 165  79
+	add_ctype tan2                 238 154  73
+	add_ctype tan3                 205 133  63
+	add_ctype tan4                 139  90  43
+	add_ctype chocolate1           255 127  36
+	add_ctype chocolate2           238 118  33
+	add_ctype chocolate3           205 102  29
+	add_ctype chocolate4           139  69  19
+	add_ctype firebrick1           255  48  48
+	add_ctype firebrick2           238  44  44
+	add_ctype firebrick3           205  38  38
+	add_ctype firebrick4           139  26  26
+	add_ctype brown1               255  64  64
+	add_ctype brown2               238  59  59
+	add_ctype brown3               205  51  51
+	add_ctype brown4               139  35  35
+	add_ctype salmon1              255 140 105
+	add_ctype salmon2              238 130  98
+	add_ctype salmon3              205 112  84
+	add_ctype salmon4              139  76  57
+	add_ctype lightsalmon1         255 160 122
+	add_ctype lightsalmon2         238 149 114
+	add_ctype lightsalmon3         205 129  98
+	add_ctype lightsalmon4         139  87  66
+	add_ctype orange1              255 165   0
+	add_ctype orange2              238 154   0
+	add_ctype orange3              205 133   0
+	add_ctype orange4              139  90   0
+	add_ctype darkorange1          255 127   0
+	add_ctype darkorange2          238 118   0
+	add_ctype darkorange3          205 102   0
+	add_ctype darkorange4          139  69   0
+	add_ctype coral1               255 114  86
+	add_ctype coral2               238 106  80
+	add_ctype coral3               205  91  69
+	add_ctype coral4               139  62  47
+	add_ctype tomato1              255  99  71
+	add_ctype tomato2              238  92  66
+	add_ctype tomato3              205  79  57
+	add_ctype tomato4              139  54  38
+	add_ctype orangered1           255  69   0
+	add_ctype orangered2           238  64   0
+	add_ctype orangered3           205  55   0
+	add_ctype orangered4           139  37   0
+	add_ctype red2                 238   0   0
+	add_ctype red3                 205   0   0
+	add_ctype red4                 139   0   0
+	add_ctype red5                  90   0   0
+	add_ctype deeppink1            255  20 147
+	add_ctype deeppink2            238  18 137
+	add_ctype deeppink3            205  16 118
+	add_ctype deeppink4            139  10  80
+	add_ctype hotpink1             255 110 180
+	add_ctype hotpink2             238 106 167
+	add_ctype hotpink3             205  96 144
+	add_ctype hotpink4             139  58  98
+	add_ctype pink1                255 181 197
+	add_ctype pink2                238 169 184
+	add_ctype pink3                205 145 158
+	add_ctype pink4                139  99 108
+	add_ctype lightpink1           255 174 185
+	add_ctype lightpink2           238 162 173
+	add_ctype lightpink3           205 140 149
+	add_ctype lightpink4           139  95 101
+	add_ctype palevioletred1       255 130 171
+	add_ctype palevioletred2       238 121 159
+	add_ctype palevioletred3       205 104 137
+	add_ctype palevioletred4       139  71  93
+	add_ctype maroon1              255  52 179
+	add_ctype maroon2              238  48 167
+	add_ctype maroon3              205  41 144
+	add_ctype maroon4              139  28  98
+	add_ctype violetred1           255  62 150
+	add_ctype violetred2           238  58 140
+	add_ctype violetred3           205  50 120
+	add_ctype violetred4           139  34  82
+	add_ctype magenta2             238   0 238
+	add_ctype magenta3             205   0 205
+	add_ctype magenta4             139   0 139
+	add_ctype orchid1              255 131 250
+	add_ctype orchid2              238 122 233
+	add_ctype orchid3              205 105 201
+	add_ctype orchid4              139  71 137
+	add_ctype plum1                255 187 255
+	add_ctype plum2                238 174 238
+	add_ctype plum3                205 150 205
+	add_ctype plum4                139 102 139
+	add_ctype mediumorchid1        224 102 255
+	add_ctype mediumorchid2        209  95 238
+	add_ctype mediumorchid3        180  82 205
+	add_ctype mediumorchid4        122  55 139
+	add_ctype darkorchid1          191  62 255
+	add_ctype darkorchid2          178  58 238
+	add_ctype darkorchid3          154  50 205
+	add_ctype darkorchid4          104  34 139
+	add_ctype purple1              155  48 255
+	add_ctype purple2              145  44 238
+	add_ctype purple3              125  38 205
+	add_ctype purple4               85  26 139
+	add_ctype mediumpurple1        171 130 255
+	add_ctype mediumpurple2        159 121 238
+	add_ctype mediumpurple3        137 104 205
+	add_ctype mediumpurple4         93  71 139
+	add_ctype thistle1             255 225 255
+	add_ctype thistle2             238 210 238
+	add_ctype thistle3             205 181 205
+	add_ctype thistle4             139 123 139
+	add_ctype gray1                  3   3   3
+	add_ctype grey1                  3   3   3
+	add_ctype gray2                  5   5   5
+	add_ctype grey2                  5   5   5
+	add_ctype gray3                  8   8   8
+	add_ctype grey3                  8   8   8
+	add_ctype gray4                 10  10  10
+	add_ctype grey4                 10  10  10
+	add_ctype gray5                 13  13  13
+	add_ctype grey5                 13  13  13
+	add_ctype gray6                 15  15  15
+	add_ctype grey6                 15  15  15
+	add_ctype gray7                 18  18  18
+	add_ctype grey7                 18  18  18
+	add_ctype gray8                 20  20  20
+	add_ctype grey8                 20  20  20
+	add_ctype gray9                 23  23  23
+	add_ctype grey9                 23  23  23
+	add_ctype gray10                26  26  26
+	add_ctype grey10                26  26  26
+	add_ctype gray11                28  28  28
+	add_ctype grey11                28  28  28
+	add_ctype gray12                31  31  31
+	add_ctype grey12                31  31  31
+	add_ctype gray13                33  33  33
+	add_ctype grey13                33  33  33
+	add_ctype gray14                36  36  36
+	add_ctype grey14                36  36  36
+	add_ctype gray15                38  38  38
+	add_ctype grey15                38  38  38
+	add_ctype gray16                41  41  41
+	add_ctype grey16                41  41  41
+	add_ctype gray17                43  43  43
+	add_ctype grey17                43  43  43
+	add_ctype gray18                46  46  46
+	add_ctype grey18                46  46  46
+	add_ctype gray19                48  48  48
+	add_ctype grey19                48  48  48
+	add_ctype gray20                51  51  51
+	add_ctype grey20                51  51  51
+	add_ctype gray21                54  54  54
+	add_ctype grey21                54  54  54
+	add_ctype gray22                56  56  56
+	add_ctype grey22                56  56  56
+	add_ctype gray23                59  59  59
+	add_ctype grey23                59  59  59
+	add_ctype gray24                61  61  61
+	add_ctype grey24                61  61  61
+	add_ctype gray25                64  64  64
+	add_ctype grey25                64  64  64
+	add_ctype gray26                66  66  66
+	add_ctype grey26                66  66  66
+	add_ctype gray27                69  69  69
+	add_ctype grey27                69  69  69
+	add_ctype gray28                71  71  71
+	add_ctype grey28                71  71  71
+	add_ctype gray29                74  74  74
+	add_ctype grey29                74  74  74
+	add_ctype gray30                77  77  77
+	add_ctype grey30                77  77  77
+	add_ctype gray31                79  79  79
+	add_ctype grey31                79  79  79
+	add_ctype gray32                82  82  82
+	add_ctype grey32                82  82  82
+	add_ctype gray33                84  84  84
+	add_ctype grey33                84  84  84
+	add_ctype gray34                87  87  87
+	add_ctype grey34                87  87  87
+	add_ctype gray35                89  89  89
+	add_ctype grey35                89  89  89
+	add_ctype gray36                92  92  92
+	add_ctype grey36                92  92  92
+	add_ctype gray37                94  94  94
+	add_ctype grey37                94  94  94
+	add_ctype gray38                97  97  97
+	add_ctype grey38                97  97  97
+	add_ctype gray39                99  99  99
+	add_ctype grey39                99  99  99
+	add_ctype gray40               102 102 102
+	add_ctype grey40               102 102 102
+	add_ctype gray41               105 105 105
+	add_ctype grey41               105 105 105
+	add_ctype gray42               107 107 107
+	add_ctype grey42               107 107 107
+	add_ctype gray43               110 110 110
+	add_ctype grey43               110 110 110
+	add_ctype gray44               112 112 112
+	add_ctype grey44               112 112 112
+	add_ctype gray45               115 115 115
+	add_ctype grey45               115 115 115
+	add_ctype gray46               117 117 117
+	add_ctype grey46               117 117 117
+	add_ctype gray47               120 120 120
+	add_ctype grey47               120 120 120
+	add_ctype gray48               122 122 122
+	add_ctype grey48               122 122 122
+	add_ctype gray49               125 125 125
+	add_ctype grey49               125 125 125
+	add_ctype gray50               127 127 127
+	add_ctype grey50               127 127 127
+	add_ctype gray51               130 130 130
+	add_ctype grey51               130 130 130
+	add_ctype gray52               133 133 133
+	add_ctype grey52               133 133 133
+	add_ctype gray53               135 135 135
+	add_ctype grey53               135 135 135
+	add_ctype gray54               138 138 138
+	add_ctype grey54               138 138 138
+	add_ctype gray55               140 140 140
+	add_ctype grey55               140 140 140
+	add_ctype gray56               143 143 143
+	add_ctype grey56               143 143 143
+	add_ctype gray57               145 145 145
+	add_ctype grey57               145 145 145
+	add_ctype gray58               148 148 148
+	add_ctype grey58               148 148 148
+	add_ctype gray59               150 150 150
+	add_ctype grey59               150 150 150
+	add_ctype gray60               153 153 153
+	add_ctype grey60               153 153 153
+	add_ctype gray61               156 156 156
+	add_ctype grey61               156 156 156
+	add_ctype gray62               158 158 158
+	add_ctype grey62               158 158 158
+	add_ctype gray63               161 161 161
+	add_ctype grey63               161 161 161
+	add_ctype gray64               163 163 163
+	add_ctype grey64               163 163 163
+	add_ctype gray65               166 166 166
+	add_ctype grey65               166 166 166
+	add_ctype gray66               168 168 168
+	add_ctype grey66               168 168 168
+	add_ctype gray67               171 171 171
+	add_ctype grey67               171 171 171
+	add_ctype gray68               173 173 173
+	add_ctype grey68               173 173 173
+	add_ctype gray69               176 176 176
+	add_ctype grey69               176 176 176
+	add_ctype gray70               179 179 179
+	add_ctype grey70               179 179 179
+	add_ctype gray71               181 181 181
+	add_ctype grey71               181 181 181
+	add_ctype gray72               184 184 184
+	add_ctype grey72               184 184 184
+	add_ctype gray73               186 186 186
+	add_ctype grey73               186 186 186
+	add_ctype gray74               189 189 189
+	add_ctype grey74               189 189 189
+	add_ctype gray75               191 191 191
+	add_ctype grey75               191 191 191
+	add_ctype gray76               194 194 194
+	add_ctype grey76               194 194 194
+	add_ctype gray77               196 196 196
+	add_ctype grey77               196 196 196
+	add_ctype gray78               199 199 199
+	add_ctype grey78               199 199 199
+	add_ctype gray79               201 201 201
+	add_ctype grey79               201 201 201
+	add_ctype gray80               204 204 204
+	add_ctype grey80               204 204 204
+	add_ctype gray81               207 207 207
+	add_ctype grey81               207 207 207
+	add_ctype gray82               209 209 209
+	add_ctype grey82               209 209 209
+	add_ctype gray83               212 212 212
+	add_ctype grey83               212 212 212
+	add_ctype gray84               214 214 214
+	add_ctype grey84               214 214 214
+	add_ctype gray85               217 217 217
+	add_ctype grey85               217 217 217
+	add_ctype gray86               219 219 219
+	add_ctype grey86               219 219 219
+	add_ctype gray87               222 222 222
+	add_ctype grey87               222 222 222
+	add_ctype gray88               224 224 224
+	add_ctype grey88               224 224 224
+	add_ctype gray89               227 227 227
+	add_ctype grey89               227 227 227
+	add_ctype gray90               229 229 229
+	add_ctype grey90               229 229 229
+	add_ctype gray91               232 232 232
+	add_ctype grey91               232 232 232
+	add_ctype gray92               235 235 235
+	add_ctype grey92               235 235 235
+	add_ctype gray93               237 237 237
+	add_ctype grey93               237 237 237
+	add_ctype gray94               240 240 240
+	add_ctype grey94               240 240 240
+	add_ctype gray95               242 242 242
+	add_ctype grey95               242 242 242
+	add_ctype gray96               245 245 245
+	add_ctype grey96               245 245 245
+	add_ctype gray97               247 247 247
+	add_ctype grey97               247 247 247
+	add_ctype gray98               250 250 250
+	add_ctype grey98               250 250 250
+	add_ctype gray99               252 252 252
+	add_ctype grey99               252 252 252
+
+	define even_more_colors_flag 1
+	# echo "pip"
+
+#-------------------------------------------------------------------------------

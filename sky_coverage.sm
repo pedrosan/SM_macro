@@ -1,0 +1,629 @@
+# 2013-02-13 17:16 sky_coverage.sm
+#---------------------------------------------------------------------------
+# read_wga_sub
+read_wga_sub
+
+	data large_WGA_sub.out
+	read { reg 4.s offset 5 vignet 6 exposure 7 cts 8 err_cts 9 sn 10 }
+	read { rate 11 err_rate 12 qflag 14 fx 15 mycts 16 mysn 17 }
+	read { bkg_cts 19 bkg_rate 20 }
+
+#---------------------------------------------------------------------------
+# histo_exp_wga
+histo_exp_wga
+
+	location 6000 31000 7000 31000
+	window 1 1 1 1
+
+	data exp_times.dat
+	read t_exp 4
+	set lg_t_exp = lg(t_exp)
+
+	data exp_times_sky_sel.dat
+	read t_exp_sel 4
+	set lg_t_exp_sel = lg(t_exp_sel)
+
+	define hstep ? { Step of the log(T) histogram ? }
+
+	set x= 1.0+$hstep/2.,6.0+$hstep/2.,$hstep
+
+	set ht   =histogram(lg_t_exp:x)
+	set htsel=histogram(lg_t_exp_sel:x)
+
+	limits x ht 
+	limits x -10 200
+	ticksize -1 0 0 0 
+	ctype 2 expand 1.5
+	box
+	xlabel log(T_{exp}) [sec]
+	ylabel \# of PSPC fields
+
+	ltype 0
+	histogram x ht 
+	ltype 1
+	histogram x htsel 
+	ltype 0
+
+#---------------------------------------------------------------------------
+# sky_wga
+sky_wga	
+
+	define boh ? <* Did you already run "histo_exp_wga" [y/n] : >
+
+	if(substr('$boh',0,1) != 'y') { return }
+
+	location 6000 31000 7000 31000
+	window 1 1 1 1
+
+	data exp_times.dat
+	read t_exp 4
+	set lg_t_exp = lg(t_exp)
+	
+	if(!$?convfac) { define convfac (1.5e-11) }  # 3.e-11 ??
+	define cts4det ?   <                           Counts for detection : >
+	define convfac ?   <     Cts/Sec --> 0.1-2.4 Flux Conversion Factor : >
+	define pspc_area ? <                          PSPC FOV area [deg^2] : >
+
+	set cps     = $cts4det/10.**x
+	set flux    = cps*$convfac
+	set flux    = reverse(flux)
+	set lg_flux = lg(flux)
+	set rht     = reverse(ht)
+	set sky_cum = cumulate(rht)
+	set sky_cum = $pspc_area*sky_cum
+
+	define checkbox ? < Plot box [y/n] : >
+	if(substr('$checkbox',0,1) == 'y' ) { 
+	   limits lg_flux sky_cum
+	   limits -16 -9 sky_cum
+	   ticksize -1 0 0 0 
+	   ctype 2 expand 1.5
+	   box
+	   xlabel "PSPC 0.1-2.4 Flux [erg/cm^2/sec]"
+	   ylabel "Sky Covered [deg^2]"
+	}
+
+	ltype 2 
+	ctype 3 
+	connect  lg_flux sky_cum
+	ltype 0
+	ctype 2 
+	ptype 4 3 
+	points lg_flux sky_cum
+
+#------------------------------------------------------------------------------
+# sky_sigma
+sky_sigma
+	
+	define node ?  <        Node of the sigmoid shape : >
+	define sigma ? < "curvature" of the sigmoid shape : >
+
+	set xsky = -16,-8,0.1
+	set xsky = xsky - $node
+	set ysky = $totalsky*0.5*(1. + $sigma*xsky/sqrt(($sigma*xsky)**2. + 1.))
+
+	ctype 4 
+	connect (xsky+$node) ysky
+
+#---------------------------------------------------------------------------
+# sky_wga_2
+sky_wga_2	
+
+	define boh ? <* Did you already run "histo_exp_wga" [y/n] : >
+
+	if(substr('$boh',0,1) != 'y') { return }
+
+	location 6000 31000 7000 31000
+	window 1 1 1 1
+
+	data exp_times.dat
+	read t_exp 4
+	set lg_t_exp = lg(t_exp)
+	
+	if(!$?convfac) { define convfac (1.5e-11) }  # 3.e-11 ??
+	define cts4det ?   <                           Counts for detection : >
+	define convfac ?   <     Cts/Sec --> 0.1-2.4 Flux Conversion Factor : >
+	define pspc_area ? <                          PSPC FOV area [deg^2] : >
+
+	define newterm ?   < Additional term due to OFFSET re-normalization : >
+
+	set lg_cps  = 0.7*lg($cts4det/10.**x) - 0.7 + $newterm
+	set cps  = 10.**lg_cps
+	set flux = cps*$convfac
+	set flux = reverse(flux)
+	set lg_flux = lg(flux)
+	set rht = reverse(ht)
+	set sky_cum=cumulate(rht)
+	set sky_cum=sky_cum
+	set sky_cum=$pspc_area*sky_cum
+
+	define checkbox ? < Plot box [y/n] : >
+	if(substr('$checkbox',0,1) == 'y' ) { 
+	   limits lg_flux sky_cum
+	   limits -16 -9 sky_cum
+	   limits -16 -9 -50 3000
+	   ticksize -1 0 0 0 
+	   ctype 2 expand 1.5
+	   box
+	   xlabel "PSPC 0.1-2.4 Flux [erg/cm^2/sec]"
+	   ylabel "Sky Covered [deg^2]"
+	}
+
+	ltype 2 
+	ctype 3 
+	connect  lg_flux sky_cum
+	ltype 0
+	ctype 2 
+	ptype 4 3 
+	points lg_flux sky_cum
+
+#---------------------------------------------------------------------------
+# sky_wga_total
+sky_wga_total
+
+	define boh ? <* Did you already run "histo_exp_wga" [y/n] : >
+
+	if(substr('$boh',0,1) != 'y') { return }
+
+	location 6000 31000 7000 31000
+	window 1 1 1 1
+
+	data exp_times.dat
+	read t_exp 4
+	set lg_t_exp = lg(t_exp)
+	
+
+	if(!$?convfac) { define convfac (1.5e-11) }  # 3.e-11 ??
+	define cts4det ?   <                           Counts for detection : >
+	define convfac ?   <     Cts/Sec --> 0.1-2.4 Flux Conversion Factor : >
+	echo "------------------------------"
+	echo "  [1] < 10 arcmin "
+	echo "  [2] < 20 arcmin "
+	echo "  [3] < 30 arcmin "
+	echo "  [4] < 40 arcmin "
+	echo "  [5] < 50 arcmin "
+	define extannulus ? <                    Select encircled area index : >
+	define extannulus ( $extannulus - 1 )
+
+	# set lg_cps  = 0.7*lg($cts4det/10.**x) - 0.7 
+	# set lg_cps  = 0.7*lg($cts4det/10.**x) -0.7 +((x-3.8)/2.5)**2.
+
+	set lg_cps  = -3.45 + 2.2*((x-5.5)/3.4)**2
+
+	set rad1      = { 0       10      20      30      40      }
+	set rad2      = { 10      20      30      40      50      }
+	set pspc_area = { 0.08726 0.26181 0.43633 0.61086 0.78539 }
+	# set newterm   = { 0.0     0.12    0.32    0.53    0.76    }
+	set newterm   = { 0.0     0.07    0.38    0.63    0.88    }
+
+	#
+	# vectors used for the interpolation
+	#
+	set lg_x      = -16,-9,0.1
+	set lg_x      = -16,-9,0.25
+	set sky_total = 0.0*lg_x
+
+	define checkbox ? < Plot box [y/n] : >
+	if(substr('$checkbox',0,1) == 'y' ) { 
+	   limits -16 -9 -50 7500
+	   ticksize -1 0 0 0 
+	   ctype 2 expand 1.5
+	   box
+	   xlabel "PSPC 0.1-2.4 Flux [erg/cm^2/sec]"
+	   ylabel "Sky Covered [deg^2]"
+	}
+
+	ltype 2 
+	ctype 3 
+
+	do 1=0,$extannulus {
+
+	   echo "----------------------------------------------" 
+	   echo "* Doing "$(rad1[$1]) - $(rad2[$1])
+	   echo "* Corona Area : "$(pspc_area[$1]) 
+	   echo "* Magic Term  : "$(newterm[$1])
+
+	   set lg_cps     = lg_cps + $(newterm[$1])
+	   set cps        = 10.**lg_cps
+	   set flux       = cps*$convfac
+	   set flux       = reverse(flux)
+	   set lg_flux    = lg(flux)
+	   set lg_flux_$1 = lg_flux
+
+	   set rht        = reverse(ht)
+	   set sky_cum    = cumulate(rht)
+	   set sky_cum_$1 = $(pspc_area[$1])*sky_cum
+
+	   connect lg_flux_$1 sky_cum_$1
+
+	}
+	ltype 0 
+	ctype 2
+
+	echo "----------------------------------------------"
+	set real_sky = 0*sky_cum_0
+
+	do 1=0,$extannulus {
+	   interp2 lg_flux_$1 sky_cum_$1 lg_x sky_contrib_$1
+	   set sky_total = sky_total + sky_contrib_$1
+	   set real_sky  = real_sky + sky_cum_$1
+	}
+
+	ltype 2 
+	ctype 3 
+	connect lg_x sky_total
+	ltype 0
+	ctype 2 
+	ptype 4 3 
+	points lg_x sky_total
+
+	vecminmax sky_total dum totalsky
+
+	set dimen(flux_out) = $(dimen(sky_total))
+	set dimen(area_out) = $(dimen(sky_total))
+
+	set flux_out[0] = lg_x[0]
+	set area_out[0] = sky_total[0]
+	do 1=1,$(dimen(sky_total)-1) {
+	   set flux_out[$1] = lg_x[$1]
+	   set area_out[$1] = sky_total[$1] - sky_total[$($1-1)]
+	}
+
+#------------------------------------------------------------------------------
+# sky_sigma_2 4	: curvatura | normalizzazione | ascissa del "nodo" | exponente
+sky_sigma_2 4	#
+
+		location 5500 31000 12000 31000
+		ctype 2
+		
+		set ydum = (-0.05*$2) , (1.05*$2) , 23
+
+		ltype 0
+		set a = 0.0,1.0,0.01
+		set f = 3.*a - 1.5 + $3
+		set x = f - $3
+		set y = $2*0.5*(1. + ($1*x)**$4/sqrt(($1*x)**(2*$4) + 1.))
+		limits f -0.05 1.05 
+		ticksize 0.1 1 0 0
+		box
+		connect f y
+
+		ltype 1
+		relocate -25 0 
+		draw 100 0
+		relocate -25 $2
+		draw 100 $2
+		ltype 0
+
+#---------------------------------------------------------------------------
+# sky_gauss
+sky_gauss
+
+	echo ">---------------------------------------------"
+	echo "> integrating a gaussian distribution "
+	echo "> representing exposure times"
+	echo "> "
+	
+	define f_node  ? <  Peak of the Flux Gaussian : >
+	define f_width ? < Width of the Flux Gaussian : >
+
+	if( !$?totalsky ) { 
+	   define totalsky ? < Total Sky : >
+	}
+
+	define f1  -17.0
+	define f2   -8.0
+	set    f = $f1,$f2,0.1
+
+ 	set t1 = (f - $f_node)/(sqrt(2)*$f_width)
+ 	set t2 = erfc(t1)
+ 	set gsky_cum = 1 - t2/2.
+	set gsky_cum = $totalsky*gsky_cum
+
+	lweight 3 
+	ctype 5 
+	ltype 2 
+	connect f gsky_cum
+	ltype 0 
+	ctype 2 
+	lweight 1 
+
+#------------------------------------------------------------------------------
+# sky_compare
+sky_compare
+
+	location 3000 31000 6000 31000
+	limits -14.6 -8.0 -0.1 1.1 
+	ctype 2 
+	expand 1.5
+	lweight 3 
+	ltype 0 
+	ticksize -1 0 0 0 
+	box 1 1 0 4
+	xlabel "0.1-2.4 keV Flux [erg/cm^2/sec]"
+
+	data "/home/gf/Science/Simulations/Deep_Samples/Analytic/file_sky_emss.dat"
+	lines 5 28
+	read { flux_emss 1 darea_emss 2 }
+	set flux_emss=flux_emss - lg(1.1)
+	
+	data "/home/gf/Science/Simulations/Deep_Samples/Analytic/file_sky_sedentary.dat"
+	lines 5 13
+	read { flux_sede 1 darea_sede 2 }
+	
+	data "/home/gf/Science/Simulations/Deep_Samples/Analytic/file_sky_dxrbs.dat"
+	lines 5 23
+	read { flux_dxrbs 1 darea_dxrbs 2 }
+	
+	data "/home/gf/Science/Simulations/Deep_Samples/Analytic/file_sky_rex.dat"
+	lines 5 24
+	read { flux_rex 1 darea_rex 2 }
+	
+	foreach 1 < sede emss dxrbs rex > {
+	   set area_$1  = cumulate(darea_$1)
+	   define tot_$1 $(area_$1[$(dimen(area_$1)-1)])
+	   set narea_$1 = area_$1/$tot_$1
+	}
+
+	ltype 2 
+	ctype 2 
+	foreach 1 < sede emss dxrbs rex > {
+	   connect flux_$1 narea_$1
+	}
+
+	expand 2.0
+	ctype 3 points flux_emss  narea_emss
+	ctype 4 points flux_dxrbs narea_dxrbs
+	ctype 5 points flux_sede  narea_sede
+	ctype 7 points flux_rex   narea_rex  
+	
+	ltype 0
+	expand 1.2
+	angle 90 
+	ctype 3 axis -$(0.1*$tot_emss)  $(1.1*$tot_emss)  0 0 $($gx2)      $gy1 $($gy2-$gy1) 1 4
+	ctype 4 axis -$(0.1*$tot_dxrbs) $(1.1*$tot_dxrbs) 0 0 $($gx2-2000) $gy1 $($gy2-$gy1) 1 4
+	ctype 5 axis -$(0.1*$tot_sede)  $(1.1*$tot_sede)  0 0 $($gx2-4000) $gy1 $($gy2-$gy1) 1 4
+	ctype 7 axis -$(0.1*$tot_rex)   $(1.1*$tot_rex)   0 0 $($gx2-6000) $gy1 $($gy2-$gy1) 1 4
+	angle 0
+
+	ptype 4 3 
+	relocate ( $($gx1 + 1000) $($gy2 - 1000) )
+	ctype 3 expand 3 dot 
+	expand 1.2 putlabel 6 "EMSS"
+	relocate ( $($gx1 + 1000) $($gy2 - 2500) )
+	ctype 4 expand 3 dot 
+	expand 1.2 putlabel 6 "DXRBS"
+	relocate ( $($gx1 + 1000) $($gy2 - 4000) )
+	ctype 5 expand 3 dot 
+	expand 1.2 putlabel 6 "sedentary"
+	relocate ( $($gx1 + 1000) $($gy2 - 5500) )
+	ctype 7 expand 3 dot 
+	expand 1.2 putlabel 6 "REX"
+
+	ctype 2 
+
+#------------------------------------------------------------------------------
+# sky_compare_abs
+sky_compare_abs
+
+	define lorl ? < Lin [1] or Log [2] : >
+	location 4500 31000 6000 31000
+	if( $lorl == 1 ) {
+	   limits -14.6 -9.2 -400 21500
+	   ticksize -1 0 0 0 
+	} else {
+	   limits -14.6 -9.2 $(lg(1)) $(lg(28000))
+	   ticksize -1 0 -1 0 
+	}
+	ctype 2 
+	expand 1.5
+	lweight 3 
+	ltype 0 
+	box 1 1 0 0
+	xlabel "0.1-2.4 keV Flux [erg/cm^2/sec]"
+	ylabel "deg^2"
+
+	data "/home/gf/Science/Simulations/Deep_Samples/Analytic/file_sky_emss.dat"
+	lines 5 28
+	read { flux_emss 1 darea_emss 2 }
+	set flux_emss=flux_emss - lg(1.1)
+	
+	data "/home/gf/Science/Simulations/Deep_Samples/Analytic/file_sky_sedentary.dat"
+	lines 5 13
+	read { flux_sede 1 darea_sede 2 }
+	
+	data "/home/gf/Science/Simulations/Deep_Samples/Analytic/file_sky_dxrbs.dat"
+	lines 5 23
+	read { flux_dxrbs 1 darea_dxrbs 2 }
+	
+	data "/home/gf/Science/Simulations/Deep_Samples/Analytic/file_sky_rex.dat"
+	lines 5 24
+	read { flux_rex 1 darea_rex 2 }
+	
+	foreach 1 < sede emss dxrbs rex > {
+	   set area_$1  = cumulate(darea_$1)
+	   define tot_$1 $(area_$1[$(dimen(area_$1)-1)])
+	   set narea_$1 = area_$1/$tot_$1
+	}
+
+	ltype 2 
+	ctype 2 
+	foreach 1 < sede emss dxrbs rex > {
+	   if( $lorl == 1 ) {
+	      connect flux_$1 area_$1
+	   } else {
+	      connect flux_$1 (lg(area_$1))
+	   }
+	}
+
+	expand 2.0
+	if( $lorl == 1 ) {
+	   ctype 3 points flux_emss  area_emss
+	   ctype 4 points flux_dxrbs area_dxrbs
+	   ctype 5 points flux_sede  area_sede
+	   ctype 7 points flux_rex   area_rex  
+	} else {
+	   ctype 3 points flux_emss  (lg(area_emss))
+	   ctype 4 points flux_dxrbs (lg(area_dxrbs))
+	   ctype 5 points flux_sede  (lg(area_sede))
+	   ctype 7 points flux_rex   (lg(area_rex))
+	}
+	
+	# ltype 0
+	# expand 1.2
+	# angle 90 
+	# ctype 3 axis -$(0.1*$tot_emss)  $(1.1*$tot_emss)  0 0 $($gx2)      $gy1 $($gy2-$gy1) 1 4
+	# ctype 4 axis -$(0.1*$tot_dxrbs) $(1.1*$tot_dxrbs) 0 0 $($gx2-2000) $gy1 $($gy2-$gy1) 1 4
+	# ctype 5 axis -$(0.1*$tot_sede)  $(1.1*$tot_sede)  0 0 $($gx2-4000) $gy1 $($gy2-$gy1) 1 4
+	# ctype 7 axis -$(0.1*$tot_rex)   $(1.1*$tot_rex)   0 0 $($gx2-6000) $gy1 $($gy2-$gy1) 1 4
+	# angle 0
+
+	ptype 4 3 
+	relocate ( $($gx1 + 1000) $($gy2 - 1000) )
+	ctype 3 expand 3 dot 
+	expand 1.2 putlabel 6 "EMSS"
+	relocate ( $($gx1 + 1000) $($gy2 - 2500) )
+	ctype 4 expand 3 dot 
+	expand 1.2 putlabel 6 "DXRBS"
+	relocate ( $($gx1 + 1000) $($gy2 - 4000) )
+	ctype 5 expand 3 dot 
+	expand 1.2 putlabel 6 "sedentary"
+	relocate ( $($gx1 + 1000) $($gy2 - 5500) )
+	ctype 7 expand 3 dot 
+	expand 1.2 putlabel 6 "REX"
+
+	ctype 2 
+
+#---------------------------------------------------------------------------
+# histo_exp_rex
+histo_exp_rex
+
+	location 6000 31000 7000 31000
+	window 1 1 1 1
+
+	data REX_pspc_table.dat
+	read { name 1.s ra1 2.s ra2 3.s ra3 4.s d1 5.s d2 6.s d3 7.s t_exp 8 r_i 9 r_o 10 nh 14 }
+	set lg_t_exp = lg(t_exp)
+
+	define linorlog ? < lin [1] or log [2] : >
+
+
+	if( $linorlog == 1 ) {
+	   define hstep ? < Step of the T histogram : >
+	   set x  = -2000+$hstep/2.,100000+$hstep/2.,$hstep
+	   set ht = histogram(t_exp:x)
+	   limits -5000 80e3 -10 200
+	   ticksize 0 0 0 0 
+	} else {
+	   define hstep ? { Step of the log(T) histogram ? }
+	   set x  = 2.4+$hstep/2.,5+$hstep/2.,$hstep
+	   set ht = histogram(lg_t_exp:x)
+	   limits x -10 200
+	   ticksize -1 0 0 0 
+	} 
+
+	ctype 2 expand 1.5
+	box
+	xlabel "log(T_{exp}) [sec]"
+	ylabel "\# of PSPC fields"
+
+	histogram x ht 
+
+#---------------------------------------------------------------------------
+# sky_rex_total
+sky_rex_total
+
+	define boh ? <* Did you already run "histo_exp_rex" [y/n] : >
+
+	if(substr('$boh',0,1) != 'y') { return }
+
+	location 6000 31000 7000 31000
+	window 1 1 1 1
+
+	data REX_pspc_table.dat
+	read { name 1.s ra1 2.s ra2 3.s ra3 4.s d1 5.s d2 6.s d3 7.s t_exp 8 r_i 9 r_o 10 nh 14 }
+	set lg_t_exp = lg(t_exp)
+
+	set rad1      = { 0       10      20      30      40      }
+	set rad2      = { 10      20      30      40      50      }
+	set pspc_area = 3.141593*(rad2**2. - rad1**2.)/3600
+	set newterm   = { 0.0     0.07    0.38    0.63    0.88    }
+
+	set dimen(a0) = $(dimen(name))
+	set a1 = a0
+	set a2 = a0
+	set a3 = a0
+	set a4 = a0
+
+	do 1=0,$(dimen(name)-1) {
+	   if ( $($1 % 60) == 0 ) { echo    $(int($1/12.02)) % done }
+	   do 2=0,4 {
+	      if( r_i[$1] > rad1[$2] && r_i[$1] < rad2[$2] ) { 
+		 define r1 $(r_i[$1]) 
+	      } else {
+		 define r1 $(rad1[$2])
+	      }
+	      if( r_o[$1] < rad2[$2] ) { 
+		 define r2 $(r_o[$1]) 
+	      } else {
+		 define r2 $(rad2[$2])
+	      }
+	      set a$2[$1] = 3.141593*($r2**2. - $r1**2.)/3600
+	   }
+	}
+
+	sort < t_exp lg_t_exp a0 a1 a2 a3 a4 > 
+
+	if( !$?convfac ) { define convfac (1.5e-11) }  # 3.e-11 ??
+	define convfac ?   <     Cts/Sec --> 0.1-2.4 Flux Conversion Factor : >
+
+	do 1=0,4 { 
+	   set lg_cps_$1 = -3.45 + 2.2*((lg_t_exp - 5.5)/3.4)**2 + newterm[$1]
+	   set flux_$1   = reverse($convfac*10.**(lg_cps_$1))
+	}
+
+	set flux = flux_0 CONCAT flux_1 CONCAT flux_2 CONCAT flux_3 CONCAT flux_4 
+	set area = a0     CONCAT a1     CONCAT a2     CONCAT a3     CONCAT a4 
+	sort < flux area > 
+	set lg_flux = lg(flux)
+	set sky_total = cumulate(area)
+
+	#
+	# vectors used for the interpolation
+	#
+	set lg_x   = -14.5,-11.5,0.10
+	interp2 lg_flux sky_total lg_x sky_step
+
+	define checkbox ? < Plot box [y/n] : >
+	if(substr('$checkbox',0,1) == 'y' ) { 
+	   limits -15 -11 -50 2500
+	   ticksize -1 0 0 0 
+	   ctype 2 expand 1.5
+	   box
+	   xlabel "PSPC 0.1-2.4 Flux [erg/cm^2/sec]"
+	   ylabel "Sky Covered [deg^2]"
+	}
+
+	echo ----------------------------------------------
+	set real_sky = 0*sky_cum_0
+
+	points lg_x sky_step 
+	ltype 2 
+	ctype 3 
+	lweight 3 
+	connect lg_flux sky_total
+	ltype 0
+	ctype 2 
+
+	vecminmax sky_total dum totalsky
+
+	set dimen(flux_out) = $(dimen(sky_step))
+ 	set dimen(area_out) = $(dimen(sky_step))
+	set flux_out[0] = lg_x[0]
+	set area_out[0] = sky_step[0]
+	do 1=1,$(dimen(sky_step)-1) {
+	   set flux_out[$1] = lg_x[$1]
+	   set area_out[$1] = sky_step[$1] - sky_step[$($1-1)]
+	}
+
+#------------------------------------------------------------------------------

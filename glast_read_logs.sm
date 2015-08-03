@@ -1,0 +1,205 @@
+#---------------------------------------------------------------------------
+# read_logs
+read_logs
+
+	define model ? { Model ? [rlbl/peak/xhbl] }
+	define cosmo ? { H_0 [50/75] ? }
+	if( $cosmo == 50 ) { define 4 "PURO" }
+	if( $cosmo == 75 ) { define 4 "h75" }
+
+	if( substr('$model',0,1) == 'r' ) {
+	   define aux "Rlbl" 
+	   set vdata = < Oct08 Oct09 Oct12_peak2 Oct15_peak2 >
+	   define label "Radio / LBL"
+	}
+	if( substr('$model',0,1) == 'p' ) {
+	   define aux "Rpeak" 
+	   set vdata = < Oct08 Oct09 Oct13_peak2 Oct15_peak2 >
+	   define label "Radio / Bolometric"
+	}
+	if( substr('$model',0,1) == 'x' ) {
+	   define aux "Xhbl" 
+	   set vdata = < Oct12_ev Oct12_peak2 Oct13_peak2 Oct15_peak2 >
+	   define label "X-ray / HBL"
+	}
+
+	#-------------------------------------------------------
+	#
+	set veclist = < alldet onlyglast onlyxrm glasttot xrmtot xrmto40 xrmto80 xrmto200 >
+	foreach 1 veclist {
+	   define s1_$1 (0.0)
+	   define s2_$1 (0.0)
+	}
+
+	#-------------------------------------------------------
+	#
+	foreach var vdata {
+	  data survey.$aux.$var.after_glast_$4_01.log
+	  define alldet     read 14  6
+	  define onlyglast  read 15  7
+	  define onlyxrm    read 16  7
+	  define glasttot   read 18  6
+	  define xrmtot     read 19  7
+	  define xrmto40    read 26  9
+	  define xrmto80    read 27  9
+	  define xrmto200   read 27  8
+
+	  define s1_alldet    $($s1_alldet + $alldet)
+	  define s1_onlyglast $($s1_onlyglast + $onlyglast)
+	  define s1_onlyxrm   $($s1_onlyxrm + $onlyxrm)
+	  define s1_glasttot  $($s1_glasttot + $glasttot)
+	  define s1_xrmtot    $($s1_xrmtot + $xrmtot)
+	  define s1_xrmto40   $($s1_xrmto40 + $xrmto40)
+	  define s1_xrmto80   $($s1_xrmto80 + $xrmto80)
+	  define s1_xrmto200  $($s1_xrmto200 + $xrmto200)
+	}
+
+	#-------------------------------------------------------
+	#
+	foreach var vdata {
+	  data survey.$aux.$var.after_glast_$4.log
+	  define alldet     read 14  6
+	  define onlyglast  read 15  7
+	  define onlyxrm    read 16  7
+	  define glasttot   read 18  6
+	  define xrmtot     read 19  7
+	  define xrmto40    read 26  9
+	  define xrmto80    read 27  9
+	  define xrmto200   read 27  8
+
+	  define s2_alldet    $($s2_alldet + $alldet)
+	  define s2_onlyglast $($s2_onlyglast + $onlyglast)
+	  define s2_onlyxrm   $($s2_onlyxrm + $onlyxrm)
+	  define s2_glasttot  $($s2_glasttot + $glasttot)
+	  define s2_xrmtot    $($s2_xrmtot + $xrmtot)
+	  define s2_xrmto40   $($s2_xrmto40 + $xrmto40)
+	  define s2_xrmto80   $($s2_xrmto80 + $xrmto80)
+	  define s2_xrmto200  $($s2_xrmto200 + $xrmto200)
+	}
+
+	echo "-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
+	echo "   Survey of 30000 deg^2"
+	echo "   Model : "$label
+	echo "-------------------------------------------------------"
+	echo "                   IC/sync=0.1   IC/sync=1.0"
+	echo ""
+	echo "    Total       : "$(sprintf('%8.1f      ',$s1_alldet)+sprintf('%8.1f',$s2_alldet))    
+	echo "    Glast-only  : "$(sprintf('%8.1f      ',$s1_onlyglast)+sprintf('%8.1f',$s2_onlyglast))
+	echo "    XRM-only    : "$(sprintf('%8.1f      ',$s1_onlyxrm)+sprintf('%8.1f',$s2_onlyxrm))
+	echo ""   
+	echo "    Fermi       : "$(sprintf('%8.1f      ',$s1_glasttot)+sprintf('%8.1f',$s2_glasttot))
+	echo "    XRM (any E) : "$(sprintf('%8.1f      ',$s1_xrmtot)+sprintf('%8.1f',$s2_xrmtot))
+	echo "    XRM 10- 40  : "$(sprintf('%8.1f      ',$s1_xrmto40)+sprintf('%8.1f',$s2_xrmto40))
+	echo "    XRM 10- 80  : "$(sprintf('%8.1f      ',$s1_xrmto80)+sprintf('%8.1f',$s2_xrmto80))
+	echo "    XRM 10-200  : "$(sprintf('%8.1f      ',$s1_xrmto200)+sprintf('%8.1f',$s2_xrmto200))
+	echo "-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
+
+#---------------------------------------------------------------------------
+# read_logs2
+read_logs2
+
+	define model ? { Model ? [rlbl/peak/xhbl] }
+	define cosmo ? { H_0 [50/75] ? }
+	if( $cosmo == 50 ) { define 4 "PURO" }
+	if( $cosmo == 75 ) { define 4 "h75" }
+
+	if( substr('$model',0,1) == 'r' ) {
+	   define aux "Rlbl" 
+	   set vdata = < Oct08 Oct09 Oct12_peak2 Oct15_peak2 >
+	   define label "Radio / LBL"
+	}
+	if( substr('$model',0,1) == 'p' ) {
+	   define aux "Rpeak" 
+	   set vdata = < Oct08 Oct09 Oct13_peak2 Oct15_peak2 >
+	   define label "Radio / Bolometric"
+	}
+	if( substr('$model',0,1) == 'x' ) {
+	   define aux "Xhbl" 
+	   set vdata = < Oct12_ev Oct12_peak2 Oct13_peak2 Oct15_peak2 >
+	   define label "X-ray / HBL"
+	}
+
+	#-------------------------------------------------------
+	#
+	set veclist = < alldet onlyglast onlyxrm glasttot xrmtot xrmto40 xrmto80 xrmto200 >
+	define s1_nmolt     (0.0)
+	define s2_nmolt     (0.0)
+	foreach 1 veclist {
+	   define s1_$1 (0.0)
+	   define s2_$1 (0.0)
+	}
+
+	#-------------------------------------------------------
+	#
+	foreach var vdata {
+	  data survey.$aux.$var.after_glast_$4_01.log
+	  define nmolt      read  4  4 
+	  define alldet     read 14  4
+	  define onlyglast  read 15  5
+	  define onlyxrm    read 16  5
+	  define glasttot   read 18  4
+	  define xrmtot     read 19  5
+	  define xrmto40    read 26  7
+	  define xrmto80    read 27  7
+	  define xrmto200   read 27  6
+
+	  define s1_nmolt     $($s1_nmolt + $nmolt)
+	  define s1_alldet    $($s1_alldet + $alldet)
+	  define s1_onlyglast $($s1_onlyglast + $onlyglast)
+	  define s1_onlyxrm   $($s1_onlyxrm + $onlyxrm)
+	  define s1_glasttot  $($s1_glasttot + $glasttot)
+	  define s1_xrmtot    $($s1_xrmtot + $xrmtot)
+	  define s1_xrmto40   $($s1_xrmto40 + $xrmto40)
+	  define s1_xrmto80   $($s1_xrmto80 + $xrmto80)
+	  define s1_xrmto200  $($s1_xrmto200 + $xrmto200)
+	}
+
+	#-------------------------------------------------------
+	#
+	foreach var vdata {
+	  data survey.$aux.$var.after_glast_$4.log
+	  define nmolt      read  4  4 
+	  define alldet     read 14  4
+	  define onlyglast  read 15  5
+	  define onlyxrm    read 16  5
+	  define glasttot   read 18  4
+	  define xrmtot     read 19  5
+	  define xrmto40    read 26  7
+	  define xrmto80    read 27  7
+	  define xrmto200   read 27  6
+
+	  define s2_nmolt     $($s2_nmolt + $nmolt)
+	  define s2_alldet    $($s2_alldet + $alldet)
+	  define s2_onlyglast $($s2_onlyglast + $onlyglast)
+	  define s2_onlyxrm   $($s2_onlyxrm + $onlyxrm)
+	  define s2_glasttot  $($s2_glasttot + $glasttot)
+	  define s2_xrmtot    $($s2_xrmtot + $xrmtot)
+	  define s2_xrmto40   $($s2_xrmto40 + $xrmto40)
+	  define s2_xrmto80   $($s2_xrmto80 + $xrmto80)
+	  define s2_xrmto200  $($s2_xrmto200 + $xrmto200)
+	}
+	 
+	foreach 1 veclist {
+	  define s1_$1 $($s1_$1/$s1_nmolt)
+	  define s2_$1 $($s2_$1/$s2_nmolt)
+	}
+
+	echo "-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
+	echo "   Survey of 10000 deg^2"
+	echo "   Model : "$label
+	echo "-------------------------------------------------------"
+	echo "                   IC/sync=0.1   IC/sync=1.0"
+	echo ""
+	echo "    Total       : "$(sprintf('%9.2f      ',$s1_alldet)+sprintf('%9.2f',$s2_alldet))    
+	echo "    Glast-only  : "$(sprintf('%9.2f      ',$s1_onlyglast)+sprintf('%9.2f',$s2_onlyglast))
+	echo "    XRM-only    : "$(sprintf('%9.2f      ',$s1_onlyxrm)+sprintf('%9.2f',$s2_onlyxrm))
+	echo "    "
+	echo "    Fermi       : "$(sprintf('%9.2f      ',$s1_glasttot)+sprintf('%9.2f',$s2_glasttot))
+	echo "    XRM (any E) : "$(sprintf('%9.2f      ',$s1_xrmtot)+sprintf('%9.2f',$s2_xrmtot))
+	echo "    XRM 10- 40  : "$(sprintf('%9.2f      ',$s1_xrmto40)+sprintf('%9.2f',$s2_xrmto40))
+	echo "    XRM 10- 80  : "$(sprintf('%9.2f      ',$s1_xrmto80)+sprintf('%9.2f',$s2_xrmto80))
+	echo "    XRM 10-200  : "$(sprintf('%9.2f      ',$s1_xrmto200)+sprintf('%9.2f',$s2_xrmto200))
+	echo "-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
+	echo $s1_nmolt $s2_nmolt
+
+#---------------------------------------------------------------------------

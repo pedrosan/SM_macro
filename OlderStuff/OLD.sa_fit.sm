@@ -1,0 +1,224 @@
+#---------------------------------------------------------------------------
+# par_read
+par_read
+
+	define case     ? { What scenario [B/Rmr/Xmr/X]  : }
+	define sim      ? { What simulation [1/2/3/4/...]: }
+
+	if( substr('$case',0,1) == 'B' ) {
+	   define filename "B.peak"
+	}
+	if( substr('$case',0,1) == 'R' ) {
+	   define filename "Rmr.lbl"
+	}
+	if( substr('$case',0,1) == 'X' ) {
+	   define filename "$case.hbl"
+	}
+
+	data "./"$case"/F"$sim"/"$filename.model_hint
+	define npar read 4 1 
+	echo  -- N_par = $npar
+	lines 5 $(4+$npar)
+	read parname 1.s
+	set parname = { 'chi2' } CONCAT parname
+
+	data "./"$case"/F"$sim"/"$filename.par_all
+	read {temp 1 costo 2 p1 3 p2 4 p3 5 p4 6 p5 7 }
+	if( $npar >= 6 ) {
+	    read p6  8
+	}
+	if( $npar >= 7 ) {
+	    read p7  9
+	}
+	if( $npar >= 8 ) {
+	    read p8 10
+	}
+	if( $npar >= 9 ) {
+	    read p9 11
+	}
+	set step=1,$(dimen(costo))
+
+	vecminmax costo c1 c2
+	define c2 $($c1+200)
+
+	set p0 = costo
+
+#---------------------------------------------------------------------------
+# par_vs_step
+par_vs_step
+
+	echo ---------------------------------------------
+	do i=0,$npar {
+	   echo  [$i] $(parname[$i])
+	}
+	echo ---------------------------------------------
+	define var ? { Parameter to plot [p#] : }
+	define 1 $var
+
+	location 5500 31500 6000 30000
+	ctype 2 
+	expand 1.5 
+	lweight 3
+	ticksize 0 0 0 0
+	if( $var > 0 ) {
+	   limits step  p$1
+	} else {
+	   limits step -20 500
+	}
+	box
+	expand 2.0
+	xlabel Step
+	# ylabel $(parname[$1])
+	define lab_y ? { Label Y : }
+	ylabel $lab_y
+
+	define color ? { Color : }
+
+	ctype $color 
+	ltype 0
+	lweight 2
+	connect step (p$1) 
+	ctype 2
+
+#---------------------------------------------------------------------------
+# par_vs_costo
+par_vs_costo
+
+	echo ---------------------------------------------
+	do i=0,$npar {
+	   echo  [$i] $(parname[$i])
+	}
+	echo ---------------------------------------------
+	define var ? { Parameter to plot [p#] : }
+	define 1 $var
+
+	location 5500 31500 6000 30000
+	ctype 2 
+	expand 1.5 
+	lweight 3
+	ticksize 0 0 0 0
+	limits (p$1) -5 $c2
+	box
+	expand 2.0
+	xlabel $(parname[$1])
+	ylabel \chi^2
+
+	ltype 0
+	lweight 2
+	ptype 4 3
+	expand 2.0
+	points (p$1) costo if( costo <= $c2 )
+
+#---------------------------------------------------------------------------
+# par_vs_par
+par_vs_par
+
+	echo ---------------------------------------------
+	do i=0,$npar {
+	   echo  [$i] $(parname[$i])
+	}
+	echo ---------------------------------------------
+	define var1 ? { First Parameter  [p#] : }
+	define var2 ? { Second Parameter [p#] : }
+	define 1 $var1
+	define 2 $var2
+
+	location 5500 31500 6000 30000
+	ctype 2 
+	expand 1.5 
+	lweight 3
+	ticksize 0 0 0 0
+	limits (p$1) (p$2)
+	box
+	# xlabel $(parname[$1])
+	# ylabel $(parname[$2])
+	expand 2.0
+	define lab_x ? { Label X : }
+	ylabel $lab_x
+	define lab_y ? { Label Y : }
+	ylabel $lab_y
+
+	ltype 0
+	lweight 2
+	ptype 4 3 
+	expand 2.0
+	points (p$1) (p$2)
+
+#---------------------------------------------------------------------------
+# parchecklim
+parchecklim
+
+	define var ?   { Quantity to plot ?}
+
+	set ydum = $var
+	vecminmax ydum ymin ymax 
+
+	define xmin ?  { Minimum X ?}
+	define xmax ?  { Maximum X ?}
+	define ymin ?  { Minimum Y ?}
+	define ymax ?  { Maximum Y ?}
+	define color ? { Color ? }
+
+	location 5500 31500 9000 30000
+	ctype 2 
+	expand 1.5 
+	lweight 2.5
+	ltype 0
+	ticksize 0 0 0 0
+	limits $xmin $xmax $ymin $ymax 
+	box
+	xlabel Step
+
+	ctype $color
+	lweight 1.5
+	connect step ($var) 
+	ctype 2 
+
+#---------------------------------------------------------------------------
+# avrg_best_par
+avrg_best_par
+
+	set chi2 = costo
+	define 1 < pd0 >
+	set pd0 = p0
+	echo $1
+
+	do 2=1,$npar {
+	    set pd$2 = p$2
+	    define 1 <$1 pd$2 >
+	    # echo $1
+	}
+
+	define list <$1>
+	echo $list
+
+	sort < $1 > 
+
+	define howmany ? { How many data to take for average : }
+
+	foreach 3 < min max avrg sigma > {
+	   set dimen($3) = $($npar+1)
+	   help $3
+	}
+
+	echo  --- par  ---- min ---- max ----
+	do 2=0,$npar {
+	    set tmp$2 = pd$2 if( step <= $howmany )
+	    vecminmax tmp$2 aa bb
+	    set min[$2]  = $aa
+	    set max[$2]  = $bb
+	    stats  tmp$2 mean$2 sigma$2 pip
+	    set avrg[$2]  = $mean$2
+	    set sigma[$2] = $sigma$2
+
+	    # define dum2 $(sprintf('       %8.4f ',$(tmp$2[0])) )
+	    # define dum3 $(sprintf('   %8.4f ',$(tmp$2[$($howmany-1)])))
+	    # define dum4 $(sprintf('    <%8.4f> ',$mean$2))
+	    # define dum5 $(sprintf(' %8.4f ',$sigma$2))
+	    # echo  $(parname[$2]) : $dum2 $dum3 $dum4 $dum5
+	}
+
+	print ' %16s  [%8.4f - %8.4f]    %8.4f +/- %8.4f \n' < parname min max avrg sigma >
+
+
+#---------------------------------------------------------------------------

@@ -1,0 +1,44 @@
+# powpar
+powpar
+
+	location 6000 29000 7000 30000
+	window 1 1 1 1
+
+	ctype 2
+	lweight 2
+	expand 1.5
+
+	define a1      ? {alpha_1 ?}
+	define e_break ? {E_break [keV] ?}
+	define e_peak  ? {E_peak  [keV] ?}
+
+	define fac ( (2 + $a1)/($e_break - $e_peak) )
+	set lg_e=-2,2.1,0.01
+
+	set erat=10.**(lg_e - $lg_e_break)
+	set lg_fac=$beta*lg(1-exp(-erat))
+
+	set a3 = (10.**lg_fac)*$a2 + (1. - 10.**lg_fac)*$a1
+	set lg_f = -a3*lg_e + lg(2.)
+
+	ticksize -1 0 0 0 
+
+	limits lg_e lg_f 
+	ctype 2 
+	box 1 2 0 3
+	connect lg_e lg_f
+
+	limits lg_e aa
+	box 1 3 0 2 
+	ctype 3
+	connect lg_e a3
+	ctype 5
+	connect xx aa
+
+	ctype 2
+	ltype 2
+	relocate 0 -10 
+	draw     0  10
+	ltype 0
+
+#---------------------------------------------------------------------------

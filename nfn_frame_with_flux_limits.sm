@@ -1,0 +1,735 @@
+#--------------------------------------------------------------------------
+# nfn_frame_with_flux_limits 01  [<empty>]
+nfn_frame_with_flux_limits   01
+
+	lweight 3
+	ctype 2
+	ltype 0
+	location 5500 31000 7500 28000
+
+	# limits 8.5 18.2 -14.2 -9.2
+	limits 8.5 18.9 -15.2 -10.2
+	# limits 8.5 27.3 -16.1 -8.8
+	limits 8.5 25.8 -16.1 -7.8
+	ticksize 0.5 2 0.25 1
+	expand 1.25
+	box
+	xlabel log(\\nu) [Hz]
+	ylabel log(\\nu F_{\\nu}) [erg/cm^2/s]
+
+	if ('$1' != 'empty') {
+	   expand 1.2
+	   ptype 4 3
+	   points vnu5   lg_nf_radio
+	   points vnumm  lg_nf_mm
+	   points vnuir  lg_nf_ir
+	   points vnuopt lg_nf_opt
+	   points vnux   lg_nf_x
+	}
+
+	#------------------------------------------------------------
+	# geometry settings
+	#------------------------------------------------------------
+	define wherelabel1 ? < Where to print top labels [i|o] : >
+	if( substr('$wherelabel1',0,1) == 'o' ) {
+	   define dgy1 (350)
+	   define codeputlab (6)
+	   define lab_gy0 (3000)
+	} else {
+	   define dgy1 (-350)
+	   define codeputlab (4)
+	   define lab_gy0 (3000)
+	}
+
+	define dfy (0.2)
+	define dgy (350)
+	define lab_ang (90)
+	define saveexp $expand
+	expand 0.9
+	angle $lab_ang
+
+	#------------------------------------------------------------
+	# @5GHz : 50 mJy, 1 Jy 
+	#------------------------------------------------------------
+	set dxvec    = -0.1,0.1,0.05
+	set dxvec_r  = dxvec
+	define lim_nur $(lg(5e9))
+	define lim_fr1 $(lg(50e-26*5e9))   # 50 mJy
+	define lim_fr1 $(lg(35e-26*5e9))   # 35 mJy
+	define lim_fr2 $(lg( 1e-23*5e9))    #  1 Jy
+	define lim_nu $lim_nur
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy2 + $dgy1) )
+	angle $lab_ang
+	putlabel $codeputlab "5 GHz"
+	angle 0
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 - $lab_gy0 - 4.*$dgy) )
+	putlabel 6 35 mJy
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 - $lab_gy0 - $dgy) )
+	putlabel 6 1 Jy
+
+	# Radio: 8.4 GHz
+	define lim_nur2 $(lg(8.4e9))
+	define lim_fr21 $(lg(200e-26*8.4e9))   # 200 mJy @8.4GHz
+	define lim_nu $lim_nur2
+	angle $lab_ang
+	ctype grey80
+	## relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy2 + $dgy1) )
+	## putlabel $codeputlab "8.4 GHz"
+	## angle 0
+	## relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 - $lab_gy0 - 2.5*$dgy) )
+	## putlabel $codeputlab " 200 mJy"
+
+	#------------------------------------------------------------
+	# Planck 60 GHz
+	#------------------------------------------------------------
+	define color_planck "olivedrab"
+	define color_planck "forestgreen"
+	set dxvec_planck  = dxvec
+	define lim_nuplanck $(lg(60e9))
+	define lim_fplanck  $(lg(200e-26) + $lim_nuplanck)   #   200 mJy
+	define lim_nu $lim_nuplanck
+	angle $lab_ang
+	#ctype 7
+	ctype $color_planck
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy2 + $dgy1) )
+	putlabel $codeputlab Planck
+	angle 0
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 + 2250) )
+	putlabel 6 "200 mJy"
+	## relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 - $lab_gy0 - $dgy) )
+	## putlabel 5 " 3 mJy"
+
+	#------------------------------------------------------------
+	# LMT @ 1mm
+	#------------------------------------------------------------
+	define color_lmt "darkorange"
+	set dxvec_lmt  = dxvec
+	define lim_nulmt $(lg(3e8/1e-3))
+	define lim_flmt  $(lg(10e-26) + $lim_nulmt)   #   10 mJy
+	define lim_nu $lim_nulmt
+	angle $lab_ang
+	ctype $color_lmt
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) -400 ) $($gy2 + $dgy1) )
+	putlabel $codeputlab LMT
+	angle 0
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 + 1500) )
+	putlabel 6 "10 mJy"
+	## relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 - $lab_gy0 - $dgy) )
+	## putlabel 5 " 3 mJy"
+
+	#------------------------------------------------------------
+	# ALMA 
+	#------------------------------------------------------------
+	define color_alma "red"
+	set dxvec_alma  = dxvec
+	define lim_nualma $(lg(400e9))
+	define lim_falma  $(lg(0.37e-26) + $lim_nualma)   # 0.37 mJy (1 minute!)
+	define lim_nu $lim_nualma
+	angle $lab_ang
+	ctype $color_alma
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy2 + $dgy1) )
+	putlabel $codeputlab ALMA
+	angle 0
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 +  750) )
+	putlabel 6 "0.4 mJy"
+
+	#------------------------------------------------------------
+	# mm: 2.1 mm
+	#------------------------------------------------------------
+	set dxvec_mm  = dxvec
+	define lim_numm1 $(lg(3e8/2.1e-3)) 
+	define lim_ffmm1 $(lg(3e-26) + $lim_numm1)   #   3 mJy
+	define lim_nu $lim_numm1
+	angle $lab_ang
+	ctype grey80
+	## relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy2 + $dgy1) )
+	## putlabel $codeputlab 2.1 mm 
+	## angle 0
+	## relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 - $lab_gy0 - $dgy) )
+	## putlabel 5 " 3 mJy"
+
+	#------------------------------------------------------------
+	# FIR: 150 microns
+	#------------------------------------------------------------
+	set dxvec_fir  = dxvec
+	define lim_nufir2 $(lg(3e8/150e-6)) 
+	define lim_ffir21 $(lg(31e-26) + $lim_nufir2)   #   31 mJy
+	define lim_nu $lim_nufir2
+	angle $lab_ang
+	ctype grey80
+	## relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy2 + $dgy1) )
+	## putlabel $codeputlab 150 \mu m
+	## angle 0
+	## relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 - $lab_gy0 - $dgy) )
+	## putlabel 5 " 31 mJy"
+
+	#------------------------------------------------------------
+	# FIR: 10 microns
+	#------------------------------------------------------------
+	define lim_nufir1 $(lg(3e8/10e-6))   
+	define lim_ffir11 $(lg(50e-26) + $lim_nufir1)   #   50 mJy
+	define lim_nu $lim_nufir1
+	angle $lab_ang
+	ctype grey80
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy2 + $dgy1) )
+	# putlabel $codeputlab 10 \mu m
+
+	#------------------------------------------------------------
+	# IRAS
+	#------------------------------------------------------------
+	set dxvec_iras  = dxvec
+	define lim_nuiras1 $(lg(3e8/100.0e-6)) 
+	define lim_nuiras2 $(lg(3e8/ 60.0e-6)) 
+	define lim_nuiras3 $(lg(3e8/ 25.0e-6)) 
+	define lim_nuiras4 $(lg(3e8/ 12.0e-6)) 
+	define lim_iras1   $(lg(1.0* 1.0e-23) + $lim_nuiras1)   # 100 microns
+	define lim_iras2   $(lg(1.0* 0.6e-23) + $lim_nuiras2)   #  60 microns
+	define lim_iras3   $(lg(1.0* 0.5e-23) + $lim_nuiras3)   #  25 microns
+	define lim_iras4   $(lg(1.0* 0.4e-23) + $lim_nuiras4)   #  12 microns
+	set nuvec_iras   = < $lim_nuiras1 $lim_nuiras2  $lim_nuiras3  $lim_nuiras4 >
+	set limvec_iras  = < $lim_iras1   $lim_iras2    $lim_iras3    $lim_iras4 >
+
+	define lim_nu $lim_nuiras2
+	angle $lab_ang
+	ctype grey80
+	ctype grey40
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy2 + $dgy1) )
+	# putlabel $codeputlab 4 \mu m
+	putlabel $codeputlab IRAS
+
+	#------------------------------------------------------------
+	# WISE
+	#------------------------------------------------------------
+	define color_wise "olivedrab"
+	define color_wise "forestgreen"
+	set dxvec_wise  = dxvec
+	define lim_nuwise1 $(lg(3e8/23.0e-6)) 
+	define lim_nuwise2 $(lg(3e8/12.0e-6)) 
+	define lim_nuwise3 $(lg(3e8/ 4.7e-6)) 
+	define lim_nuwise4 $(lg(3e8/ 3.3e-6)) 
+	define lim_wise1   $(lg(2.0*2600e-29) + $lim_nuwise1)   # 23   microns
+	define lim_wise2   $(lg(2.0* 650e-29) + $lim_nuwise2)   # 12   microns
+	define lim_wise3   $(lg(2.0* 160e-29) + $lim_nuwise3)   #  4.7 microns
+	define lim_wise4   $(lg(2.0* 120e-29) + $lim_nuwise4)   #  3.3 microns
+	set nuvec_wise   = < $lim_nuwise1 $lim_nuwise2  $lim_nuwise3  $lim_nuwise4 >
+	set limvec_wise  = < $lim_wise1   $lim_wise2    $lim_wise3    $lim_wise4 >
+
+	define lim_nu $lim_nuwise2
+	angle $lab_ang
+	ctype grey80
+	ctype 4
+	ctype $color_wise
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy2 + $dgy1) )
+	# putlabel $codeputlab 4 \mu m
+	putlabel $codeputlab WISE
+
+	#------------------------------------------------------------
+	# FIR: 4 microns 
+	#------------------------------------------------------------
+	set dxvec_ir  = dxvec
+	define lim_nuir $(lg(3e8/4e-6)) 
+	define lim_fir1 $(lg( 23e-29) + $lim_nuir)   #   5 microJy
+	define lim_fir2 $(lg( 23e-29) + $lim_nuir)   #  20 microJy  (T=12x6s, mid BG, 10-sigma)
+	define lim_nu $lim_nuir
+	# angle $lab_ang
+	# ctype grey80
+	# ctype 5
+	# relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy2 + $dgy1) )
+	# putlabel $codeputlab 4 \mu m
+	# putlabel $codeputlab IRAC
+
+	#------------------------------------------------------------
+	# Spitzer/IRAC : 4 microns (pseudo IRAC)
+	#------------------------------------------------------------
+	define color_irac "blue"
+	set dxvec_irac = dxvec
+	define lim_nuirac $(lg(3e8/4e-6)) 
+	define lim_firac1 $(lg( 23e-29) + $lim_nuirac)   #  23 microJy  (T=12x6s, mid BG, 10-sigma)
+	define lim_firac2 $(lg(110e-29) + $lim_nuirac)   # 115 microJy  (T=12x6s, mid BG, 10-sigma)
+	define lim_nu $lim_nuirac
+	angle $lab_ang
+	ctype grey80
+	ctype $color_irac
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy2 + $dgy1) )
+	putlabel $codeputlab IRAC
+
+	#------------------------------------------------------------
+	# IR: H band
+	#------------------------------------------------------------
+	#define magH (17.0)
+	# foreach 9 < 15.1 17.0 > { 
+	foreach 9 < 15.1 > { 
+           define magH $9
+           define lim_nuH $(lg(3e8/1.66e-6)) 
+           define lim_fH1 $(lg(1024*10**(-0.4*$magH)*1e-23) + $lim_nuH)  # magH
+           define lim_nu $lim_nuH
+           angle $lab_ang
+           ctype grey80
+           ## relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy2 + $dgy1) )
+           ## putlabel $codeputlab "H band"
+           ## angle 0
+           ## relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 - $lab_gy0 - $dgy) )
+           ## putlabel 5 "$!magH"
+	}
+
+	#------------------------------------------------------------
+	# 2MASS
+	#------------------------------------------------------------
+	define color_2mass "firebrick"   # indianred
+	set dxvec_2mass = dxvec
+	define lim_nu2mass1 $(lg(3e8/2.159e-6)) 
+	define lim_nu2mass2 $(lg(3e8/1.662e-6)) 
+	define lim_nu2mass3 $(lg(3e8/1.235e-6)) 
+	define lim_2mass1   $(lg( 667*10**(-0.4*14.3)) - 23 + $lim_nu2mass1 )  # K
+	define lim_2mass2   $(lg(1024*10**(-0.4*15.1)) - 23 + $lim_nu2mass2 )  # H
+	define lim_2mass3   $(lg(1594*10**(-0.4*15.8)) - 23 + $lim_nu2mass3 )  # J
+	set nuvec_2mass   = < $lim_nu2mass1 $lim_nu2mass2  $lim_nu2mass3  >
+	set limvec_2mass  = < $lim_2mass1   $lim_2mass2    $lim_2mass3    >
+
+	define lim_nu $lim_nu2mass2
+	angle $lab_ang
+	ctype grey80
+	ctype $color_2mass
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy2 + $dgy1) )
+	# putlabel $codeputlab 4 \mu m
+	putlabel $codeputlab 2MASS
+
+	#------------------------------------------------------------
+	# Optical: V band
+	#------------------------------------------------------------
+	set dxvec_o = dxvec
+	define lim_nuo (14.736)
+	# define lim_fo1 $(lg(3480*10**(-0.4*17.0)*1e-23*6e14))   # 17.0
+	# define lim_fo2 $(lg(3480*10**(-0.4*17.5)*1e-23*6e14))   # 17.5
+	# define lim_fo3 $(lg(3480*10**(-0.4*19.0)*1e-23*6e14))   # 19.0
+	# define lim_fo4 $(lg(3480*10**(-0.4*20.0)*1e-23*6e14))   # 20.0
+	# set nuvec_opt   = < $lim_nuo $lim_nuo  $lim_nuo  $lim_nuo >
+	# set limvec_opt  = < $lim_fo1 $lim_fo2  $lim_fo3  $lim_fo4 >
+	define lim_fo1 $(lg(3480*10**(-0.4*18.0)*1e-23*6e14))   
+	define lim_fo2 $(lg(3480*10**(-0.4*19.0)*1e-23*6e14))   
+	define lim_fo3 $(lg(3480*10**(-0.4*20.0)*1e-23*6e14))   
+	# define lim_fo4 $(lg(3480*10**(-0.4*17.0)*1e-23*6e14))   
+	set nuvec_opt   = < $lim_nuo $lim_nuo $lim_nuo > ## $lim_nuo >
+	set limvec_opt  = < $lim_fo1 $lim_fo2 $lim_fo3 > ## $lim_fo4 >
+	
+	define lim_nu $lim_nuo
+	angle $lab_ang
+	ctype 2
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy2 + $dgy1) )
+	putlabel $codeputlab "V band"
+	angle 0
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 - $lab_gy0 -   $dgy) )
+	putlabel 6 "18.0"
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 - $lab_gy0 - 3*$dgy) )
+	putlabel 6 "19.0"
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 - $lab_gy0 - 5*$dgy) )
+	putlabel 6 "20.0"
+	# relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 - $lab_gy0 - 7*$dgy) )
+	# putlabel 6 "20.0"
+
+	#------------------------------------------------------------
+	# X-ray: 1 keV
+	#------------------------------------------------------------
+	set dxvec_x = -0.3,0.3,0.05
+	define lim_nux (17.384)
+	define lim_fx1 $(lg(2e-12))  # 2e-12
+	define lim_fx2 $(lg(4e-13))  # 4e-13
+	define lim_fx3 $(lg(5e-14))  # 5e-14
+	define lim_nu $lim_nux
+	angle $lab_ang
+	ctype 2 
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy2 + $dgy1) )
+	putlabel $codeputlab "1 keV"
+	angle 0
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 - $lab_gy0 - $dgy) )
+	putlabel 5 "2e-12"
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 - $lab_gy0 - 3*$dgy) )
+	putlabel 5 "4e-13"
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 - $lab_gy0 - 5*$dgy) )
+	putlabel 5 "5e-14"
+
+	#------------------------------------------------------------
+	# Fermi/LAT
+	#------------------------------------------------------------
+	define color_GeV "olivedrab"
+	define color_GeV "forestgreen"
+	set dxvec_GeV = -0.3,0.5,0.05
+	define lim_nuGeV (23.384)
+	define lim_fGeV $(lg(2e-12))  # 1e-12
+	define lim_nu $lim_nuGeV
+	angle $lab_ang
+	ctype 7 
+	ctype $color_GeV
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy2 + $dgy1) )
+	putlabel $codeputlab Fermi
+	angle 0
+	relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 + 1000) )
+	putlabel 5 "1-year"
+	# relocate ( $( $gx1 + ($gx2-$gx1)*(($lim_nu-$fx1)/($fx2-$fx1)) ) $($gy1 - $lab_gy0 - $dgy) )
+	# putlabel 5 "2e-12"
+
+	#------------------------------------------------------------
+	
+	expand $saveexp
+	angle 0
+
+	# set nuvec1  = < $lim_nur $lim_nur $lim_nuo $lim_nuo $lim_nuo $lim_nuo $lim_nux $lim_nux $lim_nux >
+	# set limvec1 = < $lim_fr1 $lim_fr2 $lim_fo1 $lim_fo2 $lim_fo3 $lim_fo4 $lim_fx1 $lim_fx2 $lim_fx3 >
+	# set nuvec2  = < $lim_nur2 $lim_nufir1 $lim_nufir2 $lim_nuir $lim_nuir $lim_nuH >
+	# set limvec2 = < $lim_fr21 $lim_ffir11 $lim_ffir21 $lim_fir1 $lim_fir2 $lim_fH1 >
+	set nuvec1  = < $lim_nur $lim_nur > CONCAT nuvec_opt  
+	set limvec1 = < $lim_fr1 $lim_fr2 > CONCAT limvec_opt 
+	set nuvec2  = < $lim_nuir $lim_nuir $lim_nuH > CONCAT nuvec_iras  
+	set limvec2 = < $lim_fir1 $lim_fir2 $lim_fH1 > CONCAT limvec_iras 
+	# set nuvec2  = < $lim_numm1 $lim_nur2 $lim_nufir2 $lim_nuir $lim_nuir $lim_nuH >
+	# set limvec2 = < $lim_ffmm1 $lim_fr21 $lim_ffir21 $lim_fir1 $lim_fir2 $lim_fH1 >
+
+	set nuvec_hi1  = nuvec_wise   # CONCAT < $lim_nuirac >
+	set limvec_hi1 = limvec_wise  # CONCAT < $lim_firac >
+
+	set nuvec_hi2  = < $lim_nuirac $lim_nuirac >
+	set limvec_hi2 = < $lim_firac1 $lim_firac2 >
+
+	set nuvec_planck  = < $lim_nuplanck > 
+	set limvec_planck = < $lim_fplanck  > 
+
+	set nuvec_alma  = < $lim_nualma > 
+	set limvec_alma = < $lim_falma  > 
+
+	set nuvec_lmt  = < $lim_nulmt > 
+	set limvec_lmt = < $lim_flmt  > 
+
+	set nuvec_r  = < $lim_nur $lim_nur > 
+	set limvec_r = < $lim_fr1 $lim_fr2 > 
+
+	set nuvec_x  = < $lim_nux $lim_nux $lim_nux >  
+	set limvec_x = < $lim_fx1 $lim_fx2 $lim_fx3 >
+
+	set nuvec_GeV  = < $lim_nuGeV >
+	set limvec_GeV = < $lim_fGeV >
+	#----------------------------------------
+
+	ltype 1
+	connect nuvec_r   limvec_r
+	connect nuvec_opt limvec_opt
+	connect nuvec_x   limvec_x   
+	ltype 0
+	set nuvec_hi3  = nuvec_2mass
+	set limvec_hi3 = limvec_2mass
+
+	ptype 4 3 
+	ctype 2 
+	do i=0,$(dimen(nuvec_x)-1) {
+	   foreach dx dxvec_x {
+	      relocate $(nuvec_x[$i] + $dx) $(limvec_x[$i])
+	      dot
+	   }
+	}
+
+	do i=0,$(dimen(nuvec1)-1) {
+	   foreach dx dxvec {
+	      relocate $(nuvec1[$i] + $dx) $(limvec1[$i])
+	      dot
+	   }
+	}
+
+	ctype grey80
+	ctype grey40
+	do i=0,$(dimen(nuvec2)-1) {
+	   foreach dx dxvec {
+	      relocate $(nuvec2[$i] + $dx) $(limvec2[$i])
+	      dot
+	   }
+	}
+
+	# Planck
+	ctype 7
+	ctype $color_planck
+	do i=0,$(dimen(nuvec_planck)-1) {
+	   foreach dx dxvec_planck {
+	      relocate $(nuvec_planck[$i] + $dx) $(limvec_planck[$i])
+	      dot
+	   }
+	}
+
+	# LMT
+	ctype $color_lmt
+	do i=0,$(dimen(nuvec_lmt)-1) {
+	   foreach dx dxvec_lmt {
+	      relocate $(nuvec_lmt[$i] + $dx) $(limvec_lmt[$i])
+	      dot
+	   }
+	}
+
+	# ALMA
+	ctype $color_alma
+	do i=0,$(dimen(nuvec_alma)-1) {
+	   foreach dx dxvec_alma {
+	      relocate $(nuvec_alma[$i] + $dx) $(limvec_alma[$i])
+	      dot
+	   }
+	}
+
+	# ctype lawngreen
+	# ctype forestgreen
+	ctype $color_wise
+	do i=0,$(dimen(nuvec_hi1)-1) {
+	   foreach dx dxvec {
+	      relocate $(nuvec_hi1[$i] + $dx) $(limvec_hi1[$i])
+	      dot
+	   }
+	}
+
+	ctype 5
+	ctype $color_irac
+	do i=0,$(dimen(nuvec_hi2)-1) {
+	   foreach dx dxvec {
+	      relocate $(nuvec_hi2[$i] + $dx) $(limvec_hi2[$i])
+	      dot
+	   }
+	}
+
+	ctype 7
+	ctype indianred
+	ctype $color_2mass
+	do i=0,$(dimen(nuvec_hi3)-1) {
+	   foreach dx dxvec {
+	      relocate $(nuvec_hi3[$i] + $dx) $(limvec_hi3[$i])
+	      dot
+	   }
+	}
+
+	ctype 7
+	ctype $color_GeV
+	do i=0,$(dimen(nuvec_GeV)-1) {
+	   foreach dx dxvec_GeV {
+	      relocate $(nuvec_GeV[$i] + $dx) $(limvec_GeV[$i])
+	      dot
+	   }
+	}
+
+
+	#----------------------
+	#  spectral indices
+	#----------------------
+	define dnu1 (0.1)
+	define dnu2 (0.1)
+	lweight 4
+	ltype 2
+
+	define plot_R_aro (0)
+	define plot_O_aro (0)
+	define plot_R_arx (0)
+	define plot_O_aox (0)
+
+	if( $plot_R_aro == 1 ) { 
+	   foreach aro < 0.20 0.75 > {
+	      ctype 3
+	      set x = $lim_nur,$($lim_nuo+0.2),0.01
+	      set y = $lim_fr1 - ($aro - 1)*(x - $lim_nur)
+	      ltype 1 lweight 1 connect x y  if( x >  $($lim_nur + $dnu2) && x <  $($lim_nuo - $dnu2) )
+	      ltype 2 lweight 4 connect x y  if( x <= $($lim_nur + $dnu1) || x >= $($lim_nuo - $dnu1) )
+	      ctype 2 
+	   }
+	}
+
+	if( $plot_O_aro == 1 ) { 
+	   foreach aro < 0.20 0.75 > {
+	      ctype 3
+	      set x = 12.5,$($lim_nuo+0.2),0.01
+	      set y = $lim_fo3 - ($aro - 1)*(x - $lim_nuo)
+	      ltype 1 lweight 1 connect x y  if( x >  $($lim_nur + $dnu2) && x <  $($lim_nuo - $dnu2) )
+	      ltype 2 lweight 4 connect x y  if( x <= $($lim_nur + $dnu1) || x >= $($lim_nuo - $dnu1) )
+	      ctype 2 
+	   }
+	}
+
+	if( $plot_R_arx == 1 ) { 
+           foreach arx < 0.45 0.90 > {
+              ctype 5 
+              set x = $lim_nur,$($lim_nux+0.5),0.01
+              set y = $lim_fr1 - ($arx - 1)*(x - $lim_nur)  
+              ltype 1 lweight 1 connect x y  if( x >  $($lim_nur + $dnu2) && x <  $($lim_nux - $dnu2) )
+              ltype 2 lweight 4 connect x y  if( x <= $($lim_nur + $dnu1) || x >= $($lim_nux - $dnu1) )
+              ctype 2
+           }
+	}
+
+	if( $plot_O_aox == 1 ) { 
+           foreach aox < 0.65 1.50 > {
+              ctype 4 
+              set x = $lim_nuo,$($lim_nux+0.5),0.01
+              set y = $lim_fo1 - ($aox - 1)*(x - $lim_nuo)  
+              ltype 1 lweight 2 connect x y  if( x <  $($lim_nux - $dnu2) && x >  $($lim_nuo + $dnu2) )
+              ltype 2 lweight 4 connect x y  if( x >= $($lim_nux - $dnu1) || x <= $($lim_nuo + $dnu1) )
+              set y = $lim_fo3 - ($aox - 1)*(x - $lim_nuo)  
+              ltype 1 lweight 2 connect x y  if( x <  $($lim_nux - $dnu2) && x >  $($lim_nuo + $dnu2) )
+              ltype 2 lweight 4 connect x y  if( x >= $($lim_nux - $dnu1) || x <= $($lim_nuo + $dnu1) )
+              ctype 2
+           }
+	}
+	ltype 0 
+	lweight 3
+
+	expand 1 angle 0
+	# ctype 3 relocate ( 1000 $($gy1 - $lab_gy0 -   $dgy) ) putlabel 6 \alpha_{RO}= 0.25-0.75
+	# ctype 5 relocate ( 1000 $($gy1 - $lab_gy0 - 3*$dgy) ) putlabel 6 \alpha_{RX}= 0.45-0.90
+	# ctype 4 relocate ( 1000 $($gy1 - $lab_gy0 - 5*$dgy) ) putlabel 6 \alpha_{OX}= 0.65-1.50
+	if( $plot_R_aro == 1 ) { ctype 3 relocate ( $($gx1 + 1000) $($gy2 - 2*$dgy) ) putlabel 6 \alpha_{RO}= 0.20-0.75 }
+	if( $plot_R_arx == 1 ) { ctype 5 relocate ( $($gx1 + 1000) $($gy2 - 4*$dgy) ) putlabel 6 \alpha_{RX}= 0.45-0.90 }
+	if( $plot_O_aox == 1 ) { ctype 4 relocate ( $($gx1 + 1000) $($gy2 - 6*$dgy) ) putlabel 6 \alpha_{OX}= 0.65-1.50 }
+	expand $saveexp
+
+#--------------------------------------------------------------------------
+# generate_sed_family  <number of SEDs>
+generate_sed_family 1
+
+        if(!$(is_macro(compute_family_of_seds_N))) {
+           echo "WARNING: this macro REQUIRES 'compute_family_of_seds_N' included in glast_seds.sm"
+	   myload glast_seds
+	   compute_family_of_seds_N $1
+           return
+        } 
+
+	compute_family_of_seds_N $1
+
+	# from seds_comp_exp2
+	define first_x  9.0
+	define last_x  27.1
+	define step_x   0.05
+
+	define lr1 (41.5)
+	define lr2 (47.0)
+
+	define nur $(lg(5.0e9))
+	define nuo  (14.736)
+	define nux  (17.384)
+
+	define iir $( int( ($nur - $first_x)/$step_x ) )
+	define iio $( int( ($nuo - $first_x)/$step_x ) )
+	define iix $( int( ($nux - $first_x)/$step_x ) )
+
+	# AD HOC!
+	# echo " Doing some ad hoc fudging for rescaling in nfn_frame !!!"
+
+	define sed_family_ref_fr  $(lg(100e-26*5e9))                       # 50 mJy
+	define sed_family_ref_fo  $(lg(3480*10**(-0.4*19.0)*1e-23*6e14))   # mV=19
+	define sed_family_ref_fx  $(lg(4e-13))                     # 4e-13
+
+	define band2rescale ? <  To which band rescale the SEDs [r|o|x]: >
+
+	do 9=0,dimen(trial_lr)-1 {
+	   if( substr('$band2rescale',0,1) == 'r' ) { 
+	      set sed_family_nfn_$9 = sed_family_nln_$9 - sed_family_nln_$9[$iir] + $sed_family_ref_fr
+	   }
+	   if( substr('$band2rescale',0,1) == 'o' ) { 
+	      set sed_family_nfn_$9 = sed_family_nln_$9 - sed_family_nln_$9[$iio] + $sed_family_ref_fo
+	   }
+	   if( substr('$band2rescale',0,1) == 'x' ) { 
+	      set sed_family_nfn_$9 = sed_family_nln_$9 - sed_family_nln_$9[$iix] + $sed_family_ref_fx
+	   }
+	}
+	
+#--------------------------------------------------------------------------
+# plot_sed_family
+plot_sed_family
+
+	ltype 1 
+	set x local
+	set y local
+
+	define x1 local
+	define x2 local
+
+	define x1 (12.8)
+	define x2 (15.5)
+	define x1 ( 9.8)
+	define x2 (24.5)
+
+	lweight 5
+	ctype grey90
+	# ctype grey60
+	do 1=0,dimen(trial_lr)-1 {
+	   foreach shiftx < -0.20 0.00 0.20 > {
+	   foreach shifty < -0.50 -0.25 0.00 0.25 0.50 > {
+	      set x = sed_family_nu_$1  + $shiftx 
+	      set y = sed_family_nfn_$1 + $shifty
+
+	      if( y[$iir] >= $($sed_family_ref_fr - 2.0) ) {
+	         connect x y   if( x >= $x1 && x <= $x2 ) 
+	      }
+	   }
+	   }
+	}
+
+	lweight 5
+	ctype grey50
+	ctype grey80
+	ctype grey75
+	# ctype 5 
+	do 1=0,dimen(trial_lr)-1 {
+	   foreach shiftx < -0.20 0.00 0.20 > {
+	   foreach shifty < -0.05 0.00 0.05 > {
+	      set x = sed_family_nu_$1  + $shiftx 
+	      set y = sed_family_nfn_$1 + $shifty
+
+	      if( y[$iir] >= $($sed_family_ref_fr - 2.0) ) {
+	         connect x y   if( x >= $x1 && x <= $x2 ) 
+	      }
+	   }
+	   }
+	}
+
+	ctype grey30
+	ctype grey10
+	ctype 3 
+	lweight 5
+	# ltype 2 
+	do 1=0,dimen(trial_lr)-1,5 {
+	      set x = sed_family_nu_$1 
+	      set y = sed_family_nfn_$1
+
+	      if( y[$iir] >= $($sed_family_ref_fr - 2.0) ) {
+	         connect x y   if( x >= $x1 && x <= $x2 ) 
+	      }
+	}
+	lweight 2
+	ltype 0 
+
+#--------------------------------------------------------------------------
+# plot_irac_wcs_histo
+plot_irac_wcs_histo
+
+	reset_graph
+
+	define hxstep ? < Step for histogram [e.g. 10] : >
+
+	set hxirac = -2*$hxstep,1000,$hxstep
+	set hxirac = hxirac - 0.5*$hxstep
+	set hyirac_wcs  = histogram(no_2mass_f_irac_wcs :hxirac)
+	set hyirac_wcs0 = histogram(no_2mass_f_irac_wcs0:hxirac)
+	set hyirac_wcs1 = histogram(no_2mass_f_irac_wcs1:hxirac)
+	set hyirac_wcs2 = histogram(no_2mass_f_irac_wcs2:hxirac)
+	set hyirac_wcs3 = histogram(no_2mass_f_irac_wcs3:hxirac)
+	
+	limits -20 800 hyirac_wcs
+	box
+	xlabel F_{IRAC} [\mu Jy]
+
+	define dhx $($hxstep/10)
+
+	ctype 7 histogram (hxirac - 2*$dhx) hyirac_wcs0
+	ctype 3 histogram (hxirac - 1*$dhx) hyirac_wcs1
+	ctype 5 histogram (hxirac + 1*$dhx) hyirac_wcs2
+	ctype 6 histogram (hxirac + 2*$dhx) hyirac_wcs3
+	ctype 2 histogram (hxirac         ) hyirac_wcs
+
+	echo "--------------------------------------------"
+	echo " MAGENTA : wcs0 , from RADIO   with a_RO "
+	echo " RED     : wcs1 , from RADIO   with 0.75  "
+	echo " BLUE    : wcs2 , from OPTICAL with 0.20 "
+	echo " CYAN    : wcs3 , from OPTICAL with 0.00 "
+	echo " BLACK   : wcs  , lowest value "
+	echo "--------------------------------------------"
+
+#--------------------------------------------------------------------------

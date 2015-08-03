@@ -1,0 +1,999 @@
+#---------------------------------------------------------
+#	vai
+#---------------------------------------------------------
+vai
+	go_dens 60
+
+#-------------------------------------------------------
+#	go_dens 1
+#-------------------------------------------------------
+go_dens  1
+
+	lweight 3
+
+	define norm 5.5
+	limits 0.15 0.85 1.5 49.9 
+	##limits 0.2 0.8 1.5 39.9 
+
+	location 3000 17000 13000 27000 
+
+	ctype 2 
+	expand 1.3
+	ticksize 0 0 1 5
+	box 0 0 0 0
+	xlabel Q
+	#ylabel rmsd
+
+	#--- data1 ---#
+        define nlc $1
+        define nll 11840
+        define nl1 $(($nlc-1)*$nll +2)
+        define nl2 $($nlc*$nll +1)
+
+	data out3_2V
+        lines $nl1 $nl2
+	read {x 1 y 2 p 3}
+	  
+	vecminmax p pmin pmax
+	echo Original min/max/range: $pmin $pmax $($pmax-$pmin)
+
+	set p = p - $pmin
+	
+	set xx = x if (p < $norm)
+	set yy = y if (p < $norm)
+	set pp = p if (p < $norm)
+
+	vecminmax pp pmin pmax
+	echo Renorm. min/max: $pmin $pmax
+
+	set x=xx/582
+	set y=yy
+	set p = pp/$norm +0.00001
+
+	#--- plot points for data1 --#
+	plot_shaded_dots x y p
+	#----------------------------#
+
+	relocate ( $($gx1+1000) $($gy1+1000) )
+	expand 1.3
+	ctype 2 
+	putlabel 6 ER (w/o Ligand)
+	ctype 2
+
+	#--- ready for data2 ---#
+	#
+        location 17000 31000 13000 27000
+        #limits 0.15 0.85 1.5 49.9 
+	# limits 0.2 0.8 1.5 39.9 
+
+	ctype 2 
+        expand 1.01
+        ticksize 0 0 1 5
+        expand 1.3
+	box 0 0 0 0 
+	xlabel Q
+
+	#--- data 2 ---#
+        define nlc $1
+        define nll 12160
+        define nl1 $(($nlc-1)*$nll +2)
+        define nl2 $($nlc*$nll +1)
+
+	data "out3_2V+lig"
+        lines $nl1 $nl2
+	read {x 1 y 2 p 3}
+	  
+	vecminmax p pmin pmax
+	echo Original min/max/range: $pmin $pmax $($pmax-$pmin)
+
+	set p = p - $pmin
+	
+	set xx = x if (p < $norm)
+	set yy = y if (p < $norm)
+	set pp = p if (p < $norm)
+
+	vecminmax pp pmin pmax
+	echo Renorm. min/max: $pmin $pmax
+
+	set x=xx/600
+	set y=yy
+
+	set p = pp/$norm +0.00001
+
+	#--- plot points for data1 --#
+	plot_shaded_dots x y p
+	#----------------------------#
+
+	relocate ( $($gx1+1000) $($gy1+1000) )
+	expand 1.3
+	ctype 2 
+	putlabel 6 ER + Ligand
+	ctype 2
+
+	#scala_vert2
+	## scala
+
+	### #location 12000 32000 10000 30000
+	### location 17000 32000 13000 28000
+	### ticksize 0 0 5 10
+	### expand 1.3
+	### #limits 0 1 -0.5 45. ctype 2 box 0 0 0 0
+	### #limits 0.15 0.85 1.5 49.9 ctype 2 box 1 0 0 0
+	### limits 0.2 0.8 1.5 39.9  ctype 2 box 1 0 0 0
+	### xlabel Q
+	### relocate 0.42 44 
+	### ctype 5
+	### putlabel 6 ER + Ligand 
+
+	### ctype 2
+	### location 2000 17000 13000 28000
+	### #limits 0.15 0.85 1.5 49.9 ctype 2 box 1 1 0 0
+	### limits 0.2 0.8 1.5 39.9  ctype 2 box 1 0 0 0
+	### xlabel Q
+	### ylabel rmsd
+	### relocate 0.42 44 
+	### ctype 5
+	### putlabel 6 ER (w/o Ligand)
+
+        ## relocate (7600 30500)
+        relocate (15000 30500)
+        expand 1.5
+        ctype 3
+        putlabel 5 Estrogen Receptor 
+        ## relocate (7600 29700)
+        relocate (20500 30600)
+        expand 1.01
+	putlabel 6 (monomer)
+        ctype 2
+        expand 1.1
+
+	expand 1.3
+	location 3000 17000 13000 27000 
+	ticksize 0 0 1 10
+	box 1 2 0 0 
+
+        location 17000 31000 13000 27000
+	box 1 0 0 2
+
+#-------------------------------------------------------
+#	go_QRg 1
+#-------------------------------------------------------
+go_QRg  1
+
+	lweight 3
+
+	location 12000 32000 10000 30000
+
+	expand 1.01
+	ticksize 0 0 1 5
+	expand 1.3
+	#limits 0 1 -0.5 55. ctype 2 box 0 0 0 0
+	limits 0.15 0.85 15 59.9 ctype 2 box 0 0 0 0
+	#xlabel Q
+	#ylabel rmsd
+
+
+	#------------COLOR SCALE for Q ------------------
+
+        local set colours = CTYPE()
+        local set cnames = CTYPE(STRING)
+
+        local set c1dum = 0,255,8
+        local set c2dum = c1dum*0 + 255
+        local set c3dum = c1dum*0
+
+        set blue = (255-c1dum) CONCAT c3dum CONCAT c1dum CONCAT (255-c1dum)
+        set green= c2dum CONCAT (255-c1dum) CONCAT c3dum CONCAT c3dum
+        set red  = c2dum CONCAT c2dum CONCAT (255-c1dum) CONCAT c3dum
+
+        local set coldum = blue
+
+        #---------------------------------------------
+        ctype = red + 256*green + 256*256*blue
+        set cvec = red + 256*green + 256*256*blue
+        #---------------------------------------------
+
+	#data o3qd_Tc
+	data out3_2Vb
+
+        define nlc $1
+        define nll 11840
+        define nl1 $(($nlc-1)*$nll +2)
+        define nl2 $($nlc*$nll +1)
+
+        lines $nl1 $nl2
+
+	read {x 1 y 2 p 3}
+	  
+	vecminmax p pmin pmax
+	echo $pmin $pmax $($pmax-$pmin)
+
+	set p = p - $pmin
+	
+	set xx = x if (p < $norm)
+	set yy = y if (p < $norm)
+	set pp = p if (p < $norm)
+
+	vecminmax pp pmin pmax
+	echo $pmin $pmax
+
+	set x=xx/582
+	set y=yy
+
+	set p = pp/$norm +0.00001
+	#set p = p**(1/2)
+
+	vecminmax p pmin pmax
+	echo $pmin $pmax
+
+        #set nnp = abs(int((1-p)*$(dimen(coldum)))) -15
+        set nnp = abs(int((1-p)*$(dimen(coldum)))) 
+        define na (dimen(p) -1)
+
+        do i=0,$na,1 {
+          define ncol $(nnp[$i])
+	  if ($ncol < 1) {define ncol 1}
+	  if ($ncol > 126) {define ncol 126}
+          ctype $ncol
+	  expand 2.19
+	  ptype 4 3 
+	  if ($(p[$i])>0.) {
+            relocate $(x[$i]) $(y[$i]) dot
+	  }
+        }
+	
+        ctype = colours
+        ctype = cnames
+
+	go2_Rg
+	go2_Q
+	
+	scala_vert2
+
+	location 0 32500 0 32500
+	limits 0 32500 0 32500
+
+	draw_arrow 10300 8300 3300 8300
+	draw_arrow 10500 2500 10500 8100
+
+	location 12000 32000 10000 30000
+	expand 1.01
+	ticksize 0 0 1 5
+	expand 1.3
+	#limits 0 1 -0.5 45. ctype 2 box 0 0 0 0
+	limits 0.15 0.85 15 59.9 ctype 2 box 0 0 0 0
+
+        ctype 3
+        expand 1.5
+        relocate (6600 31500)
+        ctype 3
+        putlabel 5 Estrogen Receptor 
+        relocate (6600 30700)
+        expand 1.01
+	putlabel 5 (monomer)
+        ctype 2
+        expand 1.1
+
+#-------------------------------------------------------
+#	scala
+#-------------------------------------------------------
+scala
+
+        location 15000 31000 30500 31500
+
+	#------------COLOR SCALE for Q ------------------
+
+        local set colours = CTYPE()
+        local set cnames = CTYPE(STRING)
+
+        local set c1dum = 0,255,8
+        local set c2dum = c1dum*0 + 255
+        local set c3dum = c1dum*0
+
+        set blue = (255-c1dum) CONCAT c3dum CONCAT c1dum CONCAT (255-c1dum)
+        set green= c2dum CONCAT (255-c1dum) CONCAT c3dum CONCAT c3dum
+        set red  = c2dum CONCAT c2dum CONCAT (255-c1dum) CONCAT c3dum
+
+        local set coldum = blue
+
+        #---------------------------------------------
+        ctype = red + 256*green + 256*256*blue
+        set cvec = red + 256*green + 256*256*blue
+        #---------------------------------------------
+
+        lweight 8
+        ptype 4 3
+        limits 0 $(dimen(coldum)-1) 0 1
+        do i=0,$(dimen(coldum)-2) {
+             define ncol $i
+             if ($ncol == 2) {
+                define ncol 3
+             }
+           relocate $i 0.25
+           ctype $ncol
+           expand 3 dot
+           relocate $i 0.5
+           ctype $ncol
+           expand 3 dot
+           relocate $i 0.75
+           ctype $ncol
+           expand 3 dot
+           relocate $i 0.85
+           ctype $ncol
+           expand 3 dot
+        }
+        lweight 1
+	
+        ctype = colours
+        ctype = cnames
+
+	expand 1.02
+	limits  0 $norm 0 1
+	ctype 2 box 1 3 0 3 
+	#relocate (17000 31900)
+	#putlabel 5 Q
+
+	relocate (23000 29000)
+	lweight 1
+	putlabel 5 F(Q,rmsd) (units of \epsilon)
+	lweight 3
+	angle 0
+
+#-------------------------------------------------------
+#	scala2
+#-------------------------------------------------------
+scala2
+
+        location 5000 29000 30000 31000
+
+	#------------COLOR SCALE for Q ------------------
+
+        local set colours = CTYPE()
+        local set cnames = CTYPE(STRING)
+
+        local set c1dum = 0,255,8
+        local set c2dum = c1dum*0 + 255
+        local set c3dum = c1dum*0
+
+        set blue = (255-c1dum) CONCAT c3dum CONCAT c1dum CONCAT (255-c1dum)
+        set green= c2dum CONCAT (255-c1dum) CONCAT c3dum CONCAT c3dum
+        set red  = c2dum CONCAT c2dum CONCAT (255-c1dum) CONCAT c3dum
+
+        local set coldum = blue
+
+        #---------------------------------------------
+        ctype = red + 256*green + 256*256*blue
+        set cvec = red + 256*green + 256*256*blue
+        #---------------------------------------------
+
+        lweight 8
+        ptype 4 3
+        limits 0 $(dimen(coldum)-1) 0 1
+        do i=0,$(dimen(coldum)-2) {
+             define ncol $i
+             if ($ncol == 2) {
+                define ncol 3
+             }
+           relocate $i 0.25
+           ctype $ncol
+           expand 3 dot
+           relocate $i 0.5
+           ctype $ncol
+           expand 3 dot
+           relocate $i 0.75
+           ctype $ncol
+           expand 3 dot
+           relocate $i 0.85
+           ctype $ncol
+           expand 3 dot
+        }
+        lweight 1
+	
+        ctype = colours
+        ctype = cnames
+
+	expand 1.2
+	limits 20 0 0 1
+	ctype 2 box 3 3 1 3
+	relocate (17000 31900)
+	putlabel 5 rmsd
+
+#-------------------------------------------------------
+#	scala_vert
+#-------------------------------------------------------
+scala_vert
+
+        #location 5000 29000 30000 31000
+	location  23500 24500 3000 31000
+
+	#------------COLOR SCALE for Q ------------------
+
+        local set colours = CTYPE()
+        local set cnames = CTYPE(STRING)
+
+        local set c1dum = 0,255,8
+        local set c2dum = c1dum*0 + 255
+        local set c3dum = c1dum*0
+
+        set blue = (255-c1dum) CONCAT c3dum CONCAT c1dum CONCAT (255-c1dum)
+        set green= c2dum CONCAT (255-c1dum) CONCAT c3dum CONCAT c3dum
+        set red  = c2dum CONCAT c2dum CONCAT (255-c1dum) CONCAT c3dum
+
+        local set coldum = blue
+
+        #---------------------------------------------
+        ctype = red + 256*green + 256*256*blue
+        set cvec = red + 256*green + 256*256*blue
+        #---------------------------------------------
+
+        lweight 8
+        ptype 4 3
+        limits 0 1 0 $(dimen(coldum)-1) 
+        do i=0,$(dimen(coldum)-1) {
+           define ncol $i
+           relocate  0.25 $i
+           ctype $ncol
+           expand 3 dot
+           relocate  0.5 $i
+           ctype $ncol
+           expand 3 dot
+           relocate 0.75 $i
+           ctype $ncol
+           expand 3 dot
+           relocate  0.85 $i
+           ctype $ncol
+           expand 3 dot
+        }
+        lweight 1
+	
+        ctype = colours
+        ctype = cnames
+
+	expand 1.2
+	limits  0 1 0 1
+	ctype 2 box 3 3 3 3
+	relocate (26000 16900)
+	angle 90
+	putlabel 5 Energy
+	angle 0
+
+	relocate (26000 2900)
+	angle 0
+	putlabel 5 E_{min}
+	angle 0
+
+	relocate (26000 30900)
+	angle 0
+	putlabel 5 E_{max}
+	angle 0
+
+
+#-------------------------------------------------------
+#	scala_vert2
+#-------------------------------------------------------
+scala_vert2
+
+        #location 5000 29000 30500 31500
+	location 12000 32000 30500 31500 
+
+	#------------COLOR SCALE for Q ------------------
+
+        local set colours = CTYPE()
+        local set cnames = CTYPE(STRING)
+
+        local set c1dum = 0,255,8
+        local set c2dum = c1dum*0 + 255
+        local set c3dum = c1dum*0
+
+        set blue = (255-c1dum) CONCAT c3dum CONCAT c1dum CONCAT (255-c1dum)
+        set green= c2dum CONCAT (255-c1dum) CONCAT c3dum CONCAT c3dum
+        set red  = c2dum CONCAT c2dum CONCAT (255-c1dum) CONCAT c3dum
+
+        local set coldum = blue
+
+        #---------------------------------------------
+        ctype = red + 256*green + 256*256*blue
+        set cvec = red + 256*green + 256*256*blue
+        #---------------------------------------------
+
+        lweight 8
+        ptype 4 3
+        limits  $(dimen(coldum)-1) 0 0 1 
+
+	set p=0,dimen(coldum)-1
+	set p=p/dimen(coldum)
+
+        set nnp = abs(int(p*$(dimen(coldum)))) -8
+        define na (dimen(p) -1)
+
+        do i=0,$na,1 {
+           define ncol $i
+	   if ($ncol > 127) {define ncol 127}
+	   if ($ncol < 1) {define ncol 1}
+           relocate  $i 0.25 
+           ctype $ncol
+           expand 3 dot
+           relocate  $i 0.5
+           ctype $ncol
+           expand 3 dot
+           relocate $i 0.75
+           ctype $ncol
+           expand 3 dot
+           relocate $i 0.85
+           ctype $ncol
+           expand 3 dot
+        }
+        lweight 1
+	
+        ctype = colours
+        ctype = cnames
+
+	expand 1.2
+	limits  0 $norm 0 1
+	ctype 2 box 0 3 1 3 
+	relocate (25000 28800)
+	#angle 270
+	lweight 1
+	putlabel 5 F(Q,rmsd) (units of \epsilon)
+	lweight 3
+	angle 0
+
+	##relocate (12000 32000)
+	##angle 0
+	##putlabel 5 0
+	##angle 0
+
+	##relocate (32000 32000)
+	##angle 0
+	##putlabel 5 6
+	##angle 0
+
+go2_Rg
+
+	lweight 3
+
+	location 3000 12000 10000 30000 
+	prep_Rg out3_Rg 599
+	ctype 2 expand 1.5
+	ticksize 1 5 1 5
+	ticksize 0.5 1 0 0
+	box 1 2 0 0 
+	
+	lweight 1
+	xlabel F(R_g) 
+	ylabel R_g
+	lweight 3
+
+	movie0_Rg 110 3
+
+	#location 10000 24500 2500 31500
+	ticksize 0 0 0 0
+
+#---------------------------------------------------------------------------
+# prep_Rg  2 
+#	arg[1] = <input-file>
+#	arg[2] = number of parameters
+#---------------------------------------------------------------------------
+#
+prep_Rg    2
+
+	define num ($2 +1)
+	
+	data $1
+	lines 2 1000000
+	read x 1 read y 2
+	set x = x
+
+	ltype 0
+	ctype 2
+	ticksize 0.5 1 0 0
+	expand 1.2
+	limits 3.99 0.0001 15. 59.9
+	notation 0 0 0 0
+	#box 0 1 0 0
+	expand 1.5
+
+	define nl (int((dimen(x))/($num)))
+	echo $nl
+
+	lweight 1
+	ctype 7
+	angle 0
+	angle 0
+	ctype 4
+	lweight 3
+
+go2
+
+	lweight 3
+
+	location 3000 12000 10000 30000 
+	prep_D2 out3_D 599
+	ctype 2 expand 1.5
+	ticksize 1 5 1 5
+	ticksize 0.5 1 0 0
+	box 1 2 0 0 
+	
+	lweight 1
+	xlabel F(rmsd) 
+	ylabel rmsd
+	lweight 3
+
+	movie0_D 110 3
+
+	#location 10000 24500 2500 31500
+	ticksize 0 0 0 0
+
+#---------------------------------------------------------------------------
+# prep_D2  2 
+#	arg[1] = <input-file>
+#	arg[2] = number of parameters
+#---------------------------------------------------------------------------
+#
+prep_D2    2
+
+	define num ($2 +1)
+	
+	data $1
+	lines 2 385000
+	read x 1 read y 2
+	set x = x
+
+	ltype 0
+	ctype 2
+	ticksize 0.5 1 0 0
+	expand 1.2
+	limits 3.99 0.0001 1.5 49.9
+	notation 0 0 0 0
+	#box 0 1 0 0
+	expand 1.5
+
+	define nl (int((dimen(x))/($num)))
+	echo $nl
+
+	lweight 1
+	ctype 7
+	angle 0
+	angle 0
+	ctype 4
+	lweight 3
+
+go2_Q
+
+	lweight 3
+
+	location 24500 32000 8000 15000
+
+	prep out3_Q 582 1
+	ctype 2 expand 1.5
+	ticksize 0 0 1 5
+	ticksize 0 0 0.5 1
+	box 1 2 0 0 
+	
+	lweight 1
+	ylabel F(Q) 
+	xlabel Q
+	lweight 3
+
+	movie0 110 3 1
+
+	prep "../ER+Lig/Analyze/out3_Q" 600 1
+	movie0 110 5 1
+	
+#---------------------------------------------------------------------------
+# prep  3
+#       arg[1] = <input-file>
+#       arg[2] = number of parameters
+#       arg[3] = dq for sampling Q=[0,1]  (dq =1,2,3...)
+#---------------------------------------------------------------------------
+
+prep    3
+
+        define num $(int($2/$3)+1)
+        define num2 $($2+1)
+
+        data $1
+        lines 2 5000000
+        read x 1 read y 2
+        set x = x/($num)
+
+        ltype 0
+        ctype 2
+        ticksize 0 0 0 0
+	ticksize 0 0 0.5 1
+        expand 1.2
+        limits 0.5 0.85 0 1.99
+        notation 0 0 0 0
+        expand 1.5
+
+        define nl (int((dimen(x)*$3)/$num))
+        echo $nl
+
+        lweight 3
+
+movie0_D  2
+
+        expand 1.1
+        define nn  $1
+
+        define lim1 (1+ $num*($nn-1))
+        define lim2 ( $num*$nn)
+
+        lines $lim1 $lim2
+        read  x 1
+        read  y 2
+        read  s 4
+        read  e 3
+
+        #set xpp = x if (x < 30.)
+        #set ypp = y if (x < 30.)
+        vecminmax y ypmin ypmax
+
+        set x = x
+        set y = y - $ypmin 
+
+        set sub_x = x if( y < 500)
+        set sub_y = y if( y < 500)
+
+        set x = sub_x
+        set y = sub_y
+
+        define np (dimen(sub_x) )
+        define np2 ($np -3)
+        set y_sm = sub_y
+        set y_sm2 = sub_y
+        set y_sm3 = sub_y
+
+        do i=1, $np2 {
+          set y_sm[$i] = ($(sub_y[$i-1])+$(sub_y[$i]))/2
+        }
+        do i=2, $np2 {
+          set y_sm2[$i] = ($(y_sm[$i-2])+$(y_sm[$i-1])+$(y_sm[$i])+$(y_sm[$i+1])+$(y_sm[$i+2]) )/5
+        }
+
+        do i=2, $np2 {
+          set y_sm3[$i] = ($(y_sm2[$i-2])+$(y_sm2[$i-1])+$(y_sm2[$i])+$(y_sm2[$i+1])+$(y_sm2[$i+2]) )/5
+        }
+
+        ctype $2
+        ptype 20 3
+        ltype 0
+        ptype 12 3
+        #connect x y
+        #connect sub_x sub_y
+        vecminmax sub_y ypmin ypmax
+	set sub_y = sub_y - $ypmin
+        connect y_sm sub_x 
+
+        define scale (1/500.)
+
+movie0_Rg  2
+
+        expand 1.1
+        define nn  $1
+
+        define lim1 (1+ $num*($nn-1))
+        define lim2 ( $num*$nn)
+
+        lines $lim1 $lim2
+        read  x 1
+        read  y 2
+        read  s 4
+        read  e 3
+
+        #set xpp = x if (x < 30.)
+        #set ypp = y if (x < 30.)
+        vecminmax y ypmin ypmax
+
+        set x = x
+        set y = y - $ypmin 
+
+        set sub_x = x if( y < 500)
+        set sub_y = y if( y < 500)
+
+        set x = sub_x
+        set y = sub_y
+
+        define np (dimen(sub_x) )
+        define np2 ($np -3)
+        set y_sm = sub_y
+        set y_sm2 = sub_y
+        set y_sm3 = sub_y
+
+        do i=1, $np2 {
+          set y_sm[$i] = ($(sub_y[$i-1])+$(sub_y[$i]))/2
+        }
+        do i=2, $np2 {
+          set y_sm2[$i] = ($(y_sm[$i-2])+$(y_sm[$i-1])+$(y_sm[$i])+$(y_sm[$i+1])+$(y_sm[$i+2]) )/5
+        }
+
+        do i=2, $np2 {
+          set y_sm3[$i] = ($(y_sm2[$i-2])+$(y_sm2[$i-1])+$(y_sm2[$i])+$(y_sm2[$i+1])+$(y_sm2[$i+2]) )/5
+        }
+
+        ctype $2
+        ptype 20 3
+        ltype 0
+        ptype 12 3
+        #connect x y
+        #connect sub_x sub_y
+        connect y_sm sub_x 
+
+        define scale (1/500.)
+
+#---------------------------------------------------------------------------
+# movie0  3
+#       arg[1] = number to plot?
+#       arg[2] = color ?
+#       arg[3] = dq for sampling Q=[0,1]  (dq =1,2,3...)
+#---------------------------------------------------------------------------
+movie0  3
+
+        expand 1.1
+        define nn  $1
+
+        #define num2 (int($num*$3))
+        define lim1 (5+ $num*($nn-1))
+        define lim2 ( $num*$nn)
+
+        lines $lim1 $lim2
+        read  x 1
+        read  y 2
+        read  s 4
+        read  e 3
+
+        #set xpp = x if (x > $($num/2))
+        #set ypp = y if (x > $($num/2))
+        vecminmax y ypmin ypmax
+        set x = x/($num)
+        set x = x
+        set y = y - $ypmin 
+
+        set sub_x = x if( y < 500)
+        set sub_y = y if( y < 500)
+
+        set x = sub_x
+        set y = sub_y
+
+        define np (dimen(sub_x) )
+        define np2 ($np -3)
+        set y_sm = sub_y
+        set y_sm2 = sub_y
+        set y_sm3 = sub_y
+
+        do i=1, $np2 {
+          set y_sm[$i] = ($(sub_y[$i-1])+$(sub_y[$i]))/2
+        }
+        do i=2, $np2 {
+          set y_sm2[$i] = ($(y_sm[$i-2])+$(y_sm[$i-1])+$(y_sm[$i])+$(y_sm[$i+1])+$(y_sm[$i+2]) )/5
+        }
+        do i=2, $np2 {
+          set y_sm3[$i] = ($(y_sm2[$i-2])+$(y_sm2[$i-1])+$(y_sm2[$i])+$(y_sm2[$i+1])+$(y_sm2[$i+2]) )/5
+        }
+
+        ctype $2
+        ptype 20 3
+        ltype 0
+        ptype 12 3
+        #connect x y
+        #connect sub_x sub_y
+        connect sub_x y_sm
+
+        define scale (1/500.)
+
+go_only_Q
+
+	lweight 3
+
+	location 4000 32000 4000 32000
+
+	prep out3_Q 582 1
+	ctype 2 expand 1.5
+	ticksize 0 0 1 5
+	limits 0.15 0.85 0 18
+	box 1 2 0 0 
+	
+	lweight 1
+	ylabel F(Q) 
+	xlabel Q
+	lweight 3
+
+
+	do i=96,161,5 {movie00 $i 3 1}
+	movie00 110 5 1
+
+	
+#---------------------------------------------------------------------------
+# movie00  3
+#       arg[1] = number to plot?
+#       arg[2] = color ?
+#       arg[3] = dq for sampling Q=[0,1]  (dq =1,2,3...)
+#---------------------------------------------------------------------------
+movie00  3
+
+        expand 1.1
+        define nn  $1
+
+        #define num2 (int($num*$3))
+        define lim1 (5+ $num*($nn-1))
+        define lim2 ( $num*$nn)
+
+        lines $lim1 $lim2
+        read  x 1
+        read  y 2
+        read  s 4
+        read  e 3
+
+        set xpp = x if (x > $($num/2))
+        set ypp = y if (x > $($num/2))
+        vecminmax ypp ypmin ypmax
+        set x = x/($num)
+        set x = x
+        set y = y - $ypmin  + 0.2*($nn-130) +7.5
+
+        set sub_x = x if( y < 500)
+        set sub_y = y if( y < 500)
+
+        set x = sub_x 
+        set y = sub_y
+
+        define np (dimen(sub_x) )
+        define np2 ($np -3)
+        set y_sm = sub_y
+        set y_sm2 = sub_y
+        set y_sm3 = sub_y
+
+        do i=1, $np2 {
+          set y_sm[$i] = ($(sub_y[$i-1])+$(sub_y[$i]))/2
+        }
+        do i=2, $np2 {
+          set y_sm2[$i] = ($(y_sm[$i-2])+$(y_sm[$i-1])+$(y_sm[$i])+$(y_sm[$i+1])+$(y_sm[$i+2]) )/5
+        }
+        do i=2, $np2 {
+          set y_sm3[$i] = ($(y_sm2[$i-2])+$(y_sm2[$i-1])+$(y_sm2[$i])+$(y_sm2[$i+1])+$(y_sm2[$i+2]) )/5
+        }
+
+        ctype $2
+        ptype 20 3
+        ltype 0
+        ptype 12 3
+        #connect x y
+        #connect sub_x sub_y
+        #connect sub_x y_sm
+        connect sub_x y_sm3 
+
+        define scale (1/500.)
+
+#---------------------------------------------------------
+# lj
+lj
+
+	reset_graph
+
+	set x=0.5,2.0,0.01
+	set y = 5*(1/x)**12 - 6*(1/x)**10
+
+	set yb1 = 1.2*((1/x)**12 - 2*(1/x)**6)
+	set yb2 = 1.2*(1/x)**12 
+
+	limits 0.5 2.0 -2 3 
+	ticksize 0 0 0 0
+	box 
+
+	expand 2.5
+	xlabel r [units of \sigma]
+	ylabel V(r)
+
+	ctype 3 
+	lweight 4
+	connect x y
+	ctype 5 
+	lweight 3
+	connect x yb1
+	connect x yb2
+
+	ctype 2
+
+
+
+#---------------------------------------------------------

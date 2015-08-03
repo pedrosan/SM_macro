@@ -1,0 +1,52 @@
+#-------------------------------------------------------------------------------
+# load_filters
+load_filters
+
+	foreach 1 < u g r i z > {
+	   data SDSS_$1.dat
+	   read < lambda_$1 1 sensi_13_ps_$1 2 sensi_13_es_$1 3 sensi_00_es_$1 4 > 
+	}
+
+#-------------------------------------------------------------------------------
+# plot_filters
+plot_filters
+
+	reset_graph
+
+	notation -5 5 -5 5
+	limits 2600 11400 -0.01 0.605
+	box
+	xlabel wavelength [\AA]
+	ylabel Q.E.
+	relocate ( $(0.5*($gx1+$gx2)) $($gy2+750) )
+	putlabel 5 SDSS ugriz filters
+
+	ctype 5 
+	ltype 0 connect lambda_u sensi_13_es_u
+	ltype 2 connect lambda_u sensi_00_es_u
+	ltype 1 connect lambda_u sensi_13_ps_u
+
+	ctype 4 
+	ltype 0 connect lambda_g sensi_13_es_g
+	ltype 2 connect lambda_g sensi_00_es_g
+	ltype 1 connect lambda_g sensi_13_ps_g
+
+	ctype 3 
+	ltype 0 connect lambda_r sensi_13_es_r
+	ltype 2 connect lambda_r sensi_00_es_r
+	ltype 1 connect lambda_r sensi_13_ps_r
+
+	ctype 7 
+	ltype 0 connect lambda_i sensi_13_es_i
+	ltype 2 connect lambda_i sensi_00_es_i
+	ltype 1 connect lambda_i sensi_13_ps_i
+
+	ctype 2 
+	ltype 0 connect lambda_z sensi_13_es_z
+	ltype 2 connect lambda_z sensi_00_es_z
+	ltype 1 connect lambda_z sensi_13_ps_z
+
+	ctype 2 
+	ltype 0 
+
+#-------------------------------------------------------------------------------

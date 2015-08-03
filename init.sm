@@ -1,0 +1,34 @@
+startup2
+	# define macro2 :
+	## DEFINE macro2 <$macro2>
+
+	IF($?macro2) {
+	    macro read "$!macro2/x11_tools.sm"
+	    macro read "$!macro2/plot_lut.sm"
+	    macro read "$!macro2/matrix.sm"
+	    macro read "$!macro2/tools.sm"
+	    macro read "$!macro2/astro_tools.sm"
+	    echo "#================================================================================"
+	    echo "# Loaded the following macro files: "
+	    echo "#   + x11_tools.sm "
+	    echo "#   + plot_lut.sm "
+	    echo "#   + matrix.sm "
+	    echo "#   + tools.sm "
+	    echo "#   + astro_tools.sm "
+	    echo "#================================================================================"
+
+	    define_even_more_colors
+	    prepare_all_luts 256
+	    define_physical_constants
+	    define_new_ptypes
+
+	    echo "#   "
+	    echo "# Loaded the following definition programs:  "
+	    echo "#   + define_even_more_colors"
+	    echo "#   + define_physical_constants "
+	    echo "#================================================================================"
+
+	} ELSE {
+	    echo " Directory macro2 is not defined"
+	}
+

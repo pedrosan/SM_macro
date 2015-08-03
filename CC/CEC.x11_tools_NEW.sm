@@ -1,0 +1,1025 @@
+#--------------------------------------------------------------------------
+new_ptypes
+
+       define plus1 {{m 150 50 150 -50 50 -50 50 -150 -50 -150 -50 -50 -150 -50 -150 50 -50 50 -50 150 50 150 50 50 150 50 }}
+       define plus2 {{m 150 60 150 -60 60 -60 60 -150 -60 -150 -60 -60 -150 -60 -150 60 -60 60 -60 150 60 150 60 60 150 60 }}
+       define upper {{m -10 0 10 0 m 0 0 0 -2000 -200 -1700 0 -1850 200 -1700 0 -2000 }}
+
+##--------------------------------------------------------------------------
+## post 1
+post   1
+                dev postencap $1
+
+##--------------------------------------------------------------------------
+## postl 1
+postl   1
+                dev postlandencap $1
+
+
+#--------------------------------------------------------------------------
+# devx11 01 [<howmany_dev>]
+devx11 01
+
+       if(!$?1) {
+           define 1 ? { How many X11 devices [1/2] : }
+       }
+
+       do 2=1,$1 {
+           define size ? < Size dev. $2 : >
+           device x11 -bg white -g "$!size"x$size \
+       	       -ndevice $1 -device $2 -name $2 -title $2
+           gsave $2
+       }
+       prompt "$!1>"
+       define size delete
+
+       if( $1 > 1 ) {
+       echo -------------------------------------------------------
+       echo  If there are 2 devices, you can now use the commands:
+       echo       * dev1
+       echo       * dev2
+       echo  to move between them.
+       echo -------------------------------------------------------
+       }
+
+##--------------------------------------------------------------------------
+# gsave 1
+gsave 1
+       
+       define grestore$1 "location $!gx1 $!gx2 $!gy1 $!gy2 limits $!fx1 $!fx2 $!fy1 $!fy2 "
+
+##--------------------------------------------------------------------------
+# dev1  : switch to DEV-1, saving settings of DEV-2
+dev1 
+
+       if($?grestore1) { 
+          echo Using existing saved configuration for dev-1
+          echo Config: $grestore1 
+       }
+
+       gsave 2
+       echo SAVED dev-2 config: $grestore2 
+
+       device x11 -device 1
+       if($?grestore1) { 
+           echo Restoring dev-1 config: $grestore1
+           $grestore1 
+       } else { 
+           echo ---[ There is NOT a SAVED Conf-1 ]---
+       }
+       prompt "1>"
+
+##--------------------------------------------------------------------------
+# dev2  : switch to DEV-2, saving settings of DEV-1
+dev2
+
+       if($?grestore2) { 
+          echo Using existing saved configuration for dev-2
+          echo Config: $grestore2
+       }
+       
+       gsave 1
+       echo SAVED dev-1 config: $grestore1
+       
+       device x11 -device 2
+       if($?grestore2) { 
+           echo Restoring dev-2 config: $grestore2
+           $grestore2 
+       } else { 
+           echo ---[ There is NOT a SAVED Conf-2 ]---
+       }
+       prompt "2>"
+
+##--------------------------------------------------------------------------
+# resize
+resize
+        location 5500 31000 5500 31000
+
+
+##--------------------------------------------------------------------------
+# devnull  : switch to DEV-NULL, saving settings of DEV-1 or -2
+devnull
+
+       if($?grestore2) { 
+          echo Using existing saved configuration for dev-2
+          echo Config: $grestore2
+       }
+       
+       gsave 1
+       echo SAVED dev-1 config: $grestore1
+       
+       device x11 -device 2
+       if($?grestore2) { 
+           echo Restoring dev-2 config: $grestore2
+           $grestore2 
+       } else { 
+           echo ---[ There is NOT a SAVED Conf-2 ]---
+       }
+       prompt "2>"
+
+##---------------------------------------------------------------------------
+# reset_graph
+reset_graph
+
+       ctype 2
+       expand 1.5
+       lweight 3 
+       ltype 0
+       window 1 1 1 1
+       location 5500 30000 5500 30000
+
+##---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+# restore_colors_default
+restore_colors_default
+       
+        set xr= {0   255 0   255 0   0   0   255 255}
+        set xg= {0   255 0   0   255 0   255 0   255}
+        set xb= {0   255 0   0   0   255 255 255 0  }
+
+       set dimen(cn) = 9.s
+       set cn= {default white black red green blue cyan magenta yellow}
+                
+        ctype = xr + xg*256 + xb*256*256
+       ctype = cn 
+
+       define NCOLORS 9
+       set colortot = xr + xg*256 + xb*256*256
+       set coldum = colortot
+
+       delete xr
+       delete xg
+       delete xb
+       delete cn 
+
+#---------------------------------------------------------------------------
+# color_map 12
+color_map 12
+
+       define NCOLORS $1
+       #---------------------------------------------
+       # Color stuff
+       #
+        set colours = CTYPE()
+        set cnames  = CTYPE(STRING)
+
+       if($?1) { 
+           set c1dum = 0,255,$(1024/$1)
+           set c2dum = c1dum*0 + 255
+           set c3dum = c1dum*0 
+       } else {
+          define 1
+           set c1dum = 0,255,$(1024/$1)
+           set c2dum = c1dum*0 + 255
+           set c3dum = c1dum*0 
+       }
+
+       if(!$?2) { 
+           echo -----------------------------------
+           echo ** Available color palettes: 
+           echo [-1] B&W   ( high is white )
+           echo  [0] B&W   ( high is black )
+           echo  [1] rainbow (black--->yellow)
+           echo  [2] rainbow (yellow--->black)
+           echo  [3] 'heat'
+           echo  [4] cyan-->blue
+           echo  [9] MORE
+           define mappa ? { Which Palette ? }
+       } else {
+           define mappa $2 
+       } 
+
+       #---- B&W  ( high is white ) ----#
+       #
+       if ( $mappa == -1 ) {
+          set coldum = 0,255,$(256/$1)
+           ctype = (1 + 256 + 256*256)*coldum
+          set colortot = (1 + 256 + 256*256)*coldum
+       }
+
+       #---- B&W   ( high is black ) ----#
+       #
+       if ( $mappa == 0 ) {
+          set coldum = 0,255,$(256/$1)
+           ctype = (1 + 256 + 256*256)*(255-coldum)
+          set colortot = (1 + 256 + 256*256)*(255-coldum)
+       }
+
+       #---- rainbow (black---->black) ----#
+       #
+       if ( $mappa == 1 ) {
+           set blue  = c1dum       CONCAT (255-c1dum) CONCAT c3dum       CONCAT c1dum
+           set green = c3dum       CONCAT c3dum       CONCAT c1dum       CONCAT c2dum
+           set red   = c3dum       CONCAT c1dum       CONCAT c2dum       CONCAT c2dum 
+        
+           ctype    = red + 256*green + 256*256*blue
+           set cvec = red + 256*green + 256*256*blue
+          set colortot = cvec
+
+           set coldum = red
+       }
+
+       #---- rainbow (yellow--->black) ----#
+       #
+       if ( $mappa == 2 ) {
+           set blue  = (255-c1dum) CONCAT c3dum       CONCAT c1dum       CONCAT (255-c1dum)
+           set green = c2dum       CONCAT (255-c1dum) CONCAT c3dum       CONCAT c3dum
+           set red   = c2dum       CONCAT c2dum       CONCAT (255-c1dum) CONCAT c3dum 
+        
+           ctype    = red + 256*green + 256*256*blue
+           set cvec = red + 256*green + 256*256*blue
+          set colortot = cvec
+
+           set coldum = red
+       }
+
+       #---- HEAT ----#
+       #
+       if ( $mappa == 3 ) {
+          set coldum = 0,255,$(256/$1)
+           ctype = 255 + 256*(255-coldum)
+          set colortot = 255 + 256*(255-coldum)
+       }
+
+       #---- cyan-->blue ----#
+       #
+       if ( $mappa == 4 ) {
+          set coldum = 0,255,$(256/$1)
+           ctype = 0 + 256*(255-coldum) + 256*256*255
+          set colortot = 0 + 256*(255-coldum) + 256*256*255
+       }
+
+       if ( $mappa == 9 ) {
+          rainbow_mod $1
+          set coldum = colortot
+           ctype = colortot
+       }
+
+#------------------------------------------------------------------------------
+# rainbow_mod  <#N-colors>
+rainbow_mod 1 
+
+       ### echo ------------------------------------------------------
+       ### echo First of all give 3 reference values:
+       ### echo They need to be:
+       ### echo   * yellow-green transition 
+       ### echo   * green -blue  transition 
+       ### echo   * blue  -black/red/cyan transition 
+       ### echo ------------------------------------------------------
+
+       ### define sepvar ? <                  Give 3 dividing values : >
+       ### set _test = < $sepvar >
+       ### if( $(dimen(_test)) != 3 ) {
+       ###    echo ERROR: you gave $(dimen(_test)) values!
+       ###    define sepvar ?  <                  Give 3 dividing values : >
+       ### }
+
+       set sep = < 0 0.25 0.5 0.75 1 >
+
+       echo ----------------------------------------------------------
+       echo  *** NOTE: use negative number for inverted color scale
+       echo                [1] Green--Blue--black (normal)
+       echo                [2] Green--Blue--red
+       echo                [3] Green--Blue--cyan
+       echo                [4] Green--Magenta--Blue
+       define whatend ? <             What End of the color scale : >
+
+       define nco $1
+       # define softness ? < Softening parameter : >
+       define softness 0
+
+       define ncoint $($nco/4)
+
+       define dnu1   $($(sep[1])-$(sep[0]))
+       define dnu2   $($(sep[2])-$(sep[1]))
+       define dnu3   $($(sep[3])-$(sep[2]))
+       define dnu4   $($(sep[4])-$(sep[3]))
+       define cstep1 ($dnu1/$ncoint)
+       define cstep2 ($dnu2/$ncoint)
+       define cstep3 ($dnu3/$ncoint)
+       define cstep4 ($dnu4/$ncoint)
+
+       set cdum1=$($(sep[0])+$cstep1),$(sep[1]),$cstep1 
+       set cdum2=$($(sep[1])+$cstep2),$(sep[2]),$cstep2 
+       set cdum3=$($(sep[2])+$cstep3),$(sep[3]),$cstep3 
+       set cdum4=$($(sep[3])+$cstep4),$(sep[4]),$cstep4 
+
+       set c1r = 0*cdum1 + 255
+       set c1g = int((255-$softness)*((cdum1-$(sep[0]))/$dnu1)**0.7)+$softness
+       set c1b = 0*cdum1 + $softness
+
+       set c2r = int((255-$softness)*(($(sep[2])-cdum2)/$dnu2)**0.7)+$softness
+       set c2g = 0*cdum2 + 255
+       set c2b = 0*cdum2 + $softness
+
+       if( $(abs($whatend)) < 4 ) {
+          set c3r = 0*cdum3 + $softness
+          set c3g = int((255-$softness)*(($(sep[3]) - cdum3)/$dnu3))+$softness
+          set c3b = int((255-$softness)*((cdum3 - $(sep[2]))/$dnu3))+$softness
+       }
+
+       if( $(abs($whatend)) == 4 ) {
+          set c3r = int((255-$softness)*((cdum3 - $(sep[2]))/$dnu3))+$softness
+          set c3g = int((255-$softness)*(($(sep[3]) - cdum3)/$dnu3))+$softness
+          set c3b = int((255-$softness)*((cdum3 - $(sep[2]))/$dnu3))+$softness
+       }
+
+       ##  given color INcreases
+       ## set VEC = int(255*((cdum4 - $(sep[3]))/$dnu4))
+       ##
+       ##  given color DEcreases
+       ## set VEC = int(255*(($(sep[3]) - cdum3)/$dnu3))
+
+       #--- normal end: blue to black ---#
+       if( $(abs($whatend)) == 1 ) {
+          set c4r = 0*cdum4  
+          set c4g = 0*cdum4
+          set c4b = int(255*(($(sep[4]) - cdum4)/$dnu4))
+       }
+
+       #--- RED end: blue to red ---#
+       if( $(abs($whatend)) == 2 ) {
+          set c4r = int(255*((cdum4 - $(sep[3]))/$dnu4))
+          set c4g = 0*cdum4
+          set c4b = int(255*(($(sep[4]) - cdum4)/$dnu4))
+       }
+
+       #--- CYAN end: blue to cyan ---#
+       if( $(abs($whatend)) == 3 ) {
+          set c4r = 0*cdum4
+          set c4g = int(255*((cdum4 - $(sep[3]))/$dnu4))
+          set c4b = 0*cdum4 + 255  ## int(255*(($(sep[4]) - cdum4)/$dnu4))
+       }
+
+       #--- magenta to blue ---#
+       if( $(abs($whatend)) == 4 ) {
+          set c4r = int(255*(($(sep[4]) - cdum4)/$dnu4)**0.7)
+          set c4g = 0*cdum4
+          set c4b = 0*cdum4 + 255  ## int(255*(($(sep[4]) - cdum4)/$dnu4))
+       }
+
+       set ctr = c1r concat c2r concat c3r concat c4r
+       set ctg = c1g concat c2g concat c3g concat c4g
+       set ctb = c1b concat c2b concat c3b concat c4b
+
+       # set color1=255 + 256*int(255*((cdum1-$(sep[0]))/$dnu1))
+       # set color2=int(255*(($(sep[2])-cdum2)/$dnu2)) + 256*255
+       # set color3=256*255*int(($(sep[3])-cdum3)/$dnu3) + 256*256*int(255*((cdum3-$(sep[2]))/$dnu3))
+
+       set cdum     = cdum1  concat cdum2  concat cdum3  concat cdum4
+       # set colortot = color1 concat color2 concat color3 
+
+       set colortot = ctr +256*ctg + 256*256*ctb
+       
+       if( $whatend < 0 ) { 
+          set _colortot = reverse(colortot)
+          set colortot = _colortot
+          delete _colortot
+       }
+
+       # ctype = colortot 
+
+#---------------------------------------------------------------------------
+# plot_shaded_dots <x> <y> <color-coding-vec> <expand>
+plot_shaded_dots 34
+
+       #---------------------------------------------
+       # defining color palette
+       #
+       # if(!$?ncolpalette) {
+          define ncolpalette ? { Number of colors in the palette : }
+       # }
+       color_map $ncolpalette
+
+       if($?4) { define myexp $4 } else { define myexp 1 }
+
+       vecminmax $3 min_for_col max_for_col
+
+       define min_for_col ? {  Minimum value of color coding vector :  }
+       define max_for_col ? {  Maximum value of color coding vector :  }
+
+       #
+       # drawing itself 
+       #
+       echo ----------------------------------------------------------------------
+       echo Now select an exponent to be used in the \$value-color conversion.
+       echo   eta > 1 : more colors used for the top    of the range of \$value
+       echo   eta < 1 :                          bottom 
+       define expo ? { Exponent used in color-mapping ? }
+       set colv = int( (dimen(coldum)-1)*(($3 - $min_for_col)/($max_for_col - $min_for_col))**$expo )
+       echo colv DONE
+
+       lweight 3 
+       do 4=0,$(dimen($1)-1) {
+           if( $(colv[$4]) <= $(dimen(coldum)-1) ){
+              ctype $(colv[$4])
+           } else {
+              ctype $(dimen(coldum)-1)
+           }
+
+           ptype 4 3 expand $(2.0*$myexp) relocate $($1[$4]) $($2[$4]) dot 
+       }
+
+       #---------------------------------------------
+       # Restoring ColorMap
+       #
+       ### delete coldum
+        ### echo Restoring ColorMap
+       ### restore_colors_default
+
+       ### define border "n"
+       ### define border ? { Draw dot-borders [y/n] : }
+       ### if( substr('$border',0,1) == 'y' ) {
+       ### lweight 1
+       ### do 4=0,$(dimen($1)-1) {
+       ###     ctype 2
+       ###     ptype 4 0 expand $(2.1*$myexp) relocate $($1[$4]) $($2[$4]) dot 
+       ### }
+       ### lweight 3
+       ### }
+
+       #---------------------------------------------
+       #
+       #
+       ### echo Re-Defining color palette
+       # color_map $ncolpalette $mappa
+       echo Drawing color scale 
+
+       # define pip "y"
+       define pip ? {draw color scale [y/n] }
+       if( substr('$pip',0,1) == 'y' ) {
+           print_scala 4500 29000 $($gy2 +  500) $($gy2 + 1500)
+       } else {
+          restore_colors_default
+       }
+
+       #---------------------------------------------
+       # Restoring ColorMap
+       #
+
+       delete colours
+       delete cnames
+
+##------------------------------------------------------------------------------
+## print_scala <how much over the boxes in steps of 500>
+## print_scala x1 x2 y1 y2
+print_scala 4
+
+       define saveloc "location $!gx1 $!gx2 $!gy1 $!gy2 limits $!fx1 $!fx2 $!fy1 $!fy2 "
+       echo $saveloc
+
+        expand 1.1
+       ptype 4 3
+
+       location $1 $2 $3 $4
+
+       limits $min_for_col $max_for_col 0 1
+       set by = < 0 0 1 1 0 >
+
+       set ydum  =$min_for_col,$max_for_col,$(($max_for_col-$min_for_col)/$($NCOLORS))
+       set colv3 =int( (dimen(coldum))*((ydum- $min_for_col)/($max_for_col-$min_for_col))**$expo ) 
+       do i=0,$(dimen(ydum)-2)  {
+          ctype $i
+          ctype $(colv3[$i])
+          define x1 $(ydum[$i])
+          define x2 $(ydum[$i+1])
+          set bx = < $x1 $x2 $x2 $x1 $x1 >
+          shade 5 bx by 
+       }
+
+       restore_colors_default
+       
+       ctype 2
+       ticksize 0 0 0 0 
+       #box 0 3 1 3
+       box 0 3 0 3
+
+       location 4000 32000 4000 32000
+       relocate ($($gx1+0.3*($gx2-$gx1)) $($gy1+0.9*($gy2-$gy1)))
+       ctype 2 
+       putlabel 5 Free energy F(Q,rmsd)
+
+       define px1 $($min_for_col +0.5*($max_for_col-$min_for_col))
+       define py1 0.9
+
+       define px2 $($min_for_col +0.65*($max_for_col-$min_for_col))
+       define py2 0.9
+
+       draw_arrow $px1 $py1 $px2 $py2
+
+       echo Restoring location 
+       $saveloc
+
+#------------------------------------------------------------------------------
+# print_palette
+print_palette
+
+       window 1 1 1 1 
+        expand 1.1
+       ptype 4 3
+
+       define where ? <                 Location [1-5] from top : >
+
+       if($?min_for_col) { 
+          echo $min_for_col
+       } else {
+          define min_for_col 0
+       }
+       if($?max_for_col) { 
+          echo $max_for_col
+       } else {
+          define max_for_col 1
+       }
+       location 6000 30000 $(30000 - 5000*$where) $(35000 - 5000*$where)
+       limits $min_for_col $max_for_col 0 1
+       set by = < 0 0 1 1 0 >
+
+       if($?expo) { define expon $expo }
+       define expon ? <  Exponent used in data-color conversion : >
+
+       set ydum  =$min_for_col,$max_for_col,$(($max_for_col-$min_for_col)/$($NCOLORS))
+       set colv3 =int( (dimen(coldum))*((ydum- $min_for_col)/($max_for_col-$min_for_col))**$expon ) 
+       do i=0,$(dimen(ydum)-2)  {
+          ctype $i
+          ctype $(colv3[$i])
+          define x1 $(ydum[$i])
+          define x2 $(ydum[$i+1])
+          set bx = < $x1 $x2 $x2 $x1 $x1 >
+          shade 5 bx by 
+       }
+
+       define i y
+       define i ?      <                       Restore colourmap : >
+       if('$i' != 'n') {
+          restore_colors_default
+       }
+       ctype 2
+       ticksize 0 0 0 0 
+       box 0 3 1 3
+       foreach var sep { 
+           ltype 2 
+           relocate $var 0 
+           draw     $var 1 
+           ltype 0
+       }
+
+       location 5000 31000 5000 31000
+       ctype 0
+
+#---------------------------------------------------------------------------
+# plot_verynice [<expand-factor>]
+#                     | it assumes that the following arrays already exist:
+#                     | X - xav e_vec_u e_vec_d
+#                     | Y - yme eyme_u  eyme_d
+plot_verynice 01
+
+       # if(!$?1) {
+       #     echo usage: mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d>
+       #     return
+       # }
+       # if('$1' == '-h' || '$1' == '?' || '$1' == '-help') {
+       #     echo usage: mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d>
+       #     return
+       # }
+
+       if($?1) { 
+          define expf $1 
+       } else {
+          define expf 1
+       }
+       echo -----------------------------------
+       echo  [1] BLACK circles
+       echo  [2] white circles
+       echo  [3] ***   circles
+       echo  [4] BLACK triangles
+       echo  [5] white triangles
+       echo  [6] BLACK squares
+       echo  [7] white squares
+       echo  [8] ***   squares
+       echo  [9] white diamonds
+       echo -----------------------------------
+       define howplot ? { Which DOT style ? }
+
+       if( $howplot == 1 ) {
+           #------------------------------------
+           # black circles
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar xav yme eyme_u 2
+            errorbar xav yme eyme_d 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 20 3 
+            points xav yme
+       }
+       if( $howplot == 2 ) {
+           #------------------------------------
+           # White Circles
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar xav yme eyme_u 2
+            errorbar xav yme eyme_d 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+           expand $($expf*2.4)
+           ctype 1 
+           ptype 20 3
+           points xav yme
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 20 0 
+            points xav yme
+        }
+       if( $howplot == 3) {
+           #------------------------------------
+           # Starred circles
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar xav yme eyme_u 2
+            errorbar xav yme eyme_d 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+           expand $($expf*2.4)
+           ctype 1 
+           ptype 20 3
+           points xav yme
+           ctype 2 
+           ptype 4 1 
+           points xav yme
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 20 0 
+            points xav yme
+       }
+       if( $howplot == 4) {
+           #------------------------------------
+           # Black Triangles
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar xav yme eyme_u 2
+            errorbar xav yme eyme_d 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 3 3 
+            points xav yme
+       }
+       if( $howplot == 5 ) {
+           #------------------------------------
+           # White Triangles
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar xav yme eyme_u 2
+            errorbar xav yme eyme_d 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+           expand $($expf*2.4)
+           ctype 1 
+           ptype 3 3 
+           points xav yme
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 3 0 
+            points xav yme
+        }
+       if( $howplot == 6 ) {
+           #------------------------------------
+           # Black Squares
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar xav yme eyme_u 2
+            errorbar xav yme eyme_d 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+           expand $($expf*2.5)
+           ctype 1 
+           ptype 4 3 
+           points xav yme
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 4 3 
+            points xav yme
+        }
+       if( $howplot == 7 ) {
+           #------------------------------------
+           # White Squares
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar xav yme eyme_u 2
+            errorbar xav yme eyme_d 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+           expand $($expf*2.5)
+           ctype 1 
+           ptype 4 3 
+           points xav yme
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 4 0 
+            points xav yme
+        }
+       if( $howplot == 8 ) {
+           #------------------------------------
+           # Starred Squares
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar xav yme eyme_u 2
+            errorbar xav yme eyme_d 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+           expand $($expf*2.5)
+           ctype 1 
+           ptype 4 3 
+           points xav yme
+            expand $($expf*3.0)
+           ctype 2 
+           ptype 4 1 
+           points xav yme
+            ptype 4 0 
+            points xav yme
+        }
+       if( $howplot == 9 ) {
+           #------------------------------------
+           # White diamonds 
+            ctype 2
+            lweight 3
+            expand $($expf*2.0)
+            errorbar xav yme eyme_u 2
+            errorbar xav yme eyme_d 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+           expand $($expf*2.5)
+           angle 45
+           ctype 1 
+           ptype 4 3 
+           points xav yme
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 4 0 
+            points xav yme
+           angle 0
+        }
+
+       expand $($expf*1.5)
+       ctype 2 
+
+       echo --------------------------------
+       echo  Plot label ?
+       echo   [0] NO
+       echo   [1] top left
+       echo   [2] bottom left 
+       define golabel ? { Plot label ? [0/1/2] }
+
+       if( $golabel > 0 ) {
+         if( $golabel == 1 ) { define poslab "TOP" }
+         if( $golabel == 2 ) { define poslab "BOTTOM" }
+         echo $poslab
+         define ypos ? { Which position from $!!poslab ? [1-7] }
+         if( $golabel == 1 ) {
+            relocate ( $($gx1+1600) $($gy2-1250*$ypos) ) 
+         }
+         if( $golabel == 2 ) {
+            relocate ( $($gx1+1600) $($gy1+1250*$ypos) ) 
+         }
+         if( $howplot == 1 ) {
+           # black circle
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 20 3 
+           dot
+         }
+         if( $howplot == 2 ) {
+           # White Circles
+           expand $($expf*2.4)
+           ctype 1 
+           ptype 20 3
+           dot
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 20 0 
+            dot
+          }
+         if( $howplot == 3) {
+           # Starred circles
+           expand $($expf*2.4)
+           ctype 2 
+           ptype 4 1 
+           dot
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 20 0 
+            dot
+         }
+           if( $howplot == 4) {
+           # Black Triangles
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 3 3 
+            dot
+         }
+         if( $howplot == 5 ) {
+           # White Triangles
+           expand $($expf*2.4)
+           ctype 1 
+           ptype 3 3 
+           dot
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 3 0 
+            dot
+          }
+         if( $howplot == 6 ) {
+           # Black Squares
+           expand $($expf*2.5)
+           ctype 1 
+           ptype 4 3 
+           dot
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 4 3 
+            dot
+          }
+         if( $howplot == 7 ) {
+           # White Squares
+           expand $($expf*2.5)
+           ctype 1 
+           ptype 4 3 
+           dot
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 4 0 
+            dot
+          }
+         if( $howplot == 8 ) {
+           # Starred Squares
+           expand $($expf*2.5)
+           ctype 1 
+           ptype 4 3 
+           dot
+            expand $($expf*3.0)
+           ctype 2 
+           ptype 4 1 
+           dot
+            ptype 4 0 
+            dot
+          }
+         if( $howplot == 9 ) {
+           # White diamonds 
+           expand $($expf*2.5)
+           angle 45
+           ctype 1 
+           ptype 4 3 
+           dot
+            ctype 2 
+            expand $($expf*3.0)
+            ptype 4 0 
+            dot
+           angle 0
+          }
+         define labstr ? { Label ? }
+         expand $($expf*1.3)
+         putlabel 6 " "$labstr
+       }
+
+#------------------------------------------------------------------------------
+# mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d> <expand>
+mypoints 08
+
+       # if('$1' == '-h' || '$1' == '?' || '$1' == '-help') {
+       if(!$?1) {
+           echo usage: mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d> <expand>
+           return
+       }
+       if('$1' == '-h' || '$1' == '?' || '$1' == '-help') {
+           echo usage: mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d> <expand>
+           return
+       }
+       set _x       local
+       set _y       local
+       set _err_y_u local
+       set _err_y_d local
+       define pty   local
+       define cty_i local
+       define cty_o local
+       define exp   local
+
+       define pty     $1
+       define cty_o   $2
+       define cty_i   $3
+       set _x       = $4
+       set _y       = $5
+       set _err_y_u = $6
+       set _err_y_d = $7
+       define exp     $8
+
+       define oldlwe $lweight
+       define oldcty $ctype
+       define oldpty "$ptype"
+       define oldexp $expand
+
+       ctype $cty_o
+       errorbar _x _y _err_y_u 2
+       errorbar _x _y _err_y_d 4
+       expand $($exp*1.8) ctype $cty_i ptype $pty 3 
+       points _x _y 
+       expand $($exp*2.1) ctype $cty_o ptype $pty 0
+       points _x _y 
+
+       ptype   $oldpty
+       ctype   $oldcty
+       lweight $oldlwe
+       expand  $oldexp
+
+#------------------------------------------------------------------------------
+# mypoints_upper <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d> <threshold> <expand>
+mypoints_upper 09
+
+       # if('$1' == '-h' || '$1' == '?' || '$1' == '-help') {
+       if(!$?1) {
+           echo usage: mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d> <threshold> <expand>
+           return
+       }
+       if('$1' == '-h' || '$1' == '?' || '$1' == '-help') {
+           echo usage: mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d> <threshold> <expand>
+           return
+       }
+
+       foreach name < x xtmp1 xtmp2 > {
+         set _$name       local
+       } 
+       foreach name < y ytmp1 ytmp2 err_y_u err_y_d err_ytmp1_u err_ytmp1_d err_ytmp2_u err_ytmp2_d > {
+         set _$name       local
+       } 
+
+       #set _x       local
+       #set _y       local
+       #set _xtmp1   local
+       #set _ytmp1   local
+       #set _err_y_u local
+       #set _err_y_d local
+       define pty   local
+       define cty_i local
+       define cty_o local
+       define exp   local
+
+       define pty     $1
+       define cty_o   $2
+       define cty_i   $3
+       set _x       = $4
+       set _y       = $5
+       set _err_y_u = $6
+       set _err_y_d = $7
+       define limit   $8
+       define exp     $9
+
+       define oldlwe $lweight
+       define oldcty $ctype
+       define oldpty "$ptype"
+       define oldexp $expand
+
+       define upper {{m -10 0 10 0 m 0 0 0 -2000 -200 -1700 0 -1850 200 -1700 0 -2000 }}
+
+       set _xtmp1       = _x        if(  (_y - _err_y_d) >  $limit ) 
+       set _ytmp1       = _y        if(  (_y - _err_y_d) >  $limit ) 
+       set _err_ytmp1_u = _err_y_u  if(  (_y - _err_y_d) >  $limit ) 
+       set _err_ytmp1_d = _err_y_d  if(  (_y - _err_y_d) >  $limit ) 
+       set _xtmp2       = _x        if(  (_y - _err_y_d) <= $limit ) 
+       set _ytmp2       = _y        if(  (_y - _err_y_d) <= $limit ) 
+       set _err_ytmp2_u = _err_y_u  if(  (_y - _err_y_d) <= $limit ) 
+       set _err_ytmp2_d = _err_y_d  if(  (_y - _err_y_d) <= $limit ) 
+
+       ctype $cty_o
+       errorbar _xtmp1 _ytmp1 _err_ytmp1_u 2
+       errorbar _xtmp1 _ytmp1 _err_ytmp1_d 4
+
+       # upper limits 
+       expand $($exp*1.2) ptype $upper
+       points _xtmp2 _ytmp2
+
+       expand $($exp*1.8) ctype $cty_i ptype $pty 3 
+       points _xtmp1 _ytmp1 
+       expand $($exp*2.1) ctype $cty_o ptype $pty 0
+       points _xtmp1 _ytmp1 
+
+       expand $($exp*1.8) ctype $cty_i ptype $pty 3 
+       points _xtmp2 _ytmp2 
+       expand $($exp*2.1) ctype $cty_o ptype $pty 0
+       points _xtmp2 _ytmp2 
+
+       ptype   $oldpty
+       ctype   $oldcty
+       lweight $oldlwe
+       expand  $oldexp
+
+#---------------------------------------------------------------------------

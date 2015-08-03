@@ -1,0 +1,189 @@
+##     *                    PROGRAM SLOPES                          *
+##     *                                                            *
+##     *  PROGRAM TO COMPUTE THE THEORETICAL REGRESSION SLOPES      *
+##     *  AND UNCERTAINTIES (VIA DELTA METHOD) FOR A
+##     *  (X(I),Y(I)) DATA SET WITH UNKNOWN POPULATION DISTRIBUTION.*
+##     *                                                            *
+##     *         SIXLIN(NMAX,NTOT,X,Y,A,SIGA,B,SIGB), CALCULATES 6  *
+##     *              LINEAR FITS ANALYTICALLY                      *
+##     A full description of these methods can be found in:
+##       Isobe, T., Feigelson, E. D., Akritas, M. and Babu, G. J.,
+##          Linear Regression in Astronomy I, Astrophys. J. 364, 104 
+##          (1990)
+##       Babu, G. J. and Feigelson, E. D., Analytical and Monte Carlo
+##          Comparisons of Six Different Linear Least Squares Fits,
+##          Communications in Statistics, Simulation & Computation, 
+##          21, 533 (1992)
+##       Feigelson, E. D. and Babu, G. J., Linear Regression in 
+##          Astronomy II, Astrophys. J. 397, 55 (1992).
+##
+##      CALL SIXLIN(NMAX,NTOT,X,Y,A,SIGA,B,SIGB)
+##
+##************************* SUBROUTINE SIXLIN ****************************
+##
+## SUBROUTINE SIXLIN(NMAX,N,X,Y,A,SIGA,B,SIGB)
+## 
+##                      SIX LINEAR REGRESSIONS
+##      WRITTEN BY T. ISOBE, G. J. BABU AND E. D. FEIGELSON
+##                CENTER FOR SPACE RESEARCH, M.I.T.
+##                              AND
+##               THE PENNSYLVANIA STATE UNIVERSITY
+## 
+##                    REV. 1.0,   SEPTEMBER 1990
+## 
+##        THIS SUBROUTINE PROVIDES LINEAR REGRESSION COEFFICIENTS
+##     COMPUTED BY SIX DIFFERENT METHODS DESCRIBED IN ISOBE,
+##     FEIGELSON, AKRITAS, AND BABU 1990, ASTROPHYSICAL JOURNAL
+##     AND BABU AND FEIGELSON 1990, SUBM. TO TECHNOMETRICS.
+##     THE METHODS ARE OLS(Y/X), OLS(X/Y), OLS BISECTOR, ORTHOGONAL,
+##     REDUCED MAJOR AXIS, AND MEAN-OLS REGRESSIONS.
+## 
+##     INPUT
+##          X(I) : INDEPENDENT VARIABLE
+##          Y(I) : DEPENDENT VARIABLE
+##             N : NUMBER OF DATA POINTS
+## 
+##     OUTPUT
+##          A(J) : INTERCEPT COEFFICIENTS
+##          B(J) : SLOPE COEFFICIENTS
+##       SIGA(J) : STANDARD DEVIATIONS OF INTERCEPTS
+##       SIGB(J) : STANDARD DEVIATIONS OF SLOPES
+##      WHERE J = 1, 6.
+## 
+##     ERROR RETURNS
+##          CALCULATION IS STOPPED WHEN DIVISION BY ZERO WILL
+##          OCCUR (I.E. WHEN SXX, SXY, OR EITHER OF THE OLS
+##          SLOPES IS ZERO).
+##
+# sixlin <X> <Y>
+sixlin 2
+
+       set vX   local
+       set vY   local
+       set vXin local
+       set vYin local
+
+       set vXin = $1
+       set vYin = $2
+       
+       #-----------------------------------------------------------
+       # INITIALIZATIONS
+       #
+       define S1   (0.0)
+       define S2   (0.0)
+       define SXX  (0.0)
+       define SYY  (0.0)
+       define SXY  (0.0)
+       define SUM1 (0.0)
+       define SUM2 (0.0)
+       define SUM3 (0.0)
+
+       define RN (dimen(vXin))
+
+       #-----------------------------------------------------------
+       # COMPUTE AVERAGES AND SUMS
+       #
+       define S1 $(sum(vXin))
+       define S2 $(sum(vYin))
+
+       define XAVRG $( $S1/$RN )
+       define YAVRG $( $S2/$RN )
+
+       echo "-------------------"
+       echo " <X> : "$XAVRG
+       echo " <Y> : "$YAVRG
+       echo "-------------------"
+
+       set vX = vXin - $XAVRG  
+       set vY = vYin - $YAVRG  
+
+       define SXX $(sum(vX*vX))
+       define SYY $(sum(vY*vY))
+       define SXY $(sum(vX*vY))
+
+       if( $SXY == 0 ) {
+          echo " SXY is zero. Terminated "
+          return
+       }
+
+       #-----------------------------------------------------------
+       # SLOPE COEFFICIENTS
+       #
+       define SIGN (1.0)
+       if( $SXY <  0.0 ) { define SIGN (-1.0) }
+       define B1 $( $SXY/$SXX )
+       define B2 $( $SYY/$SXY )
+       define B3 $( ( $B1*$B2 - 1.0 + SQRT((1.0 + $B1**2.)*(1.0 + $B2**2.)) )/($B1 + $B2) )
+       define B4 $( 0.5*($B2 - 1.0/$B1 + $SIGN*SQRT(4.0 + ($B2 - 1.0/$B1)**2.)) ) 
+       define B5 $( $SIGN*SQRT($B1*$B2) )
+       define B6 $( 0.5*($B1 + $B2) )
+
+
+       #-----------------------------------------------------------
+       # COMPUTE INTERCEPT COEFFICIENTS
+       #
+       do 9=1,6 {
+          define A$9 $( $YAVRG - $B$9*$XAVRG )
+       }
+
+       #-----------------------------------------------------------
+       # PREPARE FOR COMPUTATION OF VARIANCES
+       #
+       define GAM1 $( $B3/(($B1 + $B2)*SQRT((1.0 + $B1**2.)*(1.0 + $B2**2.))) )
+       define GAM2 $( $B4/(SQRT(4.0*$B1**2. + ($B1*$B2 - 1.0)**2.)) )
+
+       define SUM1 $( sum((vX*(vY - $B1*vX))**2.) )
+       define SUM2 $( sum((vY*(vY - $B2*vX))**2.) )
+       define SUM3 $( sum((vX*vY*(vY - $B1*vX)*(vY - $B2*vX))) )
+       define COV  $( $SUM3/($B1*$SXX**2.) )
+
+       #-----------------------------------------------------------
+       # COMPUTE VARIANCES OF THE SLOPE COEFFICIENTS
+       #
+       define SIGB1 $( $SUM1/($SXX**2.) )
+       define SIGB2 $( $SUM2/($SXY**2.) )
+       define SIGB3 $( ($GAM1**2.)*(((1.0 + $B2**2.)**2.)*$SIGB1 + 2.0*(1.0 + $B1**2.)*(1.0 + $B2**2.)*$COV + ((1.0 +$B1**2.)**2.)*$SIGB2) )
+       define SIGB4 $( ($GAM2**2.)*($SIGB1/$B1**2. + 2.0*$COV + $B1**2.*$SIGB2) )
+       define SIGB5 $( 0.25*($B2*$SIGB1/$B1 + 2.0*$COV + $B1*$SIGB2/$B2) )
+       define SIGB6 $( 0.25*($SIGB1 + 2.0*$COV + $SIGB2) )
+
+       #-----------------------------------------------------------
+       # COMPUTE VARIANCES OF THE INTERCEPT COEFFICIENTS
+       #
+       define SIGA1 $(sum((    (vY-$B1*vX)*(1.0 - $RN*$XAVRG*vX/$SXX))**2.))
+       define SIGA2 $(sum((    (vY-$B2*vX)*(1.0 - $RN*$XAVRG*vY/$SXY))**2.))
+       define SIGA3 $(sum(((vX*(vY-$B1*vX)*(1.0 + $B2**2.)/$SXX + vY*(vY - $B2*vX)*(1.0 + $B1**2.)/$SXY) *$GAM1*$XAVRG*$RN - vY + $B3*vX)**2.))
+       define SIGA4 $(sum(((vX*(vY-$B1*vX)/$SXX + vY*(vY - $B2*vX)*($B1**2.)/$SXY)*$GAM2 *$XAVRG*$RN/SQRT($B1**2.) - vY + $B4*vX)**2.))
+       define SIGA5 $(sum(((vX*(vY-$B1*vX)*SQRT($B2/$B1)/$SXX + vY*(vY - $B2*vX)*SQRT($B1/$B2)/$SXY) *0.5*$RN*$XAVRG - vY + $B5*vX)**2.))
+       define SIGA6 $(sum(((vX*(vY-$B1*vX)/$SXX + vY*(vY - $B2*vX)/$SXY) *0.5*$RN*$XAVRG - vY + $B6*vX)**2.))
+
+       #-----------------------------------------------------------
+       # CONVERT VARIANCES TO STANDARD DEVIATIONS
+       #
+       do 9=1,6 {
+         define SIGB$9 $( sqrt($SIGB$9) )
+         define SIGA$9 $( sqrt($SIGA$9)/$RN )
+       }
+
+       #-----------------------------------------------------------
+       # RETURN DATA ARRAYS TO THEIR ORIGINAL FORM
+       #
+       # set vX = vX + $XAVRG
+       # set vY = vY + $YAVRG
+
+       #-----------------------------------------------------------
+
+       echo "====================================================================="
+       echo " SIX LINEAR REGRESSIONS: ANALYTICAL RESULTS "
+       echo " A = INTERCEPT,  B = SLOPE,  SD = STANDARD DEVIATION "
+       echo " "
+       echo "                           A          SD(A)        B          SD(B)  "
+       echo "  "
+       echo " OLS(Y/X)          : "$(sprintf('%10.3f',$A1))  $(sprintf('%10.3f',$SIGA1))  $(sprintf('%10.3f',$B1))  $(sprintf('%10.3f',$SIGB1))
+       echo " OLS(X/Y)          : "$(sprintf('%10.3f',$A2))  $(sprintf('%10.3f',$SIGA2))  $(sprintf('%10.3f',$B2))  $(sprintf('%10.3f',$SIGB2))
+       echo " OLS BISECTOR      : "$(sprintf('%10.3f',$A3))  $(sprintf('%10.3f',$SIGA3))  $(sprintf('%10.3f',$B3))  $(sprintf('%10.3f',$SIGB3))
+       echo " ORTHOGONAL        : "$(sprintf('%10.3f',$A4))  $(sprintf('%10.3f',$SIGA4))  $(sprintf('%10.3f',$B4))  $(sprintf('%10.3f',$SIGB4))
+       echo " REDUCED MAJ AXIS  : "$(sprintf('%10.3f',$A5))  $(sprintf('%10.3f',$SIGA5))  $(sprintf('%10.3f',$B5))  $(sprintf('%10.3f',$SIGB5))
+       echo " MEAN OLS          : "$(sprintf('%10.3f',$A6))  $(sprintf('%10.3f',$SIGA6))  $(sprintf('%10.3f',$B6))  $(sprintf('%10.3f',$SIGB6))
+       echo "====================================================================="
+

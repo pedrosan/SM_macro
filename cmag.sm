@@ -1,0 +1,133 @@
+# cmag
+cmag
+
+	location 5500 28000 5500 30000
+	lweight 3 
+
+	define t_f_ms (12.9)
+	define t_ft_ms ( 0.178)
+	define t_f_ms  ? {          Frame Time (ms) : }
+        define t_ft_ms ? { Frame Transfer Time (ms) : }
+	define t_f  ($t_f_ms/1000.0)
+	define t_ft ($t_ft_ms/1000.0)
+
+	define maxrate ? { Max. count rate in input : }
+
+	define step (0.01)
+	set r_theo=0.001,$maxrate,$step
+
+	set r_correct = (1.0 - exp((r_theo*($t_ft-$t_f))))/$t_f
+	set loss_fraction = 1 - r_correct/r_theo
+
+	vecminmax r_correct a b 
+
+	define ymax $( $b*1.05 )
+
+	define xlinlog ? { Linear or Log scale for X-axis [1/2] : }
+	if ( $xlinlog == 1 ) {
+	  define x1  (0.0)
+	  define x2  ($maxrate)
+	  define xtick (0)
+	} else {
+	  define x1 $(lg(0.001))
+	  define x2 $(lg($maxrate))
+	  define xtick (-1)
+	}
+
+	define ylinlog ? { Linear or Log scale for Y-axis [1/2] : }
+	if ( $ylinlog == 1 ) {
+	  define y1  (0.0)
+	  define y2  ($ymax)
+	  define ytick (0)
+	} else {
+	  define y1 $(lg(0.001))
+	  define y2 $(lg($ymax))
+	  define ytick (-1)
+	}
+
+	ctype 2 
+	expand 1.5 
+	limits $x1 $x2 $y1 $y2
+	ticksize $xtick 0 $ytick 0
+
+	box 1 4 0 4 
+	expand 2.0 
+	xlabel C_{mag}
+	ctype 3 
+	ylabel C_{det}
+	box 4 2 4 4 
+	ctype 2
+
+	ltype 2 relocate 0 0 draw 1e3 1e3
+	ctype 3 ltype 0 
+	if ( $xlinlog == 1 ) {
+	   if ( $ylinlog == 1 ) {
+   	      connect r_theo r_correct
+	   } else {
+	      connect r_theo ( lg(r_correct) )
+	   }
+	} else {
+	   if ( $ylinlog == 1 ) {
+   	      connect (lg(r_theo)) r_correct
+	   } else {
+	      connect (lg(r_theo)) ( lg(r_correct) )
+	   }
+	}
+
+	define flinlog ? { Linear or Log scale for Fraction [1/2] : }
+	if ( $flinlog == 1 ) {
+	   define f1 (0.0001)
+	   define f2 (1.0001)
+	   define ftick (1)
+	} else {
+	   define f1 $(lg(0.0001))
+	   define f2 $(lg(1.0001))
+	   define ftick (-1)
+	}
+
+	limits $x1 $x2 $f1 $f2
+	ticksize $xtick 0 $ftick 0 
+
+	expand 1.5
+	ctype 4
+	box  4 4 4 2 
+	relocate ( $($gx2 + 3500) $( ($gy1+$gy2)/2.) )
+	angle -90
+	putlabel 5 Coincidence Loss Fraction
+	angle 0
+
+	ctype 4 
+	ltype 0
+	if ( $xlinlog == 1 ) {
+	   if ( $flinlog == 1 ) {
+   	      connect r_theo loss_fraction
+	   } else {
+	      connect r_theo ( lg(loss_fraction) )
+	   }
+	} else {
+	   if ( $flinlog == 1 ) {
+   	      connect (lg(r_theo)) loss_fraction
+	   } else {
+	      connect (lg(r_theo)) ( lg(loss_fraction) )
+	   }
+	}
+
+	ctype 2 
+	limits $x1 $x2 $y1 $y2
+	ticksize $xtick 0 $ytick 0
+	expand 1.5 
+	box 1 4 0 4 
+
+	echo ---------------------------------------------
+	echo   Count rate array step is $step
+	define gridstep ? { Every How many step to draw a line : }
+	do 1=0,$(dimen(r_theo)-1),$gridstep {
+	    ltype 1 
+	    ctype 6
+	    relocate $x1 $(r_correct[$1])
+	    draw $(r_theo[$1]) $(r_correct[$1])
+	    draw $(r_theo[$1]) $y1
+	}
+
+
+#------------------------------------------------------------------------------

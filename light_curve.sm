@@ -1,0 +1,2547 @@
+#------------------------------------------------------------------------------
+# help.light_curve
+help.light_curve
+
+	echo "-------------------------------------------------------"
+	echo "* readdata_lc      [<filename-of-unbinned-LC>]"
+	echo "                   Loads lc data from SM-format output files."
+	echo "* readdata_lc_fits [<filename-of-unbinned-LC>]"
+	echo "                   Loads lc data from standard output from LCURVE,"
+	echo "                   i.e. the ASCII dump of lcurve fits files."
+	echo "* dtlc"
+	echo "* dtlc_fits"
+	echo "* "
+	echo "* read_reb_lc"
+	echo "* read_xte_lc"
+	echo "* read_qdp_lc"
+	echo "*"
+	echo "* print_dtlc"
+	echo "* store_reb_lc"
+	echo "* write_reb_lc"
+	echo "-------------------------------------------------------"
+	echo "* plot_dtlc_lin     [-silent]"
+	echo "* plot_dtlc_log     [-silent]"
+	echo "* plot_dtlc_loglog  [-silent]"
+	echo "-------------------------------------------------------"
+	echo "* "
+	echo "* read_gti  /  read_gti_new  /  read_gti_old"
+	echo "* plot_gti  /  plot_gti_bars /  plot_gti_labels "
+	echo "* "
+	echo "-------------------------------------------------------"
+
+##--------------------------------------------------------------------------
+## cdlc97
+cdlc97
+	cd /data/analysis/SAX/Mkn421/1997/Products
+
+##--------------------------------------------------------------------------
+## cdlc98
+cdlc98
+	cd /data/analysis/SAX/Mkn421/1998/Temporal
+
+##--------------------------------------------------------------------------
+## cdlc99
+cdlc99
+	cd /data/analysis/SAX/Mkn421/1999/Temporal
+
+##--------------------------------------------------------------------------
+## cdlc00
+cdlc00
+	cd /home/gfossati/Science/Mkn421/2000/Temporal
+
+##--------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+# load_lc_97
+load_lc_97
+
+	define PWD :
+	echo leaving $PWD ...
+	cdlc97
+
+	foreach time < 500 1500 2000 > {
+	  foreach 9 < l97_01_05 \
+	                 l97_05_2 \
+			 m97_2_3 \
+			 m97_4_6      > {
+	    define var $9_$time
+	    echo $var
+	    read_reb_lc $var
+	  }
+	}
+
+	echo going back to $PWD ...
+	cd $PWD
+
+#---------------------------------------------------------------------------
+# load_lc_98
+load_lc_98
+
+	define PWD :
+	echo leaving $PWD ...
+	cdlc98
+
+	foreach time < 1000 1500 2000 > {
+	  foreach dete < l98_01_05 l98_05_2 m98_2_3 m98_4_6 > {
+	    define var "$!dete"_"$!time"ab
+	    echo $var
+	    read_reb_lc $var
+	  }
+	}
+
+	foreach time < 500 1000 > {
+	  foreach dete < m98_2_10 > {
+	    define var "$!dete"_"$!time"ab
+	    echo $var
+	    read_reb_lc $var
+	  }
+	}
+
+	echo going back to $PWD ...
+	cd $PWD
+
+#---------------------------------------------------------------------------
+# load_lc_99
+load_lc_99
+
+	define PWD :
+	echo leaving $PWD ...
+	cdlc99
+
+	foreach time < 1000 1500 2000 > {
+	  foreach 9 < l99_01_05 l99_05_2 m99_2_3 m99_4_6 > {
+	    define var $9_$time
+	    echo $var
+	    read_reb_lc $var
+	  }
+	}
+	foreach time { 500 1000 } {
+	  foreach 9 { m99_2_10 } {
+	    define var $9_$time
+	    echo $var
+	    read_reb_lc $var
+	  }
+	}
+
+	echo going back to $PWD ...
+	cd $PWD
+
+#---------------------------------------------------------------------------
+# load_lc_00b
+load_lc_00b
+
+	define PWD :
+	echo leaving $PWD ...
+	cdlc00
+
+	foreach time < 250 500 1000 > {
+	  foreach 9 < m00_2_10 > {
+	    define var $9_"$!time"b
+	    echo $var
+	    read_reb_lc $var
+	  }
+	}
+
+	echo going back to $PWD ...
+	cd $PWD
+
+#---------------------------------------------------------------------------
+# load_lc_00
+load_lc_00
+
+	define PWD :
+	echo leaving $PWD ...
+	cdlc00
+
+	foreach time < 500 1000 1500 2000 > {
+	  foreach 9 < l00_01_15 l00_01_05 l00_05_2 m00_2_3 m00_4_10 m00_2_10 > {
+	    define var $9_$time
+	    echo $var
+	    read_reb_lc $var
+	  }
+	}
+
+	echo going back to $PWD ...
+	cd $PWD
+
+#---------------------------------------------------------------------------
+# load_lc_01
+load_lc_01
+
+	foreach band < 5_8 10_12 14_18 20_37 5_23 > {
+	   foreach dt < 32 128 256 512 > {
+	       read_xte_lc pca $band week1 $dt 2001 rescaleT
+	   }
+	}
+
+#---------------------------------------------------------------------------
+# load_lc_03
+load_lc_03
+
+	foreach band < 5_8 14_18 20_37 5_23 > {
+	   foreach dt < 128 256 > {
+	       read_xte_lc pca $band all $dt 2003 rescaleT
+	   }
+	}
+
+#---------------------------------------------------------------------------
+# read_gti_old  :  ****OLD OLD OLD**** ... do NOT use with NEW GTI files
+#              e.g. [orbit_mecs2] for SAX 2000
+#              e.g. [sec_pca]     for XTE 2001
+read_gti_old
+
+	define gtifile ?  {*   GTI file name [ gti_***.dat] : }
+	data gti_$gtifile.dat
+	define 1 $gtifile
+	read < gti_t1_$1 2 gti_t2_$1 3 >
+
+	define whattodo ? {*        Rescale Time-Axis [y/n] : }
+	if(substr('$whattodo',0,1) == 'y') {
+	  define t0ref  ? {* Time (in TJD) to which rescale : }
+	  set gti_t1_$1 = gti_t1_$1 - 86400.0*($t0ref- 9353.0)
+	  set gti_t2_$1 = gti_t2_$1 - 86400.0*($t0ref- 9353.0)
+	} 
+
+	set gti_dt_s_$1 = ( gti_t2_$1 - gti_t1_$1 )
+	set gti_dt_m_$1 = ( gti_t2_$1 - gti_t1_$1 )/60.
+
+#---------------------------------------------------------------------------
+# read_gti_new : reads GTI files in the new format, where there are already
+#                T_1, T_2 and dT scaled with respect to T0 in cols. 5, 6, 4.
+#                
+#                USE THIS AND ONLY THIS WITH RECENT DATA !!!!
+#                with new format GTI files:
+#                   N absTstart absTstop dT relTstart relTstop
+#
+#                For SAX2000 a good file is : gti_orbit_mecs2.dat 
+#                in /home/gfossati/Science/Mkn421/2000/Temporal
+#                
+#                For RXTE2001 the file is : gti_sec_pca.dat 
+#                in /home/gfossati/Science/Mkn421/2001/
+#                
+read_gti_new
+
+	define gtifile ?  <*   GTI file name [ gti_***.dat] : >
+	data gti_$gtifile.dat
+	define 1 $gtifile
+
+	define t0ref read 4 3
+
+	echo " *** Reading GTI intervals with time rescaled to T0ref =" $t0ref 
+	read < gti_n_$1 1.s gti_dt_s_$1 4 gti_t1_$1 5 gti_t2_$1 6 >
+
+	set gti_tm_$1 = 0.5*(gti_t1_$1+gti_t2_$1)
+
+#---------------------------------------------------------------------------
+# read_gti     : reads GTI files in the new format, where there are already
+#                T_1, T_2 and dT scaled with respect to T0 in cols. 5, 6, 4.
+#                
+#                USE THIS AND ONLY THIS WITH RECENT DATA !!!!
+#                
+read_gti    
+
+	read_gti_new
+
+
+#---------------------------------------------------------------------------
+# plot_gti_bars [<color>]
+plot_gti_bars  01
+
+	define gtivec ? {*                        GTI Vector name : }
+	define 2 $gtivec
+
+	define n (dimen(gti_t1_$2))
+	define h $($fy1+0.1*($fy2-$fy1))
+	define h ? <* Y-coordinate for GTI plot [Y-min=$fy1] : >
+
+	define scarti 0
+	do i=0,$($n-1) {
+	   lweight 10
+	   if($?1) { ctype $1 } else { ctype 3 }
+	   if( $(gti_t1_$2[$i]) >= $fx1 && $(gti_t1_$2[$i]) <= $fx2 ) {
+	      relocate $(gti_t1_$2[$i]) $h 
+	      draw     $(gti_t2_$2[$i]) $h
+	   } else { 
+	     define scarti $($scarti+1)
+	   }
+	}
+	echo " segmenti scartati : " $scarti
+
+	set ydum= $h + 0*gti_t1_$2
+	angle 90
+	lweight 2
+	ptype 2 1 
+	ctype 2 
+	expand 2.5
+	points gti_t1_$2 ydum
+	points gti_t2_$2 ydum
+	expand 2.
+	angle 0
+
+	define plotlabs ? <* Label GTI intervals [y/n] : >
+	if( substr('$plotlabs',0,1) == 'y' ) {
+	   expand 0.6
+	   angle 90
+	   set gti_tm_$2 = 0.5*(gti_t1_$2+gti_t2_$2)
+	   set gti_n_temp  = gti_n_$2  if( gti_t1_$2 > $fx1 && gti_t2_$2 < $fx2 )
+	   set gti_tm_temp = gti_tm_$2 if( gti_t1_$2 > $fx1 && gti_t2_$2 < $fx2 )
+	   set ydum_temp   = 2*ydum    if( gti_t1_$2 > $fx1 && gti_t2_$2 < $fx2 )
+	   ptype gti_n_temp
+	   points gti_tm_temp ydum_temp  
+	   angle 0
+	   expand 2.0
+	   delete gti_n_temp
+	   delete gti_tm_temp
+	   delete ydum_temp
+	}
+
+#---------------------------------------------------------------------------
+# plot_gti_labels [<color>]
+plot_gti_labels  01
+
+	define gtivec ? {*                        GTI Vector name : }
+	define 2 $gtivec
+
+	define n (dimen(gti_t1_$2))
+	define h $($fy1+0.1*($fy2-$fy1))
+	define h ? <* Y-coordinate for GTI plot [Y-min=$fy1] : >
+
+	# define scarti 0
+	# do i=0,$($n-1) {
+	#    lweight 10
+	#    if($?1) { ctype $1 } else { ctype 3 }
+	#    if( $(gti_t1_$2[$i]) >= $fx1 && $(gti_t1_$2[$i]) <= $fx2 ) {
+	#       relocate $(gti_t1_$2[$i]) $h 
+	#       draw     $(gti_t2_$2[$i]) $h
+	#    } else { 
+	#      define scarti $($scarti+1)
+	#    }
+	# }
+	echo " Rejected Segments : " $scarti
+
+	set ydum= $h + 0*gti_t1_$2
+	# angle 90
+	# lweight 2
+	# ptype 2 1 
+	# ctype 2 
+	# expand 2.5
+	# points gti_t1_$2 ydum
+	# points gti_t2_$2 ydum
+	# expand 2.
+	# angle 0
+
+	define plotlabs ? <* Label GTI intervals [y/n] : >
+	if( substr('$plotlabs',0,1) == 'y' ) {
+	   expand 0.6
+	   angle 90
+	   set gti_tm_$2 = 0.5*(gti_t1_$2+gti_t2_$2)
+	   set gti_n_temp  = gti_n_$2  if( gti_t1_$2 > $fx1 && gti_t2_$2 < $fx2 )
+	   set gti_tm_temp = gti_tm_$2 if( gti_t1_$2 > $fx1 && gti_t2_$2 < $fx2 )
+	   set ydum_temp   = ydum      if( gti_t1_$2 > $fx1 && gti_t2_$2 < $fx2 )
+	   ptype gti_n_temp
+	   points gti_tm_temp ydum_temp  
+	   angle 0
+	   expand 2.0
+	   delete gti_n_temp
+	   delete gti_tm_temp
+	   delete ydum_temp
+	}
+
+#---------------------------------------------------------------------------
+# plot_gti [<color>]
+plot_gti 01
+
+	define gtivec ? { GTI Vector name : }
+	define 2 $gtivec
+
+	define n (dimen(gti_t1_$2))
+	define h $($fy1+0.1*($fy2-$fy1))
+	define h ? <* Y-coordinate for GTI plot [Y-min=$fy1] : >
+
+	do i=0,$($n-1) {
+	   lweight 1
+	   if($?1) { ctype $1 } else { ctype 3 }
+	   if( $(gti_t1_$2[$i]) >= $fx1 && $(gti_t1_$2[$i]) <= $fx2 ) {
+	       relocate $(gti_t1_$2[$i]) $($fy1-0.1)
+	       draw     $(gti_t1_$2[$i]) $($fy2+0.1)
+	       relocate $(gti_t2_$2[$i]) $($fy1-0.1)
+	       draw     $(gti_t2_$2[$i]) $($fy2+0.1)
+	   } 
+	}
+
+	set ydum= $h + 0*gti_t1_$2
+	angle 90
+	lweight 2
+	ptype 2 1 
+	ctype 2 
+	expand 2.5
+	points gti_t1_$2 ydum
+	points gti_t2_$2 ydum
+	expand 2.
+	angle 0
+
+	define plotlabs ? <* Label GTI intervals [y/n] : >
+	if( substr('$plotlabs',0,1) == 'y' ) {
+	   expand 0.6
+	   angle 90
+	   set gti_tm_$2 = 0.5*(gti_t1_$2+gti_t2_$2)
+	   set gti_n_temp  = gti_n_$2  if( gti_t1_$2 > $fx1 && gti_t2_$2 < $fx2 )
+	   set gti_tm_temp = gti_tm_$2 if( gti_t1_$2 > $fx1 && gti_t2_$2 < $fx2 )
+	   set ydum_temp   = ydum      if( gti_t1_$2 > $fx1 && gti_t2_$2 < $fx2 )
+	   ptype gti_n_temp
+	   points gti_tm_temp ydum_temp  
+	   angle 0
+	   expand 2.0
+	   delete gti_n_temp
+	   delete gti_tm_temp
+	   delete ydum_temp
+	}
+
+#---------------------------------------------------------------------------
+# read_pds_lucio_old
+read_pds_lucio_old
+
+	# set newt_tmp       = newt_$suffix
+	# set newt1_tmp      = newt1_$suffix
+	# set newt2_tmp      = newt2_$suffix
+	# set newbin_tmp     = newbin_$suffix
+	# set counts_tmp     = counts_$suffix
+	# set dt_true_tmp    = dt_true_$suffix
+	# set err_counts_tmp = err_counts_$suffix 
+	# set rate_tmp       = rate_$suffix       
+	# set cvrfr_tmp      = cvrfr_$suffix      
+	# set err_rate_tmp   = err_rate_$suffix  
+
+	define PWD :
+	echo leaving $PWD ...
+	cdlc98
+
+	data lucio_PDS_lc.dat
+	lines  30 45
+	read { newt1_pds1 2 newbin_pds1 3 rate_pds1 5 err_rate_pds1 6 }
+
+	set newt_pds1  = newt1_pds1 + 0.5*newbin_pds1
+	set newt2_pds1 = newt1_pds1 +     newbin_pds1
+
+	lines  49 67
+	read { newt1_pds2 2 newbin_pds2 3 rate_pds2 5 err_rate_pds2 6 }
+
+	set newt1_pds2 = newt1_pds2 + 2*86400
+
+	set newt_pds2  = newt1_pds2 + 0.5*newbin_pds2
+	set newt2_pds2 = newt1_pds2 +     newbin_pds2
+ 
+	set     newt_pds =     newt_pds1 CONCAT     newt_pds2
+	set    newt1_pds =    newt1_pds1 CONCAT    newt1_pds2
+	set    newt2_pds =    newt2_pds1 CONCAT    newt2_pds2
+	set   newbin_pds =   newbin_pds1 CONCAT   newbin_pds2
+	set     rate_pds =     rate_pds1 CONCAT     rate_pds2
+	set err_rate_pds = err_rate_pds1 CONCAT err_rate_pds2
+
+	# stats  clean_rate_reb                mean_reb  width_reb  kurt_reb
+	stats rate_pds mean_pds width_pds kurt_pds
+
+	set cvrfr_pds   = 0*rate_pds + 1
+	set dt_true_pds = 0*rate_pds + 1
+	set counts_pds  = rate_pds*dt_true_pds
+	set err_counts_pds  = rate_pds*dt_true_pds
+
+	echo going back to $PWD ...
+	cd $PWD
+
+#---------------------------------------------------------------------------
+# readdata_lc  	Legge i dati dai file originali output di QDP/lc1
+#               : It looks like this and OBSOLETE macro (TO BE CHECKED)
+readdata_lc 01
+
+	if($?1 == 0) {
+	   define oldname  ? { Data file name : }
+	   define 1 $oldname
+	}
+	define oldname  $1
+
+	data $1
+	lines 23 23   read tdum  3   define t0 $(tdum)
+	lines 25 25   read ndum  5   define nn $(ndum)
+	lines 37 $(36+$nn)
+	read { t 1 dt 2 rate 3 sigma_rate 4 cvrfr 5 }
+
+	echo ----------------------
+	echo  T_0 = $t0
+	echo  Bins = $nn
+	echo ----------------------
+
+	define whattodo ? {         Rescale Time-Axis [y/n] : }
+	if(substr('$whattodo',0,1) == 'y') {
+	  define t0ref  ? { Time (in days) to which rescale : }
+	  define t0refsec  (($t0 - $t0ref)*86400)
+	  set t  = t + $t0refsec
+	} 
+
+	set t1      = t 
+	set t2      = t + 2.*dt
+	set dt_true = cvrfr*2*dt
+	set counts  = dt_true*rate
+
+	define how_error ? { Poisson error or Propagate [1/2] : }
+	if(substr('$how_error',0,1) == '1') {
+	    set err_counts = sqrt(counts)
+	    set err_rate   = err_counts/dt_true
+	} else {
+	    set err_counts = sigma_rate
+	    set err_rate   = err_counts
+	}
+	# set err_rate   = err_counts/dt_true
+
+	define basicbin ($(2*$(dt[0])))
+
+	vecminmax t tmin tmax
+	define tmin_lim ($tmin-40*$basicbin)
+	define tmin_lim (0-40*$basicbin)
+	define tmax_lim ($tmax+40*$basicbin)
+
+	echo $tmin_lim 
+	echo $tmax_lim 
+
+#---------------------------------------------------------------------------
+# readdata_lc_fits : Legge i dati dai file originali output di LCURVE[1]
+#                    che sono FITS file dumped to ASCII
+#                    
+readdata_lc_fits 01
+
+	if($?1 == 0) {
+	   define oldname  ? {* Data file name :}
+	   define 1 $oldname
+	}
+	define oldname  $1
+
+	data $1
+        define nn      read  5 3  
+        define t0d_int read 38 2  
+        define t0d_dec read 39 2  
+	lines 63 $(62+$nn)
+	read { t 2 dt 3 rate 4 sigma_rate 5 cvrfr 6 }
+
+	echo "----------------------"
+	echo " T_0 = "$t0d_int" [TJD] + "$t0d_dec" [s]"
+	echo " Good Bins = "$nn
+	echo "----------------------"
+	define nn delete
+
+	define t0ref $t0d_int
+
+	define whattodo ? {*             Rescale Time-Axis [y/n] : }
+	if(substr('$whattodo',0,1) == 'y') {
+	  define t0ref  ? {* Time (in TJD days) to which rescale : }
+	  define t0ref2   ((($t0d_int - $t0ref) + $t0d_dec)*86400.0)
+	  set t  = t + $t0ref2
+	} 
+
+	set t1         = t 
+	set t2         = t + 2.0*dt
+	set dt_true    = cvrfr*2.0*dt
+	set counts     = dt_true*rate
+
+	echo "*** the answer to this next option does NOT really matter at all "
+	define how_error ? {*    Poisson error or Propagate [1/2] : }
+	if(substr('$how_error',0,1) == '1') {
+	    set err_counts = sqrt(counts)
+	    set err_rate   = err_counts/dt_true
+	} else {
+	    ## set err_counts = sigma_rate
+	    ## set err_rate   = err_counts
+	    set err_counts = sigma_rate*dt_true
+	    set err_rate   = sigma_rate
+	}
+	## NOTE:     err_counts array really is never used
+	##       and err_rate   almost as well.
+
+	define basicbin ($(2.0*$(dt[0])))
+
+	vecminmax t tmin tmax
+	# echo "     T_min =" $tmin
+	# echo "     T_max =" $tmax
+	define tmin_lim ($tmin-40*$basicbin)
+	define tmax_lim ($tmax+40*$basicbin)
+
+	## echo T_min_lim - $tmin_lim 
+	## echo T_max_lim - $tmax_lim 
+
+#---------------------------------------------------------------------------
+# dtlc  prepares a rebinned light curve (USES: sub_dtlc).
+#	The new Tbin must be a multiple of that of the input light curve.
+#	INPUT : "plain" light curve (USES: readdata_lc)
+#	OUTPUT: cts_xxxx  [array] rebinned counts
+#	      : err_xxxx  [array] error on cts_xxxx 
+#	      : ratio, err_ratio, sn_ratio [arrays]
+dtlc
+
+	readdata_lc
+	sub_dtlc
+
+#---------------------------------------------------------------------------
+# dtlc_fits  prepares a rebinned light curve (USES: sub_dtlc).
+# 	     The new Tbin must be a multiple of that of the input light curve.
+#	     INPUT : "plain" light curve (USES: readdata_lc_fits)
+#	     OUTPUT: cts_xxxx  [array] rebinned counts
+#	           : err_xxxx  [array] error on cts_xxxx 
+#	           : ratio, err_ratio, sn_ratio [arrays]
+dtlc_fits
+
+	readdata_lc_fits
+	sub_dtlc
+
+#---------------------------------------------------------------------------
+# read_lc_fits  loads a light curve "directly" (NO REBINNING)
+#	     INPUT : USES readdata_lc_fits
+read_lc_fits
+
+	readdata_lc_fits
+
+	define newbin $( t[1]-t[0] )
+	set newt_reb       = t
+	set newt1_reb      = newt_reb - $newbin/2.0
+	set newt2_reb      = newt_reb + $newbin/2.0
+	set newbin_reb     = 0*newt_reb + $newbin
+	set dt_true_reb    = dt_true
+	set cvrfr_reb      = cvrfr
+	set rate_reb       = rate
+	set err_rate_reb   = err_rate
+	set counts_reb     = counts
+	set err_counts_reb = err_counts
+
+	define whattodo ? {*        Rename vectors [y/n] : }
+	if(substr('$whattodo',0,1) == 'y') {
+	  echo " "
+	  echo "*                       The input file was : " $oldname
+	  echo "*                   The re-binning time is : " $newbin
+	  define name ? <* Suffix name for vectors to become *_name : >
+	  foreach 3 { newt newt1 newt2 newbin dt_true counts err_counts rate err_rate cvrfr }{
+	     set $3_$name = $3_reb
+	     delete $3_reb
+	  }
+	} 
+
+##---------------------------------------------------------------------------
+## core routine for rebinning a light curve.
+## NOTE: it only rebins to a newbin that is multiple of the input bin duration.
+sub_dtlc
+
+	echo "*           The basic binning time is : "$(2.0*$(dt[0]))
+	define newbin ? {*                New binning interval :} 
+
+	if( $(int($newbin/$basicbin)*$basicbin) == $newbin ) { 
+	   echo  "  "
+	} else { 
+	   echo "  New binning interval should be MULTIPLE of the basic one "
+	   define newbin ? {*                New binning interval : } 
+	}
+
+	define  howmany (int($newbin/$basicbin))
+	echo "* The new bin time corresponds to "$howmany" of the old basic unity"
+
+	set newt   = $tmin_lim,$tmax_lim,$newbin
+	set newt1  =   newt - $newbin/2.0
+	set newt2  =   newt + $newbin/2.0
+	set newbin = 0*newt + $newbin
+
+	define maxnewindex (dimen(newt))
+	set dimen(counts_reb)   = $maxnewindex
+	set dimen(sigma_reb)    = $maxnewindex
+	set dimen(dt_true_reb)  = $maxnewindex
+	set dimen(n_contrib_reb)= $maxnewindex
+
+	define maxindex (dimen(counts)-1)
+
+	define first     (0)
+	define tmp_first (0)
+	define topcts    (0)
+	define bottomcts (100)
+
+	echo "     new LC vector dimension = "$maxnewindex
+	echo "Original LC vector dimension = "$($maxindex+1)
+
+	#------------------------------------------------
+	# rebinning loop
+	#
+	define stepcheck ( int($maxnewindex/10) )
+	do i=0,$($maxnewindex-1) {
+	   #  if($(int($i/100)*100) == $i) { echo * $i }
+	   if($(int($i/$stepcheck)*$stepcheck) == $i) { echo * $(int($i/$stepcheck)*10.0) % }
+
+	   define cts_dum       (0)
+	   define sigma_dum     (0)
+	   define dt_true_dum   (0)
+	   define n_contrib     (0)
+
+	   do j=$first,$($first+$howmany+2) {
+	      if( $j < $($maxindex+1) ) {
+	      if( ($(t[$j]) >= $(newt1[$i])) && ( $(t[$j]) < $(newt2[$i])) ) {
+		          
+		 ## echo - GOOD bin
+	         define cts_dum      ($cts_dum + $(counts[$j]))
+		 define sigma_dum    ($sigma_dum + $(sigma_rate[$j])**2)
+	         define dt_true_dum  ($dt_true_dum + $(dt_true[$j]))
+	         define tmp_first    ($j+1)
+		 if( $(counts[$j]) > 0 ) {
+		     define n_contrib    ($n_contrib+1)
+		 }
+		 #
+		 # changed 01/03/30 to count only 'positive'/actual contribution.
+		 # It may need to be changed for ASM where sometimes data are negative.
+	      ## } else {
+		##  echo - Too bad, the bin tagged T=$(t[$j]) was not good [$(newt1[$i]) - $(newt2[$i])]
+	      }
+	      }
+           }
+	   define previous $first
+	   define first    $tmp_first
+
+	   set counts_reb[$i]    = $cts_dum
+	   set sigma_reb[$i]     = $sigma_dum
+	   set dt_true_reb[$i]   = $dt_true_dum
+	   set n_contrib_reb[$i] = $n_contrib
+
+	   # if($cts_dum > $topcts ){
+	   # 	  define topcts  ($cts_dum) 
+           # 	  define toprate ($cts_dum/$dt_true_dum) 
+           # }
+	   # if($cts_dum < $topcts && $cts_dum > 0 ){
+           # 	  define bottomcts  ($cts_dum) 
+           # 	  define bottomrate ($cts_dum/$dt_true_dum) 
+           # }
+	}
+
+	set newt_reb       = newt
+	set newt1_reb      = newt1
+	set newt2_reb      = newt2
+	set newbin_reb     = newbin
+	set err_counts_reb = sqrt(counts_reb)
+	set rate_reb       = counts_reb/dt_true_reb
+	set cvrfr_reb      = dt_true_reb/$newbin
+
+	define how_error ? {* [rebinning] Poisson error or Propagate [1/2] : }
+
+	if(substr('$how_error',0,1) == '1') {
+	    set err_rate_reb = err_counts_reb/dt_true_reb
+	} else {
+	    set err_rate_reb = sqrt(sigma_reb)/n_contrib_reb
+	}
+
+	set clean_newt_reb     = newt_reb     if(rate_reb > 0)
+	set clean_rate_reb     = rate_reb     if(rate_reb > 0)
+	set clean_err_rate_reb = err_rate_reb if(rate_reb > 0)
+
+	stats  clean_rate_reb                           mean_reb  width_reb  kurt_reb
+	stats2 clean_rate_reb (1/clean_err_rate_reb**2) mean2_reb width2_reb kurt2_reb
+
+	echo "-----------------------------------------------------------------"
+	echo "* Average cts/sec = " $mean_reb    $mean2_reb
+	echo "* sigma           = " $width_reb   $width2_reb
+	echo "* kurtosis        = " $kurt_reb    $kurt2_reb
+
+	echo "-----------------------------------------------------------------"
+	echo "* ha prodotto una serie di vettori/variabili del tipo *_reb"
+	echo "* Possono essere renamed con il comando \"store_reb_lc\""
+	echo "-----------------------------------------------------------------"
+
+	define whattodo ? {*                     Rename vectors [y/n] : }
+	if(substr('$whattodo',0,1) == 'y') {
+	  echo " "
+	  echo "*                       The input file was : " $oldname
+	  echo "*                   The re-binning time is : " $newbin
+	  define name ? <* Suffix name for vectors to become *_name : >
+	  foreach 3 < newt newt1 newt2 newbin dt_true counts err_counts rate err_rate cvrfr >{
+	     set $3_$name = $3_reb
+	     delete $3_reb
+	  }
+	} 
+
+	define mean_$name   ($mean_reb)
+	define mean2_$name  ($mean2_reb)
+	define width_$name  ($width_reb)
+	define width2_$name ($width2_reb)
+
+#---------------------------------------------------------------------------
+# print_dtlc   : prints a light curve to a file
+#              : Similar to write_reb_lc
+print_dtlc
+
+	define 1        ? <* Suffix of files to be printed : >
+	define filename ? <*                     File Name : >
+
+	# 11.2f   newt
+	# 11.2f   newt1
+	# 11.2f   newt2
+	#  8.2f   newbin
+	#  9.3f   dt_true
+	#  8.1f   counts
+	#  8.3f   err_counts
+	#  8.5f   rate
+	#  8.5f   err_rate
+	#  7.5f   cvrfr
+
+	define format "%11.2f %11.2f %11.2f   %8.2f %9.3f  %8.1f %8.3f  %8.5f %8.5f  %7.5f\n"
+	print $filename '$!!format' <newt_$1 newt1_$1 newt2_$1 newbin_$1 dt_true_$1 counts_$1 err_counts_$1 rate_$1 err_rate_$1 cvrfr_$1>
+
+#---------------------------------------------------------------------------
+# write_reb_lc_long [<l.c. name>]
+#                  : prints light curve to a file, named after the l.c. suffix.
+#                  : Long Format, including counts arrays.
+write_reb_lc_long 01 
+
+	if(!$?1) { 
+	   define 1 ? <* Suffix of files to be written [lc_***.dat] : >
+	}
+	
+	define outaux $1
+	define outname lc_$outaux.dat
+	define format "%7.1f %7.1f %7.1f %5.0f %7.2f %6.0f %7.3f %7.4f %7.4f  %6.4f \n"
+	define format "%9.2f %9.2f %9.2f %6.1f %11.5f %10.2f %10.3f %10.5f %10.5f %7.5f\n"
+
+	echo $outname
+	echo $format 
+
+	define tnames " newt_$1 newt1_$1 newt2_$1 newbin_$1 dt_true_$1 "
+	define rnames " counts_$1 err_counts_$1 rate_$1 err_rate_$1 cvrfr_$1 "
+	#print $outname '$!format' <newt_$1 newt1_$1 newt2_$1 newbin_$1 dt_true_$1 counts_$1 err_counts_$1 rate_$1 err_rate_$1 cvrfr_$1 >
+	print $outname '$!format' < $!tnames $!rnames >
+
+	echo -----------------------------------------------------------------
+	echo   All arrays _$1 have been save in file : lc_$outaux.dat 
+	echo -----------------------------------------------------------------
+
+#---------------------------------------------------------------------------
+# write_reb_lc [<l.c. name>]
+#              : prints light curve to a file, named after the l.c. suffix.
+#              : SHORT format, 
+write_reb_lc 01 
+
+	if(!$?1) { 
+	   define 1 ? <* Suffix of files to be written [lc_***.dat] : >
+	}
+	
+	define outaux $1
+	define outname lc_$outaux.dat
+	define format "%7.1f %7.1f %7.1f %5.0f %7.2f %6.0f %7.3f %7.4f %7.4f  %6.4f \n"
+	define format "%9.2f %9.2f %9.2f %6.1f %11.5f %10.2f %10.3f %10.5f %10.5f %7.5f\n"
+
+	echo $outname
+	echo $format 
+
+	define tnames " newt_$1 newt1_$1 newt2_$1 newbin_$1 dt_true_$1 "
+	define rnames " counts_$1 err_counts_$1 rate_$1 err_rate_$1 cvrfr_$1 "
+	#print $outname '$!format' <newt_$1 newt1_$1 newt2_$1 newbin_$1 dt_true_$1 counts_$1 err_counts_$1 rate_$1 err_rate_$1 cvrfr_$1 >
+	print $outname '$!format' < $!tnames $!rnames >
+
+	echo -----------------------------------------------------------------
+	echo   All arrays _$1 have been save in file : lc_$outaux.dat 
+	echo -----------------------------------------------------------------
+
+#---------------------------------------------------------------------------
+# unload_reb_lc 01 : unloads a rebinned light curve FROM THE MEMORY
+unload_reb_lc 01
+
+	if(!$?1) { 
+	   define 1 ? <* Suffix of files to be unloaded [lc_***.dat] : >
+	}
+
+	foreach 2 < newt newt1 newt2 newbin dt_true counts err_counts rate err_rate cvrfr > {
+	    delete $2_$1
+	}
+
+#---------------------------------------------------------------------------
+# delete_reb_lc 01 : unloads a rebinned light curve FROM THE MEMORY
+delete_reb_lc 01
+
+	unload_reb_lc
+
+#---------------------------------------------------------------------------
+# read_reb_lc   [<file suffix e.g. lc_***.dat>]
+#               : reads from file a standard format rebinned light curve.
+read_reb_lc 01
+
+	if(!$?1) { 
+	   define 1 ? <* Suffix of files to be read [lc_***.dat] : >
+	}
+
+	data lc_$1.dat
+	read < inp_newt 1 inp_newt1 2 inp_newt2 3 inp_newbin 4 inp_dt_true 5 >
+	read < inp_counts 6 inp_err_counts 7 >
+	read < inp_rate 8 inp_err_rate 9 inp_cvrfr 10 >
+
+	foreach 9 <newt newt1 newt2 newbin dt_true counts err_counts rate err_rate cvrfr > {
+	   set $9_$1 = inp_$9 if(inp_err_rate != 0)
+	}
+
+	set clean_newt_$1     = newt_$1     if(rate_$1 > 0)
+	set clean_rate_$1     = rate_$1     if(rate_$1 > 0)
+	set clean_err_rate_$1 = err_rate_$1 if(rate_$1 > 0)
+
+	stats  clean_rate_$1                   mean_$1  width_$1  kurt_$1
+	stats2 clean_rate_$1 (1/clean_err_rate_$1**2) mean2_$1 width2_$1 kurt2_$1
+
+	echo -----------------------------------------------------------------
+	echo * Average cts/sec = $mean_$1    $mean2_$1
+	echo * sigma           = $width_$1   $width2_$1
+	echo * kurtosis        = $kurt_$1    $kurt2_$1
+
+	echo -----------------------------------------------------------------
+	echo * ha prodotto una serie di vettori/variabili del tipo *_$1
+	echo -----------------------------------------------------------------
+
+	foreach 2 { newt rate err_rate } {
+	    echo Deleting : clean_$2_$1
+	    delete clean_$2_$1
+	}
+
+	echo *** DELETING COUNTS/ERR_COUNTS/DT_TRUE ARRAYS....
+	foreach 2 { counts err_counts dt_true } {
+	    echo *** Deleting : $2_$1
+	    delete $2_$1
+	}
+
+#------------------------------------------------------------------------------
+# read_xte_lc  [<instrument>][<channel band>] [<timeframe>] [<binning time>] [year] [<"resc">]
+#               : reads from file a PCA or HEXTE light curve, which is a 
+#               : direct dump of a FITS light curve file.
+#               : It is probably equivalent to read_lc_fits (to be checked).
+read_xte_lc 06
+
+        if($?1 == 0) {
+	   define instr ?    <*                   What Instrument [pca/hxt] : >
+	   if( substr('$instr',0,1) == 'p' ) { define 1 "pca" }
+	   if( substr('$instr',0,1) == 'h' ) { define 1 "hxt" }
+        }
+	if( substr('$1',0,1) == 'p' ) { define 1 "pca" }
+	if( substr('$1',0,1) == 'h' ) { define 1 "hxt" }
+        define instr  $1
+
+	#--- additional params for PCA case ---#
+	if( substr('$1',0,1) == 'p' ) { 
+           if($?2 == 0) {
+	      define eband ? <* Band [channels :5_8/10_12/14_18/20_37/5_23] : >
+	      define 2 $eband
+           }
+
+           if($?4 == 0) {
+              define olddata ? <*            Time Binning [32/64/128/256/512] : >
+              define 4 $olddata
+	   }
+	}
+
+	#--- Time Frame ---#
+        if($?3 == 0) {
+	   define tframe ?   <*                      Time Frame [week1/all] : >
+	   define 3 $tframe
+        }
+
+	#--- additional params for HEXTE case ---#
+	if( substr('$1',0,1) == 'h' ) { 
+           if($?2 == 0) {
+	      define eband ?    <*         Band [channels :20_60] : >
+	      define 2 $eband
+           }
+
+           if($?4 == 0) {
+              define olddata  ? <*    Time Binning [256/512/1024] : >
+              define 4 $olddata
+	   }
+	}
+
+
+	#--- Year ---#
+        if($?5 == 1) {
+	   define year $5
+	   #echo "* Rescaling Time axis to default T0ref, read from file "
+        } else {
+           define year ? <*   Observation Year [2001|2003] : >
+	}
+
+	#--- Time Frame ---#
+        if($?6 == 1) {
+	   #define t0ref $6
+	   echo "* Rescaling Time axis to default T0ref, read from file "
+        }
+	#---------------------------------------#
+
+        define eband   $2
+        define tframe  $3
+        define olddata $4
+
+	define REPO "/home/gfossati/Science/Mkn421/2001/Temporal/LC"
+	define REPO "/home/gfossati/Science/Mkn421/$!!year/Temporal/LC"
+	define datafile "$!REPO/$!1_$!2_$!3_$!4s.lc"
+        data "$!datafile"
+        define nn      read  5 3  
+        define t0d_int read 38 2  
+        define t0d_dec read 39 2  
+        lines 63 $(62+$nn)
+        read < t_in 2 _dt_in 3 rate_in 4 err_rate_in 5 cvrfr_in 6 >
+
+        echo "----------------------"
+        echo " T_0 = "$t0d_int" [TJD] + "$t0d_dec" [s]"
+        echo " Good Bins = "$nn
+        echo "----------------------"
+	define nn delete
+
+	if( $t0d_dec>0.8 ) {
+            define t0ref $($t0d_int+1)
+	} else {
+            define t0ref $t0d_int
+	}
+
+	## if($?5 == 1) {
+	if($?6 == 1) {
+           define t0ref2   ((($t0d_int - $t0ref) + $t0d_dec)*86400.0)
+           set t_in  = t_in + $t0ref2
+	} else {
+           define whattodo ? {*             Rescale Time-Axis [y/n] : }
+           if(substr('$whattodo',0,1) == 'y') {
+             define t0ref  ? {* Time (in TJD days) to which rescale : }
+             define t0ref2   ((($t0d_int - $t0ref) + $t0d_dec)*86400.0)
+             set t_in  = t_in + $t0ref2
+           } 
+	}
+
+	define name $1_$2_$4
+	echo name: $name
+	define 1 $name
+	set newt_$1     = t_in
+	set newt1_$1    = t_in - _dt_in
+	set newt2_$1    = t_in + _dt_in
+	set newbin_$1   = 2*_dt_in
+	set rate_$1     = rate_in
+	set err_rate_$1 = err_rate_in
+	set cvrfr_$1    = cvrfr_in
+	set dt_true_$1  = 2*_dt_in*cvrfr_in
+
+        set clean_newt_$1     = newt_$1     if(rate_$1 > 0)
+        set clean_rate_$1     = rate_$1     if(rate_$1 > 0)
+        set clean_err_rate_$1 = err_rate_$1 if(rate_$1 > 0)
+
+        stats  clean_rate_$1                          mean_$1  width_$1  kurt_$1
+        stats2 clean_rate_$1 (1/clean_err_rate_$1**2) mean2_$1 width2_$1 kurt2_$1
+
+        echo "-----------------------------------------------------------------"
+        echo "* Average cts/sec = "$mean_$1    $mean2_$1
+        echo "* sigma           = "$width_$1   $width2_$1
+        echo "* kurtosis        = "$kurt_$1    $kurt2_$1
+
+        echo "-----------------------------------------------------------------"
+	echo "* Stored data in arrays/variables named as *_$1 "
+        echo "-----------------------------------------------------------------"
+
+        foreach 2 { newt rate err_rate } {
+            echo Deleting : clean_$2_$1
+            delete clean_$2_$1
+        }
+	delete _dt_in
+
+#---------------------------------------------------------------------------
+# read_qdp_lc  [<file sfx e.g. qdp_lc_***.dat >]
+#              : reads from file data CONVERTED from QDP format....
+#              : The main difference is the column content and format.
+#              : NOTE: it does NOT read directly QDP files.
+read_qdp_lc 01
+
+	if(!$?1) { 
+	    define 1 ? < Suffix of files to be read [qdp_lc_***.dat] : > 
+	}
+	data qdp_lc_$1.dat
+	read < newt_$1 1 newbin_$1 2 rate_$1 3 err_rate_$1 4 cvrfr_$1 5 >
+
+	set newt1_$1   = newt_$1
+	set newt2_$1   = newt_$1
+	set newbin_$1  = newbin_$1*2.0
+	set dt_true_$1 = newbin_$1*cvrfr_$1
+	set counts_$1  = rate_$1*dt_true_$1
+	set err_counts_$1 = err_rate_$1*dt_true_$1
+
+	set clean_newt_$1     = newt_$1     if(rate_$1 > 0)
+	set clean_rate_$1     = rate_$1     if(rate_$1 > 0)
+	set clean_err_rate_$1 = err_rate_$1 if(rate_$1 > 0)
+
+	stats  clean_rate_$1                   mean_$1  width_$1  kurt_$1
+	stats2 clean_rate_$1 (1/clean_err_rate_$1**2) mean2_$1 width2_$1 kurt2_$1
+
+	echo -----------------------------------------------------------------
+	echo * Average cts/sec = $mean_$1    $mean2_$1
+	echo * sigma           = $width_$1   $width2_$1
+	echo * kurtosis        = $kurt_$1    $kurt2_$1
+
+	echo -----------------------------------------------------------------
+	echo * ha prodotto una serie di vettori/variabili del tipo *_$1
+	echo -----------------------------------------------------------------
+
+	foreach 2 { newt rate err_rate } {
+	    echo Deleting : clean_$2_$1
+	    delete clean_$2_$1
+	}
+
+#---------------------------------------------------------------------------
+# store_reb_lc  [<existing array suffix DEF=reb>] [<NEW name>]
+#              : assigns a name to a rebinned light curve.
+store_reb_lc 02
+
+	if(!$?1) {
+	   echo " Renaming arrays *_reb "
+	   define insfx "reb" 
+	   define outsfx ? <* NEW suffix for arrays names [from $insfx] : >
+	} else {
+	   define insfx  $1
+	   if($?2) {
+	      define outsfx $2
+	   } else {
+	      define outsfx ? <* NEW suffix for arrays names [from $insfx] : >
+	   }
+	}
+	define 1 $insfx
+	define 2 $outsfx
+
+	foreach 3 < newt newt1 newt2 newbin dt_true counts err_counts rate err_rate cvrfr > {
+	    set $3_$2 = $3_$1
+	    delete $3_$1
+	}
+
+#---------------------------------------------------------------------------
+# rename_reb_lc  [<existing array suffix DEF=reb>]  [<NEW name>]
+#              : assigns a name to a rebinned light curve.
+rename_reb_lc   02 
+
+	if($?2) { 
+	   store_reb_lc $1 $2
+	} else { 
+	   if($?1) {
+	      store_reb_lc $1
+	   } else {
+	      store_reb_lc 
+	   }
+	}
+
+#---------------------------------------------------------------------------
+# mvlc :  [<existing array suffix DEF=reb>]  [<NEW name>]
+#      : assigns a name to a rebinned light curve.
+mvlc 02 
+
+	if($?2) { 
+	   store_reb_lc $1 $2
+	} else { 
+	   if($?1) {
+	      store_reb_lc $1
+	   } else {
+	      store_reb_lc 
+	   }
+	}
+
+#---------------------------------------------------------------------------
+# plot_dtlc_lin [-silent]
+plot_dtlc_lin 01 
+
+	if($?1) {
+	   if( substr('$1',1,1) == 's' ) { 
+	      define silent 1 
+	      echo " Going into silent mode.... "
+	   }
+	} else {
+	      define silent 0
+	}
+	echo ------------------------------------------------------------
+	define suffix_lin   ?   {* Suffix of vectors to be loaded : }
+	define addconst_lin ?   {*   Constant to be added to Data : }
+
+	echo ------------------------------------------------------------
+	define bottomrate_lin ? {*      Lower limit to count-rate : }
+	define toprate_lin    ? {*      Upper limit to count-rate : }
+
+	define ymin    ( $bottomrate_lin )
+	define ymax    ( $toprate_lin )
+
+	if( whatis(err_rate_"$!suffix_lin"_u) == 41 ) { 
+	   # Dataset has both UP and DOWN errors defined
+	   set err_rate_tmp_u   = err_rate_"$!suffix_lin"_u
+	   set err_rate_tmp_d   = err_rate_"$!suffix_lin"_d
+	   set sn_tmp = rate_$suffix_lin/sqrt(err_rate_tmp_u**2+err_rate_tmp_d**2.)
+	   define del_ud 0
+	} else {
+	   # Dataset has only one error vector defined
+	   set err_rate_tmp_u   = err_rate_$suffix_lin
+	   set err_rate_tmp_d   = err_rate_$suffix_lin
+	   set sn_tmp = rate_$suffix_lin/err_rate_tmp_u
+	   define del_ud 1
+	}
+
+	# set filter_vec = cvrfr_$suffix_lin
+	# define threshold ?      {*     Exposed Fraction Threshold : }
+	local define hrtest $(index('$suffix_lin','hr'))
+	if( $hrtest >= 0 ) { 
+	  echo *** The data represent an Hardness Ratio...ignoring filtering on upper limits
+	  define threshold -1000
+	}
+
+	set filter_vec = sn_tmp
+	define threshold ?      {*                  S/N Threshold : }
+
+	#---
+	if( $silent ) { verbose 0 }
+	set newt_tmp  = newt_$suffix_lin                  if( filter_vec >= $threshold )
+	set newt1_tmp = newt1_$suffix_lin                 if( filter_vec >= $threshold )
+	set newt2_tmp = newt2_$suffix_lin                 if( filter_vec >= $threshold )
+	set newbin_tmp= newbin_$suffix_lin                if( filter_vec >= $threshold )
+	set rate_tmp  = rate_$suffix_lin + $addconst_lin  if( filter_vec >= $threshold )
+	set cvrfr_tmp = cvrfr_$suffix_lin                 if( filter_vec >= $threshold )
+
+	if( whatis(err_rate_"$!suffix_lin"_u) == 41 ) { 
+	   echo  > Dataset [$suffix_lin] has both UP and DOWN errors defined
+	   set err_rate_tmp_u   = err_rate_"$!suffix_lin"_u  if( filter_vec >= $threshold )
+	   set err_rate_tmp_d   = err_rate_"$!suffix_lin"_d  if( filter_vec >= $threshold )
+	   define del_ud 0
+	} else {
+	   echo  > Dataset [$suffix_lin] has only one error vector defined
+	   set err_rate_tmp_u   = err_rate_$suffix_lin       if( filter_vec >= $threshold )
+	   set err_rate_tmp_d   = err_rate_$suffix_lin       if( filter_vec >= $threshold )
+	   define del_ud 1
+	}
+	if( $silent ) { verbose 1 }
+	#---
+
+	define excluded   $(dimen(dumcount))
+	define ntotal     $(dimen(newt_$suffix_lin))
+	define exclfrac ( sprintf('%5.2f',$($excluded/$ntotal)) )
+
+	echo " | "
+	echo " +----> "This threshold EXCLUDED $excluded/$ntotal [$exclfrac %] data points 
+	echo "   "
+
+	vecminmax rate_tmp dum    top_$suffix_lin
+
+	echo ------------------------------------------------------------
+	define t0ref ?  {*                        T_0_ref : } 
+	define t0ref ( sprintf('%7.1f',$t0ref) )
+
+	#---
+	LCMODULE_set_start_stop_time
+	#---
+
+	#---
+	LCMODULE_set_location
+	#---
+
+	echo ------------------------------------------------------------
+	define layout1    ? {*     General Y "windowing" code : }
+	define layout2lin ? {*   "Y-window" code for this box : }
+
+	window 1 $layout1 1 $layout2lin
+
+	lweight 3
+	### TEMP CHANGE expand 1.5
+	expand 1.1
+	ticksize 0 0 0 0 
+	if( $xfine < 30 ) { ticksize 0.5 1 0 0 }   # used in the case of "days" x-axis
+	if( $t0ref == 0 ) { notation -4 5 -4 4 }
+	limits $xinizio $xfine $ymin $ymax 
+
+	#--- preparing boxes ---#
+	define layout2lin1 local
+	define layout2lin2 local
+	if( strlen('$layout2lin') == 3 ) {
+	   define layout2lin1 (substr('$layout2lin',0,1))
+	   define layout2lin2 (substr('$layout2lin',2,1))
+	} else {
+	   define layout2lin1 (substr('$layout2lin',0,1))
+	   define layout2lin2 $layout2lin1
+	}
+
+	if( $layout1 > 0 ) {
+	   define bx1 1
+	   define bx2 0
+	} else {
+	   if( $layout2lin1 == 1 )               { define bx1 1 } else { define bx1 0 }
+	   if( $layout2lin2 < $(abs($layout1)) ) { define bx2 3 } else { define bx2 0 }
+	}
+	ctype 2
+	box $bx1 $by1 $bx2 $by2
+	#-----------------------#
+
+	if($?t0ref == 0) {
+	    echo "  T_0 not defined !"
+	    define t0ref ? {* T_0_ref : } 
+	} else { 
+	    echo "  T_0_ref = "$t0ref
+        }
+
+	if( $xfine < 30 ) {
+	   #xlabel Time (days of March 2001)
+	   define xlabstr "Time (days of March 2001)"
+	} else {
+	   #xlabel Time (sec from T_0 = $t0ref [TJD])
+	   #define xlabstr "Time (sec from T_0 = $t0ref [TJD])"
+	   define xlabstr "Time [s from T_0 = $!t0ref (TJD)]"
+	}
+
+	if( $bx1 == 1 ) {
+	   xlabel $xlabstr
+	}
+	
+	echo "------------------------------------------------------------"
+	echo "* NORMALIZE light curve to:"
+	echo "  [0] DON\'T normalize [-3- if NO Y-label]"
+	echo "  [1] its MEAN        [-4- if NO Y-label]"
+	echo "  [2] its MAXIMUM     [-5- if NO Y-label]"
+	define whatt ?  {*                    Your choice : }
+
+	#-------------------------
+	if($whatt == 0) { 
+	   define factor 1 
+	   ### TEMP-change
+	   ### ylabel cts/s
+	   # ylabel HR
+	   ylabel V [mag.]
+	   define what $whatt
+	}
+	if($whatt == 3) { 
+	   define factor 1 
+	   define what ($whatt-3)
+	   # define labx "cts/s"
+	}
+	#-------------------------
+	if($whatt == 1) { 
+	   define factor $mean_$!suffix 
+	   ylabel rate/\langle rate\rangle
+	   relocate $fx1 1 
+	   ltype 2 
+	   draw $fx2 1 
+	   ltype 0
+	   define what $whatt
+	}
+	if($whatt == 4) { 
+	   define factor $mean_$!suffix 
+	   relocate $fx1 1 
+	   ltype 2 
+	   draw $fx2 1 
+	   ltype 0
+	   define what ($whatt-3)
+	   define labx "rate/\langle rate\rangle"
+	}
+	#-------------------------
+	if($whatt == 2) { 
+	   define factor $top_$!suffix 
+	   ylabel rate/max(rate)
+	   relocate $fx1 1 
+	   ltype 2 
+	   draw $fx2 1 
+	   ltype 0
+	   define what $whatt
+	}
+	if($whatt == 5) { 
+	   define factor $top_$!suffix 
+	   relocate $fx1 1 
+	   ltype 2 
+	   draw $fx2 1 
+	   ltype 0
+	   define what ($whatt-3)
+	   define labx "rate/max(rate)"
+	}
+	#-------------------------
+
+	define xerr "n"
+	echo ------------------------------------------------------------
+	define xerr  ?  {*        Plot X error bars [y/n] : }
+ 
+	ptype 4 3
+	set rate_tmp       = rate_tmp/$factor
+	# set err_rate_tmp = err_rate_tmp/$factor
+	set err_rate_tmp_u = err_rate_tmp_u/$factor
+	set err_rate_tmp_d = err_rate_tmp_d/$factor
+
+	echo ------------------------------------------------------------
+	echo * Connect neighboring points ? 
+	define congiungo ? {  Give number for LTYPE [-1 for NO] : } 
+	if($congiungo >= 0) {
+	   ltype $congiungo
+	   do 1=0,$(dimen(rate_tmp)-2) {
+	      define 2 $($1+1)
+ 	      relocate $(newt_tmp[$1]) $(rate_tmp[$1])
+	      if( rate_tmp[$1] != 0 && rate_tmp[$2] != 0 ) {
+	         draw $(newt_tmp[$2]) $(rate_tmp[$2]) 
+	      }
+	   }
+	}
+	ltype 0
+
+	echo ------------------------------------------------------------
+	echo *** PLOT Options :
+	echo   [1] P-shape/Color     (upper limits implemented)
+	echo   [2] Ptype/Ctype       (upper limits implemented)
+	echo   [3] Ctype-OUT/Ctype-IN
+	define come ? {*                    Your choice : }
+
+	if( $silent ) { verbose 0 }
+
+	if( $hrtest >= 0 ) { 
+	  echo *** The data represent an Hardness Ratio...ignoring filtering on upper limits
+	  set newt_tmp2          = newt_tmp          
+	  set rate_tmp2          = rate_tmp          
+	  set err_rate_tmp2_u    = err_rate_tmp_u    
+	  set err_rate_tmp2_d    = err_rate_tmp_d    
+  	  set newbin_tmp2        = newbin_tmp        
+	} else { if( $hrtest < 0 ) { 
+	define ns 2
+	set newt_tmp2          = newt_tmp          if( (rate_tmp - $ns*err_rate_tmp_d) > 0)
+	set rate_tmp2          = rate_tmp          if( (rate_tmp - $ns*err_rate_tmp_d) > 0)
+	set err_rate_tmp2_u    = err_rate_tmp_u    if( (rate_tmp - $ns*err_rate_tmp_d) > 0)
+	set err_rate_tmp2_d    = err_rate_tmp_d    if( (rate_tmp - $ns*err_rate_tmp_d) > 0)
+	set newbin_tmp2        = newbin_tmp        if( (rate_tmp - $ns*err_rate_tmp_d) > 0)
+
+	set newt_tmp3          = newt_tmp          if( (rate_tmp - $ns*err_rate_tmp_d) <= 0)
+	set rate_tmp3          = rate_tmp          if( (rate_tmp - $ns*err_rate_tmp_d) <= 0)
+	set err_rate_tmp3_u    = err_rate_tmp_u    if( (rate_tmp - $ns*err_rate_tmp_d) <= 0)
+	set err_rate_tmp3_d    = err_rate_tmp_d    if( (rate_tmp - $ns*err_rate_tmp_d) <= 0)
+	set newbin_tmp3        = newbin_tmp        if( (rate_tmp - $ns*err_rate_tmp_d) <= 0)
+	}}#-----
+	if( $silent ) { verbose 1 }
+
+	define upper {{m -10 0 10 0 m 0 0 0 -2000 -200 -1700 0 -1850 200 -1700 0 -2000 }} 
+
+	#-----------------------------------------------------------------
+	if($come == 1) {
+	   echo ------------------------------------------------------------
+	   define pty1 ?   {*   Give the code for PTYPE [#1] : }
+	   define cty1 ?   {*   Give the code for CTYPE [#1] : }
+	   define pexp ?   {*                  Expand factor : }
+	   echo ------------------------------------------------------------
+	   lweight 3
+	   expand $($pexp*1.5) ctype 2
+	   errorbar  newt_tmp2 rate_tmp2 err_rate_tmp2_u 2
+	   errorbar  newt_tmp2 rate_tmp2 err_rate_tmp2_d 4
+	   if(substr('$xerr',0,1) == 'y') { 
+	       error_x newt_tmp2 rate_tmp2 (newbin_tmp2/2)
+	       error_x newt_tmp3 rate_tmp3 (newbin_tmp3/2)
+	   }
+
+	   #--- UPPER LIMITS -------
+	   expand $($pexp*1.2) ctype 2 ptype $upper
+	   points  newt_tmp3 rate_tmp3
+
+	   expand $($pexp*1.8) ctype $cty1 ptype $pty1 3
+	   points  newt_tmp2 rate_tmp2 
+	   points  newt_tmp3 rate_tmp3
+	   expand $($pexp*2.1) ctype 2 ptype $pty1 0
+	   points  newt_tmp2 rate_tmp2 
+	   points  newt_tmp3 rate_tmp3
+	   lweight 2
+	}
+
+	#-----------------------------------------------------------------
+	if($come == 2) {
+	   echo ------------------------------------------------------------
+	   define pty ?  {*         code for PTYPE [#1 #2] : }
+	   define cty ?  {*            code for CTYPE [#1] : }
+	   define pexp ? {*                  Expand factor : }
+	   echo ------------------------------------------------------------
+
+	   lweight 3
+	   expand $($pexp*1.5) ctype $cty ptype $pty
+	   errorbar  newt_tmp2 rate_tmp2 err_rate_tmp2_u 2
+	   errorbar  newt_tmp2 rate_tmp2 err_rate_tmp2_d 4
+	   if(substr('$xerr',0,1) == 'y') { 
+	       error_x newt_tmp2 rate_tmp2 (newbin_tmp2/2)
+	       error_x newt_tmp3 rate_tmp3 (newbin_tmp3/2)
+	   }
+	   #--- UPPER LIMITS --------
+	   expand $($pexp*1.2) ptype $upper
+	   points  newt_tmp3 rate_tmp3
+
+	   expand $($pexp*1.6) ctype $cty ptype $pty
+	   points  newt_tmp2 rate_tmp2 
+	   points  newt_tmp3 rate_tmp3
+	   lweight 2
+	}
+
+	#-----------------------------------------------------------------
+	if($come == 3) {
+	   echo ------------------------------------------------------------
+	   define cty1 ? {*        code for CTYPE [border] : }
+	   define cty2 ? {*        code for CTYPE [inside] : }
+	   define pexp ? {*                  Expand factor : }
+	   echo ------------------------------------------------------------
+
+	   lweight 3
+	   expand $($pexp*1.5) ctype $cty
+	   errorbar  newt_tmp rate_tmp err_rate_tmp_u 2
+	   errorbar  newt_tmp rate_tmp err_rate_tmp_d 4
+	   if(substr('$xerr',0,1) == 'y') { 
+	       error_x newt_tmp rate_tmp (newbin_tmp/2)
+	   }
+	   #--- UPPER LIMITS --------
+	   expand $($pexp*1.2) ctype $cty1 ptype $upper
+	   points  newt_tmp3 rate_tmp3
+
+	   expand $($pexp*2.0) ctype $cty1 ptype 20 3
+	   points  newt_tmp2 rate_tmp2 
+	   points  newt_tmp3 rate_tmp3
+
+	   expand $($pexp*1.2) ctype $cty2 ptype 20 3
+	   points  newt_tmp2 rate_tmp2 
+	   points  newt_tmp3 rate_tmp3 
+
+	   ##lweight 1.5
+	   ##expand $($pexp*1.7) ctype $cty1 ptype 20 0
+	   ##points  newt_tmp rate_tmp 
+
+	   lweight 2
+	}
+	#-----------------------------------------------------------------
+
+	define plotgr "n"
+	echo ------------------------------------------------------------
+	define plotgr ? {*                Plot GRID [y/n] : }
+	if(substr('$plotgr',0,1) == 'y') {
+	   define oldlwe $lweight
+	   ctype 4
+	   ltype 1
+	   lweight 4
+	   ticksize 0 0 0 0 
+	   # ticksize 0 0 0 0
+	   grid 1 2
+	   lweight $oldlwe
+	   ltype 0
+	   ctype 2
+	}
+
+	define plotdays "n"
+	define plotdays ? {*                Plot DAYS [y/n] : }
+	if(substr('$plotdays',0,1) == 'y') {
+	   define oldlwe $lweight
+	   define oldexp $expand
+	   define oldfx1 $fx1
+	   define oldfx2 $fx2
+	   define oldfy1 $fy1
+	   define oldfy2 $fy2
+	   ## echo OLDLWEIGHT : $oldlwe
+	   ctype 3 ltype 2 lweight 4
+	   limits $($t0ref+$fx1/86400) $($t0ref+$fx2/86400) $fy1 $fy2
+	   ticksize 0.25 1 0.1 0.2 
+	   grid 0 1 
+	   ctype 2 ltype 0 lweight 3
+	   notation -5 5 -5 5 
+	   expand 1.25
+	   # box 3 3 1 3 
+	   notation 0 0 0 0 
+	   limits $oldfx1 $oldfx2 $oldfy1 $oldfy2
+	   relocate ( $(($gx1+$gx2)/2) $($gy2+2000) )
+	   # putlabel 5 Time [TJD]
+	   lweight $oldlwe
+	   expand $oldexp
+	}
+	echo ------------------------------------------------------------
+
+	window 1 1 1 1
+	if(substr('$layout2lin',0,1) == '1' && $whatt < 3) {
+	   relocate ( $($gx1 - 2500) $( ($gy1+$gy2)/2 ) )
+	   angle 90
+	   expand 2.0
+	   ctype 2
+	   putlabel 5 $labx
+	   angle 0
+	   expand 1.5
+	}
+	#-------------------------
+	window 1 $layout1 1 $layout2lin
+
+	#--- cleaning fake error arrays ---#
+	if( $del_ud == 1 ) { 
+	   echo UP and DOWN errors were FAKE...deleting them
+	   echo ------------------------------------------------------------
+	   delete err_rate_tmp_u
+	   delete err_rate_tmp_d
+	}
+
+	#--- cleaning temp arrays ---#
+	foreach 8 < tmp2 tmp3 > {
+	   foreach 9 < newt newbin rate err_rate > {
+	      delete $9_$8 
+	   }
+	   delete err_rate_$8_u
+	   delete err_rate_$8_d
+	}
+
+	notation -4 4 -4 4 
+
+#---------------------------------------------------------------------------
+# plot_dtlc_log  [<-silent>] 
+plot_dtlc_log 01 
+
+	if($?1) {
+	   if( substr('$1',1,1) == 's' ) { 
+	      define silent 1 
+	      echo " Going into silent mode.... "
+	   }
+	} else {
+	      define silent 0
+	}
+	echo "------------------------------------------------------------"
+	define suffix_log ?   {*   Suffix of vectors to be loaded : }
+	define mulconst_log ? {*    Constant to multiply Data for : }
+
+	echo "------------------------------------------------------------"
+	define bottomrate_log ? {*        Lower limit to count-rate : }
+	if( $bottomrate_log <= 0 ) {
+	   echo "CANNOT give a NEGATIVE minimum value..."
+	   define bottomrate_log (1.e-4)
+	   define bottomrate_log ? {*        Lower limit to count-rate : }
+	}
+	define toprate_log    ? {*        Upper limit to count-rate : }
+
+	define ymin    ( lg($bottomrate_log) )
+	define ymax    ( lg($toprate_log) )
+
+	define threshold ?      {*       Exposed Fraction Threshold : }
+
+	#----
+	if( $silent ) { verbose 0 }
+	set dumcount    = newt_$suffix_log                          if( cvrfr_$suffix_log <  $threshold )
+	set newt_tmp    = newt_$suffix_log                          if( cvrfr_$suffix_log >= $threshold )
+	set newt1_tmp   = newt1_$suffix_log                         if( cvrfr_$suffix_log >= $threshold )
+	set newt2_tmp   = newt2_$suffix_log                         if( cvrfr_$suffix_log >= $threshold )
+	set newbin_tmp  = newbin_$suffix_log                        if( cvrfr_$suffix_log >= $threshold )
+	set rate_tmp    = rate_$suffix_log*$mulconst_log            if( cvrfr_$suffix_log >= $threshold )
+	set lg_rate_tmp = lg(rate_$suffix_log) + lg($mulconst_log)  if( cvrfr_$suffix_log >= $threshold )
+	set cvrfr_tmp   = cvrfr_$suffix_log                         if( cvrfr_$suffix_log >= $threshold )
+
+	if( whatis(err_rate_"$!suffix_log"_u) == 41 ) { 
+	   echo  > Dataset [$suffix_log] has both UP and DOWN errors defined
+	   set err_rate_tmp_u   = $mulconst_log*err_rate_"$!suffix_log"_u if( cvrfr_$suffix_log >= $threshold )
+	   set err_rate_tmp_d   = $mulconst_log*err_rate_"$!suffix_log"_d if( cvrfr_$suffix_log >= $threshold )
+	   define del_ud 0
+	} else {
+	   echo  > Dataset [$suffix_log] has only one error vector defined
+	   set err_rate_tmp_u   = $mulconst_log*err_rate_$suffix_log      if( cvrfr_$suffix_log >= $threshold )
+	   set err_rate_tmp_d   = $mulconst_log*err_rate_$suffix_log      if( cvrfr_$suffix_log >= $threshold )
+	   define del_ud 1
+	}
+
+	set err_lg_rate_tmp_u = lg(1 + err_rate_tmp_u/rate_tmp)              if( cvrfr_tmp >= $threshold )
+	set err_lg_rate_tmp_d = lg(rate_tmp) - lg(rate_tmp - err_rate_tmp_d) if( cvrfr_tmp >= $threshold )
+	if( $silent ) { verbose 1 }
+	#----
+
+	local define deltat $(newbin_tmp[0])
+	echo "CHECK : dT = "$deltat
+
+	define excluded   $(dimen(dumcount))
+	define ntotal     $(dimen(newt_$suffix_log))
+	define exclfrac ( sprintf('%5.2f',$(1.0001*$excluded/$ntotal)) )
+
+	echo " | "
+	echo " +----> This threshold EXCLUDED "$excluded"/"$ntotal" ["$exclfrac" %] data points "
+	echo "   "
+
+	vecminmax rate_tmp dum    top_$suffix_log
+
+	echo "------------------------------------------------------------"
+	define t0ref ? {*                          T_0_ref : } 
+	define t0ref ( sprintf('%7.1f',$t0ref) )
+
+	#---
+	LCMODULE_set_start_stop_time
+	#---
+
+	#---
+	LCMODULE_set_location
+	#---
+
+	echo "------------------------------------------------------------"
+        define layout1 ?    {*       General "Y-windowing" code : }
+        define layout2log ? {*     "Y-window" code for this box : }
+
+	window 1 $layout1 1 $layout2log
+
+	#--- preparing boxes ---#
+	define layout2log1 local
+	define layout2log2 local
+	if( strlen('$layout2log') == 3 ) {
+	   define layout2log1 (substr('$layout2log',0,1))
+	   define layout2log2 (substr('$layout2log',2,1))
+	} else {
+	   define layout2log1 (substr('$layout2log',0,1))
+	   define layout2log2 $layout2log1
+	}
+
+	if( $layout1 > 0 ) {
+	   define bx1 1
+	   define bx2 0
+	} else {
+	   if( $layout2log1 == 1 )               { define bx1 1 } else { define bx1 0 }
+	   if( $layout2log2 < $(abs($layout1)) ) { define bx2 3 } else { define bx2 0 }
+	}
+	ctype 2 
+	lweight 3
+	### TEMP CHANGE expand 1.5
+	expand 1.1
+	if( $t0ref == 0 ) { notation -4 5 -4 4 }
+	limits $xinizio $xfine $ymin $ymax 
+
+	##box $bx1 $by1 $bx2 $by2
+	#-----------------------#
+
+	### TICKSIZE TO ADJUST BY HAND
+	ticksize 0 0 -2 10 
+	## if( $xfine < 30 ) { ticksize 0.5 1 -0.5 0 }   # used in the case of "days" x-axis
+	ticksize 0 0 -1   1  ### Big@ e.g. 40,50,60,... Small@ NOPE
+	ticksize 0 0 -0.5 1  ### Big@ e.g. 40,50,60,... Small@ halves
+	ticksize 0 0 -0.5 10 
+	ticksize 0 0 -1   2  ### Good for week-long 2panels light (x-ray) curve
+	ticksize 0 0 -1   1  ### 
+	if( substr('$suffix_log',0,1) == 'p' ) { 
+	    ticksize 0 0 -1   2  ### Good for week-long 2panels light (x-ray) curve
+	}
+	if( substr('$suffix_log',0,1) == 'w' || substr('$suffix_log',0,1) == 't' || substr('$suffix_log',0,1) == 'h'  ) { 
+	    ticksize 0 0 -1   5  ### Good for week-long 2panels light (g-ray) curve
+	}
+	ticksize 0 0 -0.5 1 
+
+	## CHEAT FOR PAPER GF 2007.10.14
+	if( substr('$suffix_log',0,3) == 'pca' ) { 
+	   TEST_shaded_boxes tev01_wrbr_hfreb2b_pca_5_23_32
+	}
+	## CHEAT FOR PAPER GF 2007.10.14
+	
+	box $bx1 $by1 $bx2 $by2
+	echo "  DEBUG: box set "
+	##box 3 $by1 3 $by2 
+
+	if( $t0ref == 0 ) { 
+	   define xlabstr "Time [MJD]"
+	} else {
+	   ### xlabel Time [s from T_0 = $t0ref (TJD)]
+	   define xlabstr "Time [s]"
+	   define xlabstr "Time [s from T_0 = $!t0ref (TJD)]"
+	}
+
+	if( substr('$suffix_log',0,1) == 'l'   ) { define ylabstr "Count Rate [cts/s]" }
+	#--- RossiXTE ---#
+	if( substr('$suffix_log',0,2) == 'pc'  ) { define ylabstr "cts/s/PCU"    }
+	if( substr('$suffix_log',0,2) == 'hx'  ) { define ylabstr "cts/s"        }
+	#--- HEGRA ---#
+	if( substr('$suffix_log',0,2) == 'he'  ) { define ylabstr "flux [Crabs]" }
+	if( substr('$suffix_log',0,2) == 'hr'  ) { define ylabstr "flux [Crabs]" }
+	if( substr('$suffix_log',0,2) == 'hf'  ) { define ylabstr "flux [Crabs]" }
+	#--- Whipple ---#
+	if( substr('$suffix_log',0,3) == 'rbr' ) { define ylabstr "flux [Crabs]" }
+	if( substr('$suffix_log',0,3) == 'wrb' ) { define ylabstr "flux [Crabs]" }
+	if( substr('$suffix_log',0,3) == 'wre' ) { define ylabstr "flux [Crabs]" }
+	if( substr('$suffix_log',0,3) == 'wmi' ) { define ylabstr "flux [Crabs]" }
+	if( substr('$suffix_log',0,2) == 'te'  ) { define ylabstr "flux [Crabs]" }
+	#--- Optical ---#
+	if( substr('$suffix_log',0,3) == 'opt' ) { define ylabstr "flux [arb. units]" }
+	#--- Flux ---#
+	if( substr('$suffix_log',0,2) == 'f_' ) { 
+	   define ylabstr ? <*               String for Y-label : >
+	} 
+	if( substr('$suffix_log',0,2) == 'fp' ) {define ylabstr "F_{peak} [10^{-10} erg/cm^2/s]" }
+	if( substr('$suffix_log',0,2) == 'ep' ) {define ylabstr "E_{peak} [keV]" }
+
+	if( $bx1 == 1 ) {
+	   xlabel $xlabstr
+	}
+	if( $flaglab < 2 ) {
+	   ylabel $ylabstr
+	} else {
+	   relocate ( $($gx2 + 2500) $(0.5*($gy1+$gy2)) )
+	   angle 90
+	   putlabel 5 $ylabstr
+	   angle 0
+	}
+
+	lweight 2
+
+	define xerr "n"
+	## echo "------------------------------------------------------------"
+	## define xerr  ? {*          Plot X error bars [y/n] : }
+	## GF: fudging to make it faster to replot figures for paper
+	if( substr('$suffix_log',0,1) == 'p' ) { 
+	    define xerr "n"
+	}
+	if( substr('$suffix_log',0,1) == 'w' || substr('$suffix_log',0,1) == 't' || substr('$suffix_log',0,1) == 'h'  ) { 
+	    define xerr "y"
+	}
+
+	ptype 4 3
+
+	echo "------------------------------------------------------------"
+	echo "* Connect neighboring points ? "
+	define congiungo ? {*     Number for LTYPE [-1 for NO] : } 
+	if($congiungo >= 0) {
+	   ltype $congiungo
+	   do 1=0,$(dimen(lg_rate_tmp)-2) {
+	      define 2 $($1+1)
+	      if( rate_tmp[$1] != 0 && newt_tmp[$1] >= $xinizio ) {
+ 	          relocate $(newt_tmp[$1]) $(lg_rate_tmp[$1])
+	          if( rate_tmp[$2] != 0 && newt_tmp[$2] <= $xfine ) {
+	              draw $(newt_tmp[$2]) $(lg_rate_tmp[$2]) 
+	          }
+	      }
+	   }
+	}
+	ltype 0
+
+	echo "------------------------------------------------------------"
+	echo "*** PLOT Options :        "
+	echo "   [1] P-shape/Color      "
+	echo "   [2] Ptype/Ctype        "
+	echo "   [3] Ctype-OUT/Ctype-IN "
+	define come ? {*                      Your choice : }
+
+	define ns 2
+	if( $silent ) { verbose 0 }
+	set newt_tmp2          = newt_tmp          if( (rate_tmp - $ns*err_rate_tmp_d) > 0)
+	set rate_tmp2          = rate_tmp          if( (rate_tmp - $ns*err_rate_tmp_d) > 0)
+	set lg_rate_tmp2       = lg_rate_tmp       if( (rate_tmp - $ns*err_rate_tmp_d) > 0)
+	set err_rate_tmp2_u    = err_rate_tmp_u    if( (rate_tmp - $ns*err_rate_tmp_d) > 0)
+	set err_rate_tmp2_d    = err_rate_tmp_d    if( (rate_tmp - $ns*err_rate_tmp_d) > 0)
+	set err_lg_rate_tmp2_u = err_lg_rate_tmp_u if( (rate_tmp - $ns*err_rate_tmp_d) > 0)
+	set err_lg_rate_tmp2_d = err_lg_rate_tmp_d if( (rate_tmp - $ns*err_rate_tmp_d) > 0)
+	set newbin_tmp2        = newbin_tmp        if( (rate_tmp - $ns*err_rate_tmp_d) > 0)
+
+	set newt_tmp3          = newt_tmp          if( (rate_tmp - $ns*err_rate_tmp_d) <= 0)
+	set rate_tmp3          = rate_tmp          if( (rate_tmp - $ns*err_rate_tmp_d) <= 0)
+	set lg_rate_tmp3       = lg_rate_tmp       if( (rate_tmp - $ns*err_rate_tmp_d) <= 0)
+	set err_rate_tmp3_u    = err_rate_tmp_u    if( (rate_tmp - $ns*err_rate_tmp_d) <= 0)
+	set err_rate_tmp3_d    = err_rate_tmp_d    if( (rate_tmp - $ns*err_rate_tmp_d) <= 0)
+	set err_lg_rate_tmp3_u = err_lg_rate_tmp_u if( (rate_tmp - $ns*err_rate_tmp_d) <= 0)
+	set err_lg_rate_tmp3_d = err_lg_rate_tmp_d if( (rate_tmp - $ns*err_rate_tmp_d) <= 0)
+	set newbin_tmp3        = newbin_tmp        if( (rate_tmp - $ns*err_rate_tmp_d) <= 0)
+	if( $silent ) { verbose 1 }
+
+	define upper {{m -10 0 10 0 m 0 0 0 -2000 -200 -1700 0 -1850 200 -1700 0 -2000 }} 
+
+	## CHEAT FOR PAPER GF 2007.10.14
+	if( substr('$suffix_log',0,1) == 'p' ) { 
+	    define pty1 4
+	    define cty1 3
+	    define pexp 0.6
+	}
+	if( substr('$suffix_log',0,1) == 'w' ) {
+	    define pty1 20
+	    define cty1 1
+	    define pexp 0.9
+	}
+	if( substr('$suffix_log',0,1) == 'h' ) {
+	    define pty1 3
+	    define cty1 8
+	    define pexp 1.4
+	}
+	## CHEAT FOR PAPER GF 2007.10.14
+
+	#-----------------------------------------------------------------
+	if($come == 1) {
+	   echo "------------------------------------------------------------"
+	   define pty1 ? {*     Give the code for PTYPE [#1] : }
+	   define cty1 ? {*     Give the code for CTYPE [#1] : }
+	   define pexp ? {*                    Expand factor : }
+	   echo "------------------------------------------------------------"
+	   lweight 3
+	   expand $($pexp*1.5) ctype 2 
+	   errorbar  newt_tmp2 lg_rate_tmp2 err_lg_rate_tmp2_u 2
+	   errorbar  newt_tmp2 lg_rate_tmp2 err_lg_rate_tmp2_d 4
+	   if(substr('$xerr',0,1) == 'y') { 
+	       error_x newt_tmp2  lg_rate_tmp2   (newbin_tmp2/2)
+	       error_x newt_tmp3 (lg(rate_tmp3)) (newbin_tmp3/2)
+	   }
+
+	   LCMODULE_smartjoin  newt_tmp2 lg_rate_tmp2
+
+	   #--- UPPER LIMITS -------
+	   expand $($pexp*1.2) ctype 2 ptype $upper 
+	   points  newt_tmp3 (lg(rate_tmp3))
+
+	   expand $($pexp*1.8) ctype $cty1 ptype $pty1 3 
+	   points  newt_tmp2  lg_rate_tmp2 
+	   points  newt_tmp3 (lg(rate_tmp3)) 
+
+	   expand $($pexp*2.1) ctype 2 ptype $pty1 0 
+	   points  newt_tmp2  lg_rate_tmp2 
+	   points  newt_tmp3 (lg(rate_tmp3))  
+	   lweight 2
+	}
+
+	#-----------------------------------------------------------------
+	if($come == 2) {
+	   echo "------------------------------------------------------------"
+	   define pty  ? {*  Give the code for PTYPE [#1 #2] : }
+	   define cty  ? {*     Give the code for CTYPE [#1] : }
+	   define pexp ? {*                    Expand factor : }
+	   echo "------------------------------------------------------------"
+
+	   lweight 3
+	   expand $($pexp*1.5) ctype $cty 
+	   errorbar  newt_tmp2 lg_rate_tmp2 err_lg_rate_tmp2_u 2
+	   errorbar  newt_tmp2 lg_rate_tmp2 err_lg_rate_tmp2_d 4
+	   if(substr('$xerr',0,1) == 'y') { 
+	       error_x newt_tmp2  lg_rate_tmp2   (newbin_tmp2/2)
+	       error_x newt_tmp3 (lg(rate_tmp3)) (newbin_tmp3/2)
+	   }
+
+	   LCMODULE_smartjoin  newt_tmp2 lg_rate_tmp2
+	   
+	   #--- UPPER LIMITS --------
+	   expand $($pexp*1.2) ptype $upper
+	   points  newt_tmp3 (lg(rate_tmp3))
+
+	   expand $($pexp*1.6) ctype $cty ptype $pty
+	   points  newt_tmp2  lg_rate_tmp2 
+	   points  newt_tmp3 (lg(rate_tmp3))
+	   lweight 2
+	}
+
+	#-----------------------------------------------------------------
+	if($come == 3) {
+	   echo "------------------------------------------------------------"
+	   define cty1 ? {* Give the code for CTYPE [border] : }
+	   define cty2 ? {* Give the code for CTYPE [inside] : }
+	   define pexp ? {*                    Expand factor : }
+	   echo "------------------------------------------------------------"
+
+	   lweight 3 
+	   expand $($pexp*1.5) ctype $cty1
+	   errorbar  newt_tmp2 lg_rate_tmp2 err_lg_rate_tmp2_u 2
+	   errorbar  newt_tmp2 lg_rate_tmp2 err_lg_rate_tmp2_d 4
+	   if(substr('$xerr',0,1) == 'y') { 
+	       error_x newt_tmp2  lg_rate_tmp2   (newbin_tmp2/2)
+	       error_x newt_tmp3 (lg(rate_tmp3)) (newbin_tmp3/2)
+	   }
+
+	   LCMODULE_smartjoin  newt_tmp2 lg_rate_tmp2
+
+	   #--- UPPER LIMITS -------
+	   expand $($pexp*1.2) ctype $cty1 ptype $upper 
+	   points  newt_tmp3 (lg(rate_tmp3))
+
+	   expand $($pexp*2.0) ctype $cty1 ptype 20 3 
+	   points  newt_tmp2  lg_rate_tmp2 
+	   points  newt_tmp3 (lg(rate_tmp3)) 
+
+	   expand $($pexp*1.2) ctype $cty2 ptype 20 3 
+	   points  newt_tmp2  lg_rate_tmp2
+	   points  newt_tmp3 (lg(rate_tmp3)) 
+
+	   ##lweight 1.5
+	   ##expand $($pexp*1.7) ctype $cty1 ptype 20 0 
+	   ##points  newt_tmp2 lg_rate_tmp2 
+
+	   lweight 2
+	}
+	#-----------------------------------------------------------------
+
+	define plotgr "n"
+	echo "------------------------------------------------------------"
+	define plotgr ? {*                  Plot GRID [y/n] : }
+	if(substr('$plotgr',0,1) == 'y') {
+	   define oldlwe $lweight
+	   ## echo OLDLWEIGHT : $oldlwe
+	   ctype 4 ltype 1 lweight 4
+	     # ticksize 0 0 0.1 0.2 
+	     # grid 1 1 
+	   ticksize 0 0 0 0 
+	   # grid 0 1 
+	   grid 1 2 
+	   ctype 2 ltype 0 lweight $oldlwe
+	}
+
+	define plotdays "n"
+	define plotdays ? {*                  Plot DAYS [y/n] : }
+	if(substr('$plotdays',0,1) == 'y') {
+	   define oldlwe $lweight
+	   define oldexp $expand
+	   define oldfx1 $fx1
+	   define oldfx2 $fx2
+	   define oldfy1 $fy1
+	   define oldfy2 $fy2
+	   ## echo OLDLWEIGHT : $oldlwe
+	   ctype 3 ltype 2 lweight 4
+	   limits $($t0ref+$fx1/86400) $($t0ref+$fx2/86400) $fy1 $fy2
+	   ticksize 0.25 1 0.1 0.2 
+	   grid 0 1 
+	   ctype 2 ltype 0 lweight 3
+	   notation -5 5 -5 5 
+	   expand 1.25
+	   # box 3 3 1 3 
+	   notation 0 0 0 0 
+	   limits $oldfx1 $oldfx2 $oldfy1 $oldfy2
+	   relocate ( $(($gx1+$gx2)/2) $($gy2+2000) )
+	   # putlabel 5 Time [TJD]
+	   lweight $oldlwe
+	   expand $oldexp
+	}
+	echo "------------------------------------------------------------"
+
+	#--- cleaning fake error arrays ---#
+	if( $del_ud == 1 ) { 
+	   echo " UP and DOWN errors were FAKE...deleting them "
+	   delete err_rate_tmp_u
+	   delete err_rate_tmp_d
+	   echo "------------------------------------------------------------"
+	}
+cuthere
+	#--- cleaning temp arrays ---#
+	foreach 8 < tmp2 tmp3 > {
+	   foreach 9 < newt newbin rate lg_rate > {
+	      delete $9_$8 
+	   }
+	   foreach 9 < rate lg_rate > {
+	      delete err_$9_$8_u
+	      delete err_$9_$8_d
+	   }
+	}
+
+	notation -4 4 -4 4 
+
+##------------------------------------------------------------------------------
+## LCMODULE_smartjoin  <x-array> <y-array>
+LCMODULE_smartjoin 2
+
+	   #--- EXPERIMENTAL: CONNECTING consecutive points only ---#
+	   define j1 local
+	   define j2 local
+	   define dt local
+	   ltype 1 ctype 2 
+	   ##relocate $(newt_tmp2[0]) $(lg_rate_tmp2[0])
+	   ##do j1=0,dimen(newt_tmp2)-2 {
+	   ##   define j2 $($j1+1)
+	   ##   define dt $(newt_tmp2[$j2]-newt_tmp2[$j1])
+	   ##   if( $dt <= (1.2*$deltat) ) {
+	   ##      draw $(newt_tmp2[$j2]) $(lg_rate_tmp2[$j2])
+	   ##   } else {
+	   ##      relocate $(newt_tmp2[$j2]) $(lg_rate_tmp2[$j2])
+	   ##   }
+	   ##}
+	   relocate $($1[0]) $($2[0])
+	   do j1=0,dimen($1)-2 {
+	      define j2 $($j1+1)
+	      define dt $($1[$j2]-$1[$j1])
+	      if( $dt <= (1.2*$deltat) ) {
+	         draw $($1[$j2]) $($2[$j2])
+	      } else {
+	         relocate $($1[$j2]) $($2[$j2])
+	      }
+	   }
+	   ctype 2 ltype 0
+
+##------------------------------------------------------------------------------
+## LCMODULE_smartshade  <x-array> <y-array> <color-array> <deltat> <tstep>
+LCMODULE_smartshade 5
+
+	   #--- EXPERIMENTAL: smoothing/CONNECTING consecutive points only ---#
+	   define j1 local
+	   define j2 local
+	   define dt local
+	   define tstep local
+
+	   define nint 0
+	   define t1idx 0
+	   define deltat $4
+	   define tstep  $5
+
+	   set shade_t1 = < $($1[0]) > 
+	   set shade_t2 = < $($1[0]) > 
+	   
+	   do j1=0,dimen($1)-2 {
+	      define j2 $($j1+1)
+	      define dt $($1[$j2]-$1[$j1])
+	      if( $dt > (1.2*$deltat) ) {
+		 define nint $($nint+1)
+		 set shade_t1 = shade_t1 CONCAT < $($1[$t1idx]) >
+		 set shade_t2 = shade_t2 CONCAT < $($1[$j1]) >
+		 define t1idx $j2
+	      }
+	   }
+	   echo " End of time array ... "
+
+	   if( $($j1+1) != $t1idx ) {
+	      echo " ... closing intervals ... "
+	      define nint $($nint+1)
+	      set shade_t1 = shade_t1 CONCAT < $($1[$t1idx]) >
+	      set shade_t2 = shade_t2 CONCAT < $($1[$j1+1]) >
+	   }
+	   print '  %9.2f  %9.2f\n'  < shade_t1 shade_t2 >
+
+	   set _x local
+	   set _y local
+	   set _c local
+
+	   do 9=1,$nint { 
+	      define t1 $(shade_t1[$9])
+	      define t2 $(shade_t2[$9])
+	      define t12 $($t2-$t1)
+	      echo " Interval "$9 : $t1 - $t2 [$t12]  [$($t12/$tstep) new components]
+	      set _t$9= $1   if( $1 >= $t1 && $1 <= $t2 )
+	      set _f$9= $2   if( $1 >= $t1 && $1 <= $t2 )
+	      set _c$9= $3   if( $1 >= $t1 && $1 <= $t2 )
+	      echo " ==> Dimension of selected arrays :" $(dimen(_t$9)) $(dimen(_f$9)) $(dimen(_c$9))
+
+	      set newx$9 = $t1+$tstep,$t2-$tstep,$tstep
+	      echo " ==> Dimension of new time array :" $(dimen(newx$9))
+
+	      # interp_gf _t$9 _f$9 newx$9 newf$9
+	      interp2 _t$9 _f$9 newx$9 newf$9
+	      echo " ==> Dimension of new rate array :" $(dimen(newf$9)) $(dimen(_t$9))
+
+	      # interp_gf _t$9 _c$9 newx$9 newc$9
+	      interp2 _t$9 _c$9 newx$9 newc$9
+	      echo " ==> Dimension of new color array :" $(dimen(newc$9))
+	   }
+
+	   set t_all = newx1
+	   set f_all = newf1
+	   set c_all = newc1 
+
+	   do 9=2,$nint {
+	      set t_all = t_all CONCAT newx$9
+	      set f_all = f_all CONCAT newf$9
+	      set c_all = c_all CONCAT newc$9
+	   }
+
+	   # plot_shaded_dots newx1 newy1 ep1 1.4
+	   
+
+##------------------------------------------------------------------------------
+## LCMODULE_plot_option_1
+## 
+LCMODULE_plot_option_1
+
+	#-----------------------------------------------------------------
+	# if($come == 1) {
+	   echo "------------------------------------------------------------"
+	   define pty1 ? {*     Give the code for PTYPE [#1] : }
+	   define cty1 ? {*     Give the code for CTYPE [#1] : }
+	   define pexp ? {*                    Expand factor : }
+	   echo "------------------------------------------------------------"
+	   lweight 3
+	   expand $($pexp*1.5) ctype 2 
+	   errorbar  newt_tmp2 lg_rate_tmp2 err_lg_rate_tmp2_u 2
+	   errorbar  newt_tmp2 lg_rate_tmp2 err_lg_rate_tmp2_d 4
+	   if(substr('$xerr',0,1) == 'y') { 
+	       error_x newt_tmp2  lg_rate_tmp2   (newbin_tmp2/2)
+	       error_x newt_tmp3 (lg(rate_tmp3)) (newbin_tmp3/2)
+	   }
+
+	   LCMODULE_smartjoin  newt_tmp2 lg_rate_tmp2
+
+	   #--- UPPER LIMITS -------
+	   expand $($pexp*1.2) ctype 2 ptype $upper 
+	   points  newt_tmp3 (lg(rate_tmp3))
+
+	   expand $($pexp*1.8) ctype $cty1 ptype $pty1 3 
+	   points  newt_tmp2  lg_rate_tmp2 
+	   points  newt_tmp3 (lg(rate_tmp3)) 
+
+	   expand $($pexp*2.1) ctype 2 ptype $pty1 0 
+	   points  newt_tmp2  lg_rate_tmp2 
+	   points  newt_tmp3 (lg(rate_tmp3))  
+	   lweight 2
+	# }
+
+##------------------------------------------------------------------------------
+## LCMODULE_plot_option_3
+##  
+LCMODULE_plot_option_3
+
+	#-----------------------------------------------------------------
+	# if($come == 3) {
+	   echo "------------------------------------------------------------"
+	   define cty1 ? {* Give the code for CTYPE [border] : }
+	   define cty2 ? {* Give the code for CTYPE [inside] : }
+	   define pexp ? {*                    Expand factor : }
+	   echo "------------------------------------------------------------"
+
+	   lweight 3 
+	   expand $($pexp*1.5) ctype $cty1
+	   errorbar  newt_tmp2 lg_rate_tmp2 err_lg_rate_tmp2_u 2
+	   errorbar  newt_tmp2 lg_rate_tmp2 err_lg_rate_tmp2_d 4
+	   if(substr('$xerr',0,1) == 'y') { 
+	       error_x newt_tmp2  lg_rate_tmp2   (newbin_tmp2/2)
+	       error_x newt_tmp3 (lg(rate_tmp3)) (newbin_tmp3/2)
+	   }
+
+	   LCMODULE_smartjoin  newt_tmp2 lg_rate_tmp2
+
+	   #--- UPPER LIMITS -------
+	   expand $($pexp*1.2) ctype $cty1 ptype $upper 
+	   points  newt_tmp3 (lg(rate_tmp3))
+
+	   expand $($pexp*2.0) ctype $cty1 ptype 20 3 
+	   points  newt_tmp2  lg_rate_tmp2 
+	   points  newt_tmp3 (lg(rate_tmp3)) 
+
+	   expand $($pexp*1.2) ctype $cty2 ptype 20 3 
+	   points  newt_tmp2  lg_rate_tmp2
+	   points  newt_tmp3 (lg(rate_tmp3)) 
+
+	   ##lweight 1.5
+	   ##expand $($pexp*1.7) ctype $cty1 ptype 20 0 
+	   ##points  newt_tmp2 lg_rate_tmp2 
+
+	   lweight 2
+	# }
+	#-----------------------------------------------------------------
+
+##------------------------------------------------------------------------------
+##------------------------------------------------------------------------------
+## LCMODULE_set_start_stop_time
+##     Returns:  $xinizio
+##            :  $xfine
+LCMODULE_set_start_stop_time
+
+	echo "------------------------------------------------------------"
+	echo " > Start Time= "$inizio
+	echo " > Stop Time = "$fine
+	define inizio ? {*                   New Start Time : }
+	define fine   ? {*                   New Stop Time  : }
+	echo "------------------------------------------------------------"
+
+	if( abs($inizio) < 2000 ) { define inizio $($inizio*1000) }
+	if( abs($fine)   < 2000 ) { define fine   $($fine*1000)   }
+
+	define xinizio  $inizio
+	define xfine    $fine
+
+##------------------------------------------------------------------------------
+## LCMODULE_set_location
+##     Returns:  $whatloc 
+##            :  $flaglab , $by1 , $by2 (controlling the label positions etc...)
+##        Sets:  correct location gx[12] gy[12] for the box.
+LCMODULE_set_location
+
+	echo "------------------------------------------------------------"
+	echo "* How do you prefer to customize your LOCATION ?"
+	echo "   [10] Long      vertical (i.e. NO   space for labels outside) "
+	echo "   [20] Short(er) vertical (i.e. WITH space for BOTTOM labels) "
+	echo "   [30] Short(er) vertical (i.e. WITH space for TOP    labels) "
+	echo "   [40] Long      and Narrow "
+	echo "   [50] Short     and Narrow "
+	echo "   [60] Short(er) and Narrow "
+	echo "   [70] \"VERY\" landscape (2:1 aspect ratio)"
+	echo "   [80] \"VERY\" portrait  (1:2 aspect ratio)"
+	echo "    >> Use #1 for LEFT  Axis label only. "
+	echo "    >> Use #2 for RIGHT Axis label only. "
+	define swhatloc ? {*                      Your Choice : }
+	
+	##define whatloc ($swhatloc % 10)
+	##define flaglab (($swhatloc - $whatloc)/10)
+
+	#GF 2004.10.11
+	#GF 2005.01.05
+	##define flaglab ($swhatloc % 10)
+	##define whatloc (($swhatloc - $flaglab)/10)
+	if( $swhatloc > 9 ) { 
+	   define flaglab ($swhatloc % 10)
+	   define whatloc (($swhatloc - $flaglab)/10)
+	} else {
+	   define flaglab 0
+	   define whatloc ($swhatloc)
+	}
+	echo "label control: $!flaglab"
+	echo "location code: $!whatloc"
+
+	if( $flaglab == 0 ) { 
+	    define by1 2
+	    define by2 0
+	}
+	if( $flaglab == 1 ) { 
+	    define by1 2
+	    define by2 3
+	}
+	if( $flaglab == 2 ) { 
+	    define by1 3
+	    define by2 2
+	}
+
+	window 1 1 1 1 
+	if($whatloc == 1) { location  4000 29500  4500 31000 }
+	if($whatloc == 2) { location  4000 30000  9500 31000 } 
+	if($whatloc == 3) { location  4000 30000  4500 29500 } 
+	if($whatloc == 4) { location  8500 27500  4500 31000 }
+	if($whatloc == 5) { location  8500 27500  9500 31000 } 
+	if($whatloc == 6) { location  8500 27500  4500 29500 } 
+	if($whatloc == 7) { location  4000 30000 10700 23700 } 
+	if($whatloc == 8) { location 10200 23700  4500 31500 } 
+
+##------------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+# subset_97
+subset_97
+
+	set t_1 = < 0 135e3 270e3 >
+	define scale  ( ($gx2 - $gx1)/($fx2 - $fx1) )
+	define oneday ( 86400.0*$scale )
+	lweight 4 
+	ltype 0
+	ctype 2
+
+	do 1=0,2 {
+	    relocate ( $( $gx1 - $fx1*$scale + $(t_1[$1])*$scale )           $($gy1 + 750 + $1*750) )
+	    draw     ( $( $gx1 - $fx1*$scale + (300e3 + $(t_1[$1]))*$scale ) $($gy1 + 750 + $1*750) )
+	    draw     ( $( $gx1 - $fx1*$scale + (300e3 + $(t_1[$1]))*$scale ) $($gy1 + 750 + $1*750 + 150 ) )
+	    draw     ( $( $gx1 - $fx1*$scale + $(t_1[$1])*$scale )           $($gy1 + 750 + $1*750 + 150 ) )
+	    draw     ( $( $gx1 - $fx1*$scale + $(t_1[$1])*$scale )           $($gy1 + 750 + $1*750) )
+	}
+
+	ctype 2
+	lweight 2
+
+#---------------------------------------------------------------------------
+# energy_band_labels 
+energy_band_labels 1
+
+	set dimen(bandstr) = 4.s
+
+	if ( substr($1,0,1) == '9' ) {
+	   set bandstr[0] = '0.1-0.5 keV'
+	   set bandstr[1] = '0.5-2 keV'
+	   set bandstr[2] = '2-3 keV'
+	   set bandstr[3] = '4-6 keV'
+	} else {
+	   set bandstr[0] = '0.1-0.5 & '
+	   set bandstr[1] = '4-6 keV'
+	   set bandstr[2] = '12-26 keV'
+	   set bandstr[3] = '>0.3 TeV'
+	}
+
+	if ( $1 == 97 ) {
+	    echo " labels for 19$1 "
+	    define xcoord   32100
+	    define ang      90
+	    define expa     1.25
+	    define doverel  5
+	    set coord = < 8000 15000 20841 27300 >
+	} 
+	if ( $1 == 98 ) {
+	    echo " labels for 19$1 "
+	    define xcoord   24000
+	    define ang      0
+	    define expa     1.5
+	    define doverel  6
+	    set coord = < 8000 13000 18500 25300 >
+	}
+	if ( $1 == 'tev' ) {
+	    echo  labels for 1998 $1 
+	    define xcoord   32100
+	    define ang      90
+	    define expa     1.05
+	    define doverel  5
+	    set coord = < 6200 10000 14300 22300 >
+	}
+
+	do 1=0,3 {
+	   relocate ( $xcoord $(coord[$1]) )
+	   lweight 3
+	   angle   $ang
+	   expand  $expa
+	   putlabel $doverel $(bandstr[$1])
+	   angle 0
+	}
+
+#---------------------------------------------------------------------------
+# plot_dtlc_loglog
+plot_dtlc_loglog
+
+	echo "---------------------------------------------"
+	define soglia (0.0)
+	define soglia ? {* Exposed fraction threshold ? }
+	
+	define suffix delete
+	define suffix ? {* Suffix of vectors to be loaded ?}
+
+	echo "---------------------------------------------"
+	define bottomrate ? {* Lower limit to count-rate : }
+	define toprate    ? {* Upper limit to count-rate : }
+
+	set newt_tmp       = newt_$suffix
+	set newt1_tmp      = newt1_$suffix
+	set newt2_tmp      = newt2_$suffix
+
+	set lg_newt_tmp    = lg(newt_$suffix)
+	set lg_newt1_tmp   = lg(newt1_$suffix)
+	set lg_newt2_tmp   = lg(newt2_$suffix)
+
+	set newbin_tmp     = newbin_$suffix
+	set rate_tmp       = rate_$suffix
+	set lg_rate_tmp    = lg(rate_$suffix)
+	set cvrfr_tmp      = cvrfr_$suffix      
+	set err_rate_tmp   = err_rate_$suffix  
+	# set counts_tmp     = counts_$suffix
+	# set err_counts_tmp = err_counts_$suffix 
+	# set dt_true_tmp    = dt_true_$suffix
+
+	vecminmax rate_tmp dum    top_$suffix
+	vecminmax newt_tmp inizio fine
+
+	echo "---------------------------------------------" 
+	echo " * Start Time= "$inizio
+	echo " * Stop Time = "$fine
+	echo "---------------------------------------------"
+	define inizio ? {* New Start Time : }
+	define fine   ? {*  New Stop Time : }
+	echo "---------------------------------------------"
+
+	 # define change "n"
+	 # define change ? {Would do like to change them ?}
+	 # if(substr('$change',0,1) == 'y') {
+	 #   define inizio ? {New Start Time ? }
+	 #   define fine   ? {New Stop Time ? }
+	 # }
+
+	 # define inizio ( $inizio-0.05*($fine-$inizio) )
+	 # define fine   ( $fine+0.05*($fine-$inizio) )
+	define ymin   ( lg($bottomrate) )
+	define ymax   ( lg($toprate) )
+
+	define cancello "n"
+	define cancello ? {* Erase old Plot ? }
+	if(substr('$cancello',0,1) == 'y') { erase }
+
+	echo "--------------------------------------------- "
+	echo "* How do you prefer to customize your LOCATION ? "
+	echo "   [1] Long  vertical (i.e. NO   space for labels outside)  "
+	echo "   [2] Short vertical (i.e. WITH space for labels outside)  "
+	define whatloc ? {* Your Choice ? }
+
+	if($whatloc == 2) {
+	   window 1 1 1 1
+	   location 4500 31500 9500 31000
+	} else {
+	   window 1 1 1 1
+	   location 4500 31500 4500 31000
+	}
+
+	echo "---------------------------------------------"
+	define layout1 ? {* Give me the general Y "windowing" code ? }
+	             echo "  This is the number of Y-boxes: "$layout1
+	define layout2 ? {* Give me the "Y-window" code for this box ? }
+
+	window 1 $layout1 1 $layout2
+
+	ctype 2
+	lweight 2
+	expand 1.5
+	ticksize -1 0 -0.5 1 
+	limits $(lg($inizio)) $(lg($fine)) $ymin $ymax 
+
+	if(substr('$layout2',0,1) == '1') { 
+	   if($?t0ref == 0) {
+	       echo    T_0 not defined !
+	       define t0ref ? {* T_0_ref = } 
+	       box 1 2 0 0 
+	       xlabel Time (sec from T_0 = $t0ref [TJD])
+	   } else { 
+	       box 1 2 0 0 
+	       xlabel Time (sec from T_0 = $t0ref [TJD])
+           }
+	} else {
+	   if($layout2 == $(abs($layout1)) ) { 
+	      box 0 2 0 0
+	   } else {
+	      box 0 2 3 0
+	   }
+	}
+	
+	define plotdt ? {* Plot TOPlabel with delta_T ? [y/n] }
+	if(substr('$plotdt',0,1) == 'y') {
+	   relocate (4500 31500)
+	   ctype 2
+	   putlabel 6 \Delta t = $(newt_tmp[2]-newt_tmp[1]) sec
+	}
+
+	echo "----------------------------"
+	echo "* Normalize light curve to:"
+	echo "   [0] DON\'T normalize"
+	echo "   [1] its MEAN "
+	echo "   [2] its MAXIMUM"
+	echo "----------------------------"
+	define what 0
+	define what ? {* your choice [only 0 is implemented] ? }
+	if($what > 0) { 
+	   echo "  Overriding your choice ["$what"]"
+	   echo "  ....setting back to 0 "
+	   define what 0
+	}	
+
+	if($what == 0) { 
+	   define factor 1 
+	   ylabel cts/sec 
+	}
+	if($what == 1) { 
+	   define factor $mean_$!suffix 
+	   ylabel rate/\langle rate\rangle
+	   relocate $fx1 1 
+	   ltype 2 
+	   draw $fx2 1 
+	   ltype 0
+	}
+	if($what == 2) { 
+	   define factor $top_$!suffix 
+	   ylabel rate/max(rate)
+	   relocate $fx1 1 
+	   ltype 2 
+	   draw $fx2 1 
+	   ltype 0
+	}
+
+	define xerr "n"
+	define color ? {* Color for light curve data ?}
+	define xerr  ? {* Plot X error bars ? [y/n] }
+
+	ctype $color 
+
+	ptype 4 3
+	set lg_rate_tmp  = lg_rate_tmp/$factor
+	set err_rate_tmp = err_rate_tmp/$factor
+
+	# echo " * Connect neighboring points ? "
+	echo " * Connect ALL points ? "
+	echo "   (neighboring points are connected anyway)"
+	define congiungo ? {  Give number corresponding to LTYPE ? [-1 for NO]} 
+	if($congiungo >= 0) {
+	   ltype $congiungo
+	   do 1=0,$(dimen(lg_rate_tmp)-2) {
+	      define 2 $($1+1)
+ 	      relocate $(lg_newt_tmp[$1]) $(lg_rate_tmp[$1])
+	      if( rate_tmp[$1] != 0 && rate_tmp[$2] != 0 ) {
+	          draw $(lg_newt_tmp[$2]) $(lg_rate_tmp[$2]) 
+	      }
+	   }
+	}
+	ltype 0
+
+	points  lg_newt_tmp lg_rate_tmp 
+	logerr  lg_newt_tmp lg_rate_tmp err_rate_tmp
+	# error_y newt_tmp rate_tmp err_rate_tmp
+	if(substr('$xerr',0,1) == 'y') { error_x newt_tmp rate_tmp (newbin_tmp/2)}
+
+	# points  newt_tmp ($factor*rate_tmp) 
+	# error_y newt_tmp ($factor*rate_tmp) ($factor*err_rate_tmp)
+	# error_x newt_tmp ($factor*rate_tmp) (newbin_tmp/2)
+	ctype 2 
+	angle 0
+
+	# points  newt_tmp rate_tmp 
+	# error_y newt_tmp rate_tmp err_rate_tmp
+	# error_x newt_tmp rate_tmp (newbin_tmp/2)
+	ctype 2 
+	points  lg_newt_tmp lg_rate_tmp  if(cvrfr_tmp < $soglia )
+
+#---------------------------------------------------------------------------
+# init
+init
+	echo "---------------------------------"
+	define SM_HOME :
+	echo "SM macro home directory is : "$SM_HOME
+	macro read "$!SM_HOME/utc_labels.sm"
+	echo "---------------------------------"
+
+#***********************************************************************
+#** WARNING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! **
+#**   run macro 'init' before to proceed.                             **
+#**   It is needed to load the macros necessary for plot labeling     **
+#**                                                                   ** 
+#***********************************************************************

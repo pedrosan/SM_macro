@@ -1,0 +1,1476 @@
+e---------------------------------------------------------------------------
+# ccpd
+ccpd
+
+	location 5500 31000 5500 31000
+	window 1 1 1 1
+	ticksize 0 0 0 0 
+	ctype 2
+	ltype 0
+	lweight 3
+
+	data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/dcf_le_me2.mcs"
+	read dcf_lag 1
+
+	data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/mmd_le_me2.mcs"
+	read mmd_lag 1
+
+	set dcf_lag = 3600*dcf_lag
+	set mmd_lag = 3600*mmd_lag
+
+        define step ? {Give me the STEP for the histogram...}
+        set xlag = -10e3+$step/2.,10e3+$step/2.,$step
+
+	set h_dcf_lag=histogram(dcf_lag:xlag)/$(dimen(dcf_lag))
+	set h_mmd_lag=histogram(mmd_lag:xlag)/$(dimen(mmd_lag))
+
+	set dum=h_dcf_lag CONCAT h_mmd_lag
+	vecminmax dum a b 
+	define a delete
+	delete dum
+
+	limits xlag -0.01 $($b*1.05)
+	notation -5 5 -4 4 
+	box
+	expand 2.0
+	xlabel Time Lag [s]
+	ylabel Relative Frequency
+	expand 1.5
+
+	lweight 4
+	histogram xlag h_dcf_lag
+	ltype 2
+	histogram xlag h_mmd_lag
+	ltype 1
+	ctype 3
+	relocate 0 -2
+	draw     0  2
+	ctype 2 
+	ltype 0
+
+	lweight 3
+
+	set h_dcf_lag_cum=cumulate(h_dcf_lag)
+	set h_mmd_lag_cum=cumulate(h_mmd_lag)
+
+	limits xlag -0.05 1.05
+	ctype 4 connect xlag h_dcf_lag_cum
+	ctype 5 connect xlag h_mmd_lag_cum
+	ctype 7 
+	ltype 2 
+	relocate -1e5 0.05 draw 1e5 0.05
+	relocate -1e5 0.16 draw 1e5 0.16
+	relocate -1e5 0.5  draw 1e5 0.5
+	relocate -1e5 0.84 draw 1e5 0.84
+	relocate -1e5 0.95 draw 1e5 0.95
+	ltype 0
+	ctype 2
+
+#---------------------------------------------------------------------------
+# fvar_421
+fvar_421
+
+	define quali ? {Which analysis [1=my bands/2=Zhang] }
+	define quame ? {Which AVERAGE  [1=plain/2=weighted] }
+	define xav  " "
+	define yme  " "
+	define eyme " "
+
+	if($quali == 1) {
+	data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/Solo_RMS"
+	define i (0)
+	define j (0)
+	define 2 (7)
+	foreach 1 { llow_day1 llow_day2 lmid_day1 lmid_day2 \
+		    mlow_day1 mlow_day2 mmid_day1 mmid_day2 } {
+	      define i ($i+1)
+	      echo  $(($i-1)*$2+2) $($i*$2)
+     	      lines $(($i-1)*$2+2) $($i*$2) 
+	      read < $1 2 err_$1 3 >
+
+              stats  $1         mean_$1  width_$1  kurt_$1
+              stats2 $1 (1/err_$1/err_$1) mean2_$1 width2_$1 kurt2_$1
+	      define sigma_$1 (sqrt(sum(err_$1*err_$1)))
+              echo --- $1 --------------------------------------------------------
+              echo * Average 1 = $mean_$1 +/- $width_$1   [$($sigma_$1/$(dimen($1)))]
+              echo * Average 2 = $mean2_$1 +/- $width2_$1
+
+	      if($quame == 1) {
+	          define yme  < $yme  $mean_$1 >
+	          define eyme < $eyme $sigma_$1 >
+	      } else {
+	          define yme  < $yme  $mean2_$1 >
+	          define eyme < $eyme $sigma_$1 >
+	      }
+	}
+        echo ------------------------------------------------------------------
+	foreach 1 { llow_day1 mlow_day2 mmid_day1 mmid_day2 } {
+	      define j ($j+1)
+	      define 2 $(dimen($1)+2)
+	      define xav  < $xav $($j*$2-1) $($j*$2-1) > 
+	}
+	}
+
+	if($quali == 2) {
+	data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/Solo_RMS_Zh"
+	define i (0)
+	define j (0)
+	define 2 (7)
+	foreach 1 { llow_day1 llow_day2 \
+		    mmid_day1 mmid_day2 } {
+	      define i ($i+1)
+	      echo  $(($i-1)*$2+2) $($i*$2)
+     	      lines $(($i-1)*$2+2) $($i*$2) 
+	      read < $1 2 err_$1 3 >
+
+              stats  $1         mean_$1  width_$1  kurt_$1
+              #stats2 $1 err_$1 mean2_$1 width2_$1 kurt2_$1
+              stats2 $1 (1/err_$1/err_$1) mean2_$1 width2_$1 kurt2_$1
+	      define sigma_$1 (sqrt(sum(err_$1*err_$1)))
+              echo --- $1 --------------------------------------------------------
+              echo * Average 1 = $mean_$1 +/- $width_$1   [$($sigma_$1/$(dimen($1)))]
+              echo * Average 2 = $mean2_$1 +/- $width2_$1
+
+	      if($quame == 1) {
+	          define yme  < $yme  $mean_$1 >
+	          define eyme < $eyme $sigma_$1 >
+	      } else {
+	          define yme  < $yme  $mean2_$1 >
+	          define eyme < $eyme $sigma_$1 >
+	      }
+	}
+        echo ------------------------------------------------------------------
+	foreach 1 { mmid_day1 mmid_day2 } {
+	      define j ($j+1)
+	      define 2 $(dimen($1)+2)
+	      define xav  < $xav $($j*$2-1) $($j*$2-1) > 
+	}
+
+	set lmid_day1 = < -100 >
+	set lmid_day2 = < -100 >
+	set mlow_day1 = < -100 >
+	set mlow_day2 = < -100 >
+	set err_lmid_day1 = < 90 >
+	set err_lmid_day2 = < 90 >
+	set err_mlow_day1 = < 90 >
+	set err_mlow_day2 = < 90 >
+	}
+
+	set day1     = llow_day1 CONCAT <-100 -100> CONCAT \
+		       lmid_day1 CONCAT <-100 -100> CONCAT \
+		       mlow_day1 CONCAT <-100 -100> CONCAT mmid_day1
+	set err_day1 = err_llow_day1 CONCAT <90 90> CONCAT \
+		       err_lmid_day1 CONCAT <90 90> CONCAT \
+		       err_mlow_day1 CONCAT <90 90> CONCAT err_mmid_day1
+	set day2     = llow_day2 CONCAT <-100 -100> CONCAT \
+		       lmid_day2 CONCAT <-100 -100> CONCAT \
+		       mlow_day2 CONCAT <-100 -100> CONCAT mmid_day2
+	set err_day2 = err_llow_day2 CONCAT <90 90> CONCAT \
+		       err_lmid_day2 CONCAT <90 90> CONCAT \
+		       err_mlow_day2 CONCAT <90 90> CONCAT err_mmid_day2
+
+	set xav = < $xav >
+	echo J = $j
+	set yme = < $yme >
+	set eyme = < $eyme >
+	set eyme = eyme/$(dimen(lmid_day1))
+	set xday1 = 1,$(dimen(day1)),1
+	set xday2 = xday1
+
+	location 5500 31000 5500 31000
+	window 1 1 1 1
+	ctype 2
+	ltype 0
+	lweight 3
+
+	limits $(xday1[0]-2) $(xday1[$(dimen(xday1)-1)]+3) 0.0 0.35
+	ticksize 0 0 0 0
+	box 0 2 0 0 
+	expand 2
+	ylabel F_{var}
+
+	ptype 4 3 
+	expand 2.0
+	ctype 5 
+	points  xday1 day1 
+	error_y xday1 day1 err_day1
+
+	relocate ( $($gx1+1500) $($gy2-1500) ) 
+	putlabel 6 Day1
+
+	ctype 3
+	points  xday2 day2 
+	error_y xday2 day2 err_day2
+
+	relocate ( $($gx1+1500) $($gy2-3000) ) 
+	putlabel 6 Day2
+
+	if($quame == 1) {
+	   ctype 4 
+	} else {
+	   ctype 7 
+	}
+	points  xav yme
+	error_y xav yme eyme
+
+	expand 1.5
+	ctype 2 
+
+
+#---------------------------------------------------------------------------
+# fvar_421_pap
+fvar_421_pap
+
+	echo *** Version of F_var analysis: 
+	echo  [1] FTOOLS
+	echo  [2] mine
+	define edition ? {Which one ? }
+
+	echo -----------------------------------
+	echo  [1] 1998 day1
+	echo  [2] 1998 day2
+	echo  [3] 1998 both
+	echo  [4] 1997 all
+	echo  [5] 1997 slice 1
+	echo  [6] 1997 slice 2
+	echo  [7] 1997 slice 3
+	echo -----------------------------------
+	define quali ? {Which data ? }
+
+	if($edition == 1) {
+	  if( $quali == 1 ) { data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/Solo_RMS_98_day1" }
+	  if( $quali == 2 ) { data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/Solo_RMS_98_day2" }
+	  if( $quali == 3 ) { data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/Solo_RMS_98_both" }
+	  if( $quali == 4 ) { data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/Solo_RMS_97_all" }
+	  if( $quali == 5 ) { data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/Solo_RMS_97_slice1" }
+	  if( $quali == 6 ) { data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/Solo_RMS_97_slice2" }
+	  if( $quali == 7 ) { data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/Solo_RMS_97_slice3" }
+	}
+
+	if($edition == 2) {
+	  define method ? {Which Method [ave/med] ? }
+	  if( $quali == 1 ) { data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/fvar_"$!method"_day1_98_plot.dat" }
+	  if( $quali == 2 ) { data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/fvar_"$!method"_day2_98_plot.dat" }
+	  if( $quali == 3 ) { data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/fvar_"$!method"_both_98_plot.dat" }
+	  if( $quali == 4 ) { data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/fvar_"$!method"_plain_97_plot.dat" }
+	  if( $quali == 5 ) { data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/fvar_"$!method"_slice1_97_plot.dat" }
+	  if( $quali == 6 ) { data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/fvar_"$!method"_slice2_97_plot.dat" }
+	  if( $quali == 7 ) { data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/fvar_"$!method"_slice3_97_plot.dat" }
+	}
+
+	define quame ? {Which AVERAGE  [1=plain/2=weighted] }
+
+	define xav  " "
+	define yme  " "
+	define eyme " "
+	define i (0)
+	define j (0)
+	define 2 (7)
+	foreach 1 { llow lmid mlow mmid } {
+	      define i ($i+1)
+	      echo  $(($i-1)*$2+2) $($i*$2)
+     	      lines $(($i-1)*$2+2) $($i*$2) 
+	      read < $1 2 err_$1 3 >
+
+              stats  $1         mean_$1  width_$1  kurt_$1
+              # stats2 $1 err_$1 mean2_$1 width2_$1 kurt2_$1
+              stats2 $1 (1/err_$1/err_$1) mean2_$1 width2_$1 kurt2_$1
+	      define sigma_$1 (sqrt(sum(err_$1*err_$1)))
+              echo --- $1 --------------------------------------------------------
+              echo * Plain Average    = $mean_$1 +/- $width_$1   [$($sigma_$1/$(dimen($1)))]
+              echo * Weighted Average = $mean2_$1 +/- $width2_$1
+
+	      if($quame == 1) {
+	          define yme  < $yme  $mean_$1 >
+	          if( $($sigma_$1/$(dimen($1))) > $width_$1 ) {
+	               define eyme < $eyme $sigma_$1 >
+		  } else {
+	               define eyme < $eyme $($width_$1*$(dimen($1))) >
+		  }
+	      } else {
+	          define yme  < $yme  $mean2_$1 >
+	          if( $($sigma_$1/$(dimen($1))) > $width2_$1 ) {
+	               define eyme < $eyme $sigma_$1 >
+		  } else {
+	               define eyme < $eyme $($width2_$1*$(dimen($1))) >
+		  }
+	      }
+	      
+	      # if($quame == 1) {
+	      #     define yme  < $yme  $mean_$1 >
+	      #     define eyme < $eyme $sigma_$1 >
+	      # } else {
+	      #     define yme  < $yme  $mean2_$1 >
+	      #     define eyme < $eyme $sigma_$1 >
+	      # }
+	}
+        echo ------------------------------------------------------------------
+	foreach 1 { llow lmid mlow mmid } {
+	      define j ($j+1)
+	      define xav  < $xav $j > 
+	}
+
+        set xav     = < 0.26 1.18 2.36 4.76 >
+        set e_vec_d = < 0.1  0.5  2.0  4.0 >
+        set e_vec_u = < 0.5  2.0  3.0  6.0 >
+
+	define shift (0.0)
+	define shift ? { Shift ? }
+	set e_vec_d = (lg(xav) + $shift) - lg(e_vec_d) 
+	set e_vec_u = lg(e_vec_u) - (lg(xav) + $shift)
+	set xav = lg(xav)
+	set xav = xav + $shift
+
+        define xmin -1.1
+        define xmax  1.15
+        define tick  -1
+        define lab_x "Energy [keV]"
+
+	set yme  = < $yme >
+	set eyme = < $eyme >
+	set eyme = eyme/$(dimen(llow))
+	print '  %7.4f  %7.4f  %7.4f   %7.4f  %7.4f\n' { xav e_vec_d e_vec_u yme eyme }  
+
+	define linlog ? { LIN or LOG ? [1/2] }
+
+	# define ymin 0.05
+	# define ymax 0.50
+	if($edition == 1) {
+	    define ymin 0.1
+	    define ymax 0.50
+	}
+	if($edition == 2 && '$method' == 'ave') {
+	    define ymin 0.1
+	    define ymax 0.50
+	}
+	if($edition == 2 && '$method' == 'med') {
+	    define ymin 0.14
+	    define ymax 0.75
+	}
+
+	if( $linlog == 2 ) {
+	   define ymin   (lg($ymin))
+	   define ymax   (lg($ymax))
+	   set eyme = lg(yme+eyme)-lg(yme)
+	   set yme  = lg(yme)
+	}
+
+	location 5500 31000 5500 31000
+	window 1 1 1 1
+	ctype 2
+	ltype 0
+	lweight 3
+
+	limits $xmin $xmax $ymin $ymax
+	if( $linlog == 1 ) { ticksize -1 0 0 0 }
+	if( $linlog == 2 ) { ticksize -1 0 -1 1 }
+	expand 1.5
+	box 1 2 0 0 
+	expand 2.5
+	if( substr('$method',0,1) == 'a') { ylabel F_{var} }
+	if( substr('$method',0,1) == 'm') { ylabel F_{var,med} }
+	xlabel $lab_x
+	
+	plot_nice
+
+plot_nice
+
+	echo -----------------------------------
+	echo  [1] BLACK circles
+	echo  [2] white circles
+	echo  [3] ***   circles
+	echo  [4] BLACK triangles
+	echo  [5] white triangles
+	echo  [6] BLACK squares
+	echo  [7] white squares
+	echo  [8] ***   squares
+	echo  [9] white diamonds
+	echo -----------------------------------
+	define howplot ? { Which DOT style ? }
+
+	if( $howplot == 1 ) {
+	    #------------------------------------
+	    # black circles
+            ctype 2
+            lweight 3
+            expand 2.0
+            errorbar xav yme eyme 2
+            errorbar xav yme eyme 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+            ctype 2 
+            expand 3.0
+            ptype 20 3 
+            points xav yme
+	}
+	if( $howplot == 2 ) {
+	    #------------------------------------
+	    # White Circles
+            ctype 2
+            lweight 3
+            expand 2.0
+            errorbar xav yme eyme 2
+            errorbar xav yme eyme 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+	    expand 2.4
+	    ctype 1 
+	    ptype 20 3
+	    points xav yme
+            ctype 2 
+            expand 3.0
+            ptype 20 0 
+            points xav yme
+        }
+	if( $howplot == 3) {
+	    #------------------------------------
+	    # Starred circles
+            ctype 2
+            lweight 3
+            expand 2.0
+            errorbar xav yme eyme 2
+            errorbar xav yme eyme 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+	    expand 2.4
+	    ctype 1 
+	    ptype 20 3
+	    points xav yme
+	    ctype 2 
+	    ptype 4 1 
+	    points xav yme
+            ctype 2 
+            expand 3.0
+            ptype 20 0 
+            points xav yme
+	}
+	if( $howplot == 4) {
+	    #------------------------------------
+	    # Black Triangles
+            ctype 2
+            lweight 3
+            expand 2.0
+            errorbar xav yme eyme 2
+            errorbar xav yme eyme 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+            ctype 2 
+            expand 3.0
+            ptype 3 3 
+            points xav yme
+	}
+	if( $howplot == 5 ) {
+	    #------------------------------------
+	    # White Triangles
+            ctype 2
+            lweight 3
+            expand 2.0
+            errorbar xav yme eyme 2
+            errorbar xav yme eyme 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+	    expand 2.4
+	    ctype 1 
+	    ptype 3 3 
+	    points xav yme
+            ctype 2 
+            expand 3.0
+            ptype 3 0 
+            points xav yme
+        }
+	if( $howplot == 6 ) {
+	    #------------------------------------
+	    # Black Squares
+            ctype 2
+            lweight 3
+            expand 2.0
+            errorbar xav yme eyme 2
+            errorbar xav yme eyme 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+	    expand 2.5
+	    ctype 1 
+	    ptype 4 3 
+	    points xav yme
+            ctype 2 
+            expand 3.0
+            ptype 4 3 
+            points xav yme
+        }
+	if( $howplot == 7 ) {
+	    #------------------------------------
+	    # White Squares
+            ctype 2
+            lweight 3
+            expand 2.0
+            errorbar xav yme eyme 2
+            errorbar xav yme eyme 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+	    expand 2.5
+	    ctype 1 
+	    ptype 4 3 
+	    points xav yme
+            ctype 2 
+            expand 3.0
+            ptype 4 0 
+            points xav yme
+        }
+	if( $howplot == 8 ) {
+	    #------------------------------------
+	    # Starred Squares
+            ctype 2
+            lweight 3
+            expand 2.0
+            errorbar xav yme eyme 2
+            errorbar xav yme eyme 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+	    expand 2.5
+	    ctype 1 
+	    ptype 4 3 
+	    points xav yme
+            expand 3.0
+	    ctype 2 
+	    ptype 4 1 
+	    points xav yme
+            ptype 4 0 
+            points xav yme
+        }
+	if( $howplot == 9 ) {
+	    #------------------------------------
+	    # White diamonds 
+            ctype 2
+            lweight 3
+            expand 2.0
+            errorbar xav yme eyme 2
+            errorbar xav yme eyme 4
+            errorbar xav yme e_vec_u 1
+            errorbar xav yme e_vec_d 3
+	    expand 2.5
+	    angle 45
+	    ctype 1 
+	    ptype 4 3 
+	    points xav yme
+            ctype 2 
+            expand 3.0
+            ptype 4 0 
+            points xav yme
+	    angle 0
+        }
+
+	expand 1.5
+	ctype 2 
+
+	define golabel ? { Plot label ? [y/n] }
+
+	if( substr('$golabel',0,1) == 'y') {
+	  define ypos $quali
+	  define ypos ? { Which position from top ? [1-7] }
+	  relocate ( $($gx1+1600) $($gy2-1250*$ypos) ) 
+	  if( $howplot == 1 ) {
+	    # black circle
+            ctype 2 
+            expand 3.0
+            ptype 20 3 
+	    dot
+	  }
+	  if( $howplot == 2 ) {
+	    # White Circles
+	    expand 2.4
+	    ctype 1 
+	    ptype 20 3
+	    dot
+            ctype 2 
+            expand 3.0
+            ptype 20 0 
+            dot
+          }
+	  if( $howplot == 3) {
+	    # Starred circles
+	    expand 2.4
+	    ctype 2 
+	    ptype 4 1 
+	    dot
+            ctype 2 
+            expand 3.0
+            ptype 20 0 
+            dot
+	  }
+  	  if( $howplot == 4) {
+	    # Black Triangles
+            ctype 2 
+            expand 3.0
+            ptype 3 3 
+            dot
+	  }
+	  if( $howplot == 5 ) {
+	    # White Triangles
+	    expand 2.4
+	    ctype 1 
+	    ptype 3 3 
+	    dot
+            ctype 2 
+            expand 3.0
+            ptype 3 0 
+            dot
+          }
+	  if( $howplot == 6 ) {
+	    # Black Squares
+	    expand 2.5
+	    ctype 1 
+	    ptype 4 3 
+	    dot
+            ctype 2 
+            expand 3.0
+            ptype 4 3 
+            dot
+          }
+	  if( $howplot == 7 ) {
+	    # White Squares
+	    expand 2.5
+	    ctype 1 
+	    ptype 4 3 
+	    dot
+            ctype 2 
+            expand 3.0
+            ptype 4 0 
+            dot
+          }
+	  if( $howplot == 8 ) {
+	    # Starred Squares
+	    expand 2.5
+	    ctype 1 
+	    ptype 4 3 
+	    dot
+            expand 3.0
+	    ctype 2 
+	    ptype 4 1 
+	    dot
+            ptype 4 0 
+            dot
+          }
+	  if( $howplot == 9 ) {
+	    # White diamonds 
+	    expand 2.5
+	    angle 45
+	    ctype 1 
+	    ptype 4 3 
+	    dot
+            ctype 2 
+            expand 3.0
+            ptype 4 0 
+            dot
+	    angle 0
+          }
+	  define labstr ? { Label ? }
+	  expand 1.3
+	  putlabel 6 "  "$labstr
+	}
+
+#---------------------------------------------------------------------------
+# fvar_421_new
+fvar_421_new
+
+	define quali ? {Which analysis [1=my bands/2=Zhang/3=1997] }
+	define quame ? {Which AVERAGE  [1=plain/2=weighted] }
+	define xav1  " "
+	define yme1  " "
+	define eyme1 " "
+	define xav2  " "
+	define yme2  " "
+	define eyme2 " "
+
+	if($quali == 1) {
+	data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/Solo_RMS_98_day1"
+	define i (0)
+	define j (0)
+	define 2 (7)
+	foreach 1 { llow_day1 lmid_day1 mlow_day1 mmid_day1 } {
+	      define i ($i+1)
+	      echo  $(($i-1)*$2+2) $($i*$2)
+     	      lines $(($i-1)*$2+2) $($i*$2) 
+	      read < $1 2 err_$1 3 >
+
+              stats  $1         mean_$1  width_$1  kurt_$1
+              # stats2 $1 err_$1 mean2_$1 width2_$1 kurt2_$1
+              stats2 $1 (1/err_$1/err_$1) mean2_$1 width2_$1 kurt2_$1
+	      define sigma_$1 (sqrt(sum(err_$1*err_$1)))
+              echo --- $1 --------------------------------------------------------
+              echo * Average 1 = $mean_$1 +/- $width_$1   [$($sigma_$1/$(dimen($1)))]
+              echo * Average 2 = $mean2_$1 +/- $width2_$1
+
+	      if($quame == 1) {
+	          define yme1  < $yme1  $mean_$1 >
+	          define eyme1 < $eyme1 $sigma_$1 >
+	      } else {
+	          define yme1  < $yme1  $mean2_$1 >
+	          define eyme1 < $eyme1 $sigma_$1 >
+	      }
+	}
+        echo ------------------------------------------------------------------
+	foreach 1 { llow_day1 lmid_day1 mlow_day1 mmid_day1 } {
+	      define j ($j+1)
+	      define 2 $(dimen($1)+2)
+	      define xav1  < $xav1 $($j*$2-1) > 
+	}
+
+	data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/Solo_RMS_98_day2"
+	define i (0)
+	define j (0)
+	define 2 (7)
+	foreach 1 { llow_day2 lmid_day2 mlow_day2 mmid_day2 } {
+	      define i ($i+1)
+	      echo  $(($i-1)*$2+2) $($i*$2)
+     	      lines $(($i-1)*$2+2) $($i*$2) 
+	      read < $1 2 err_$1 3 >
+
+              stats  $1         mean_$1  width_$1  kurt_$1
+              # stats2 $1 err_$1 mean2_$1 width2_$1 kurt2_$1
+              stats2 $1 (1/err_$1/err_$1) mean2_$1 width2_$1 kurt2_$1
+	      define sigma_$1 (sqrt(sum(err_$1*err_$1)))
+              echo --- $1 --------------------------------------------------------
+              echo * Average 1 = $mean_$1 +/- $width_$1   [$($sigma_$1/$(dimen($1)))]
+              echo * Average 2 = $mean2_$1 +/- $width2_$1
+
+	      if($quame == 1) {
+	          define yme2  < $yme2  $mean_$1 >
+	          define eyme2 < $eyme2 $sigma_$1 >
+	      } else {
+	          define yme2  < $yme2  $mean2_$1 >
+	          define eyme2 < $eyme2 $sigma_$1 >
+	      }
+	}
+        echo ------------------------------------------------------------------
+	foreach 1 { llow_day2 mlow_day2 mlow_day2 mmid_day2 } {
+	      define j ($j+1)
+	      define 2 $(dimen($1)+2)
+	      define xav2  < $xav2 $($j*$2-1) > 
+	}
+	}
+
+	if($quali == 2) {
+	data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/Solo_RMS_Zh_day1"
+	define i (0)
+	define j (0)
+	define 2 (7)
+	foreach 1 { llow_day1 mmid_day1 } {
+	      define i ($i+1)
+	      echo  $(($i-1)*$2+2) $($i*$2)
+     	      lines $(($i-1)*$2+2) $($i*$2) 
+	      read < $1 2 err_$1 3 >
+
+              stats  $1         mean_$1  width_$1  kurt_$1
+              # stats2 $1 err_$1 mean2_$1 width2_$1 kurt2_$1
+              stats2 $1 (1/err_$1/err_$1) mean2_$1 width2_$1 kurt2_$1
+	      define sigma_$1 (sqrt(sum(err_$1*err_$1)))
+              echo --- $1 --------------------------------------------------------
+              echo * Average 1 = $mean_$1 +/- $width_$1   [$($sigma_$1/$(dimen($1)))]
+              echo * Average 2 = $mean2_$1 +/- $width2_$1
+
+	      if($quame == 1) {
+	          define yme1  < $yme1  $mean_$1 >
+	          define eyme1 < $eyme1 $sigma_$1 >
+	      } else {
+	          define yme1  < $yme1  $mean2_$1 >
+	          define eyme1 < $eyme1 $sigma_$1 >
+	      }
+	}
+        echo ------------------------------------------------------------------
+	foreach 1 { llow_day1 mmid_day1 } {
+	      define j ($j+1)
+	      define 2 $(dimen($1)+2)
+	      define xav1  < $xav1 $($j*$2-1) > 
+	}
+
+	data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/Solo_RMS_Zh_day2"
+	define i (0)
+	define j (0)
+	define 2 (7)
+	foreach 1 { llow_day2 mmid_day2 } {
+	      define i ($i+1)
+	      echo  $(($i-1)*$2+2) $($i*$2)
+     	      lines $(($i-1)*$2+2) $($i*$2) 
+	      read < $1 2 err_$1 3 >
+
+              stats  $1         mean_$1  width_$1  kurt_$1
+              # stats2 $1 err_$1 mean2_$1 width2_$1 kurt2_$1
+              stats2 $1 (1/err_$1/err_$1) mean2_$1 width2_$1 kurt2_$1
+	      define sigma_$1 (sqrt(sum(err_$1*err_$1)))
+              echo --- $1 --------------------------------------------------------
+              echo * Average 1 = $mean_$1 +/- $width_$1   [$($sigma_$1/$(dimen($1)))]
+              echo * Average 2 = $mean2_$1 +/- $width2_$1
+
+	      if($quame == 1) {
+	          define yme2  < $yme2  $mean_$1 >
+	          define eyme2 < $eyme2 $sigma_$1 >
+	      } else {
+	          define yme2  < $yme2  $mean2_$1 >
+	          define eyme2 < $eyme2 $sigma_$1 >
+	      }
+	}
+        echo ------------------------------------------------------------------
+	foreach 1 { llow_day2 mmid_day2 } {
+	      define j ($j+1)
+	      define 2 $(dimen($1)+2)
+	      define xav2  < $xav2 $($j*$2-1) > 
+	}
+
+	set lmid_day1 = < -100 >
+	set lmid_day2 = < -100 >
+	set mlow_day1 = < -100 >
+	set mlow_day2 = < -100 >
+	set err_lmid_day1 = < 90 >
+	set err_lmid_day2 = < 90 >
+	set err_mlow_day1 = < 90 >
+	set err_mlow_day2 = < 90 >
+	}
+
+	if($quali == 3) {
+	data "/neutronstar/gf/SAX/Papers/Mkn421/Zhang/Solo_RMS_97"
+	define i (0)
+	define j (0)
+	define 2 (7)
+	foreach 1 { llow_day1 lmid_day1 mlow_day1 mmid_day1 } {
+	      define i ($i+1)
+	      echo  $(($i-1)*$2+2) $($i*$2)
+     	      lines $(($i-1)*$2+2) $($i*$2) 
+	      read < $1 2 err_$1 3 >
+
+              stats  $1         mean_$1  width_$1  kurt_$1
+              # stats2 $1 err_$1 mean2_$1 width2_$1 kurt2_$1
+              stats2 $1 (1/err_$1/err_$1) mean2_$1 width2_$1 kurt2_$1
+	      define sigma_$1 (sqrt(sum(err_$1*err_$1)))
+              echo --- $1 --------------------------------------------------------
+              echo * Average 1 = $mean_$1 +/- $width_$1   [$($sigma_$1/$(dimen($1)))]
+              echo * Average 2 = $mean2_$1 +/- $width2_$1
+
+	      if($quame == 1) {
+	          define yme1  < $yme1  $mean_$1 >
+	          define eyme1 < $eyme1 $sigma_$1 >
+	      } else {
+	          define yme1  < $yme1  $mean2_$1 >
+	          define eyme1 < $eyme1 $sigma_$1 >
+	      }
+	}
+        echo ------------------------------------------------------------------
+	foreach 1 { llow_day1 lmid_day1 mlow_day1 mmid_day1 } {
+	      define j ($j+1)
+	      define 2 $(dimen($1)+2)
+	      define xav1  < $xav1 $($j*$2-1) > 
+	}
+
+	 # fake day-2 for 1997
+	foreach 1 { llow_day2 lmid_day2 mlow_day2 mmid_day2 } {
+	      set $1     = 10*llow_day1
+	      set err_$1 = llow_day1
+
+              stats  $1         mean_$1  width_$1  kurt_$1
+              # stats2 $1 err_$1 mean2_$1 width2_$1 kurt2_$1
+              stats2 $1 (1/err_$1/err_$1) mean2_$1 width2_$1 kurt2_$1
+	      define sigma_$1 (sqrt(sum(err_$1*err_$1)))
+              # echo --- $1 --------------------------------------------------------
+              # echo * Average 1 = $mean_$1 +/- $width_$1   [$($sigma_$1/$(dimen($1)))]
+              # echo * Average 2 = $mean2_$1 +/- $width2_$1
+
+	      if($quame == 1) {
+	          define yme2  < $yme2  $mean_$1 >
+	          define eyme2 < $eyme2 $sigma_$1 >
+	      } else {
+	          define yme2  < $yme2  $mean2_$1 >
+	          define eyme2 < $eyme2 $sigma_$1 >
+	      }
+	}
+        echo ------------------------------------------------------------------
+	foreach 1 { llow_day2 mlow_day2 mlow_day2 mmid_day2 } {
+	      define j ($j+1)
+	      define 2 $(dimen($1)+2)
+	      define xav2  < $xav2 $($j*$2-1) > 
+	}
+	}
+	#---- fine 1997 ---
+
+
+	set day1     = llow_day1 CONCAT <-100 -100> CONCAT \
+		       lmid_day1 CONCAT <-100 -100> CONCAT \
+		       mlow_day1 CONCAT <-100 -100> CONCAT mmid_day1
+	set err_day1 = err_llow_day1 CONCAT <90 90> CONCAT \
+		       err_lmid_day1 CONCAT <90 90> CONCAT \
+		       err_mlow_day1 CONCAT <90 90> CONCAT err_mmid_day1
+	set day2     = llow_day2 CONCAT <-100 -100> CONCAT \
+		       lmid_day2 CONCAT <-100 -100> CONCAT \
+		       mlow_day2 CONCAT <-100 -100> CONCAT mmid_day2
+	set err_day2 = err_llow_day2 CONCAT <90 90> CONCAT \
+		       err_lmid_day2 CONCAT <90 90> CONCAT \
+		       err_mlow_day2 CONCAT <90 90> CONCAT err_mmid_day2
+
+	set xav1  = < $xav1 >
+	set yme1  = < $yme1 >
+	set eyme1 = < $eyme1 >
+	set eyme1 = eyme1/$(dimen(lmid_day1))
+	set xav2  = < $xav2 >
+	set yme2  = < $yme2 >
+	set eyme2 = < $eyme2 >
+	set eyme2 = eyme2/$(dimen(lmid_day1))
+
+	set xday1 = 1,$(dimen(day1)),1
+	set xday2 = xday1
+
+	location 5500 31000 5500 31000
+	window 1 1 1 1
+	ctype 2
+	ltype 0
+	lweight 3
+
+	limits $(xday1[0]-2) $(xday1[$(dimen(xday1)-1)]+3) 0.0 0.35
+	ticksize 0 0 0 0
+	box 0 2 0 0 
+	expand 2
+	ylabel F_{var}
+
+	ptype 4 3 
+	expand 2.0
+	ctype 5 
+	points  xday1 day1 
+	error_y xday1 day1 err_day1
+
+	relocate ( $($gx1+1500) $($gy2-1500) ) 
+	putlabel 6 Day1
+
+	ctype 3
+	points  xday2 day2 
+	error_y xday2 day2 err_day2
+
+	relocate ( $($gx1+1500) $($gy2-3000) ) 
+	putlabel 6 Day2
+
+	if($quame == 1) {
+	   ctype 4 
+	} else {
+	   ctype 7 
+	}
+	points  xav1 yme1
+	error_y xav1 yme1 eyme1
+	points  xav2 yme2
+	error_y xav2 yme2 eyme2
+
+	expand 1.5
+	ctype 2 
+
+
+#---------------------------------------------------------------------------
+# t_halving
+t_halving
+
+	location 5500 31000 5500 31000
+	window 1 1 1 1
+	ctype 2
+	ltype 0
+	lweight 3
+
+	define qualidati ? { 1997 or 1998 ? [1/2] }
+	define doconn    ? { Connect data or NOT ? [1/2] }
+
+	if( $qualidati == 1 ) { data t_halving_97all.dat }
+	if( $qualidati == 2 ) { data t_halving_98day1.dat }
+
+	define primo ? { First binning ? [1=100/2=200/3=500] }
+	lines $(2+$primo) 9
+	set x=$primo,9,1
+	read { ll 2 ell 3 lh 4 elh 5 ml 6 eml 7 mh 8 emh 9 }
+
+	limits 0 10 0 1e5
+	ticksize 1 1 0 0 
+	lweight 3
+	ctype 2
+	ltype 0
+	expand 1.5
+	box
+	expand 2.0
+	ylabel T_{1/2} [s]
+
+	ptype 4 3 
+	ctype 3
+	stats ll   meandum sigmadum kurtdum
+	set   ll =  ll CONCAT < $meandum   $meandum >
+	set  ell = ell CONCAT < $sigmadum  $($sigmadum/sqrt(dimen(ll))) >
+	points  (x-0.15) ll
+	error_y (x-0.15) ll ell
+	if( $doconn == 1 ) { ltype 2 connect (x-0.15) ll if( x < 8 ) ltype 0 }
+	echo -------------------------------------------------------
+	echo  0.1-0.5 keV: $meandum +/- $sigmadum [$($sigmadum/sqrt(dimen(ll)))]
+
+	ctype 4
+	stats lh   meandum sigmadum kurtdum
+	set   lh =  lh CONCAT < $meandum   $meandum >
+	set  elh = elh CONCAT < $sigmadum $($sigmadum/sqrt(dimen(ll))) >
+	points  (x-0.05) lh
+	error_y (x-0.05) lh elh
+	if( $doconn == 1 ) { ltype 2 connect (x-0.05) lh if( x < 8 ) ltype 0 }
+	echo -------------------------------------------------------
+	echo  0.5-2.0 keV: $meandum +/- $sigmadum [$($sigmadum/sqrt(dimen(ll)))]
+
+	ctype 5
+	stats ml   meandum sigmadum kurtdum
+	set   ml =  ml CONCAT < $meandum  $meandum >
+	set  eml = eml CONCAT < $sigmadum $($sigmadum/sqrt(dimen(ll))) >
+	points  (x+0.05) ml
+	error_y (x+0.05) ml eml
+	if( $doconn == 1 ) { ltype 2 connect (x+0.05) ml if( x < 8 ) ltype 0 }
+	echo -------------------------------------------------------
+	echo  2.0-3.0 keV: $meandum +/- $sigmadum [$($sigmadum/sqrt(dimen(ll)))]
+
+	ctype 6
+	stats mh   meandum sigmadum kurtdum
+	set   mh =  mh CONCAT < $meandum $meandum >
+	set  emh = emh CONCAT < $sigmadum $($sigmadum/sqrt(dimen(ll))) >
+	points  (x+0.15) mh
+	error_y (x+0.15) mh emh
+	if( $doconn == 1 ) { ltype 2 connect (x+0.15) mh if( x < 8 ) ltype 0 }
+	echo -------------------------------------------------------
+	echo  4.0-6.0 keV: $meandum +/- $sigmadum [$($sigmadum/sqrt(dimen(ll)))]
+	echo -------------------------------------------------------
+
+#---------------------------------------------------------------------------
+# t_halving_rev
+t_halving_rev
+
+	location 6500 31000 5500 31000
+	window 1 1 1 1
+	ctype 2
+	ltype 0
+	lweight 3
+
+	echo -------------------------------------------------------
+	define anno ? { Which year: '97 or '98 ? [97/98] }
+	echo -------------------------------------------------------
+	define anal ? { Which Analysis: ? [e.g. plain/run33/run33_skip4] }
+	echo -------------------------------------------------------
+	echo  [1] first
+	echo  [2] third
+	echo  [3] fifth
+	echo  [4] average over first  5
+	echo  [5] average over first 10
+	define dati ? { Choice : }
+	echo -------------------------------------------------------
+	define doconn    ? { Connect data or NOT ? [1/2] }
+
+	if( '$anal' == 'plain' ) { define lab "Plain Analysis: " }
+	if( '$anal' == 'run33' ) { define lab "Filtered on Running Avrg: " }
+	if( $dati == 1 ) { define labcase "$!lab first lowest" }
+	if( $dati == 2 ) { define labcase "$!lab third lowest" }
+	if( $dati == 3 ) { define labcase "$!lab fifth lowest" }
+	if( $dati == 4 ) { define labcase "$!lab average over lowest  5" }
+	if( $dati == 5 ) { define labcase "$!lab average over lowest 10" }
+
+	define primo ? { First binning ? [1=100/2=200/3=500] }
+	define last  ? { Last  binning ? [5=1500/6=2000/7=2500] }
+	set x=$primo,$($last+2),1
+
+	echo  $( ($dati-1)*7+$primo )  $( ($dati-1)*7+$last ) 
+	data summary_01_05_"$!anno"_"$!anal"_plot.dat
+	lines $( ($dati-1)*7+$primo )  $( ($dati-1)*7+$last ) 
+	read { ll 3 ell 4 } 
+
+	data summary_05_2_"$!anno"_"$!anal"_plot.dat
+	lines $( ($dati-1)*7+$primo )  $( ($dati-1)*7+$last ) 
+	read { lh 3 elh 4 }
+
+	data summary_2_3_"$!anno"_"$!anal"_plot.dat
+	lines $( ($dati-1)*7+$primo )  $( ($dati-1)*7+$last ) 
+	read { ml 3 eml 4 }
+
+	data summary_4_6_"$!anno"_"$!anal"_plot.dat
+	lines $( ($dati-1)*7+$primo )  $( ($dati-1)*7+$last ) 
+	read { mh 3 emh 4 }
+
+	limits 0 10 0 1e5
+	ticksize 1 1 0 0 
+	lweight 3
+	ctype 2
+	ltype 0
+	expand 1.5
+	box
+	expand 2.0
+	ylabel T_{1/2} [s]
+
+	ptype 4 3 
+	ctype 3
+	stats ll   meandum sigmadum kurtdum
+	set   ll =  ll CONCAT < $meandum   $meandum >
+	set  ell = ell CONCAT < $sigmadum  $($sigmadum/sqrt(dimen(ll))) >
+	points  (x-0.15) ll
+	error_y (x-0.15) ll ell
+	if( $doconn == 1 ) { ltype 2 connect (x-0.15) ll if( x < $($last+1) ) ltype 0 }
+	echo -------------------------------------------------------
+	echo  0.1-0.5 keV: $(sprintf('%8.1f',$meandum)) +/- $(sprintf('%8.1f',$sigmadum)) [$($sigmadum/sqrt(dimen(ll)))]
+	expand 1.1
+	ctype 2
+	relocate ( $( $gx1 - 3000 )  $($gy1 - 2500) ) 
+	putlabel 6 0.1-0.5: $(sprintf('%8.1f',$meandum)) \pm$(sprintf('%8.1f',$sigmadum))
+	expand 2.0
+
+	ctype 4
+	stats lh   meandum sigmadum kurtdum
+	set   lh =  lh CONCAT < $meandum   $meandum >
+	set  elh = elh CONCAT < $sigmadum $($sigmadum/sqrt(dimen(ll))) >
+	points  (x-0.05) lh
+	error_y (x-0.05) lh elh
+	if( $doconn == 1 ) { ltype 2 connect (x-0.05) lh if( x < $($last+1) ) ltype 0 }
+	echo -------------------------------------------------------
+	echo  0.5-2.0 keV: $(sprintf('%8.1f',$meandum)) +/- $(sprintf('%8.1f',$sigmadum)) [$($sigmadum/sqrt(dimen(ll)))]
+	expand 1.1
+	ctype 2
+	relocate ( $( $gx1 - 3000 )  $($gy1 - 3500) ) 
+	putlabel 6 0.5-2.0: $(sprintf('%8.1f',$meandum)) \pm$(sprintf('%8.1f',$sigmadum))
+	expand 2.0
+
+	ctype 5
+	stats ml   meandum sigmadum kurtdum
+	set   ml =  ml CONCAT < $meandum  $meandum >
+	set  eml = eml CONCAT < $sigmadum $($sigmadum/sqrt(dimen(ll))) >
+	points  (x+0.05) ml
+	error_y (x+0.05) ml eml
+	if( $doconn == 1 ) { ltype 2 connect (x+0.05) ml if( x < $($last+1) ) ltype 0 }
+	echo -------------------------------------------------------
+	echo  2.0-3.0 keV: $(sprintf('%8.1f',$meandum)) +/- $(sprintf('%8.1f',$sigmadum)) [$($sigmadum/sqrt(dimen(ll)))]
+	expand 1.1
+	ctype 2
+	relocate ( $(($gx1+$gx2-1000)/2)  $($gy1 - 2500) ) 
+	putlabel 6 2.0-3.0: $(sprintf('%8.1f',$meandum)) \pm$(sprintf('%8.1f',$sigmadum))
+	expand 2.0
+
+	ctype 6
+	stats mh   meandum sigmadum kurtdum
+	set   mh =  mh CONCAT < $meandum $meandum >
+	set  emh = emh CONCAT < $sigmadum $($sigmadum/sqrt(dimen(ll))) >
+	points  (x+0.15) mh
+	error_y (x+0.15) mh emh
+	if( $doconn == 1 ) { ltype 2 connect (x+0.15) mh if( x < $($last+1) ) ltype 0 }
+	echo -------------------------------------------------------
+	echo  4.0-6.0 keV: $(sprintf('%8.1f',$meandum)) +/- $(sprintf('%8.1f',$sigmadum)) [$($sigmadum/sqrt(dimen(ll)))]
+	echo -------------------------------------------------------
+	expand 1.1
+	ctype 2
+	relocate ( $(($gx1+$gx2-1000)/2)  $($gy1 - 3500) ) 
+	putlabel 6 4.0-6.0: $(sprintf('%8.1f',$meandum)) \pm$(sprintf('%8.1f',$sigmadum))
+	expand 1.25
+
+	relocate ( $gx1  $($gy2+700) )
+	putlabel 6 $labcase
+
+#---------------------------------------------------------------------------
+# t_halving_rs
+t_halving_rs
+
+	location 6500 31000 5500 31000
+	window 1 1 1 1
+	ctype 2
+	ltype 0
+	lweight 3
+
+	echo -------------------------------------------------------
+	define anno ? { Which year: '97 or '98 ? [97/98] }
+	echo -------------------------------------------------------
+	define anal ? { Which Analysis: ? [e.g. plain/run33/run33_skip4] }
+	echo -------------------------------------------------------
+	echo  [1] all
+	echo  [2] only UP
+	echo  [3] only DOWN
+	define dati1 ? { Choice : }
+	echo -------------------------------------------------------
+	define doconn    ? { Connect data or NOT ? [1/2] }
+
+	if( $dati1 == 1 ) { define labcase "$!lab all pairs" }
+	if( $dati1 == 2 ) { define labcase "$!lab rising pairs" }
+	if( $dati1 == 3 ) { define labcase "$!lab falling pairs" }
+	if( $dati1 == 1 ) { define 1 "all" }
+	if( $dati1 == 2 ) { define 1 "up" }
+	if( $dati1 == 3 ) { define 1 "down" }
+
+	if( '$anal' == 'plain' ) { define lab "Plain Analysis: " }
+	if( '$anal' == 'run33' ) { define lab "Filtered on Running Avrg: " }
+
+	# define primo ? { First binning ? [1=100/2=200/3=500] }
+	define primo ? { First binning ? [1=500/2=1000] }
+	define last  ? { Last  binning ? [3=1500/4=2000/5=2500] }
+	set x=$primo,$($last+2),1
+
+	data summary_t12rs_$1_"$!anno"_"$!anal".dat
+	lines $( $primo )  $( $last ) 
+	read { ll 8 ell 10 } 
+
+	lines $( 5+$primo )  $( 5+$last ) 
+	read { lh 8 elh 10 }
+
+	lines $( 10+$primo )  $( 10+$last ) 
+	read { ml 8 eml 10 }
+
+	lines $( 15+$primo )  $( 15+$last ) 
+	read { mh 8 emh 10 }
+
+	foreach var ( ll lh ml mh ) {
+	   set e$var = e$var/2.
+
+	   if( $dati1 == 2 ) {
+	      set r$var  = $var
+	      set er$var = e$var
+	   }
+	   if( $dati1 == 3 ) {
+	      set f$var  = $var
+	      set ef$var = e$var
+	   }
+	}
+
+	limits 0 8 0 1e5
+	ticksize 1 1 0 0 
+	lweight 3
+	ctype 2
+	ltype 0
+	expand 1.5
+	box
+	expand 2.0
+	ylabel T_{1/2} [s]
+
+	ptype 4 3 
+	ctype 3
+	stats ll   meandum sigmadum kurtdum
+	set   ll =  ll CONCAT < $meandum   $meandum >
+	set  ell = ell CONCAT < $sigmadum  $($sigmadum/sqrt(dimen(ll))) >
+	points  (x-0.15) ll
+	error_y (x-0.15) ll ell
+	if( $doconn == 1 ) { ltype 2 connect (x-0.15) ll if( x < $($last+1) ) ltype 0 }
+	echo -------------------------------------------------------
+	echo  0.1-0.5 keV: $(sprintf('%8.1f',$meandum)) +/- $(sprintf('%8.1f',$sigmadum)) [$($sigmadum/sqrt(dimen(ll)))]
+	expand 1.1
+	ctype 2
+	relocate ( $( $gx1 - 3000 )  $($gy1 - 2500) ) 
+	putlabel 6 0.1-0.5: $(sprintf('%8.1f',$meandum)) \pm$(sprintf('%8.1f',$sigmadum))
+	expand 2.0
+
+	ctype 4
+	stats lh   meandum sigmadum kurtdum
+	set   lh =  lh CONCAT < $meandum   $meandum >
+	set  elh = elh CONCAT < $sigmadum $($sigmadum/sqrt(dimen(ll))) >
+	points  (x-0.05) lh
+	error_y (x-0.05) lh elh
+	if( $doconn == 1 ) { ltype 2 connect (x-0.05) lh if( x < $($last+1) ) ltype 0 }
+	echo -------------------------------------------------------
+	echo  0.5-2.0 keV: $(sprintf('%8.1f',$meandum)) +/- $(sprintf('%8.1f',$sigmadum)) [$($sigmadum/sqrt(dimen(ll)))]
+	expand 1.1
+	ctype 2
+	relocate ( $( $gx1 - 3000 )  $($gy1 - 3500) ) 
+	putlabel 6 0.5-2.0: $(sprintf('%8.1f',$meandum)) \pm$(sprintf('%8.1f',$sigmadum))
+	expand 2.0
+
+	ctype 5
+	stats ml   meandum sigmadum kurtdum
+	set   ml =  ml CONCAT < $meandum  $meandum >
+	set  eml = eml CONCAT < $sigmadum $($sigmadum/sqrt(dimen(ll))) >
+	points  (x+0.05) ml
+	error_y (x+0.05) ml eml
+	if( $doconn == 1 ) { ltype 2 connect (x+0.05) ml if( x < $($last+1) ) ltype 0 }
+	echo -------------------------------------------------------
+	echo  2.0-3.0 keV: $(sprintf('%8.1f',$meandum)) +/- $(sprintf('%8.1f',$sigmadum)) [$($sigmadum/sqrt(dimen(ll)))]
+	expand 1.1
+	ctype 2
+	relocate ( $(($gx1+$gx2-1000)/2)  $($gy1 - 2500) ) 
+	putlabel 6 2.0-3.0: $(sprintf('%8.1f',$meandum)) \pm$(sprintf('%8.1f',$sigmadum))
+	expand 2.0
+
+	ctype 6
+	stats mh   meandum sigmadum kurtdum
+	set   mh =  mh CONCAT < $meandum $meandum >
+	set  emh = emh CONCAT < $sigmadum $($sigmadum/sqrt(dimen(ll))) >
+	points  (x+0.15) mh
+	error_y (x+0.15) mh emh
+	if( $doconn == 1 ) { ltype 2 connect (x+0.15) mh if( x < $($last+1) ) ltype 0 }
+	echo -------------------------------------------------------
+	echo  4.0-6.0 keV: $(sprintf('%8.1f',$meandum)) +/- $(sprintf('%8.1f',$sigmadum)) [$($sigmadum/sqrt(dimen(ll)))]
+	echo -------------------------------------------------------
+	expand 1.1
+	ctype 2
+	relocate ( $(($gx1+$gx2-1000)/2)  $($gy1 - 3500) ) 
+	putlabel 6 4.0-6.0: $(sprintf('%8.1f',$meandum)) \pm$(sprintf('%8.1f',$sigmadum))
+	expand 1.25
+
+	relocate ( $gx1  $($gy2+700) )
+	putlabel 6 $labcase
+
+#---------------------------------------------------------------------------
+# diff_rf
+diff_rf
+
+	set v_nobase     = <  1.0 25.9 32.2 39.2 > 
+	set e_v_nobase_u = < 57.6 25.1 18.8  8.6 >
+	set e_v_nobase_d = < 36.3 21.9  4.9  7.9 >
+
+	set v_baseday1     = <  1.0 13.6 15.0 26.1 >
+	set e_v_baseday1_u = < 11.9  7.4 11.2 13.8 >
+	set e_v_baseday1_d = < 11.5  3.2  4.1  4.0 >
+
+	set v_baseday2     = <  0.6 16.8 19.4 25.5 >
+	set e_v_baseday2_u = < 10.3 11.1 14.1 11.6 >
+	set e_v_baseday2_d = <  8.7  8.5  3.4  4.7 >
+
+	define case ? { Case : nobase/baseday/baseday2 ? }
+
+	set yme = v_$case
+	set eyme_u = e_v_"$!case"_u
+	set eyme_d = e_v_"$!case"_d
+
+        set xav     = < 0.26 1.18 2.36 4.76 >
+        set e_vec_d = < 0.1  0.5  2.0  4.0 >
+        set e_vec_u = < 0.5  2.0  3.0  6.0 >
+
+	define shift (0.0)
+	define shift ? { Shift ? }
+	set e_vec_d = (lg(xav) + $shift) - lg(e_vec_d) 
+	set e_vec_u = lg(e_vec_u) - (lg(xav) + $shift)
+	set xav = lg(xav)
+	set xav = xav + $shift
+
+        define xmin -1.1
+        define xmax  1.15
+        define tick  -1
+        define lab_x "Energy [keV]"
+	define lab_y "T_{decay}-T_{rise} [ks]"
+
+	location 6500 31000 5500 31000
+	window 1 1 1 1
+	ctype 2
+	ltype 0
+	lweight 3
+
+	limits $xmin $xmax -10.0 40.0
+	limits $xmin $xmax -40.0 60.0
+	ticksize $tick 0 0 0 
+	expand 1.5
+	box
+	expand 2.0
+	xlabel $lab_x
+	ylabel $lab_y
+
+	plot_verynice_exp 1.3
+
+#---------------------------------------------------------------------------
+# diff_rf_2
+diff_rf_2
+
+	set v_nobase     = <  1.0 25.9 32.2 39.2 > 
+	set e_v_nobase_u = < 57.6 25.1 18.8  8.6 >
+	set e_v_nobase_d = < 36.3 21.9  4.9  7.9 >
+
+	set v_baseday1     = <  1.0 13.6 15.0 26.1 >
+	set e_v_baseday1_u = < 11.9  7.4 11.2 13.8 >
+	set e_v_baseday1_d = < 11.5  3.2  4.1  4.0 >
+
+	set v_baseday2     = <  0.6 16.8 19.4 25.5 >
+	set e_v_baseday2_u = < 10.3 11.1 14.1 11.6 >
+	set e_v_baseday2_d = <  8.7  8.5  3.4  4.7 >
+
+	define case ? { Case : nobase/baseday/baseday2 ? }
+
+	set yme = v_$case
+	set eyme_u = e_v_"$!case"_u
+	set eyme_d = e_v_"$!case"_d
+
+        set xav     = < 0.26 1.18 2.36 4.76 >
+        set e_vec_d = < 0.1  0.5  2.0  4.0 >
+        set e_vec_u = < 0.5  2.0  3.0  6.0 >
+
+	define shift (0.0)
+	define shift ? { Shift ? }
+	set e_vec_d = (lg(xav) + $shift) - lg(e_vec_d) 
+	set e_vec_u = lg(e_vec_u) - (lg(xav) + $shift)
+	set xav = lg(xav)
+	set xav = xav + $shift
+
+	define linlog ? { LIN or LOG ? [1/2] }
+
+        define xmin -1.1
+        define xmax  1.15
+        define tick  -1
+        define lab_x "Energy [keV]"
+	define lab_y "T_{decay}-T_{rise} [ks]"
+
+        if( $linlog == 1 ) {
+           define yminn   ($ymin)
+           define ymaxx   ($ymax)
+        }  
+        if( $linlog == 2 ) {
+           define yminn   (lg($ymin))
+           define ymaxx   (lg($ymax))
+           set eyme_u = lg(yme+eyme_u)-lg(yme)
+           set eyme_d = lg(yme)-lg(yme-eyme_d)
+           set yme  = lg(yme)
+        }  
+
+	location 6500 31000 5500 31000
+	window 1 1 1 1
+	ctype 2
+	ltype 0
+	lweight 3
+
+        limits $xmin $xmax $yminn $ymaxx
+        if( $linlog == 1 ) { ticksize -1 0 0 0 }
+        if( $linlog == 2 ) { ticksize -1 0 -1 1 }
+
+	expand 1.5
+	box
+	expand 2.0
+	xlabel $lab_x
+	ylabel $lab_y
+
+	plot_verynice_exp 1.3
+
+#---------------------------------------------------------------------------
+# p_mu
+p_mu
+
+	define gm1 ? { Average of Gauss 1 : }
+	define gw1 ? { Width   of Gauss 1 : }
+	define gm2 ? { Average of Gauss 2 : }
+	define gw2 ? { Width   of Gauss 2 : }
+
+	define x1 ? { X_min : }
+	define x2 ? { X_max : }
+	define dx ? { dX : }
+
+	set x  =$x1,$x2,$dx
+	set xx =$x1,$x2,$dx
+
+	define mu ($gm2 - $gm1)
+
+	gauss x $gm1 $gw1
+	set g1=gauss*$dx
+	gauss x $gm2 $gw2
+	set g2=gauss*$dx
+
+	set dimen(pmu) = dimen(xx)
+	do 1=0,$(dimen(xx)-1) { 
+	  if( $1 == $(int($1/100)*100) ) { echo ---- $1/$(dimen(xx)-1) --- }
+	  set inexp = ((x - $gm1)**2.*($gw1**2. + $gw2**2.) + 2.*(x - $gm1)*(xx[$1] - $mu)*$gw1**2.)/2./($gw1*$gw2)**2.
+	  set integ = exp(-inexp)*$dx
+	  define integr (sum(integ))
+	  set pmu[$1] = exp(-(xx[$1] - $mu)**2./2./$gw2**2.)*$integr/6.28/($gw1*$gw2)
+	}
+	set pmu = pmu/(sum(pmu))
+	
+	location 5500 31000 5500 31000
+	window 1 1 1 1
+	ticksize 0 0 0 0 
+	ctype 2
+	ltype 0
+	lweight 3
+
+	limits $x1 $x2 g2
+	box
+
+	ctype 3 connect x g1
+	ctype 4 connect x g2
+	ctype 5 connect xx pmu
+
+
+
+#---------------------------------------------------------------------------

@@ -1,0 +1,911 @@
+#-------------------------------------------------------------------------------
+# prepare_all_luts  [ <N colors> ]
+#        MUST RUN THIS BEFORE ANYTHING ELSE, MAYBE EVEN AT STARTUP!
+prepare_all_luts  01 
+
+	define nc local
+
+	if( $?1 ) {
+	   define nc $1
+	} else {
+	   define nc ? < Number of colors in palettes : >
+	}
+
+	define 1 $nc
+
+	echo "prepare_luts : SAO "
+	make_luts_sao  $1
+
+	echo "prepare_luts : GF "
+	make_luts_gf   $1
+
+	echo "prepare_luts : CIAO "
+	make_luts_ciao $1
+
+#-------------------------------------------------------------------------------
+# load_lut   <FAMILY: sao | gf | ciao>   <LUT NAME>
+#
+#  sao : a / b / bb / heat / rainbow 
+#
+#  gf  : bw1/r , rainbow1/r , heat , cyan , redblue1 , redblue2 , boh
+#        more1/r , more2/r , more3/r , more4/r 
+#
+#  ciao: sls1 / sls2 / hsv / rainbow1 / rainbow2 / ramp / std / heaob
+#
+load_lut 02
+
+	if( $?2 ) {
+	   echo "*** LUT family : "$1
+	   echo "*** LUT name   : "$2
+	} else {
+	   define whichfam ? <*** LUT family [sao|ciao|gf] : > 
+	   if( substr('$whichfam',0,2) == 'sa' ) { 
+	      echo "      a , b , bb , heat , rainbow "
+	   }
+	   if( substr('$whichfam',0,2) == 'gf' ) { 
+	      #echo "      bw1 / bw2 / rainbow1 / rainbow2 / heat / cyan / redblue1 / redblue2 / boh"
+	      #echo "      more1 / more2 / more3 / more4 / more1r / more2r / more3r / more4r "
+	      echo " bw1/r , rainbow1/r , heat , cyan , redblue1 , redblue2 , boh"
+	      echo " more1/r , more2/r , more3/r , more4/r "
+	   }
+	   if( substr('$whichfam',0,2) == 'ci' ) { 
+              #echo "      sls1 / sls2 / hsv / rainbow1 / rainbow2 / ramp / std / heaob"
+              echo "      sls1 , sls2 , hsv , rainbow1 , rainbow2 , std "
+	   }
+	   define whichlut ? <*** LUT name                 : >
+
+	   define 1 $whichfam
+	   define 2 $whichlut
+	}
+
+	set r = $1_$2_r
+	set g = $1_$2_g
+	set b = $1_$2_b
+
+	define lut_name "$!1 $!2"
+
+#-------------------------------------------------------------------------------
+# plot_lut  <N colors>
+#           It assumes the existence of arrays 'r' 'g' 'b'
+plot_lut 01
+
+	if( $?1 ) { 
+	   echo " Remapping LUT to $!1 colors "
+	   remap_lut $1
+	} else {
+	   echo " Using LUT as is "
+	}
+
+	set n=1,dimen(r)
+
+	do 9=1,dimen(r) {
+	   define 8 $(sprintf('lut%03d',$9))
+	   define name "$8"
+	   # echo $name
+
+	   define 7 $($9-1) 
+	   add_ctype $name r[$7] g[$7] b[$7]
+	}
+
+	reset_graph
+	
+	location 5500 30000 7500 24000
+	limits 0 1 -1 256
+	box 3 0 1 0 
+
+	limits $(n[0]-0.5) $(n[dimen(n)-1]+0.5) -1 256
+	box 1 2 3 0 
+	xlabel N
+	ylabel RGB
+
+	lweight 5 
+	ctype 3 connect n r
+	ctype 4 connect n g
+	ctype 5 connect n b
+	lweight 3
+
+	#-----------------------------------------------------------
+        expand 1.1
+	ptype 4 3
+	location $gx1 $gx2 27000 30000
+
+	ctype 2
+	limits $(n[0]-0.5) $(n[dimen(n)-1]+0.5) 0 1
+	box 0 3 0 3 
+	set by = < 0 0 1 1 0 >
+
+	do 9=1,dimen(r) {
+	   define 8 $(sprintf('lut%03d',$9))
+	   define name "$8"
+	   ctype $name
+
+	   define 7 $($9-1) 
+	   define x1 $(n[$7]-0.5)
+	   define x2 $(n[$7]+0.5)
+	   set bx = < $x1 $x2 $x2 $x1 $x1 >
+	   shade 5 bx by 
+	}
+	ctype 2
+	box 0 3 0 3 
+	#-----------------------------------------------------------
+
+	#-----------------------------------------------------------
+	# Deleting newly defined colors
+	do 9=1,dimen(r) {
+	   define 8 $(sprintf('lut%03d',$9))
+	   define name "$8"
+	   del_ctype $name
+	}
+	#-----------------------------------------------------------
+
+	reset_graph
+
+#-------------------------------------------------------------------------------
+# plot_all_luts  <N colors>
+plot_all_luts 01
+
+	reset_graph
+	define ymin ( 2000)
+	define ymax (31600)
+	location 7500 31600 $ymin $ymax
+
+	set lutnames1_sao  = { sao sao sao sao sao }
+	set lutnames2_sao  = { a  b  bb  heat  rainbow }
+	set lutnames1_ciao = { ciao ciao ciao ciao ciao ciao }
+	set lutnames2_ciao = { sls1  sls2  hsv  rainbow1  rainbow2  std }
+	set lutnames1_gf   = { gf gf gf gf gf gf gf gf gf gf gf }
+	set lutnames2_gf   = { bw1 heat cyan redblue1 redblue2 rainbow1 boh more1 more2 more3 more4 } 
+
+	set lutnames1 = lutnames1_sao CONCAT lutnames1_ciao
+	set lutnames2 = lutnames2_sao CONCAT lutnames2_ciao
+
+	set lutnames1 = lutnames1_gf
+	set lutnames2 = lutnames2_gf
+
+	define nluts $(dimen(lutnames2))
+	echo $nluts
+
+	define dy $( ($ymax-$ymin)/$nluts )
+	echo $dy
+
+	define 8 (0)
+	do 9=0,$nluts-1 {
+	   define 8 $($8+1)
+	   echo $8 $9
+	   define 5 $(lutnames1[$9])
+	   define 6 $(lutnames2[$9])
+
+	   #load_lut "gf" "$!9"
+	   load_lut "$!5" "$!6"
+
+	   location $gx1 $gx2 $(int($ymin+($8-1)*$dy)) $(int($ymin+$8*$dy))
+	   relocate ( $($gx1 - 750) $(0.5*($gy1+$gy2)) )
+	   expand 1.1
+	   putlabel 4 "$!5 $!6"
+
+	   plot_one_gf_lut $1
+
+	}
+
+##-------------------------------------------------------------------------------
+## plot_one_gf_lut  <N colors>
+plot_one_gf_lut 1
+
+	echo " Remapping LUT to $!1 colors "
+	remap_lut $1
+
+	set n=1,dimen(r)
+	do 9=1,dimen(r) {
+	   define 8 $(sprintf('lut%03d',$9))
+	   define name "$8"
+	   define 7 $($9-1) 
+	   add_ctype $name r[$7] g[$7] b[$7]
+	}
+
+	#-----------------------------------------------------------
+        expand 1.1
+	ptype 4 3
+
+	ctype 2
+	limits $(n[0]-0.5) $(n[dimen(n)-1]+0.5) 0 1
+	# box 0 3 0 3 
+	set by = < 0 0 1 1 0 >
+
+	do 9=1,dimen(r) {
+	   define 8 $(sprintf('lut%03d',$9))
+	   define name "$8"
+	   ctype $name
+
+	   define 7 $($9-1) 
+	   define x1 $(n[$7]-0.5)
+	   define x2 $(n[$7]+0.5)
+	   set bx = < $x1 $x2 $x2 $x1 $x1 >
+	   shade 5 bx by 
+	}
+	ctype 2
+	box 0 3 0 3 
+	#-----------------------------------------------------------
+
+	#-----------------------------------------------------------
+	# Deleting newly defined colors
+	do 9=1,dimen(r) {
+	   define 8 $(sprintf('lut%03d',$9))
+	   define name "$8"
+	   del_ctype $name
+	}
+	#-----------------------------------------------------------
+
+	# reset_graph
+	ctype 2 
+
+#-------------------------------------------------------------------------------
+# help_luts : prints summary of available loadable LUTs
+help_luts
+
+	echo "-----------------------------------------------------------" 
+        echo "  SAO LUTs (N=256): "
+        echo "   * a        [green - lilla/magenta - red - yellow] "
+        echo "     b        [blue - red/orange - yellow - white] "
+        echo "   * rainbow  [magenta - blue/cyan - green - yellow - red] "
+        echo "     heat "
+        echo "     bb       [sort of like 'heat'] "
+        echo " "
+        echo "  CIAO LUTs (200) "
+        # echo "     red , green , blue , grey "
+        # echo "     bb     [sort of like 'heat'] "
+        # echo "     color  [16 discrete colors] "
+        echo "   * sls1 / sls2 "
+        echo "   * hsv "
+        echo "     rainbow1 [blue - cyan - green - yellow] "
+        echo "     rainbow2 [purple - blue - green - yellow - red - white] "
+        #echo "     ramp     [four ramps: orange, green, purple, okra] "
+        echo "     std      [three ramps: blue, green, red] "
+        #echo "     heaob "
+	echo " "
+        echo "  GF LUTs (N=256): "
+	echo "     bw1/r , heat , cyan"
+	echo "     more1/r    [red - yellow - green - blue - black] "
+	echo "     more2/r    [red - yellow - green - blue - red] "
+	echo "     more3/r    [red - yellow - green - blue - cyan] "
+	echo "     more4/r    [red - yellow - green - violet - blue] "
+	echo "     redblue1   [red - violet - blue] "
+	echo "     redblue2   [red - greenish - blue] "
+	echo "     boh        [red - black - yellow - blue - black] "
+	echo "     rainbow1/r [black - blue - red - yellow - white] "
+	echo "-----------------------------------------------------------" 
+
+##===============================================================================
+## SUBROUTINES BELOW
+##===============================================================================
+## build_lut_comp <x> <y> <Ncolors> <output vector>
+build_lut_comp 4 
+
+	set ni=1,$3,1
+	set nr=ni/$3
+
+	set x=$1 
+	set y=$2
+
+	set sl =1,dimen($1)-1,1
+	set sl = 0*sl
+	do 9=0,dimen(sl)-1 {
+	   define 8 $($9+1)
+	   set sl[$9] = (y[$9]-y[$8])/(x[$9]-x[$8])
+	}
+	# print < sl >
+
+	set v = nr*0 
+	do 9=0,dimen(nr)-1 {
+	   do 7=0,dimen(x)-2 {
+	      define 8 $($7+1)
+	      if( nr[$9] >= x[$7] && nr[$9] <= x[$8] ) {
+	         set v[$9] = y[$7] + (nr[$9]-x[$7])*sl[$7]
+	      }
+	   }
+	}
+	set $4 = int(255*v)
+
+##-------------------------------------------------------------------------------
+## make_luts_sao <N colors>
+make_luts_sao 1
+
+	define N $1
+
+        # redStr  = (char*)"(0,0)(.34,1)(1,1)";
+        # greenStr= (char*)"(0,0)(1,1)";
+        # blueStr = (char*)"(0,0)(.65,0)(.98,1)(1,1)";
+	# heat
+	set Rx=< 0.0 0.34 1.0 >
+	set Ry=< 0.0 1.0  1.0 >
+	set Gx=< 0.0 1.0  >
+	set Gy=< 0.0 1.0  >
+	set Bx=< 0.0 0.65 0.98 1.0 >
+	set By=< 0.0 0.0  1.0  1.0 >
+
+	build_lut_comp Rx Ry $N heat_r
+	build_lut_comp Gx Gy $N heat_g
+	build_lut_comp Bx By $N heat_b
+
+        # redStr  = (char*)"(0,0)(.25,0)(.5,1)(1,1)";
+        # greenStr= (char*)"(0,0)(.5,0)(.75,1)(1,1)";
+        # blueStr = (char*)"(0,0)(.25,1)(.5,0)(.75,0)(1,1)";
+	# b
+	set Rx=< 0.0 0.25 0.50 1.0 >
+	set Ry=< 0.0 0.0  1.0  1.0 >
+	set Gx=< 0.0 0.5  0.75 1.0 > 
+	set Gy=< 0.0 0.0  1.0  1.0 >
+	set Bx=< 0.0 0.25 0.5  0.75 1.0 >
+	set By=< 0.0 1.0  0.0  0.0  1.0 >
+
+	build_lut_comp Rx Ry $N b_r
+	build_lut_comp Gx Gy $N b_g
+	build_lut_comp Bx By $N b_b
+
+        # redStr = (char*)"(0,1)(.2,0)(.6,0)(.8,1)(1,1)";
+        # greenStr (char*)"(0,0)(.2,0)(.4,1)(.8,1)(1,0)";
+        # blueStr  (char*)"(0,1)(.4,1)(.6,0)(1,0)";
+	# rainbow
+	set Rx=< 0.0  0.2  0.6  0.8  1.0 >
+	set Ry=< 1.0  0.0  0.0  1.0  1.0 >
+	set Gx=< 0.0  0.2  0.4  0.8  1.0 > 
+	set Gy=< 0.0  0.0  1.0  1.0  0.0 >
+	set Bx=< 0.0  0.4  0.6  1.0 >
+	set By=< 1.0  1.0  0.0  0.0 >
+
+	build_lut_comp Rx Ry $N rainbow_r
+	build_lut_comp Gx Gy $N rainbow_g
+	build_lut_comp Bx By $N rainbow_b
+
+	# rainbow2
+	set Rx=< 0.0  0.2  0.6  0.75 1.0 >
+	set Ry=< 1.0  0.0  0.0  1.0  0.8 >
+	set Gx=< 0.0  0.2  0.35 0.7  1.0 > 
+	set Gy=< 0.0  0.0  0.9  1.0  0.0 >
+	set Bx=< 0.0  0.35 0.45 0.6  1.0 >
+	set By=< 1.0  0.9  0.8  0.0  0.0 >
+
+	build_lut_comp Rx Ry $N rainbow2_r
+	build_lut_comp Gx Gy $N rainbow2_g
+	build_lut_comp Bx By $N rainbow2_b
+
+        # redStr = (char*)"(0,0)(.25,0)(.5,1)(1,1)";
+        # greenStr (char*)"(0,0)(.25,1)(.5,0)(.77,0)(1,1)";
+        # blueStr =(char*)"(0,0)(.125,0)(.5,1)(.64,.5)(.77,0)(1,0)";
+	# a
+	set Rx=< 0.0  0.25 0.5  1.0 >
+	set Ry=< 0.0  0.0  1.0  1.0 >
+	set Gx=< 0.0  0.25 0.5  0.77 1.0 > 
+	set Gy=< 0.0  1.0  0.0  0.0  1.0 >
+	set Bx=< 0.0  0.125 0.5  0.64 0.77 1.0 >
+	set By=< 0.0  0.0   1.0  0.5  0.0  0.0 >
+
+	build_lut_comp Rx Ry $N a_r
+	build_lut_comp Gx Gy $N a_g
+	build_lut_comp Bx By $N a_b
+
+        # redStr  = (char*)"(0,0)(.5,1)(1,1)";
+        # greenStr= (char*)"(0,0)(.25,0)(.75,1)(1,1)";
+        # blueStr = (char*)"(0,0)(.5,0)(1,1)";
+	# bb
+	set Rx=< 0.0  0.5  1.0 >
+	set Ry=< 0.0  1.0  1.0 >
+	set Gx=< 0.0  0.25 0.75 1.0 > 
+	set Gy=< 0.0  0.0  1.0  1.0 >
+	set Bx=< 0.0  0.5  1.0 >
+	set By=< 0.0  0.0  1.0 >
+
+	build_lut_comp Rx Ry $N bb_r
+	build_lut_comp Gx Gy $N bb_g
+	build_lut_comp Bx By $N bb_b
+
+	echo "make_luts_sao: a / b / bb / heat / rainbow "
+
+	foreach 8 < a b bb heat rainbow > {
+	   foreach 9 < r g b > {
+	      set sao_$8_$9 = $8_$9
+	      delete $8_$9
+	   }
+	}
+
+##-------------------------------------------------------------------------------
+## make_luts_gf <N colors>
+make_luts_gf 1
+
+	define N $1
+
+	#---- B&W 1 ( high is white ) ----#
+	#
+	set Rx=< 0.0  1.0 >
+	set Ry=< 0.0  1.0 >
+	set Gx=< 0.0  1.0 >
+	set Gy=< 0.0  1.0 >
+	set Bx=< 0.0  1.0 >
+	set By=< 0.0  1.0 >
+
+	build_lut_comp Rx Ry $N bw1_r
+	build_lut_comp Gx Gy $N bw1_g
+	build_lut_comp Bx By $N bw1_b
+
+	#---- B&W 2 ( high is white ) ----#
+	#
+	set Rx=< 0.0  1.0 >
+	set Ry=< 1.0  0.0 >
+	set Gx=< 0.0  1.0 >
+	set Gy=< 1.0  0.0 >
+	set Bx=< 0.0  1.0 >
+	set By=< 1.0  0.0 >
+
+	#build_lut_comp Rx Ry $N bw2_r
+	#build_lut_comp Gx Gy $N bw2_g
+	#build_lut_comp Bx By $N bw2_b
+	build_lut_comp Rx Ry $N bw1r_r
+	build_lut_comp Gx Gy $N bw1r_g
+	build_lut_comp Bx By $N bw1r_b
+
+	#---- rainbow 1 (black---->white) ----#
+	#
+	set Rx=< 0.0 0.25 0.50 0.75 1.0 >
+	set Ry=< 0.0 0.0  1.0  1.0  1.0 >
+	set Gx=< 0.0 0.25 0.50 0.75 1.0 >
+	set Gy=< 0.0 0.0  0.0  1.0  1.0 >
+	set Bx=< 0.0 0.25 0.50 0.75 1.0 >
+	set By=< 0.0 1.0  0.0  0.0  1.0 >
+
+	build_lut_comp Rx Ry $N rainbow1_r
+	build_lut_comp Gx Gy $N rainbow1_g
+	build_lut_comp Bx By $N rainbow1_b
+
+	#---- rainbow 2 (yellow--->black) ----#
+	#
+	set Rx=< 0.0 0.25 0.50 0.75 1.0 >
+	set Ry=< 1.0 1.0  1.0  0.0  0.0 >
+	set Gx=< 0.0 0.25 0.50 0.75 1.0 >
+	set Gy=< 1.0 1.0  0.0  0.0  0.0 >
+	set Bx=< 0.0 0.25 0.50 0.75 1.0 >
+	set By=< 1.0 0.0  0.0  1.0  0.0 >
+
+	#build_lut_comp Rx Ry $N rainbow2_r
+	#build_lut_comp Gx Gy $N rainbow2_g
+	#build_lut_comp Bx By $N rainbow2_b
+	build_lut_comp Rx Ry $N rainbow1r_r
+	build_lut_comp Gx Gy $N rainbow1r_g
+	build_lut_comp Bx By $N rainbow1r_b
+
+	#---- HEAT ----#
+	#
+	set Rx=< 0.0 1.0 >
+	set Ry=< 1.0 0.7 >
+	set Gx=< 0.0 1.0 >
+	set Gy=< 1.0 0.0 >
+	set Bx=< 0.0 1.0 >
+	set By=< 0.0 0.0 >
+
+	build_lut_comp Rx Ry $N heat_r
+	build_lut_comp Gx Gy $N heat_g
+	build_lut_comp Bx By $N heat_b
+
+	#---- cyan-->blue ----#
+	#
+	set Rx=< 0.0 1.0 >
+	set Ry=< 0.0 0.0 >
+	set Gx=< 0.0 1.0 >
+	set Gy=< 1.0 0.0 >
+	set Bx=< 0.0 1.0 >
+	set By=< 1.0 1.0 >
+
+	build_lut_comp Rx Ry $N cyan_r
+	build_lut_comp Gx Gy $N cyan_g
+	build_lut_comp Bx By $N cyan_b
+
+	# if ( $mappa == 9 ) {
+	#    rainbow_mod $1
+	#    set coldum = colortot
+        #   ctype = colortot
+	# }
+
+	#---- red --> blue 1 ----#
+	#
+	set Rx=< 0.0 1.0 >
+	set Ry=< 1.0 0.0 >
+	set Gx=< 0.0 1.0 >
+	set Gy=< 0.1 0.1 >
+	set Bx=< 0.0 1.0 >
+	set By=< 0.0 1.0 >
+
+	build_lut_comp Rx Ry $N redblue1_r
+	build_lut_comp Gx Gy $N redblue1_g
+	build_lut_comp Bx By $N redblue1_b
+	
+	#---- red --> blue 2 ----#
+	#
+	set Rx=< 0.0 1.0 >
+	set Ry=< 0.8 0.0 >
+	set Gx=< 0.0 0.25 0.5 0.75 1.0 >
+	set Gy=< 0.0 0.2  0.8 0.2  0.0 >
+	set Bx=< 0.0 1.0 >
+	set By=< 0.0 0.8 >
+
+	build_lut_comp Rx Ry $N redblue2_r
+	build_lut_comp Gx Gy $N redblue2_g
+	build_lut_comp Bx By $N redblue2_b
+	
+        # set c1dum = 0 --> 255
+        # set c2dum = 255 constant
+        # set c3dum = 0   constant
+
+	#---- 
+	#
+	set Rx=< 0.0 0.25 0.50 0.75 1.0 >
+	set Ry=< 1.0 0.0  1.0  0.0  0.0 >
+	set Gx=< 0.0 0.25 0.50 0.75 1.0 >
+	set Gy=< 0.0 0.0  1.0  0.0  0.0 >
+	set Bx=< 0.0 0.25 0.50 0.75 1.0 >
+	set By=< 0.0 0.0  0.0  1.0  0.0 >
+
+	build_lut_comp Rx Ry $N boh_r
+	build_lut_comp Gx Gy $N boh_g
+	build_lut_comp Bx By $N boh_b
+
+	#-----------------------------------------------------------
+	foreach 8 < bw1 bw1r rainbow1 rainbow1r heat cyan redblue1 redblue2 boh > { 
+	   foreach 9 < r g b > {
+	      set gf_$8_$9 = $8_$9
+	      delete $8_$9
+	   }
+	}
+
+	#-----------------------------------------------------------
+	# MORE LUTS by GF
+	make_luts_gf_more $N
+
+	echo "make_luts_gf: bw1/r , rainbow1/r , heat , cyan , redblue1 , redblue2 , boh"
+	echo "make_luts_gf: more1/r , more2/r , more3/r , more4/r "
+
+##------------------------------------------------------------------------------
+## make_luts_gf_more <N colors>
+##       more1/r , more2/r , more3/r , more4/r
+make_luts_gf_more 1
+
+	define N   $1
+
+	define nco $1
+	define ncoint $($nco/4)
+	define softness 0
+	define exp local
+	define exp (0.7)
+	define exp (0.5)
+	define exp (1.5)
+
+	set sep = < 0 0.35 0.5 0.75 1 >
+
+	# echo "---------------------------------------------------------- "
+	# echo " *** NOTE: use negative number for inverted color scale "
+	# echo "   [1] Green--Blue--black (normal) "
+	# echo "   [2] Green--Blue--red "
+	# echo "   [3] Green--Blue--cyan "
+	# echo "   [4] Green--Magenta--Blue "
+	# define whatend ? <             What End of the color scale : >
+
+	define cstep ((sep[4]-sep[0])/$ncoint)
+
+	define dnu1   $(sep[1]-sep[0])
+	define dnu2   $(sep[2]-sep[1])
+	define dnu3   $(sep[3]-sep[2])
+	define dnu4   $(sep[4]-sep[3])
+	define cstep1 ($dnu1/$ncoint)
+	define cstep2 ($dnu2/$ncoint)
+	define cstep3 ($dnu3/$ncoint)
+	define cstep4 ($dnu4/$ncoint)
+	define cstep1 ($cstep)
+	define cstep2 ($cstep)
+	define cstep3 ($cstep)
+	define cstep4 ($cstep)
+
+	set cdum1=$(sep[0]+$cstep1),$(sep[1]),$cstep1 
+	set cdum2=$(sep[1]+$cstep2),$(sep[2]),$cstep2 
+	set cdum3=$(sep[2]+$cstep3),$(sep[3]),$cstep3 
+	set cdum4=$(sep[3]+$cstep4),$(sep[4]),$cstep4 
+
+	# USED FOR ALL
+	#set c1r = 0*cdum1 + 255
+	set c1r = int(75*((cdum1-$(sep[0]))/$dnu1)) + 180
+	set c1g = int((255-$softness)*((cdum1-$(sep[0]))/$dnu1)**$exp)+$softness
+	set c1b = 0*cdum1 + $softness
+
+	# USED FOR ALL
+	set c2r = int((255-$softness)*(($(sep[2])-cdum2)/$dnu2)**$exp)+$softness
+	set c2g = 0*cdum2 + 255
+	set c2b = 0*cdum2 + $softness
+
+	# USED FOR CASES 1-3
+	set c3r1 = 0*cdum3 + $softness
+	set c3g1 = int((255-$softness)*(($(sep[3]) - cdum3)/$dnu3))+$softness
+	set c3b1 = int((255-$softness)*((cdum3 - $(sep[2]))/$dnu3))+$softness
+
+	# USED FOR CASE 4
+	set c3r2 = int((255-$softness)*((cdum3 - $(sep[2]))/$dnu3))+$softness
+	set c3g2 = int((255-$softness)*(($(sep[3]) - cdum3)/$dnu3))+$softness
+	set c3b2 = int((255-$softness)*((cdum3 - $(sep[2]))/$dnu3))+$softness
+
+	#-----------------------------------------------------------
+	# [1] normal end: blue to black 
+	set c4r = 0*cdum4  
+	set c4g = 0*cdum4
+	set c4b = int(255*(($(sep[4]) - cdum4)/$dnu4))
+	
+	set more_1_r = c1r CONCAT c2r CONCAT c3r1 CONCAT c4r
+	set more_1_g = c1g CONCAT c2g CONCAT c3g1 CONCAT c4g
+	set more_1_b = c1b CONCAT c2b CONCAT c3b1 CONCAT c4b
+
+	#-----------------------------------------------------------
+	# [2] RED end: blue to red 
+	set c4r = int(255*((cdum4 - $(sep[3]))/$dnu4))
+	set c4g = 0*cdum4
+	set c4b = int(255*(($(sep[4]) - cdum4)/$dnu4))
+	
+	set more_2_r = c1r CONCAT c2r CONCAT c3r1 CONCAT c4r
+	set more_2_g = c1g CONCAT c2g CONCAT c3g1 CONCAT c4g
+	set more_2_b = c1b CONCAT c2b CONCAT c3b1 CONCAT c4b
+
+	#-----------------------------------------------------------
+	# [3] CYAN end: blue to cyan
+	set c4r = 0*cdum4
+	set c4g = int(255*((cdum4 - $(sep[3]))/$dnu4))
+	set c4b = 0*cdum4 + 255  ## int(255*(($(sep[4]) - cdum4)/$dnu4))
+	
+	set more_3_r = c1r CONCAT c2r CONCAT c3r1 CONCAT c4r
+	set more_3_g = c1g CONCAT c2g CONCAT c3g1 CONCAT c4g
+	set more_3_b = c1b CONCAT c2b CONCAT c3b1 CONCAT c4b
+
+	#-----------------------------------------------------------
+	# [4] magenta to blue 
+	set c4r = int(255*(($(sep[4]) - cdum4)/$dnu4)**$exp)
+	set c4g = 0*cdum4
+	set c4b = 0*cdum4 + 255  ## int(255*(($(sep[4]) - cdum4)/$dnu4))
+
+	set more_4_r = c1r CONCAT c2r CONCAT c3r2 CONCAT c4r
+	set more_4_g = c1g CONCAT c2g CONCAT c3g2 CONCAT c4g
+	set more_4_b = c1b CONCAT c2b CONCAT c3b2 CONCAT c4b
+
+	#-----------------------------------------------------------
+
+	set _colortot local
+	foreach 8 < 1 2 3 4 > { 
+	   foreach 9 < r g b > {
+	      set gf_more$8_$9 = more_$8_$9
+              set _colortot = reverse(more_$8_$9)
+              set gf_more$8r_$9 = _colortot
+	      delete more_$8_$9
+	   }
+	}
+
+##-------------------------------------------------------------------------------
+## make_luts_ciao <N colors>
+##     	sls1 / sls2 / hsv / rainbow1 / rainbow2 / ramp / std / heaob
+####       red / green / blue / grey / aips (8) / color (16)
+make_luts_ciao 1
+
+	define N   $1
+
+        foreach 9 < sls1 sls2 hsv rainbow1 rainbow2 ramp std heaob > {
+	   data "/home/gfossati/SM_macro/LUT/lut_ciao_"$9".dat"
+	   read < r 1 g 2 b 3 >
+	   set ciao_$9_r = r
+	   set ciao_$9_g = g
+	   set ciao_$9_b = b
+	}
+
+	set _colortot local
+        foreach 8 < sls1 sls2 hsv > {
+	   foreach 9 < r g b > {
+              set _colortot = reverse(ciao_$8_$9)
+              set ciao_$8r_$9 = _colortot
+	   }
+	}
+        echo "make_luts_ciao: sls1 / sls2 / hsv / rainbow1 / rainbow2 / ramp / std / heaob"
+
+##-------------------------------------------------------------------------------
+## load_lut_sao <name>
+##       a / b / bb / heat / rainbow 
+load_lut_sao 1
+
+	set r = $1_r
+	set g = $1_g
+	set b = $1_b
+
+	define lut_name "SAO $!1"
+
+##-------------------------------------------------------------------------------
+## load_lut_ciao <name> 
+##      sls1 / sls2 / hsv / rainbow1 / rainbow2 / ramp / std / heaob
+###       red / green / blue / grey / aips (8) / color (16)
+load_lut_ciao 1
+
+	set r = ciao_$1_r
+	set g = ciao_$1_g
+	set b = ciao_$1_b
+
+	#data "/home/gfossati/SM_macro/LUT/lut_ciao_"$1".dat"
+	#read < r 1 g 2 b 3 >
+
+	define lut_name "CIAO $!1"
+
+##-------------------------------------------------------------------------------
+## load_lut_gf <name>
+##       bw1 / bw2 / rainbow1 / rainbow2 / heat / cyan / redblue1 / redblue2 / boh"
+##       more1 / more2 / more3 / more4 / more1r / more2r / more3r / more4r "
+load_lut_gf 1
+
+	set r = gf_$1_r
+	set g = gf_$1_g
+	set b = gf_$1_b
+
+	define lut_name "GF $!1"
+
+##-------------------------------------------------------------------------------
+## remap_lut <Ncolors> 
+##           It assumes the existence of arrays 'r' 'g' 'b'
+remap_lut 1
+
+	set n_orig local
+	set n_resc local
+	set n_new  local
+
+	define _min local
+	define _max local
+	define newmin local
+	define newmax local
+
+	set n_orig = 1,dimen(r)
+	set n_resc = n_orig/dimen(n_orig)*$1
+
+	set n_new=1,$1,1
+
+	foreach 9 < r g b > { 
+	   set old$9 = $9
+	   interp2 n_resc $9 n_new new$9
+	   vecminmax new$9 _min _max
+	   # echo " "$9" _min , _max : " $_min $_max
+	   if( $_min <   0 ) { define newmin (0)   } else { define newmin $_min } 
+	   if( $_max > 255 ) { define newmax (255) } else { define newmax $_max } 
+	   if( $_min == $_max ) { 
+	      set new$9 = new$9*0 + $_max
+	   } else {
+	      set new$9 = (new$9 - $_min)/($_max-$_min)*($newmax-$newmin) + $newmin
+	   }
+	   set $9 = int(new$9+0.5)
+	}
+
+#-------------------------------------------------------------------------------
+## SAO LUTs (N=256):
+##    a        [green - lilla/magenta - red - yellow]
+##    b        [blue - red/orange - yellow - white]
+##    rainbow  [magenta - blue/cyan - green - yellow - red]
+##    heat
+##    bb       [sort of like 'heat']
+##
+## CIAO LUTs (200)
+##    red , green , blue , grey
+##
+###   /a/
+###   /b/
+###   /heat/
+###   i8
+##    bb     [sort of like 'heat']
+##    aips   [8 discrete colors]
+##    color  [16 discrete colors]
+###   halley
+##  * sao_sls/sls
+##  * hsv
+##    rainbow1 [blue - cyan - green - yellow]
+##    rainbow2 [purple - blue - green - yellow - red - white]
+##    ramp     [four ramps: orange, green, purple, okra]
+##    standard [three ramps: blue, green, red]
+##    heaob
+##-------------------------------------------------------------------------------
+##  
+##    name = dupstr("Grey");
+##    redStr  = (char*)"(0,0)(1,1)";
+##    greenStr= (char*)"(0,0)(1,1)";
+##    blueStr = (char*)"(0,0)(1,1)";
+##  
+##    name = dupstr("Red");
+##    redStr  = (char*)"(0,0)(1,1)";
+##    greenStr= (char*)"(0,0)(0,0)";
+##    blueStr = (char*)"(0,0)(0,0)";
+##  
+##    name = dupstr("Green");
+##    redStr  = (char*)"(0,0)(0,0)";
+##    greenStr= (char*)"(0,0)(1,1)";
+##    blueStr = (char*)"(0,0)(0,0)";
+##  
+##    name = dupstr("Blue");
+##    redStr  = (char*)"(0,0)(0,0)";
+##    greenStr= (char*)"(0,0)(0,0)";
+##    blueStr = (char*)"(0,0)(1,1)";
+##  
+##    name = dupstr("HE");
+##    redStr  = (char*)"(0,0)(.015,.5)(.25,.5)(.5,.75)(1,1)";
+##    greenStr= (char*)"(0,0)(.065,0)(.125,.5)(.25,.75)(.5,.810)(1,1)";
+##    blueStr = (char*)"(0,0)(.015,.125)(.030,.375)(.065,.625)(.25,.25)(1,1)";
+##  
+##    name = dupstr("Cool");
+##    redStr  = (char*)"(0,0)(.29,0)(.76,.1)(1,1)";
+##    greenStr= (char*)"(0,0)(.22,0)(.96,1)(1,1)";
+##    blueStr = (char*)"(0,0)(.53,1)(1,1)";
+##   
+##    name = dupstr("Color");
+##    colors[0] = RGBColor(0,0,0);
+##    colors[1] = RGBColor(0.18431, 0.18431, 0.18431);
+##    colors[2] = RGBColor(0.37255, 0.37255, 0.37255);
+##    colors[3] = RGBColor(0.56078, 0.56078, 0.56078);
+##    colors[4] = RGBColor(0.74902, 0.74902, 0.74902);
+##    colors[5] = RGBColor(0.93725, 0.93725, 0.93725);
+##    colors[6] = RGBColor(0.00000, 0.18431, 0.93725);
+##    colors[7] = RGBColor(0.00000, 0.37255, 0.74902);
+##    colors[8] = RGBColor(0.00000, 0.49804, 0.49804);
+##    colors[9] = RGBColor(0.00000, 0.74902, 0.30980);
+##    colors[10]= RGBColor(0.00000, 0.93725, 0.00000);
+##    colors[11]= RGBColor(0.30980, 0.62353, 0.00000);
+##    colors[12]= RGBColor(0.49804, 0.49804, 0.00000);
+##    colors[13]= RGBColor(0.62353, 0.30980, 0.00000);
+##    colors[14]= RGBColor(0.93725, 0.00000, 0.00000);
+##    colors[15]= RGBColor(0.74902, 0.00000, 0.30980);
+##  
+##  HSVColorMap::HSVColorMap()
+##  {
+##    /* HSV: hue varies uniformly from 270 to 360 and back to 270.
+##     * Value varies from zero to one using a cube root relation
+##     * which causes the value to approach 1.0 rapidly away from zero.
+##     * Saturation is zero near the endpoints, causing the curve
+##     * to range from black to white at the endpoints, but ranges
+##     * to 1.0 at the halfway point, causing nearly saturated colors
+##     * in the middle of the range.
+##     */
+##  
+##    name = dupstr("HSV");
+##    fileName = dupstr("hsv.lut");
+##    size = 200;
+##    colors = new RGBColor[size];
+##  
+##    for (int i=0; i<size; i++) {
+##      // generate in hsv
+##      float frac = 1.0 - ((float)i / (float)(size - 1));
+##  
+##      float h = frac * 360.0 + 270.0;
+##      float s = fabs(sin (frac * 3.1416));
+##      float v = pow((1.0 - frac), (1.0 / 3.0));
+##  
+##      // convert to rgb
+##      while (h >= 360.0)
+##        h -= 360.0;
+##  
+##      h /= 60.0;
+##      int ii = (int)h;
+##      float f = h - ii;
+##      float p = v * (1 - s);
+##      float q = v * (1 - s*f);
+##      float t = v * (1 - s * (1.0 - f));
+##  
+##      switch (ii) {
+##      case 0:
+##        colors[i] = RGBColor(v,t,p);
+##        break;
+##      case 1:
+##        colors[i] = RGBColor(q,v,p);
+##        break;
+##      case 2:
+##        colors[i] = RGBColor(p,v,t);
+##        break;
+##      case 3:
+##        colors[i] = RGBColor(p,q,v);
+##        break;
+##      case 4:
+##        colors[i] = RGBColor(t,p,v);
+##        break;
+##      case 5:
+##        colors[i] = RGBColor(v,p,q);
+##        break;
+##      }
+##    }
+##  }

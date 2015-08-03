@@ -1,0 +1,242 @@
+#---------------------------------------------------------------------------
+# compute_hr
+#
+compute_hr
+
+	define suffix1 ? < * Suffix of first vector  : >
+	define suffix2 ? < * Suffix of second vector : >
+	define 1 $suffix1
+	define 2 $suffix2
+
+        define  l1  $(dimen(rate_$suffix1))
+        define  l2  $(dimen(rate_$suffix2))
+	define  l_l ($l1/$l2)
+
+        if($l1 != $l2) {
+           echo  Vectors are different in Length
+	   echo  Vector-1 : $l1  / Time interval : $(newt_$suffix1[0]) : $(newt_$suffix1[$(dimen(newt_$suffix1)-1)]) 
+	   echo  Vector-2 : $l2  / Time interval : $(newt_$suffix2[0]) : $(newt_$suffix2[$(dimen(newt_$suffix2)-1)]) 
+
+	   # echo  - Vec-1 T_start = $(newt_$suffix1[0])
+	   # echo  - Vec-2 T_start = $(newt_$suffix2[0])
+	   # echo 
+	   # echo  - Vec-1 T_stop  = $(newt_$suffix1[$(dimen(newt_$suffix1)-1)])
+	   # echo  - Vec-2 T_stop  = $(newt_$suffix2[$(dimen(newt_$suffix2)-1)])
+	   echo 
+
+	   define cskip ? { Align them ? [y/n] }
+	   if(substr('$cskip',0,1) == 'y') {
+	      #
+	      #  Vec-1 longest
+	      #
+	      if($l_l > 1) { 
+	         set newt_tmp   =     newt_$suffix2
+	         set newt1_tmp  =    newt1_$suffix2
+	         set newt2_tmp  =    newt2_$suffix2
+	         set newbin_tmp =   newbin_$suffix2
+		 set     rate2  =     rate_$suffix2
+		 set err_rate2  = err_rate_$suffix2
+		 set dimen(rate1)     = $l2
+		 set dimen(err_rate1) = $l2
+	         do 1=0,$($l2-1) {
+		    set     rate1[$1] =     rate_$suffix1[$1] 
+		    set err_rate1[$1] = err_rate_$suffix1[$1] 
+	         }
+	      }
+	      #
+	      #  Vec-2 longest
+	      #
+	      if($l_l < 1) { 
+	         set newt_tmp   =     newt_$suffix1
+	         set newt1_tmp  =    newt1_$suffix1
+	         set newt2_tmp  =    newt2_$suffix1
+	         set newbin_tmp =   newbin_$suffix1
+		 set     rate1  =     rate_$suffix1
+		 set err_rate1  = err_rate_$suffix1
+		 set dimen(rate2)     = $l1
+		 set dimen(err_rate2) = $l1
+	         do 1=0,$($l1-1) {
+		    set     rate2[$1] =     rate_$suffix2[$1] 
+		    set err_rate2[$1] = err_rate_$suffix2[$1] 
+	         }
+	      }
+	   }
+	}
+
+	if($l1 == $l2) { 
+	  local set newt_tmp   =     newt_$suffix1
+	  local set newt1_tmp  =    newt1_$suffix1
+	  local set newt2_tmp  =    newt2_$suffix1
+	  local set newbin_tmp =   newbin_$suffix1
+	  local set     rate1  =     rate_$suffix1
+	  local set err_rate1  = err_rate_$suffix1
+	  local set     rate2  =     rate_$suffix2
+	  local set err_rate2  = err_rate_$suffix2
+	}
+
+	define 3 (1)
+
+	echo --------------------------
+	echo > What HR definition ? 
+	echo   [1] A/B
+	echo   [2] (A-B)/(A+B) 
+	define 3 ? <  Choice : >
+
+	if($3 == 1) { 
+	 set hr     = rate1/rate2
+	 set aux1   = err_rate1/rate1
+	 set aux2   = err_rate2/rate2
+	 set err_hr = rate1/rate2*sqrt(aux1**2. + aux2**2.)
+	}
+
+	if($3 == 2) { 
+	 set hr     =(rate1-rate2)/(rate1+rate2)
+	 set aux1   = err_rate1/rate1
+	 set aux2   = err_rate2/rate2
+	 set err_hr =2.*(rate1*rate2)/(rate1+rate2)**2.*sqrt(aux1**2. + aux2**2.)
+	}
+
+	vecminmax hr m1 m2
+	stats     hr        mean_hr  width_hr  kurt_hr
+	stats2    hr err_hr mean2_hr width2_hr kurt2_hr
+
+	echo -----------------------------------------------------------------
+	echo * Miminum and Maximum of HR are: [$m1 : $m2]
+	echo -----------------------------------------------------------------
+	echo * Average HR = $mean_hr    $mean2_hr
+	echo * sigma      = $width_hr   $width2_hr
+	echo * kurtosis   = $kurt_hr    $kurt2_hr
+
+	define whattodo ?  < * Rename vectors [y/n] : >
+	if(substr('$whattodo',0,1) == 'y') {
+	  define hrname ? < * Suffix name for vectors to become *_name : >
+	  foreach 3 { newt newt1 newt2 newbin }{
+	     set $3_$hrname = $3_tmp
+	  }
+	  set     rate_$hrname = hr
+	  set err_rate_$hrname = err_hr
+	  set    cvrfr_$hrname = 1 + 0*hr   
+	} 
+
+	##define ratelim1 ? {Lower Y-BOX limit : }
+	##define ratelim2 ? {Upper Y-BOX limit : }
+        ##
+	##define tt1 ? {Begin Time of plot : }
+	##define tt2 ? {End Time of plot : }
+        ##
+	##ctype 2
+	##lweight 2
+	##expand 1.5
+	##location 4500 31500 8000 30500
+	##ticksize 0 0 0 0
+	##limits $tt1 $tt2 $ratelim1 $ratelim2
+	##box
+        ##
+	##xlabel Time (seconds)
+	##ylabel HR
+	##
+	##define color ? {Color to plot data points ?}
+	##ctype $color 
+	##ptype 4 3
+	##points  newt_tmp hr
+	##error_y newt_tmp hr err_hr
+	##error_x newt_tmp hr (newbin_tmp/2)
+
+	##ctype 4
+	##ltype 1 
+	##grid 1 1 
+	##ltype 0
+
+	##relocate (4500 31500)
+	##ctype 2
+
+#---------------------------------------------------------------------------
+# hr_rate
+hr_rate
+
+	window 1 1 1 1
+	location  6000 30000 6000 30000
+
+                 echo ----------------------
+	define xmin ? { * rate - X-min ?}
+	define xmax ? { * rate - X-max ?}
+                 echo ----------------------
+	define ymin ? { * HR   - Y-min ?}
+	define ymax ? { * HR   - Y-max ?}
+                 echo ----------------------
+
+	limits $xmin $xmax $ymin $ymax 
+	expand 1.5
+	ctype 2 
+	ticksize 0 0 0 0
+	box 
+	xlabel cts/sec
+	ylabel HR
+
+	expand 2.0
+	ptype 4 3 
+	define color ? {Color ?}
+	ctype $color
+
+	define x  ? {rate vector Code ? }
+	define y  ? {HR   vector Code ? }
+
+	set xvec     = rate_$x
+	set err_xvec = err_rate_$x
+
+	set yvec     = rate_$y
+	set err_yvec = err_rate_$y
+
+	points  xvec yvec
+	error_x xvec yvec err_xvec 
+	error_y xvec yvec err_yvec 
+
+#---------------------------------------------------------------------------
+# hr_rate_old
+hr_rate_old
+
+	window 1 1 1 1
+	location  6000 30000 6000 30000
+
+	define xmin ? {rate - X-min ?}
+	define xmax ? {rate - X-max ?}
+	define ymin ? {HR   - Y-min ?}
+	define ymax ? {HR   - Y-max ?}
+
+	limits $xmin $xmax $ymin $ymax 
+	expand 1.5
+	ctype 2 
+	ticksize 0 0 0 0
+	box 
+	xlabel cts/sec
+	ylabel HR
+
+	expand 2.0
+	ptype 4 3 
+	define color ? {Color ?}
+	ctype $color
+
+	define 1 (3)
+	define 1  ? {rate vector: low, high, total [1/2/3] ?}
+	define dt ? {rate vector: binning time, in KSEC ?}
+
+	if($1 == 1){
+	   set xvec     = rate_ml$dt
+	   set err_xvec = err_rate_ml$dt 
+	}
+	if($1 == 2){
+	   set xvec     = rate_mh$dt
+	   set err_xvec = err_rate_mh$dt 
+	}
+	if($1 == 3){
+	   set xvec     = rate_ml$dt + rate_mh$dt
+	   set err_xvec = sqrt(err_rate_ml$dt**2. + err_rate_mh$dt**2.)
+	}
+
+	define 2 ? {HR vector [1/2] ?}
+
+	points  xvec hr$2 
+	error_x xvec hr$2 err_xvec 
+	error_y xvec hr$2 err_hr$2 
+
+#---------------------------------------------------------------------------

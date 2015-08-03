@@ -1,0 +1,109 @@
+#---------------------------------------------------------------------------
+# dumprint3
+dumprint3
+	
+	define format " %s %5.3f %8.3f %7.4e %6.3f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.3f %7.3f %7.3f\n"
+	print 1jy.gg '$!!format' {name z f_radio f_opt f_x lg_kf_radio lg_kf_opt lg_kf_x nl_radio nl_opt nl_x a_ro a_rx a_ox } 
+
+
+	## define format " %g  %5.3f  %6.3f  %6.3f  %6.3f  %6.3f \n "
+	## print 1jy.test '$!!format' {flag_g z nl_radio nl_x a_ro_1jy a_rx_1jy }
+
+#---------------------------------------------------------------------------
+# dumprint1
+dumprint1
+	
+	define format " %s  %7.4f  %7.4f  %7.4f  %7.4f  %7.4f  %7.4f  %7.4f \n"
+	print total.polfit '$!!format' {name_total z a_ro a_rx peak_total lumpeak_total  nl_radio nl_g} 
+
+
+	## define format " %g  %5.3f  %6.3f  %6.3f  %6.3f  %6.3f \n "
+	## print 1jy.test '$!!format' {flag_g z nl_radio nl_x a_ro_1jy a_rx_1jy }
+
+#---------------------------------------------------------------------------
+# dumprint2
+dumprint2
+	
+	define format "%7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f\n"
+	print pompa.format '$!!format' {delta l_inj l_ext g_peak b u_b u_rad u_tot l_obs l_rest }
+
+
+#---------------------------------------------------------------------------
+# tabprint
+tabprint
+
+	define who ? { string for the sample [<5 chars] ? }
+
+	set dimen(tab_samp) = $(dimen(name)).s
+	do i=0,$(dimen(name)-1) {
+	   set tab_samp[$i] = '$!!who'
+	}
+
+	foreach 1 (z radio mm iras60 iras25 ir opt x g ng ax ax_erru ax_errd ag ag_err ) {
+	   echo * deleting OLD vector $1
+	   delete tab_$1
+	}
+
+	set tab_z      = z 
+	set tab_radio  = 10.**(lg_kf_radio  + 23.)
+	set tab_mm     = 10.**(lg_kf_mm     + 23.)
+	set tab_iras60 = 10.**(lg_kf_iras60 + 23.)
+	set tab_iras25 = 10.**(lg_kf_iras25 + 23.)
+	set tab_ir     = 10.**(lg_kf_ir     + 26.)
+	set tab_opt    = 10.**(lg_kf_opt    + 26.)
+	set tab_x      = 10.**(lg_kf_x      + 29.)
+	set tab_g      = 10.**(lg_kf_g      + 32.)
+	set tab_ng     = n_g
+	set tab_ax     = ax
+	set tab_ax_erru= err_ax_u
+	set tab_ax_errd= err_ax_d
+	set tab_ag     = ag
+	set tab_ag_err = err_ag_u
+
+	foreach vec (radio mm iras60 iras25 ir opt x) {
+	do i=0,$(dimen(name)-1) {
+	   if(check_$vec[$i] == 0) {set tab_$vec[$i] = 0}
+	}
+	}
+
+	do i=0,$(dimen(name)-1) {
+	   if(flag_g[$i] <= 1) {
+	      set tab_g[$i]  = 0
+	      set tab_ng[$i] = 0
+	   }
+	}
+
+	do i=0,$(dimen(name)-1) {
+	   if(flag_g[$i] <= 2) {
+	      set tab_ag[$i]  = 0
+	      set tab_ag_err[$i] = 0
+	   }
+	}
+
+	do i=0,$(dimen(name)-1) {
+	   if(flag_x[$i] <= 2) {
+	      set tab_ax[$i]  = 0
+	      set tab_ax_erru[$i] = 0
+	      set tab_ax_errd[$i] = 0
+	   }
+	}
+
+	do i=0,$(dimen(name)-1) {
+	   if(flag_z[$i] == 0) {
+	      set tab_z[$i]  = 0
+	   }
+	}
+
+
+	define tabform " %8s  %4s  %5.3f  %6.3f  %6.3f  %6.3f  %6.3f  %6.3f  %6.3f  %6.3f  %5.2f  %4.2f  %4.2f  %6.3f  %5.2f  %4.2f\n"
+
+	print '$!!tabform' {name tab_samp tab_z tab_radio tab_mm tab_iras60 tab_iras25 tab_ir tab_opt tab_x tab_ax tab_ax_erru tab_ax_errd tab_g tab_ag tab_ag_err }
+
+
+	define stampo ? {scrivo in un bel file ? }
+	if(substr('$stampo',0,1) == 'y') {
+	   define nomefile ? { nome del file ?}
+	   print $nomefile '$!!tabform' {name tab_samp tab_z tab_radio tab_mm tab_iras60 tab_iras25 tab_ir tab_opt tab_x tab_ax tab_ax_erru tab_ax_errd tab_g tab_ag tab_ag_err }
+	}
+
+

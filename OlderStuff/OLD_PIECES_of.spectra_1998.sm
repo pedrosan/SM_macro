@@ -1,0 +1,1236 @@
+#---------------------------------------------------------------------------
+# le_me_bkn_pds
+le_me_bkn_pds
+
+	define datadir "/neutronstar/gf/SAX/mkn421/1998/Products"
+	echo $datadir
+
+	data "$!datadir/eufs_with_pds_02.qdp"
+	read {kev_l2 1 dkev_l2 2 eufs_l2 5}
+
+	data "$!datadir/eufs_with_pds_04.qdp"
+	read {kev_l4 1 dkev_l4 2 eufs_l4 5}
+
+	data "$!datadir/ratio_with_pds_02.qdp"
+	read {ratio_l2 3 err_ratio_l2 4}
+
+	data "$!datadir/ratio_with_pds_04.qdp"
+	read {ratio_l4 3 err_ratio_l4 4}
+
+	set lkev_l2 = lg(kev_l2)
+	set lkev_l4 = lg(kev_l4)
+
+	set lecs2 = ratio_l2*eufs_l2
+	set lecs4 = ratio_l4*eufs_l4
+	set dx2_d = 0*lecs2
+	set dx2_u = 0*lecs2
+	set dx4_d = 0*lecs4
+	set dx4_u = 0*lecs4
+
+	set dx2_d[70] = 0.107
+	set dx2_d[71] = 0.037
+	set dx2_d[72] = 0.071
+	set dx2_d[73] = 0.068
+	set dx2_d[74] = 0.212
+
+	set dx2_u[70] = 0.086
+	set dx2_u[71] = 0.034
+	set dx2_u[72] = 0.061
+	set dx2_u[73] = 0.058
+	set dx2_u[74] = 0.142
+
+	set dx4_d[55] = 0.193
+	set dx4_d[56] = 0.145
+
+	set dx4_u[55] = 0.133
+	set dx4_u[56] = 0.109
+
+	set nufnu_le2 = lg(lecs2) + lg(662.6176) - 29. + lkev_l2 + 17.383
+	set nufnu_le4 = lg(lecs4) + lg(662.6176) - 29. + lkev_l4 + 17.383
+	
+	set err_lecs2_u =  lg(1 + err_ratio_l2/ratio_l2)
+	set err_lecs2_d = -lg(1 - err_ratio_l2/ratio_l2)
+	set err_lecs4_u =  lg(1 + err_ratio_l4/ratio_l4)
+	set err_lecs4_d = -lg(1 - err_ratio_l4/ratio_l4)
+
+	location 6000 30000 6000 30000
+	expand 1.5
+	ctype 2 
+
+	echo -------------------------------------
+	define whatx ? {Energy [1] of Frequency [2] X-Axis ?}
+	if($whatx == 2) {
+
+	   define xmin 16.1 
+	   define xmax 19.7
+	   define tick  0
+	   define lab_x "log(\\nu)"
+
+	   set xl2 = lkev_l2 + 17.383
+	   set xl4 = lkev_l4 + 17.383
+	   set aaa2=xl2 
+	   set aaa4=xl4 
+
+	} else {
+
+	    # define xmin -0.8
+	    # define xmax  2.1
+	    define xmin -1.1
+	    define xmax  2.5
+	   define tick  -1
+	   define lab_x "Energy [keV]"
+
+	   set xl2 = lkev_l2 
+	   set xl4 = lkev_l4
+	   set aaa2=xl2 
+	   set aaa4=xl4 
+
+	}
+
+	echo -------------------------------------
+	define whaty ? {F_nu [1] of nu_F_nu [2] Y-Axis ?}
+	if($whaty == 1) {
+
+	   define ymin -3.9
+	   define ymax  0.1 
+	   define lab_y "log(F_\\nu) [erg/cm^2/s/Hz]"
+
+	   set yl2 = lg(lecs2)
+	   set yl4 = lg(lecs4)
+	   set bbb2=yl2 
+	   set bbb4=yl4 
+
+	} else {
+
+	   #  define ymin -11.8 
+	   # define ymax  -9.1 
+	    define ymin -11.8 
+	    define ymax  -8.8 
+	   define lab_y "log(\\nu F_\\nu) [erg/cm^2/s]"
+
+	   set yl2 = nufnu_le2
+	   set yl4 = nufnu_le4
+	   set bbb2=yl2
+	   set bbb4=yl4
+
+	}
+
+	set errbbb2_u = err_lecs2_u 
+	set errbbb2_d = err_lecs2_d 
+	set errbbb4_u = err_lecs4_u 
+	set errbbb4_d = err_lecs4_d 
+
+	limits $xmin $xmax $ymin $ymax 
+	ticksize $tick 0 0 0 
+	expand 1.5
+	box 
+	ylabel $lab_y
+	expand 2
+	xlabel $lab_x
+
+	echo *** ----------------------
+	echo *** PLOT Options :
+	echo    [1] B/W
+	echo    [2] Color
+	define come ? { Your choice ? }
+
+	#
+	#  Color 
+	#
+	if($come == 2) { 
+	   expand 1.5
+	   ptype 20 3 
+	   ctype 3 
+	   points   aaa2 bbb2
+	   errorbar aaa2 bbb2 errbbb2_u 2 
+	   errorbar aaa2 bbb2 errbbb2_d 4 
+	   errorbar aaa2 bbb2 dx2_d 3
+	   errorbar aaa2 bbb2 dx2_u 1
+
+	   ctype 5 
+	   points   aaa4 bbb4
+	   errorbar aaa4 bbb4 errbbb4_u 2 
+	   errorbar aaa4 bbb4 errbbb4_d 4 
+	   errorbar aaa4 bbb4 dx4_d 3
+	   errorbar aaa4 bbb4 dx4_u 1
+
+	   ctype 2 
+	   expand 1.5
+	   relocate (18000 30750)
+	   putlabel 5 May 2 and May 4, LECS+MECS+PDS
+	}
+
+	#
+	#  B/W
+	#
+	if($come == 1) { 
+
+	   ctype 2
+	   expand 1.5
+	   errorbar aaa2 bbb2 errbbb2_u 2 
+	   errorbar aaa2 bbb2 errbbb2_d 4 
+	   errorbar aaa2 bbb2 dx2_d 3
+	   errorbar aaa2 bbb2 dx2_u 1
+	   expand 1.6
+	   ctype 1
+	   ptype 20 3 
+	   points   aaa2 bbb2
+	   ctype 2 
+	   expand 2.0
+	   ptype 20 0 
+	   points   aaa2 bbb2
+
+	   errorbar aaa4 bbb4 errbbb4_u 2 
+	   errorbar aaa4 bbb4 errbbb4_d 4 
+	   errorbar aaa4 bbb4 dx4_d 3
+	   errorbar aaa4 bbb4 dx4_u 1
+	   expand 2.0
+	   ctype 2 
+	   ptype 4 3 
+	   points   aaa4 bbb4
+
+	   ctype 2 
+	   expand 1.5
+	   relocate (18000 30750)
+	   putlabel 5 May 2 and May 4, LECS+MECS+PDS
+
+	   lweight 3
+
+	   #
+	   # ex-macomb
+	   #
+	   expand 2.5
+	   data gg_1101f_1.dat 
+	   lines 8 10
+	   read{x 1 y 2 e 3}
+	   set errp = lg(10**y+e)-y
+	   set errm = y-lg(10**y-e)
+	   set x = x - 17.383
+
+	   ptype 4 1 
+	   points x y
+	   errorbar x y errm 4
+	   errorbar x y errp 2
+	   lweight 1
+	   ltype 2
+	   connect x y
+	   ltype 0
+	   lweight 3
+	
+	   data gg_1101f_2.dat 
+	   lines 12 14
+	   read{x 1 y 2 e 3}
+	   set errp = lg(10**y+e)-y
+	   set errm = y-lg(10**y-e)
+	   set x = x - 17.383
+
+	   ptype 3 0 
+	   points x y
+	   errorbar x y errm 4
+	   errorbar x y errp 2
+	   lweight 1
+	   ltype 2
+	   connect x y
+	   ltype 0
+	   lweight 3
+	
+	   relocate (8000 12500)
+	   expand 2.5 ptype  4 1 dot expand 1.4 putlabel 6  1994 pre-flare
+	
+	   relocate (8000 11000)
+	   expand 2.5 ptype  3 0 dot expand 1.4 putlabel 6  1994 flare
+	
+	   relocate (8000  9500)
+	   expand 2.5 ptype 20 0 dot expand 1.4 putlabel 6  1997, May 2 
+	
+	   relocate (8000  8000)
+	   expand 2.5 ptype  4 3 dot expand 1.4 putlabel 6  1997, May 4 
+	}
+
+#---------------------------------------------------------------------------
+# add_le_me_pds  the REAL Xsed Plotting Program
+add_le_me_pds
+
+	define datafile ? { Name of data file [ratio_****.qdp] ? }
+	lweight 3
+
+	define datadir "/neutronstar/gf/SAX/mkn421/1998/Products"
+	echo $datadir
+
+	data "$!datadir/eufs_$!datafile.qdp"
+	read {kev 1 dkev 2 eufs 5}
+
+	data "$!datadir/ratio_$!datafile.qdp"
+	read {ratio 3 err_ratio 4}
+
+	set lkev = lg(kev)
+	set lkev = lg(kev)
+	set dx_d = 0*eufs
+	set dx_u = 0*eufs
+
+	set spec  = ratio*eufs
+	set nufnu = lg(spec) + lg(662.6176) - 29. + lkev + 17.383
+	
+	set err_spec_u =  lg(1 + err_ratio/ratio)
+	set err_spec_d = -lg(1 - err_ratio/ratio)
+
+	location 6000 30000 6000 30000
+	expand 1.5
+	ctype 2 
+
+	define whatx ? {Energy [1] of Frequency [2] X-Axis ?}
+	if($whatx == 2) {
+	    define xmin 16.1 
+	    define xmax 19.7
+	    define tick  0
+	    define lab_x "log(\\nu)"
+
+	    set xl  = lkev + 17.383
+	    set aaa = xl 
+	} else {
+	    define xmin -1.1
+	    define xmax  2.5
+	    define tick  -1
+	    define lab_x "Energy [keV]"
+
+	    set xl  = lkev
+	    set aaa = xl 
+	}
+
+	define whaty ? {F_nu [1] of nu_F_nu [2] Y-Axis ?}
+	if($whaty == 1) {
+	    define ymin -3.9
+	    define ymax  0.1 
+	    define lab_y "log(F_\\nu) [erg/cm^2/s/Hz]"
+
+	    set yl  = lg(spec)
+	    set bbb = yl
+	} else {
+	    define ymin -11.8 
+	    define ymax  -8.8 
+	    define lab_y "log(\\nu F_\\nu) [erg/cm^2/s]"
+
+	    set yl  = nufnu
+	    set bbb = yl
+	}
+
+	set errbbb_u = err_spec_u 
+	set errbbb_d = err_spec_d 
+
+	limits $xmin $xmax $ymin $ymax 
+	ticksize $tick 0 0 0 
+	expand 1.5
+	box 
+	ylabel $lab_y
+	expand 2
+	xlabel $lab_x
+
+	echo *** ----------------------
+	echo *** PLOT Options :
+	echo    [1] B/W
+	echo    [2] Ptype/Ctype
+	echo    [3] Ctype/Ctype
+	define come ? { Your choice ? }
+
+	if($come == 1){
+	   ctype 2
+	   expand 1.5
+	   errorbar aaa bbb errbbb_u 2 
+	   errorbar aaa bbb errbbb_d 4 
+	   errorbar aaa bbb dx_d     3
+	   errorbar aaa bbb dx_u     1
+	   expand 1.6
+	   ctype 1
+	   ptype 20 3 
+	   points   aaa bbb
+	   ctype 2 
+	   expand 2.0
+	   ptype 20 0 
+	   points   aaa bbb
+	}
+
+	if($come == 2) {
+	   define pty ? { Give the code for PTYPE [#1 #2] : }
+	   define cty ? { Give the code for CTYPE [#1] : }
+
+	   ptype $pty
+	   ctype $cty
+	   expand 1.5
+	   errorbar aaa bbb errbbb_u 2 
+	   errorbar aaa bbb errbbb_d 4 
+	   errorbar aaa bbb dx_d     3
+	   errorbar aaa bbb dx_u     1
+	   expand 1.6
+	   # ctype 1
+	   # ptype 20 3 
+	   points   aaa bbb
+	   # ctype 2 
+	   # expand 2.0
+	   # ptype 20 0 
+	   # points   aaa bbb
+	}
+
+	if($come == 3) {
+	   echo -----------------------------------------
+	   define cty1 ? { Give the code for CTYPE [border] : }
+	   define cty2 ? { Give the code for CTYPE [inside] : }
+	   echo -----------------------------------------
+
+	   ctype $cty1
+	   expand 1.5
+	   errorbar aaa bbb errbbb_u 2 
+	   errorbar aaa bbb errbbb_d 4 
+	   errorbar aaa bbb dx_d     3
+	   errorbar aaa bbb dx_u     1
+
+	   expand 2.0
+	   ctype $cty1
+	   ptype 20 3 
+	   points   aaa bbb
+
+	   expand 1.5
+	   ctype $cty2
+	   ptype 20 3 
+	   points   aaa bbb
+
+	   expand 1.7
+	   lweight 1.5
+	   ctype $cty1
+	   ptype 20 0 
+	   points   aaa bbb
+	}
+
+	define plotlab ? { Label ? [y/n] }
+	if(substr('$plotlab',0,1) == 'y') { 
+	  echo -----------------------------------------
+	  define order ? { Which position from the Bottom ? }
+
+	  relocate ( $($gx1 + 1500) $($gy1 + 1500 + 1500*$order) ) 
+	  expand 2.0
+	  ctype $cty1
+	  ptype 20 3 
+	  dot
+
+	  expand 1.2
+	  ctype $cty2
+	  ptype 20 3 
+	  dot
+
+	  expand 2.0
+	  lweight 1.5
+	  ctype $cty1
+	  ptype 20 0 
+	  dot
+
+	  define labtxt ? { TEXT of Label : }
+
+	  ctype $cty2
+	  relocate ( $($gx1 + 2250) $($gy1 + 1450 + 1500*$order) ) 
+	  expand 1.3
+	  putlabel 6 $labtxt
+	  expand 1.5
+
+	  ctype $cty1
+	  relocate ( $($gx1 + 2200) $($gy1 + 1500 + 1500*$order) ) 
+	  expand 1.3
+	  putlabel 6 $labtxt
+	  expand 1.5
+	}
+
+	## ctype 2 
+	## expand 1.5
+   	## relocate (18000 30750)
+	## putlabel 5 May 2 and May 4, LECS+MECS+PDS
+
+	lweight 3
+
+#---------------------------------------------------------------------------
+# le_me_3c279
+le_me_3c279
+
+	data eufs_3c279.qdp
+	read {kev_l2 1 dkev_l2 2 eufs_l2 5}
+
+	data ratio_3c279.qdp
+	read {ratio_l2 3 err_ratio_l2 4}
+	
+	set lkev_l2 = lg(kev_l2)
+	set lecs2 = ratio_l2*eufs_l2
+
+	set nufnu_le2 = lg(lecs2) + lg(662.6176) - 29. + lkev_l2 + 17.383
+	set fnu_le2    = lg(lecs2) + lg(662.6176) - 29. 
+	set err_lecs2_u = lg(1 + err_ratio_l2/ratio_l2)
+	set err_lecs2_d = -lg(1 - err_ratio_l2/ratio_l2)
+
+	location 5500 31000 7500 31500
+	location 6000 30000 6000 30000
+	expand 1.5
+	ctype 2 
+
+	define whatx ? {Energy [1] of Frequency [2] X-Axis ?}
+	if($whatx == 2) {
+
+	   define xmin 16.1 
+	   define xmax 19.8
+	   define tick  0
+	   define lab_x "log(\\nu)"
+
+	   set xl2 = lkev_l2 + 17.383
+
+	} else {
+
+	   define xmin -1.1 
+	   define xmax  2.5
+	   define tick  -1
+	   define lab_x "Energy [keV]"
+
+	   set xl2 = lkev_l2 
+
+	}
+
+	define whaty ? {F_nu [1] of nu_F_nu [2] Y-Axis ?}
+	if($whaty == 1) {
+
+	   define ymin -31 
+	   define ymax -28
+	   define lab_y "log(F_\\nu) [erg/cm^2/s/Hz]"
+
+	   set yl2 = fnu_le2 
+
+	} else {
+
+	   define ymin -12.8 
+	   define ymax -9.8
+	   define lab_y "log(\\nu F_\\nu) [erg/cm^2/s]"
+
+	   set yl2 = nufnu_le2
+
+	}
+
+	limits $xmin $xmax $ymin $ymax 
+	ticksize $tick 0 0 0 
+	expand 1.5
+	box 
+	ylabel $lab_y
+	expand 2
+	xlabel $lab_x
+
+	set err_x_u = 0*xl2
+	set err_x_d = 0*xl2
+	set err_x_d[19] = 0.913
+	set err_x_u[19] = 0.273
+
+	expand 1.5
+	ptype 20 3
+	ctype 3 
+	points   xl2 yl2 
+	errorbar xl2 yl2 err_lecs2_u 2 
+	errorbar xl2 yl2 err_lecs2_d 4 
+
+#---------------------------------------------------------------------------
+# xsed_2155
+xsed_2155
+
+	ltype 0
+
+	define stato ? { Stato alto [1] o basso [2] ? }
+
+	if($stato == 1) { 
+	   data lecsalt.dat
+	   read { l_x 1 l_nfn 2 l_nfn_d 3 l_nfn_u 4 }
+	   data mecsalt.dat
+	   read { m_x 1 m_nfn 2 m_nfn_d 3 m_nfn_u 4 }
+
+	   set l_nfn   = l_nfn   - lg(0.79)
+	   set l_nfn_d = l_nfn_d - lg(0.79)
+	   set l_nfn_u = l_nfn_u - lg(0.79)
+	} else {
+	   data lecsbas.dat
+	   read { l_x 1 l_nfn 2 l_nfn_d 3 l_nfn_u 4 }
+	   data mecsbas.dat
+	   read { m_x 1 m_nfn 2 m_nfn_d 3 m_nfn_u 4 }
+
+	   set l_nfn   = l_nfn   - lg(0.83)
+	   set l_nfn_d = l_nfn_d - lg(0.83)
+	   set l_nfn_u = l_nfn_u - lg(0.83)
+	}
+
+	define readpds ? { Read also PDS ? [y/n] }
+	if(substr('$readpds',0,1) == 'y') { 
+	   data pds.dat
+	   read { p_x 1 p_nfn 2 p_nfn_d 3 p_nfn_u 4 }
+
+	   set p_nfn   = p_nfn   - lg(0.73)
+	   set p_nfn_d = p_nfn_d - lg(0.73)
+	   set p_nfn_u = p_nfn_u - lg(0.73)
+	   set x     = l_x     CONCAT m_x      CONCAT p_x 
+	   set nfn   = l_nfn   CONCAT m_nfn    CONCAT p_nfn
+	   set nfn_d = l_nfn_d CONCAT m_nfn_d  CONCAT p_nfn_d
+	   set nfn_u = l_nfn_u CONCAT m_nfn_u  CONCAT p_nfn_u
+	} else {
+	   set x     = l_x     CONCAT m_x 
+	   set nfn   = l_nfn   CONCAT m_nfn
+	   set nfn_d = l_nfn_d CONCAT m_nfn_d
+	   set nfn_u = l_nfn_u CONCAT m_nfn_u
+	}
+
+	set err_nfn_u = nfn_u - nfn
+	set err_nfn_d = nfn   - nfn_d
+
+	# set aaa      = x - 17.383
+	# set bbb      = nfn
+	set errbbb_u = err_nfn_u
+	set errbbb_d = err_nfn_d
+
+
+	location 6000 30000 6000 30000
+	expand 1.5
+	ctype 2 
+
+	define whatx ? {Energy [1] of Frequency [2] X-Axis ?}
+	if($whatx == 2) {
+	    define xmin 16.1 
+	    define xmax 19.7
+	    define tick  0
+	    define lab_x "log(\\nu)"
+
+	    set aaa = x
+	} else {
+	    define xmin -1.1
+	    define xmax  2.5
+	    define tick  -1
+	    define lab_x "Energy [keV]"
+
+	    set aaa = x - 17.383
+	}
+
+	define whaty ? {F_nu [1] of nu_F_nu [2] Y-Axis ?}
+	if($whaty == 1) {
+	    define ymin -3.9
+	    define ymax  0.1 
+	    define lab_y "log(F_\\nu) [erg/cm^2/s/Hz]"
+
+	    set bbb = nfn - x + 29 
+	} else {
+	    define ymin -11.8 
+	    define ymax  -8.8 
+	    define lab_y "log(\\nu F_\\nu) [erg/cm^2/s]"
+
+	    set bbb = nfn
+	}
+
+	limits $xmin $xmax $ymin $ymax 
+	ticksize $tick 0 0 0 
+	expand 1.5
+	box 
+	ylabel $lab_y
+	expand 2
+	xlabel $lab_x
+
+
+	echo *** ----------------------
+	echo *** PLOT Options :
+	echo    [1] B/W
+	echo    [2] Ptype/Ctype
+	echo    [3] Ctype/Ctype
+	define come ? { Your choice ? }
+
+	if($come == 1){
+	   ctype 2
+	   expand 1.5
+	   errorbar aaa bbb errbbb_u 2 
+	   errorbar aaa bbb errbbb_d 4 
+	   expand 1.6
+	   ctype 1
+	   ptype 20 3 
+	   points   aaa bbb
+	   ctype 2 
+	   expand 2.0
+	   ptype 20 0 
+	   points   aaa bbb
+	}
+
+	if($come == 2) {
+	   define pty ? { Give the code for PTYPE [#1 #2] : }
+	   define cty ? { Give the code for CTYPE [#1] : }
+
+	   ptype $pty
+	   ctype $cty
+	   expand 1.5
+	   errorbar aaa bbb errbbb_u 2 
+	   errorbar aaa bbb errbbb_d 4 
+	   expand 1.6
+	   # ctype 1
+	   # ptype 20 3 
+	   points   aaa bbb
+	   # ctype 2 
+	   # expand 2.0
+	   # ptype 20 0 
+	   # points   aaa bbb
+	}
+
+	if($come == 3) {
+	   echo -----------------------------------------
+	   define cty1 ? { Give the code for CTYPE [border] : }
+	   define cty2 ? { Give the code for CTYPE [inside] : }
+	   echo -----------------------------------------
+
+	   ctype $cty1
+	   expand 1.5
+	   errorbar aaa bbb errbbb_u 2 
+	   errorbar aaa bbb errbbb_d 4 
+
+	   expand 2.0
+	   ctype $cty1
+	   ptype 20 3 
+	   points   aaa bbb
+
+	   expand 1.2
+	   ctype $cty2
+	   ptype 20 3 
+	   points   aaa bbb
+
+	   expand 1.7
+	   lweight 1.5
+	   ctype $cty1
+	   ptype 20 0 
+	   points   aaa bbb
+	}
+
+	define plotlab ? { Label ? [y/n] }
+	if(substr('$plotlab',0,1) == 'y') { 
+	  echo -----------------------------------------
+	  define order ? { Which position from the Bottom ? }
+
+	  relocate ( $($gx1 + 1500) $($gy1 + 1500 + 1500*$order) ) 
+	  expand 2.0
+	  ctype $cty1
+	  ptype 20 3 
+	  dot
+
+	  expand 1.2
+	  ctype $cty2
+	  ptype 20 3 
+	  dot
+
+	  expand 2.0
+	  lweight 1.5
+	  ctype $cty1
+	  ptype 20 0 
+	  dot
+
+	  define labtxt ? { TEXT of Label : }
+
+	  ctype $cty2
+	  relocate ( $($gx1 + 2250) $($gy1 + 1450 + 1500*$order) ) 
+	  expand 1.3
+	  putlabel 6 $labtxt
+	  expand 1.5
+
+	  ctype $cty1
+	  relocate ( $($gx1 + 2200) $($gy1 + 1500 + 1500*$order) ) 
+	  expand 1.3
+	  putlabel 6 $labtxt
+	  expand 1.5
+	}
+
+	lweight 3
+
+#---------------------------------------------------------------------------
+# xsed_mkn501
+xsed_mkn501
+
+	ltype 0
+
+	define stato ? { Stato alto [1] o basso [2] ? }
+
+	if($stato == 1) { 
+	   data out_l_3.dat 
+	   read { l_x 1 l_fn 3 l_err_fn 4 }
+
+	   data out_m_3.dat 
+	   read { m_x 1 m_fn 3 m_err_fn 4 }
+
+	   data out_p_3.dat 
+	   read { p_x 1 p_fn 3 p_err_fn 4 }
+
+	   set tmp_x  = l_x      CONCAT m_x      CONCAT p_x 
+	   set fn     = l_fn     CONCAT m_fn     CONCAT p_fn 
+	   set err_fn = l_err_fn CONCAT m_err_fn CONCAT p_err_fn 
+
+	   set fn_u = fn + err_fn
+	   set fn_d = fn - err_fn
+
+	   set x     = lg(tmp_x)
+	   set nfn   = lg(fn)   + x 
+	   set nfn_u = lg(fn_u) + x 
+	   set nfn_d = lg(fn_d) + x 
+
+	} else {
+	   echo ..........PIPPOL...............
+	}
+
+	set err_nfn_u = nfn_u - nfn
+	set err_nfn_d = nfn   - nfn_d
+
+	# set aaa      = x - 17.383
+	# set bbb      = nfn
+	set errbbb_u = err_nfn_u
+	set errbbb_d = err_nfn_d
+
+
+	location 6000 30000 6000 30000
+	expand 1.5
+	ctype 2 
+
+	define whatx ? {Energy [1] of Frequency [2] X-Axis ?}
+	if($whatx == 2) {
+	    define xmin 16.1 
+	    define xmax 19.7
+	    define tick  0
+	    define lab_x "log(\\nu)"
+
+	    set aaa = x
+	} else {
+	    define xmin -1.1
+	    define xmax  2.5
+	    define tick  -1
+	    define lab_x "Energy [keV]"
+
+	    set aaa = x - 17.383
+	}
+
+	define whaty ? {F_nu [1] of nu_F_nu [2] Y-Axis ?}
+	if($whaty == 1) {
+	    define ymin -2.9
+	    define ymax  1.1 
+	    define lab_y "log(F_\\nu) [erg/cm^2/s/Hz]"
+
+	    set bbb = nfn - x + 29 
+	} else {
+	    define ymin -11.8 
+	    define ymax  -8.8 
+	    define lab_y "log(\\nu F_\\nu) [erg/cm^2/s]"
+
+	    set bbb = nfn
+	}
+
+	limits $xmin $xmax $ymin $ymax 
+	ticksize $tick 0 0 0 
+	expand 1.5
+	box 
+	ylabel $lab_y
+	expand 2
+	xlabel $lab_x
+
+
+	echo *** ----------------------
+	echo *** PLOT Options :
+	echo    [1] B/W
+	echo    [2] Ptype/Ctype
+	echo    [3] Ctype/Ctype
+	define come ? { Your choice ? }
+
+	if($come == 1){
+	   ctype 2
+	   expand 1.5
+	   errorbar aaa bbb errbbb_u 2 
+	   errorbar aaa bbb errbbb_d 4 
+	   expand 1.6
+	   ctype 1
+	   ptype 20 3 
+	   points   aaa bbb
+	   ctype 2 
+	   expand 2.0
+	   ptype 20 0 
+	   points   aaa bbb
+	}
+
+	if($come == 2) {
+	   define pty ? { Give the code for PTYPE [#1 #2] : }
+	   define cty ? { Give the code for CTYPE [#1] : }
+
+	   ptype $pty
+	   ctype $cty
+	   expand 1.5
+	   errorbar aaa bbb errbbb_u 2 
+	   errorbar aaa bbb errbbb_d 4 
+	   expand 1.6
+	   # ctype 1
+	   # ptype 20 3 
+	   points   aaa bbb
+	   # ctype 2 
+	   # expand 2.0
+	   # ptype 20 0 
+	   # points   aaa bbb
+	}
+
+	if($come == 3) {
+	   echo -----------------------------------------
+	   define cty1 ? { Give the code for CTYPE [border] : }
+	   define cty2 ? { Give the code for CTYPE [inside] : }
+	   echo -----------------------------------------
+
+	   ctype $cty1
+	   expand 1.5
+	   errorbar aaa bbb errbbb_u 2 
+	   errorbar aaa bbb errbbb_d 4 
+
+	   expand 2.0
+	   ctype $cty1
+	   ptype 20 3 
+	   points   aaa bbb
+
+	   expand 1.2
+	   ctype $cty2
+	   ptype 20 3 
+	   points   aaa bbb
+
+	   expand 1.7
+	   lweight 1.5
+	   ctype $cty1
+	   ptype 20 0 
+	   points   aaa bbb
+	}
+
+	define plotlab ? { Label ? [y/n] }
+	if(substr('$plotlab',0,1) == 'y') { 
+	  echo -----------------------------------------
+	  define order ? { Which position from the Bottom ? }
+
+	  relocate ( $($gx1 + 1500) $($gy1 + 1500 + 1500*$order) ) 
+	  expand 2.0
+	  ctype $cty1
+	  ptype 20 3 
+	  dot
+
+	  expand 1.2
+	  ctype $cty2
+	  ptype 20 3 
+	  dot
+
+	  expand 2.0
+	  lweight 1.5
+	  ctype $cty1
+	  ptype 20 0 
+	  dot
+
+	  define labtxt ? { TEXT of Label : }
+
+	  ctype $cty2
+	  relocate ( $($gx1 + 2250) $($gy1 + 1450 + 1500*$order) ) 
+	  expand 1.3
+	  putlabel 6 $labtxt
+	  expand 1.5
+
+	  ctype $cty1
+	  relocate ( $($gx1 + 2200) $($gy1 + 1500 + 1500*$order) ) 
+	  expand 1.3
+	  putlabel 6 $labtxt
+	  expand 1.5
+	}
+
+	lweight 3
+
+#---------------------------------------------------------------------------
+# read_pointings_98_old
+read_pointings_98_old
+
+	define check_del ? { Delete OLD vectors ? [y/n] }
+	if(substr('$check_del',0,1) == 'y') {
+	   foreach 2 { a1_1 a2 eb fold a1_01 epeak norm1kev } {
+	      echo ** Deleting $2
+	      delete $2
+	   }
+	}
+
+	define datadir "/neutronstar/gf/SAX/mkn421/1998/Logs"
+	echo $datadir
+
+	set all_pointings_vec = { low_1_2 \
+				  low_3 \
+				  top1 \
+				  top2 \
+				  after_6 \
+				  after_7 \
+				  after_8_9 \
+				  after_10_12 \
+				  after_13_16 \
+				  april23_1 \
+				  april23_2 \
+				  april23_3 }
+	set sub_pointings_vec = { low_3 \
+				  top1 \
+				  top2 \
+				  after_6 \
+				  after_7 \
+				  after_8_9 \
+				  after_10_12 \
+				  after_13_16 \
+				  april23_1 \
+				  april23_2 \
+				  april23_3 }
+
+	foreach 1 all_pointings_vec {
+	data "$!datadir/summary_fit_$!1.dat"
+
+	lines 4 4 
+	read time_$1  1
+	read time_mid_$1   1
+	read time_start_$1 2 
+	read time_stop_$1  3 
+
+	lines 5 5 
+	read fl_low_ab_$1   1 
+	read fl_high_ab_$1  2 
+
+	lines 6 6
+	read fl_low_unab_$1  1 
+	read fl_high_unab_$1 2 
+
+	lines 7 12
+	read a1_$1          1 
+	read err_a1_d_$1    2 
+	read err_a1_u_$1    3 
+	read a10_$1         4 
+	read err_a10_d_$1   5 
+	read err_a10_u_$1   6
+	read eb_$1          7 
+	read err_eb_d_$1    8 
+	read err_eb_u_$1    9
+	read fold_$1        10 
+	read err_fold_d_$1  11 
+	read err_fold_u_$1  12 
+	read a01_$1         13 
+	read err_a01_d_$1   14 
+	read err_a01_u_$1   15
+	read epeak_$1       16 
+	read err_epeak_d_$1 17
+	read err_epeak_u_$1 18
+	read norm1kev_$1    19
+	read a05_$1         20
+	read err_a05_d_$1   21
+	read err_a05_u_$1   22
+	read a5_$1          23
+	read err_a5_d_$1    24
+	read err_a5_u_$1    25
+
+	}
+
+	#----------------------------------------------
+	define 1 $(all_pointings_vec[0])
+	echo * Doing concatenation with $1 data
+
+	foreach 2 { fl_low_ab fl_high_ab fl_low_unab fl_high_unab \
+		    norm1kev time time_start time_stop time_mid } {
+	  set $2       = $2_$1 
+	  delete $2_$1
+	}
+
+	foreach 2 { a01 a05 a1 a5 a10 eb fold epeak } {
+	  set $2       = $2_$1 
+	  set err_$2_d = err_$2_d_$1 
+	  set err_$2_u = err_$2_u_$1 
+
+	  delete $2_$1
+	  delete err_$2_d_$1
+	  delete err_$2_u_$1
+	}
+	
+	#----------------------------------------------
+	foreach 1 sub_pointings_vec {
+	echo * Doing concatenation with $1 data
+
+	foreach 2 { fl_low_ab fl_high_ab fl_low_unab fl_high_unab \
+		    norm1kev time time_start time_stop time_mid } {
+	  set $2       = $2       CONCAT $2_$1 
+	  delete $2_$1
+	}
+
+	foreach 2 { a01 a05 a1 a5 a10 eb fold epeak } {
+	  set $2       = $2       CONCAT $2_$1 
+	  set err_$2_d = err_$2_d CONCAT err_$2_d_$1 
+	  set err_$2_u = err_$2_u CONCAT err_$2_u_$1 
+
+	  delete $2_$1
+	  delete err_$2_d_$1
+	  delete err_$2_u_$1
+	}
+	}
+
+	foreach 1 { a01 a05 a1 a5 a10 eb fold epeak } {
+	    set err_$1_u = err_$1_u - $1
+	    set err_$1_d = $1 - err_$1_d 
+	}
+	set dalpha = a5 - a05
+	set err_dalpha_u = sqrt(err_a5_u**2 + err_a05_u**2)
+	set err_dalpha_d = sqrt(err_a5_d**2 + err_a05_d**2)
+
+	set old_fl_low_ab    = fl_low_ab  
+	set old_fl_high_ab   = fl_high_ab
+	set old_fl_low_unab  = fl_low_unab
+	set old_fl_high_unab = fl_high_unab
+
+	set old_fl_all_ab   = fl_all_ab
+	set old_fl_all_unab = fl_all_unab
+
+
+#---------------------------------------------------------------------------
+# read_pointings_98_new
+read_pointings_98_new
+
+	define data1998dir "/neutronstar/gf/SAX/mkn421/1998/Test/Def_XClean"
+	echo $data1998dir
+
+	define check_del ? { Delete OLD vectors ? [y/n] }
+	if(substr('$check_del',0,1) == 'y') {
+	   foreach 2 { a1_1 a2 eb fold a1_01 epeak norm1kev } {
+	      echo ** Deleting $2
+	      delete $2
+	   }
+	}
+
+	set all_pointings_vec = { low_1_2 \
+				  low_3 \
+				  top1_4 \
+				  top2_5 \
+				  after_6 \
+				  after_7 \
+				  after_8_9 \
+				  after_10_12 \
+				  after_13_16 \
+				  april23_1 \
+				  april23_2 \
+				  april23_3 }
+	set sub_pointings_vec = { low_3 \
+				  top1_4 \
+				  top2_5 \
+				  after_6 \
+				  after_7 \
+				  after_8_9 \
+				  after_10_12 \
+				  after_13_16 \
+				  april23_1 \
+				  april23_2 \
+				  april23_3 }
+
+	foreach 1 all_pointings_vec {
+	data "$!data1998dir/top_$!1.out"
+
+	lines 4 4 
+	read time_$1 1
+	read time_mid_$1   1
+	read time_start_$1 2 
+	read time_stop_$1  3 
+
+	lines 5 5 
+	read fl_low_ab_$1   1 
+	read fl_high_ab_$1  2 
+	read fl_all_ab_$1   3 
+
+	lines 6 6
+	read fl_low_unab_$1  1 
+	read fl_high_unab_$1 2 
+	read fl_all_unab_$1  3 
+
+	lines 7 12
+	read a1_$1          1 
+	read err_a1_d_$1    2 
+	read err_a1_u_$1    3 
+	read a10_$1         4 
+	read err_a10_d_$1   5 
+	read err_a10_u_$1   6
+	read eb_$1          7 
+	read err_eb_d_$1    8 
+	read err_eb_u_$1    9
+	read fold_$1        10 
+	read err_fold_d_$1  11 
+	read err_fold_u_$1  12 
+	read a01_$1         13 
+	read err_a01_d_$1   14 
+	read err_a01_u_$1   15
+	read epeak_$1       16 
+	read err_epeak_d_$1 17
+	read err_epeak_u_$1 18
+	read norm1kev_$1    19
+	read a05_$1         20
+	read err_a05_d_$1   21
+	read err_a05_u_$1   22
+	read a5_$1          23
+	read err_a5_d_$1    24
+	read err_a5_u_$1    25
+
+	}
+
+	#----------------------------------------------
+	define 1 $(all_pointings_vec[0])
+	echo * Doing concatenation with $1 data
+
+	foreach 2 { fl_low_ab fl_high_ab fl_low_unab fl_high_unab fl_all_ab fl_all_unab \
+		    norm1kev time time_start time_stop time_mid } {
+	  set $2       = $2_$1 
+	  delete $2_$1
+	}
+
+	foreach 2 { a01 a05 a1 a5 a10 eb fold epeak } {
+	  set $2       = $2_$1 
+	  set err_$2_d = err_$2_d_$1 
+	  set err_$2_u = err_$2_u_$1 
+
+	  delete $2_$1
+	  delete err_$2_d_$1
+	  delete err_$2_u_$1
+	}
+	
+	#----------------------------------------------
+	foreach 1 sub_pointings_vec {
+	echo * Doing concatenation with $1 data
+
+	foreach 2 { fl_low_ab     \
+		    fl_high_ab    \
+		    fl_all_ab    \
+		    fl_low_unab  \
+		    fl_high_unab  \
+		    fl_all_unab  \
+		    norm1kev \
+		    time \
+		    time_start \
+		    time_stop \
+		    time_mid } {
+	  set $2       = $2       CONCAT $2_$1 
+	  delete $2_$1
+	}
+
+	foreach 2 { a01 a05 a1 a5 a10 eb fold epeak } {
+	  set $2       = $2       CONCAT $2_$1 
+	  set err_$2_d = err_$2_d CONCAT err_$2_d_$1 
+	  set err_$2_u = err_$2_u CONCAT err_$2_u_$1 
+
+	  delete $2_$1
+	  delete err_$2_d_$1
+	  delete err_$2_u_$1
+	}
+	}
+
+	foreach 1 { a01 a05 a1 a5 a10 eb fold epeak } {
+	    set err_$1_u = err_$1_u - $1
+	    set err_$1_d = $1 - err_$1_d 
+	}
+	set dalpha = a5 - a05
+	set err_dalpha_u = sqrt(err_a5_u**2 + err_a05_u**2)
+	set err_dalpha_d = sqrt(err_a5_d**2 + err_a05_d**2)
+
+	echo  ...Renaming vectors to 'new_' ...
+
+	set new_fl_low_ab    = fl_low_ab  
+	set new_fl_high_ab   = fl_high_ab
+	set new_fl_all_ab    = fl_all_ab
+	set new_fl_low_unab  = fl_low_unab
+	set new_fl_high_unab = fl_high_unab
+	set new_fl_all_unab  = fl_all_unab
+	set new_time         = time
+	set new_time_start   = time_start
+	set new_time_stop    = time_stop
+	set new_time_mid     = time_mid
+
+#---------------------------------------------------------------------------

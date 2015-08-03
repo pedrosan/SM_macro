@@ -1,0 +1,40 @@
+#---------------------------------------------------------------------------
+# selectstrip2_h   plot 3 models predictions, with choice of a_RX intervals
+selectstrip2_h
+
+	echo "-----------------------------------------------------------"
+	echo " histogram computed for the following intervals of a_RX:"
+	echo " [1]      - 0.55 "
+	echo " [2] 0.55 - 0.65 "
+	echo " [3] 0.65 - 0.70 "
+	echo " [4] 0.70 - 0.75 "
+	echo " [5] 0.75 - 0.80 "
+	echo " [6] 0.80 - 0.90 "
+	echo " [7] 0.90 -      "  
+	echo "-----------------------------------------------------------"
+	define which ? { Which histogram [1-7] ? }
+	define colore ? { Which Colour ? }
+
+	define long $(strlen('$which'))
+	echo $long
+
+	set xfh = xh1*0
+	set rfh = rh1*0
+	set bfh = bh1*0
+
+	if( $long == 1 ) {
+
+	   set xfh = xh$which
+	   set rfh = rh$which
+	   set bfh = bh$which
+
+	} else {
+	   do i=1,$long {
+	      define 2 $(substr('$which',$($i-1),1))
+	      echo $2
+	      set xfh = xfh + xh$2
+	      set rfh = rfh + rh$2
+	      set bfh = bfh + bh$2
+	   }
+	}
+

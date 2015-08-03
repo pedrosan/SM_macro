@@ -1,0 +1,2215 @@
+#--------------------------------------------------------------------------
+# help.glast
+help.glast
+
+        echo "------------------------------------------------------- "
+        echo "* lumdist     [<z>]  "
+        echo "* lumdist_vec [<H_0>] [<q_0>] "
+        echo "* nfn_frame   [<empty>] "
+        echo "* nln_frame   [<empty>] "
+	echo "* sed_nfn     [<color>] [<ltype>] [<lweight>]  "
+        echo "*  "
+        echo "* save_seds_radio "
+        echo "* redoit      [<data-code>]  "
+        echo "* redoit_bw   [<data-code>]  "
+        echo "* redo_seds       [<suffix>] "
+        echo "* redo_seds_radio [<suffix>] "
+	echo "* seds_comp_radio 08 "
+	echo "	           [<L_radio>] "
+	echo "	           [<damp-length>] "
+	echo "	           [<X_junct>] "
+	echo "	           [<peak-dist>] "
+	echo "	           [<radio spectral index>] "
+	echo "	           [<L_1kev/L_5GHz ratio>] "
+	echo "	           [<eta-1>] "
+	echo "	           [<eta-2>] "
+	echo "* seds_comp_exp  09 "
+	echo "	           [<L_radio>] "
+	echo "	           [<damp-length>] "
+	echo "	           [<X_junct>] "
+	echo "	           [<peak-dist>] "
+	echo "	           [<radio spectral index>] "
+	echo "	           [<L_1kev/L_5GHz ratio>] "
+	echo "	           [<eta-1>] "
+	echo "	           [<eta-2>] "
+	echo "	           [<nuL_gamma/nuL_5GHz>] "
+	echo "* seds_comp_exp2 09   (the CORRECT one) "
+	echo "	           [<L_radio>] "
+	echo "	           [<damp-length>] "
+	echo "	           [<X_junct>] "
+	echo "	           [<peak-dist>] "
+	echo "	           [<radio spectral index>] "
+	echo "	           [<L_1kev/L_5GHz ratio>] "
+	echo "	           [<eta-1>] "
+	echo "	           [<eta-2>] "
+	echo "	           [<nuL_gamma/nuL_5GHz>] "
+	echo "* prev_seds_comp_radio "
+	echo "	           [<X_junct>] "
+	echo "	           [<radio spectral index>] "
+	echo "	           [<eta-1>] "
+	echo "	           [<eta-2>] "
+	echo "* xrm_flux_limits "
+	echo "* read_ratio_vs_peak [<h0>] [<gfactor>] [<redshift>] "
+	echo "* flux_vs_peak       [<h0>] [<gfactor>] [<redshift>] "
+	echo "* read_flux_vs_z     [<h0>] [<xpeak>] [<gfactor>] "
+	echo "* draw_flux_vs_z  "
+	echo "* intflux            [<band>] [<E1>] [<E2>] [<z>] "
+	echo "* loop_intflux  "
+        echo "------------------------------------------------------- "
+
+## #--------------------------------------------------------------------------
+## # lumdist [<z>]
+## lumdist 01
+## 
+## 	if($?1) { 
+## 	   define z $1
+## 	} else {
+## 	   define z ? { Redshift : }
+## 	}
+##         define h0 50
+## 	define q0 0
+## 	define h_100     ($h0/100.)
+## 	define log_c_H_0 (27.96616033 - lg($h_100))
+## 	define $0 ($log_c_H_0 + lg($z*(1.  + 0.5*$z)))
+## 
+## #--------------------------------------------------------------------------
+## # lumdist_vec [<H_0>] [<q_0>] 
+## lumdist_vec 01
+## 
+## 	if(!$?1) { 
+## 	   define h0 ? { H_0 : }
+## 	}
+## 	# } else {
+## 	#    define q0 ? { q_0 : }
+## 	# }
+## 
+##         # define h0 50
+## 	define q0 0
+## 	define h_100     ($h0/100.)
+## 	define log_c_H_0 (27.96616033 - lg($h_100))
+## 	set zvec=0.01,3.0,0.01
+## 	set d_l_vec = $log_c_H_0 + lg(zvec*(1. + 0.5*zvec))
+
+##--------------------------------------------------------------------------
+## nfn_frame 01  [<empty>]
+nfn_frame   01
+
+	lweight 3
+	ctype 2
+	ltype 0
+	location 5500 31000 8500 30000
+
+	# limits 8.5 18.2 -14.2 -9.2
+	# limits 8.5 27.3 -16.1 -8.8
+	limits 8.5 25.8 -16.1 -7.8
+	ticksize 0.5 2 0.25 1
+	expand 1.5
+	box
+	xlabel log(\\nu) [Hz]
+	ylabel log(\\nu F_{\\nu}) [erg/cm^2/s]
+
+	if ('$1' != 'empty') {
+	   expand 1.2
+	   ptype 4 3
+	   points vnu5   lg_nf_radio
+	   points vnumm  lg_nf_mm
+	   points vnuir  lg_nf_ir
+	   points vnuopt lg_nf_opt
+	   points vnux   lg_nf_x
+	}
+
+	#
+	# 10 mJy @ 5 GHz
+	# 1-Jy @ 5 GHz
+	# 20-th V magnitude
+	# 1 microJy @ 1keV
+	#
+	set dxvec  = < -0.1 0.0 0.1 >
+
+	set nuvec  = <   9.698  9.698 14.736  17.384 >
+	set limvec = < -15.30 -13.30 -12.72  -11.616 > 
+
+	ctype 2 
+	ptype 4 3 
+	do i=0,$(dimen(nuvec)-2) {
+	   foreach dx dxvec {
+	      relocate $(nuvec[$i] + $dx) $(limvec[$i])
+	      dot
+	   }
+	}
+
+##--------------------------------------------------------------------------
+## nln_frame 01  [<empty>]
+nln_frame   01
+
+	ctype 2
+	ltype 0
+	location 5500 31000 8500 30000
+
+	lweight 4
+	limits 8.5 27.3 41.1 49.2
+	limits 8.5 24.9 41.1 49.2
+	ticksize 0.5 2.0 0.25 1.
+	expand 1.5
+	box
+	xlabel log(\\nu) [Hz]
+	ylabel log(\\nu L_{\\nu}) [erg/s]
+
+	# if ($1 == 1) {
+	if ('$1' != 'empty') {
+	   expand 1.2
+	   ptype 4 3
+   	   points vnu5   nl_radio
+	   points vnumm  nl_mm
+	   points vnuir  nl_ir
+	   points vnuopt nl_opt
+	   points vnux   nl_x
+	}
+
+#--------------------------------------------------------------------------
+# sed_nfn [<color>] [<ltype>] [<lweight>] 
+sed_nfn 03
+	
+	if('$1' == '-h') {
+	   echo " USAGE: sed_nfn [<color>] [<ltype>] [<lweight>]"
+	   return
+	}
+
+	if($?3) {
+	   define lpeso $3
+	} else {
+	   if(!$?lpeso) {
+	       define lpeso ? { Line Weight : }
+	   }
+	}
+
+	if($?2) {
+	   define linetype $2
+	} else {
+	   if(!$?linetype) {
+	       define linetype ? { Line Type : }
+	   }
+	}
+
+	if($?1) {
+	   define color    $1
+	}
+
+	define l_r ?      { L_Radio ? }
+	define redshift ? { Redshift ? }
+
+	# lumdist $redshift
+	systemcall cosmo_calculator.py $redshift | egrep -v Age >!  /tmp/lumdist
+	data "/tmp/lumdist"
+	define lumdist read 1 3 
+
+	echo " ** L_radio  = "$(sprintf('%5.2f',$l_r))
+	echo " ** redshift = "$(sprintf('%5.2f',$redshift))
+	echo "-------------------------------------------------------"
+	echo " ** Flare ? ** "
+	echo " [0] plain  "
+	echo " [1] IC  "
+	echo " [2] synchro "
+	echo " [3] SED "
+
+        define flare ? { Option : }
+	if( $flare == 0 ) {
+	    define gfactor (1.0)
+	    define sfactor (1.0)
+	} 
+	if( $flare == 1 ) {
+	    define icfactor ? { IC flare amplitude : }
+	    define gfactor ($icfactor)
+	    define sfactor (1.0)
+	} 
+	if( $flare == 2 ) {
+	    define syfactor ? { Synchro flare amplitude : }
+	    define gfactor (1.0/$syfactor)
+	    define sfactor ($syfactor)
+	} 
+	if( $flare == 3 ) {
+	    define sedfactor ? { SED flare amplitude : }
+	    define gfactor (1.0)
+	    define sfactor ($sedfactor)
+	} 
+
+	# seds_comp_exp2 $l_r 1000.0 11.7 8.3 0.2 -6.5 1.8 0.5 3.5
+	seds_comp_exp2 $l_r 1000.0 11.7 8.3 0.2 -6.5 0.0 0.5 $gfactor
+
+	set nulnu = nulnu + lg($sfactor)
+	define flux_r $($l_radio   - 2*$lumdist - 1.09920986 -  9.698 + 26.0)
+	define flux_o $($l_opt_sc  - 2*$lumdist - 1.09920986 - 14.736 + 23.0)
+	define flux_x $($l_1kev_sc - 2*$lumdist - 1.09920986)
+	define lum_r  $l_radio
+	define lum_o  $l_opt_sc
+	define lum_x  $l_1kev_sc 
+
+	define resc ? { rescale to X-ray, Radio, or PEAK [x/r/p/n] ? }
+	if( substr('$resc',0,1) == 'r' ) {
+	   define l_r_resc ? { L_radio : }
+	   set nulnu    = nulnu + ($l_r_resc - $l_radio )
+	   set l_sc_cut = l_sc_cut + ($l_r_resc - $l_radio )
+	   define flux_r $($flux_r + ($l_r_resc - $l_radio ) )
+	   define flux_o $($flux_o + ($l_r_resc - $l_radio ) )
+	   define flux_x $($flux_x + ($l_r_resc - $l_radio ) )
+	   define lum_r  $($lum_r + ($l_r_resc - $l_radio ) )
+	   define lum_o  $($lum_o + ($l_r_resc - $l_radio ) )
+	   define lum_x  $($lum_x + ($l_r_resc - $l_radio ) )
+	}
+	if( substr('$resc',0,1) == 'x' ) {
+	   define l_x_resc ? { L_X : }
+	   set nulnu    = nulnu + ($l_x_resc - $l_1kev_sc )
+	   set l_sc_cut = l_sc_cut + ($l_x_resc - $l_1kev_sc )
+	   define flux_r $($flux_r + ($l_x_resc - $l_1kev_sc ) )
+	   define flux_o $($flux_o + ($l_x_resc - $l_1kev_sc ) )
+	   define flux_x $($flux_x + ($l_x_resc - $l_1kev_sc ) )
+	   define lum_r  $($lum_r + ($l_x_resc - $l_1kev_sc ) )
+	   define lum_o  $($lum_o + ($l_x_resc - $l_1kev_sc ) )
+	   define lum_x  $($lum_x + ($l_x_resc - $l_1kev_sc ) )
+	}
+	if( substr('$resc',0,1) == 'p' ) {
+	   define l_p_resc ? { L_peak : }
+	   set nulnu    = nulnu + ($l_p_resc - $l_peak )
+	   set l_sc_cut = l_sc_cut + ($l_p_resc - $l_peak )
+	   define flux_r $($flux_r + ($l_p_resc - $l_peak ) )
+	   define flux_o $($flux_o + ($l_p_resc - $l_peak ) )
+	   define flux_x $($flux_x + ($l_p_resc - $l_peak ) )
+	   define lum_r  $($lum_r + ($l_p_resc - $l_peak ) )
+	   define lum_o  $($lum_o + ($l_p_resc - $l_peak ) )
+	   define lum_x  $($lum_x + ($l_p_resc - $l_peak ) )
+	}
+
+	# lumdist $redshift
+	systemcall cosmo_calculator.py $redshift | egrep -v Age >!  /tmp/lumdist
+	data "/tmp/lumdist"
+	define lumdist read 1 3 
+	
+	define flux_r $(10.0**$flux_r)   # mJy
+	define flux_o $(10.0**$flux_o)   #  Jy
+	define flux_x $(10.0**$flux_x)   # erg/cm^2/s
+
+	define magv  (-2.5*lg($flux_o/3480.0) )
+
+	echo "------------------------------------------------------------"
+	echo "   F_r = "$(sprintf('%10.4f',$flux_r)) "         [mJy (@ 5 GHz)]"
+	echo "   m_V =    "$(sprintf('%5.2f',$magv)) 
+	echo "  xF_x =    "$(sprintf('%8.2e',$flux_x)) " [erg/cm^2/s (@ 1 keV)]"
+	echo " "
+	echo "   L_r = "$(sprintf('%5.2f',$lum_r)) 
+	echo "   L_o = "$(sprintf('%5.2f',$lum_o))
+	echo "   L_x = "$(sprintf('%5.2f',$lum_x))
+	echo "------------------------------------------------------------"
+	set nufnu = nulnu - 2*$lumdist - 1.09920986
+	set fnu   = nufnu - x
+	set nnu   = fnu - ( x - 17.384 - 8.795 )
+	set f_sc_cut = l_sc_cut - 2*$lumdist - 1.09920986
+
+	set x = x - lg(1. + $z)
+
+	lweight $lpeso
+	ctype $color
+	ltype $linetype
+	connect x nufnu
+	# ltype 4 
+	# lweight 2 
+	# connect x f_sc_cut
+	ltype 0
+	
+#---------------------------------------------------------------------------
+# save_seds_radio
+save_seds_radio
+
+	define suffix ? { Suffix of vector names : }
+
+	set dimen(save_seds_radio) = 10
+	set save_seds_radio[0] = $oldlum
+	set save_seds_radio[1] = $olddamp
+	set save_seds_radio[2] = $oldjunct
+	set save_seds_radio[3] = $olddist
+	set save_seds_radio[4] = $oldar
+	set save_seds_radio[5] = $oldk
+	set save_seds_radio[6] = $oldeta1
+	set save_seds_radio[7] = $oldeta2
+	set save_seds_radio[8] = $l_radio_0
+	set save_seds_radio[9] = $x_peak_0
+
+	set dimen(save_seds_radio_aux) = 10.s
+	set save_seds_radio_aux[0] = 'L_radio     '
+	set save_seds_radio_aux[1] = 'Damp_Length '
+	set save_seds_radio_aux[2] = 'nu_junct    '
+	set save_seds_radio_aux[3] = 'Peaks-dist  '
+	set save_seds_radio_aux[4] = 'alpha_R     '
+	set save_seds_radio_aux[5] = 'F_x/F_r     '
+	set save_seds_radio_aux[6] = 'eta_1       '
+	set save_seds_radio_aux[7] = 'eta_2       '
+	set save_seds_radio_aux[8] = 'L_radio_0   '
+	set save_seds_radio_aux[9] = 'x_peak_0    '
+
+	print ' %12s  %8.2f \n' < save_seds_radio_aux save_seds_radio >
+	print avrg.info.seds_radio.$suffix ' %12s  %8.2f \n' < save_seds_radio_aux save_seds_radio >
+
+#------------------------------------------------------------------------------
+# redoit  [<suffix>] The REAL one, for the PAPER stuff
+redoit 01
+
+	if($?1) { 
+	   define suffix $1  
+	} else {
+	   define suffix ? { Gimme the suffix of data file to read ? }
+	} 
+
+	data  avrg.info.$suffix
+	lines 1 8 
+	read { rx 1 rnl 2 rerrnl 3 }
+	lines 9 17 
+	read { dummy 1 }
+
+	#----------------------------------------
+	# array "dummy" contains:
+	#   dummy[0]= avrg d_l
+	#   dummy[1]= avrg a_x
+	#   dummy[2]= sigma a_x
+	#   dummy[3]= avrg a_g
+	#   dummy[4]= sigma a_g
+	#   dummy[5]= L_min
+	#   dummy[7]= L_max
+	#----------------------------------------
+	
+	nln_frame empty  # frame without any points other than average
+
+	define color  ? { Color ?} 
+	ctype $color
+
+	ptype 4 3 
+	expand 1.8
+	points  rx rnl
+	lweight 3
+	expand 3
+	error_y rx rnl rerrnl
+	lweight 2
+	ltype 1
+	# connect rx rnl
+	ltype 0
+	lweight 1
+
+	butterfly $($(dummy[1])-1) $(dummy[2]) $(dummy[2]) 17.384 16.384 18.0
+	set nl_btfly = btfly + $(rnl[4])
+	connect nufly nl_btfly
+	expand 1.5
+
+	butterfly $($(dummy[3])-1) $(dummy[4]) $(dummy[4]) 22.384 21.85 24.00
+	set nl_btfly = btfly + $(rnl[5])
+	connect nufly nl_btfly
+
+	expand 1.5
+	ctype 2
+
+	define go ? {* IRAS 12/25/60/100 microns ? }
+	if(substr('$go',0,1) == 'y') { redoiras }
+
+        define boh1 ? { Continue plotting SEDs ? [y/n] }
+	if('$boh1' == 'y') { 
+	   redo_seds_radio
+	}
+
+
+#------------------------------------------------------------------------------
+# redoit_bw  [<suffix>]
+redoit_bw 01
+
+	if($?1) { 
+	   define suffix $1 
+	} else { 
+	   define suffix ? { Gimme the suffix of data file to read ? }
+	}
+
+	data  avrg.info.$suffix
+	lines 1 8 
+	read { rx 1 rnl 2 rerrnl 3 }
+	lines 9 17 
+	read { dummy 1 }
+
+	data avrg.info.$suffix
+	lines 18 23 
+	read {irfreq 1 irnlum 2 irnlumerr 3 }
+
+	#----------------------------------------
+	# array "dummy" contains:
+	#   dummy[0]= avrg d_l
+	#   dummy[1]= avrg a_x
+	#   dummy[2]= sigma a_x
+	#   dummy[3]= avrg a_g
+	#   dummy[4]= sigma a_g
+	#   dummy[5]= L_min
+	#   dummy[7]= L_max
+	#----------------------------------------
+	
+	nln_frame empty  # frame without any points other than average
+	lweight 3
+	ctype 2 
+
+	define ct    ? { Give me the COLOR type ? [#] }
+
+        define boh1 ? { Plotting SEDs ? [y/n] }
+	if('$boh1' == 'y') { 
+	   define 2 ? { What SEDs model [radio/exp2/dd] : }
+
+	   data  avrg.info.seds_radio.$suffix
+	   read { rsedsr 2 }
+
+	   define l_radio_0 ($(rsedsr[8]))
+	   define x_peak_0  ($(rsedsr[9]))
+	   echo $l_radio_0
+	   echo $x_peak_0
+           
+	   define lt ? { Give me the line type ? [#] }
+
+	   ltype $lt 
+	   seds_comp_$2 $(rsedsr[0]) $(rsedsr[1]) $(rsedsr[2]) $(rsedsr[3]) $(rsedsr[4]) $(rsedsr[5]) $(rsedsr[6]) $(rsedsr[7]) 
+
+	}
+
+	lweight 4
+	ctype $ct
+
+        define boh2 ? { Plotting Points ? [y/n] }
+	if('$boh2' == 'y') { 
+	   butterfly $($(dummy[1])-1) $(dummy[2]) $(dummy[2]) 17.384 16.384 18.0
+	   set nl_btfly = btfly + $(rnl[4])
+	   connect nufly nl_btfly
+	   expand 1.5
+
+	   butterfly $($(dummy[3])-1) $(dummy[4]) $(dummy[4]) 22.384 21.85 24.00
+	   set nl_btfly = btfly + $(rnl[5])
+	   connect nufly nl_btfly
+
+	   expand 2.5
+	   error_y rx rnl rerrnl
+	   error_y irfreq irnlum irnlumerr 
+
+	   define pt    ? { Give me the point type ? [#] }
+	   define howpt ? { Empty or Filled ? [e/f] }
+	   echo  " > point type is : "$pt $howpt
+
+	   # ctype 2
+	   ptype $pt 3 
+	   ctype $ct
+	   # expand 2.0
+	   if ( $pt < 10 ) {
+	      expand 2.4
+	   } else {
+	      expand 1.9
+	   }
+	   points rx rnl
+	   points  irfreq irnlum 
+
+	   ctype 1 
+	   ptype $pt 3 
+	   # expand 1.1
+	   if ( $pt < 10 ) {
+	      expand 1.1
+	   } else {
+	      expand 0.9
+	   }
+	   if ( substr('$howpt',0,1) == 'e' ) {
+	      points rx rnl 
+	      points  irfreq irnlum 
+	   }
+	   ctype 2 
+ 	}
+
+#------------------------------------------------------------------------------
+# redo_seds_radio [<suffix>]
+redo_seds_radio 01
+
+	define suffix ? { Gimme the suffix of data file to read ? }
+
+	define color  ? { Color ?} 
+	ctype $color
+
+	data  avrg.info.seds_radio.$suffix
+	read { rsedsr 2 }
+
+	define l_radio_0 ($(rsedsr[8]))
+	define x_peak_0  ($(rsedsr[9]))
+	echo "    L_radio_0 = "$l_radio_0
+	echo "    x_peak_0  = "$x_peak_0
+
+	seds_comp_radio $(rsedsr[0]) $(rsedsr[1]) $(rsedsr[2]) $(rsedsr[3]) $(rsedsr[4]) $(rsedsr[5]) $(rsedsr[6]) $(rsedsr[7]) 
+
+#--------------------------------------------------------------------------
+# seds_comp_radio 8	: constant peak distance
+#         	  arg[1]=L_radio
+#		  arg[2]=damping length 	 (best Heidel = 300)
+#		  arg[3]=x_junction 		 (best Heidel = 11.698)
+#		  arg[4]=peaks distance          (best Heidel = 8.0)
+#		  arg[5]=radio spectral index
+#		  arg[6]=L_1kev/L_5GHz ratio
+#		  arg[7]=eta1
+#		  arg[8]=eta2
+#
+seds_comp_radio 08		
+
+	if($?1 == 0) {
+	   define oldlum   ? { Luminosity ? }
+	   define olddamp  ? { damping length ? }
+	   define oldjunct ? { X_junct ? }
+	   define olddist  ? { peak distance ? }
+	   define oldar    ? { radio spectral index ? }
+	   define oldk     ? { L_1kev/L_5GHz ratio ? }
+	   define oldeta1  ? { eta 1 ? }
+	   define oldeta2  ? { eta 2 ? }
+	   echo " *-------------------------- "
+	   define color    ? { Colore  ? }
+	   define 1 $oldlum
+	   define 2 $olddamp
+	   define 3 $oldjunct
+	   define 4 $olddist
+	   define 5 $oldar
+	   define 6 $oldk
+	   define 7 $oldeta1
+	   define 8 $oldeta2
+	} 
+	define oldeta1   $7
+	define oldeta2   $8
+
+	define gfactor ? { factor to rescale IC component ? }
+
+	# ltype 0
+	# ctype 2
+	# expand 1.5
+	# lweight 2	
+
+	#-------------------------------------------------------
+	#
+	set l_radio  = $1
+	set tau      = $2
+	set x_junct  = $3
+	set distanza = $4
+	set alpha_s  = $5
+	set K        = $6 + lg($gfactor)
+	set oldeta1  = $7
+	set oldeta2  = $8
+
+	set alpha_h  =  0.6
+	set l_radio_0 = $l_radio_0   ## set l_radio_0 = 42.5
+	set x_peak_0  = $x_peak_0    ## set x_peak_0  = 14.5
+
+	set beta = 1.-alpha_s
+	if($(l_radio) < 42.5) {
+	  set eta       = $oldeta1
+	}
+	if($(l_radio) >= 42.5) {
+	  set eta       = $oldeta2
+	}
+	set x_peak = x_peak_0 - eta*(l_radio-l_radio_0)
+	set sigma = sqrt(2*(x_peak-x_junct)/beta)
+
+	echo "     >-------------------------------- "
+	echo "     > x_junct :  "$(x_junct)
+	echo "     > x_peak  :  "$(x_peak)
+	echo "     > sigma   :  "$(sigma)
+	echo "     >  "
+
+	set l_peak = beta*(x_junct-9.698)+l_radio+0.5*beta*(x_peak-x_junct)
+
+	## set l_5_sync = (1.+0.5*eta*beta)*l_peak - 0.5*beta*(x_peak_0+eta*l_peak_0 -x_junct)-beta*(x_junct-9.698)
+
+	# here the optical luminosity is computed in the WRONG way
+	#
+	#
+	echo "**** preview optical luminosity is computed in the WRONG way ***"
+	set l_5_sync    = l_radio
+	set l_opt_sync  = l_peak-((14.736-x_peak)/sigma)**2. 
+	set l_1kev_sync = l_peak-((17.383-x_peak)/sigma)**2. 
+	set l_1kev_comp = l_5_sync + K + 7.685
+	set l_1kev_sc = 40.0 + lg(10.0**(l_1kev_sync-40.0)+10.0**(l_1kev_comp-40.0))
+
+	echo "     > L_5GHz        = "$(l_5_sync)
+	echo "     > L_opt         = "$(l_opt_sync)
+	echo "     > L_sync (1keV) = "$(l_1kev_sync)
+	echo "     > L_comp (1keV) = "$(l_1kev_comp)
+	echo "     > L_tot  (1keV) = "$(l_1kev_sc)
+	echo "     >--------------------------------"
+
+	set ratio=l_1kev_sc-l_5_sync-7.685
+	set alrx =ratio/7.685/-1
+	set alro =(l_opt_sync-l_5_sync-5.037)/5.037/-1
+	echo "     > X-R ratio     = "$(ratio)
+	echo "     > alpha_RX      = "$(alrx)
+	echo "     > alpha_RO      = "$(alro)
+
+	#------------------------------------------
+	# disegna le SEDS
+	#
+	define first_x  9.0
+	# define last_x  27.1
+	define last_x  24.5
+	define step_x   0.01
+	set x = $first_x,$last_x,$step_x
+	##define numero $(dimen(x))
+	##define pippo $($numero - 1)
+
+	set dimen(damper) = dimen(x)
+
+	do i=0,dimen(x)-1 {
+	if (x[$i] <= x_peak) {
+	   set damper[$i]=1.0 
+	} else {
+	   set damper[$i] = 2.-10.0**((x[$i]-$(x_peak))/tau) 
+	}
+	}
+
+	set l_s_1 = beta*(x-9.698) + l_5_sync
+	set l_s_2 = ( l_peak - ((x - x_peak)/sigma)**2.0 )*damper
+	set l_c   = l_1kev_comp + (1.-alpha_h)*(x-17.383)
+	define xref ($(x_peak) + 8.3)
+	# define xref ($(x_peak) + 8.)
+	set l_c_cut = l_1kev_comp + (1.-alpha_h)*(x-17.383)*(1.d0-10.0**((x-$xref)/3.0))	
+	# set l_c_cut = l_1kev_comp + (1.-alpha_h)*(x-17.383)*(1.d0-10.0**((x-22.0)/2.0))	
+	set l_sc = 40.0 + lg(10.0**(l_s_2-40.0)+10.0**(l_c-40.0))
+	set l_sc_cut = 40.0 + lg(10.0**(l_s_2-40.0)+10.0**(l_c_cut-40.0))
+
+	#---- Bump Gamma ----
+	set x_peak_g = x_peak + distanza
+
+	  ## if (x_peak <= 14.5) {
+	  ## 	set x_peak_g = 2.*x_peak - 5.5 
+	  ## } else {
+	  ## 	set x_peak_g = x_peak + 8.0 
+	  ## }
+	  ## set l_peak_g = l_peak + 1.2*(l_peak-l_peak_0)/3.0
+
+	set l_peak_g  = l_5_sync + 3.5 + lg($gfactor)
+	set l_gamma   = l_peak_g - ((x-x_peak_g)/sigma)**2.0
+	set l_sc_g = 40.0 + lg(10.0**(l_sc_cut-40.0)+10.0**(l_gamma-40.0)) 	
+
+	set l_egret_1 = l_1kev_comp + (1.-alpha_h)*(22.383-17.383)*(1.d0-10.0**((22.383-22.0)/2.0))	
+	set l_egret_2= l_peak_g - ((22.383-x_peak_g)/sigma)**2.0
+	set l_egret_t= 40.0 + lg(10.0**(l_egret_1-40.0)+10.0**(l_egret_2-40.0))
+
+	set l_tev_1 = l_1kev_comp + (1.-alpha_h)*(26.082-17.383)*(1.d0-10.0**((26.082-22.0)/2.0))	
+	set l_tev_2= l_peak_g - ((26.082-x_peak_g)/sigma)**2.0
+	set l_tev_t= 40.0 + lg(10.0**(l_tev_1-40.0)+10.0**(l_tev_2-40.0))
+
+	set ratio_rg   =(l_egret_t-l_5_sync-12.685)
+	set alrg       =(l_egret_t-l_5_sync-12.685)/12.685/-1
+
+	set ratio_rtev =(l_tev_t-l_5_sync-16.384)
+	set alrtev     =(l_tev_t-l_5_sync-16.384)/16.384/-1
+
+	echo "     > x_peak_gamma = "$(x_peak_g)
+	echo "     > L_gamma      = "$(l_sc_g)
+	echo "     > L_EGRET      = "$(l_egret_t)
+	echo "     > Ratio R/egret= "$(ratio_rg)
+	echo "     > alpha_RG     = "$(alrg)
+	echo "     > Ratio R/TeV  = "$(ratio_rtev)
+	echo "     > alpha_R-TeV  = "$(alrtev)
+	echo "     >--------------------------------"
+
+	#--------------------
+
+	##set dimen(nulnu) = $numero
+	set dimen(nulnu) = dimen(x)
+	do i=0,dimen(x)-1 {
+	   if (x[$i] <= x_junct) {
+	   	   set nulnu[$i] = l_s_1[$i] 
+	   } else {
+		   set nulnu[$i] = l_sc_g[$i] 
+	   }
+	}
+
+	# if (ratio > -5.5) { ctype 3 } else { ctype 5 } 
+
+	define save_lweight $lweight
+	define save_lcolor  $ctype
+
+	ctype $ct
+	expand 2.5
+	lweight 30
+	lweight 4
+	# if ( $?lt ) { ltype $lt } else { ltype 3 }
+	connect x nulnu
+	# connect x l_sc_cut
+
+	echo "LWEIGHT : "$save_lweight
+	echo "CTYPE   : "$save_lcolor
+	lweight $save_lweight
+	ctype   $save_lcolor
+
+#---------------------------------------------------------------------------
+# prev_seds_comp_radio 4	: distanza tra picchi costante 
+#		  arg[1]=x_junction 		 (best Heidel = 11.698)
+#		  arg[2]=radio spectral index
+#		  arg[3]=eta1
+#		  arg[4]=eta2
+#
+prev_seds_comp_radio 04		
+
+	if($?1 == 0) {
+	   define oldjunct ? { X_junct ? }
+	   define oldar    ? { radio spectral index ? }
+	   define oldeta1  ? { eta 1 ? }
+	   define oldeta2  ? { eta 2 ? }
+	   echo " *-------------------------- "
+	   # define color    ? { Colore  ? }
+	   define 1 $oldjunct
+	   define 2 $oldar
+	   define 3 $oldeta1
+	   define 4 $oldeta2
+	} 
+
+	ltype 0
+	ctype 2
+	expand 1.5
+	lweight 2	
+
+	define x_junct   $1
+	define alpha_s   $2
+
+	define l_radio_0 (42.5)
+	define x_peak_0  (14.5)
+	define alpha_h   (0.6)
+	define beta      (1.-$alpha_s)
+	define eta1      $3
+	define eta2      $4
+
+	set l_radio1  = 40,$l_radio_0,0.2
+	set l_radio2  = $l_radio_0,47,0.2
+	set nur1 = l_radio1*0 + 9.698
+	set nur2 = l_radio2*0 + 9.698
+
+	set x_peak1 = $x_peak_0 - $eta1*(l_radio1-$l_radio_0)
+	set sigma1  = sqrt(2*(x_peak1-$x_junct)/$beta)
+	set l_peak1 = $beta*($x_junct-9.698)+l_radio1+0.5*$beta*(x_peak1-$x_junct)
+
+	set x_peak2 = $x_peak_0 - $eta2*(l_radio2-$l_radio_0)
+	set sigma1  = sqrt(2*(x_peak2-$x_junct)/$beta)
+	set l_peak2 = $beta*($x_junct-9.698)+l_radio2+0.5*$beta*(x_peak2-$x_junct)
+
+	lweight 3
+	ctype 5
+	ltype 0
+	connect x_peak1 l_peak1
+	connect x_peak2 l_peak2
+	ctype 2
+	lweight 1
+	ctype 6
+	ltype 1
+	pairs nur1 l_radio1 x_peak1 l_peak1
+	pairs nur2 l_radio2 x_peak2 l_peak2
+	ltype 0
+	ctype 2
+	lweight 2
+
+#---------------------------------------------------------------------------
+# seds_comp_exp 9 <L_r> <damp-length> <x_junct> <peak_dist> <a_r> <Lx/Lr> <eta1> <eta2> <nLg/nLr>
+#                 * constant peak distance 
+#                 * constant IC/radio ratio
+##        arg[1]=L_radio
+##        arg[2]=damping length 	 (best Heidel = 300)
+##        arg[3]=x_junction 		 (best Heidel = 11.698)
+##        arg[4]=peaks distance          (best Heidel = 8.0)
+##        arg[5]=radio spectral index
+##        arg[6]=L_1kev/L_5GHz ratio
+##        arg[7]=eta1
+##        arg[8]=eta2
+##        arg[9]=nuL_gamma/nuL_5GHz ratio
+##
+seds_comp_exp 09
+
+	if($?1 == 0) {
+	   define oldlum   ? <               Luminosity : >
+	   define olddamp  ? <           damping length : >
+	   define oldjunct ? <                  X_junct : >
+	   define olddist  ? <            peak distance : >
+	   define oldar    ? <     radio spectral index : >
+	   define oldk     ? <      L_1kev/L_5GHz ratio : >
+	   define oldeta1  ? <                    eta 1 : >
+	   define oldeta2  ? <                    eta 2 : >
+	   define oldrg    ? < nuL_gamma/nuL_5GHz ratio : >
+	   echo " *--------------------------"
+	   define color    ? <                    Color : >
+	   define 1 $oldlum
+	   define 2 $olddamp
+	   define 3 $oldjunct
+	   define 4 $olddist
+	   define 5 $oldar
+	   define 6 $oldk
+	   define 7 $oldeta1
+	   define 8 $oldeta2
+	   define 9 $oldrg
+	} 
+	define oldeta1   $7
+	define oldeta2   $8
+	define oldrg     $9
+
+	ltype 0
+	ctype 2
+	expand 1.5
+	lweight 2
+
+	#-------------------------------------------------------
+	#
+	set l_radio  = $1
+	set tau      = $2
+	set x_junct  = $3
+	set distanza = $4
+	set alpha_s  = $5
+	set K        = $6 - (3.5 - $oldrg)
+	set oldeta1  = $7
+	set oldeta2  = $8
+
+	set alpha_h  =  0.6
+	set l_radio_0 = $l_radio_0  ## set l_radio_0 = 42.5
+	set x_peak_0  = $x_peak_0   ## set x_peak_0  = 14.5
+
+	set beta = 1.-alpha_s
+	if($(l_radio) < 42.5) {
+	  set eta       = $oldeta1
+	}
+	if($(l_radio) >= 42.5) {
+	  set eta       = $oldeta2
+	}
+	 
+	if($oldeta1 == 0) { 
+	     set c=l_radio-l_radio_0
+	     set c=l_radio-42.2
+	     set x_peak = 0.2*c**2. - 1.2*c + 15.0 - 0.0125*c**3.
+	} else {
+	     set x_peak = x_peak_0 - eta*(l_radio-l_radio_0)
+	}
+
+	set sigma = sqrt(2*(x_peak-x_junct)/beta)
+
+	echo "    >-------------------------------- "
+	echo "    > x_junct :  "$(x_junct)
+	echo "    > x_peak  :  "$(x_peak)
+	echo "    > sigma   :  "$(sigma)
+	echo "    >  "
+
+	set l_peak = beta*(x_junct-9.698)+l_radio+0.5*beta*(x_peak-x_junct)
+
+	# here the optical luminosity is computed in the WRONG way
+	#
+	#
+	echo "**** preview optical luminosity is computed in the WRONG way ***"
+	set l_5_sync    = l_radio
+	set l_opt_sync  = l_peak-((14.736-x_peak)/sigma)**2. 
+	set l_1kev_sync = l_peak-((17.383-x_peak)/sigma)**2. 
+	set l_1kev_comp = l_5_sync + K + 7.685
+	set l_1kev_sc = 40.0 + lg(10.0**(l_1kev_sync-40.0)+10.0**(l_1kev_comp-40.0))
+
+	echo "     > L_5GHz        = "$(l_5_sync)
+	echo "     > L_opt         = "$(l_opt_sync)
+	echo "     > L_sync (1keV) = "$(l_1kev_sync)
+	echo "     > L_comp (1keV) = "$(l_1kev_comp)
+	echo "     > L_tot  (1keV) = "$(l_1kev_sc)
+	echo "     >-------------------------------- "
+
+	set ratio=l_1kev_sc-l_5_sync-7.685
+	set alrx =ratio/7.685/-1
+	set alro =(l_opt_sync-l_5_sync-5.037)/5.037/-1
+	set alox =((l_1kev_sc-17.383)-(l_opt_sync-14.735))/(14.735-17.383)
+	echo "     > X-R ratio     = "$(ratio)
+	echo "     > alpha_RX      = "$(alrx)
+	echo "     > alpha_RO      = "$(alro)
+	echo "     > alpha_OX      = "$(alox)
+
+	#------------------------------------------
+	# plots SEDS
+	#
+	define first_x  9.0
+	define last_x  27.1
+	define step_x   0.2
+	set x = $first_x,$last_x,$step_x
+	##define numero $(dimen(x))
+	##define pippo  $($numero - 1)
+
+	# define numero $((26.5-9)/0.25 + 1)
+
+	set dimen(damper) = dimen(x)
+
+	do i=0,dimen(x)-1 {
+	if (x[$i] <= x_peak) {
+	   set damper[$i]=1.0 
+	} else {
+	   set damper[$i] = 2.-10.0**((x[$i]-$(x_peak))/tau) 
+        }}
+
+	set l_s_1   = beta*(x-9.698) + l_5_sync
+	set l_s_2   = ( l_peak - ((x - x_peak)/sigma)**2.0 )*damper
+	set l_c     = l_1kev_comp + (1.-alpha_h)*(x-17.383)
+	define xref ($(x_peak) + 8.)
+	set l_c_cut = l_1kev_comp + (1.-alpha_h)*(x-17.383)*(1.d0-10.0**((x-$xref)/2.0))	
+	# set l_c_cut = l_1kev_comp + (1.-alpha_h)*(x-17.383)*(1.d0-10.0**((x-22.0)/2.0))	
+	set l_sc     = 40.0 + lg(10.0**(l_s_2-40.0)+10.0**(l_c-40.0))
+	# echo $(l_s_2)
+	# echo $(l_c_cut)
+	set l_sc_cut = 40.0 + lg(10.0**(l_s_2-40.0)+10.0**(l_c_cut-40.0))
+
+	#---- Bump Gamma ----
+	set x_peak_g = x_peak + distanza
+
+	      ## if (x_peak <= 14.5) {
+	      ## 	set x_peak_g = 2.*x_peak - 5.5 } else {
+	      ## 	set x_peak_g = x_peak + 8.0 }
+	      ## set l_peak_g = l_peak + 1.2*(l_peak-l_peak_0)/3.0
+
+	set l_peak_g  = l_5_sync + $oldrg
+	set l_gamma   = l_peak_g - ((x-x_peak_g)/sigma)**2.0
+	set l_sc_g = 40.0 + lg(10.0**(l_sc_cut-40.0)+10.0**(l_gamma-40.0)) 	
+
+	set l_egret_1 = l_1kev_comp + (1.-alpha_h)*(22.383-17.383)*(1.d0-10.0**((22.383-22.0)/2.0))	
+	set l_egret_2= l_peak_g - ((22.383-x_peak_g)/sigma)**2.0
+	set l_egret_t= 40.0 + lg(10.0**(l_egret_1-40.0)+10.0**(l_egret_2-40.0))
+
+	set l_tev_1 = l_1kev_comp + (1.-alpha_h)*(26.082-17.383)*(1.d0-10.0**((26.082-22.0)/2.0))	
+	set l_tev_2= l_peak_g - ((26.082-x_peak_g)/sigma)**2.0
+	set l_tev_t= 40.0 + lg(10.0**(l_tev_1-40.0)+10.0**(l_tev_2-40.0))
+
+	set ratio_rg   =(l_egret_t-l_5_sync-12.685)
+	set alrg       =(l_egret_t-l_5_sync-12.685)/12.685/-1
+
+	set ratio_rtev =(l_tev_t-l_5_sync-16.384)
+	set alrtev     =(l_tev_t-l_5_sync-16.384)/16.384/-1
+
+	echo "     > x_peak_gamma = "$(x_peak_g)
+	echo "     > L_EGRET      = "$(l_egret_t)
+	echo "     > Ratio R/egret= "$(ratio_rg)
+	echo "     > alpha_R-egret= "$(alrg)
+	echo "     >  "
+	echo "     > Ratio R/TeV  = "$(ratio_rtev)
+	echo "     > alpha_R-TeV  = "$(alrtev)
+	echo "     >-------------------------------- "
+
+	#--------------------
+
+	##set dimen(nulnu) = $numero 
+	set dimen(nulnu) = dimen(x) 
+	do i=0,dimen(x)-1 {
+	if (x[$i] <= x_junct) {
+		set nulnu[$i] = l_s_1[$i] 
+	} else {
+		set nulnu[$i] = l_sc_g[$i] 
+	}
+	}
+
+	if (ratio > -5.5) { ctype 3 } else { ctype 5} 
+	ctype $color
+	# ltype 0
+	expand 2.5
+	# ltype 1
+	ltype 3
+	connect x nulnu
+	# connect x l_sc_cut
+
+#---------------------------------------------------------------------------
+# seds_comp_exp2 9 <L_r> <damp-length> <x_junct> <peak_dist> <a_r> <Lx/Lr> <eta1> <eta2> <nLg/nLr>
+#                 * constant peak distance 
+#                 * constant IC/radio ratio
+##         	  arg[1]=L_radio
+##		  arg[2]=damping length 	 (best Heidel = 300)
+##		  arg[3]=x_junction 		 (best Heidel = 11.698)
+##		  arg[4]=peaks distance          (best Heidel = 8.0)
+##		  arg[5]=radio spectral index
+##		  arg[6]=L_1kev/L_5GHz ratio
+##		  arg[7]=eta1
+##		  arg[8]=eta2
+##		  arg[9]=nuL_gamma/nuL_5GHz ratio
+#   The IC/sync ratio is adjustable.
+#   the MAIN difference with the previous macro (e.g. 'seds_comp_exp')
+#   is that variables are properly defined instead of being 1-D vectors
+#
+#   THIS IS THE ONLY REALLY CORRECT MACRO TO COMPUTE/DRAW SEDs.
+# 
+seds_comp_exp2 09
+
+        if($?9) {
+           define oldrg $(3.5 + lg($9))
+           define 9 $oldrg
+        } else {
+           define gfactor ? < IC/sync ratio : >
+           define oldrg $(3.5 + lg($gfactor))
+           define 9 $oldrg
+        }
+
+	if($?1 == 0) {
+	   define oldlum   ? <               Luminosity : >
+	   define olddamp  ? <     damping length (tau) : >
+	   define oldjunct ? <                  X_junct : >
+	   define olddist  ? <            peak distance : >
+	   define oldar    ? <     radio spectral index : >
+	   define oldk     ? <      L_1kev/L_5GHz ratio : >
+	   define oldeta1  ? <                    eta 1 : >
+	   define oldeta2  ? <                    eta 2 : >
+	   define oldrg    ? < nuL_gamma/nuL_5GHz ratio : >
+	   define gfactor  ? <            IC/sync ratio : >
+	   define oldrg $(3.5 + lg($gfactor))
+
+	   echo " *--------------------------"
+	   define color    ? <                    Color : >
+	   define 1 $oldlum
+	   define 2 $olddamp
+	   define 3 $oldjunct
+	   define 4 $olddist
+	   define 5 $oldar
+	   define 6 $oldk
+	   define 7 $oldeta1
+	   define 8 $oldeta2
+	   define 9 $oldrg
+	} 
+	define oldeta1   $7
+	define oldeta2   $8
+	define oldrg     $9
+
+	ltype 0
+	ctype 2
+	expand 1.5
+	lweight 2	
+
+	#-------------------------------------------------------
+	#
+	define l_radio  $1
+	define tau      $2
+	define x_junct  $3
+	define distanza $4
+	define alpha_s  $5
+	define K        $($6 - (3.5 - $oldrg))
+	define oldeta1  $7
+	define oldeta2  $8
+
+	define alpha_h   (0.6)
+	define l_radio_0 (42.5)	
+	define x_peak_0  (14.5)
+
+	define beta  (1.0 - $alpha_s)
+	if( $l_radio < $l_radio_0 ) {
+	   define eta  $oldeta1
+	}
+	if( $l_radio >= $l_radio_0 ) {
+	   define eta  $oldeta2
+	}
+	 
+	if( $oldeta1 == 0 ) { 
+	     ##define c ( $l_radio - $l_radio_0 )
+	     ##define c ( $l_radio - 42.2 )
+	     ##define x_peak ( 0.2*$c**2. - 1.2*$c + 15.0 - 0.0125*$c**3. )
+	     define a1        (-0.8)
+	     define a2        (0.12)
+	     define a3        (-0.012)
+	     define x_peak_0  (14.2)
+	     define l_radio_0 (43.5)
+	     define c ( $l_radio - $l_radio_0 )
+	     echo " using :" $a1 $a2 $a3 $x_peak_0 $l_radio_0
+	     define x_peak ( $x_peak_0 $a1*$c  + $a2*$c**2.0 + $a3*$c**3.0 )
+	     echo " For Lr= "$l_radio"   Xp="$x_peak
+
+	} else {
+	     define x_peak ( $x_peak_0 - $eta*($l_radio - $l_radio_0) )
+	}
+
+	define sigma ( sqrt(2*($x_peak - $x_junct)/$beta) )
+
+	echo "     >-------------------------------- "
+	echo "     > x_peak  :   "$x_peak
+
+	define l_peak ( $beta*($x_junct-9.698)+$l_radio+0.5*$beta*($x_peak-$x_junct) )
+
+	#---------------------------------------------
+	#
+	define l_5_sync  $l_radio
+
+        define damper (1.0)
+        if ( $x_peak <= 14.736 ) {
+           define damper (2.0 - 10.0**((14.736 - $x_peak)/$tau) )
+        }
+	define l_opt_sync  ( ($l_peak-((14.736-$x_peak)/$sigma)**2.)*$damper )
+
+        define damper (1.0)
+        if ($x_peak <= 17.384 ) { 
+           define damper (2.0 - 10.0**((17.384 - $x_peak)/$tau))
+        } 
+	define l_1kev_sync ( ($l_peak-((17.383-$x_peak)/$sigma)**2.)*$damper )
+	define l_1kev_comp ( $l_5_sync + $K + 7.685 )
+	define l_1kev_sc   ( 40.0 + lg(10.0**($l_1kev_sync - 40.0) + 10.0**($l_1kev_comp - 40.0)) )
+
+	echo "     *** defining fake l_20kev "
+	define l_20kev $l_1kev_sc
+
+        define l_opt_comp ( $l_1kev_comp + (1.0 - $alpha_h)*(14.736 - 17.383) )
+        define l_opt_sc   ( 40.0 + lg(10.0**($l_opt_sync - 40.0) + 10.0**($l_opt_comp - 40.0)) )
+
+	echo "     > L_5GHz        = "$l_5_sync
+	echo "     > L_opt_sync    = "$l_opt_sync
+	echo "     > L_opt         = "$l_opt_sc
+	echo "     > L_sync (1keV) = "$l_1kev_sync
+	echo "     > L_comp (1keV) = "$l_1kev_comp
+	echo "     > L_tot  (1keV) = "$l_1kev_sc
+	echo "     >-------------------------------- "
+
+	define ratio ( $l_1kev_sc - $l_5_sync - 7.685 )
+	define alrx  ( $ratio/7.685/-1 )
+	define alro  ( ($l_opt_sc - $l_5_sync - 5.037)/5.037/-1 )
+	define alox  ( (($l_1kev_sc - 17.383) - ($l_opt_sc - 14.735))/(14.735-17.383) )
+	echo "     > X-R ratio     = "$ratio
+	echo "     > alpha_RX      = "$alrx
+	echo "     > alpha_RO      = "$alro
+	echo "     > alpha_OX      = "$alox
+
+	#------------------------------------------
+	# drawing SEDS
+	#
+	define first_x  9.0
+	define last_x  27.1
+	define step_x   0.05
+	set x = $first_x,$last_x,$step_x
+	##define numero $(dimen(x))
+	##define pippo  $($numero - 1)
+
+	set dimen(damper) = dimen(x)
+	define xref ($x_peak + 8.5)
+
+	do i=0,dimen(x)-1 {
+	   if (x[$i] <= $x_peak) {
+	      set damper[$i] = 1.0 
+	   } else {
+	      set damper[$i] = 2.0 - 10.0**((x[$i] - $x_peak)/$tau) 
+           }
+	}
+
+	set l_s_1    = $beta*(x - 9.698) + $l_5_sync
+	set l_s_2    = ( $l_peak - ((x - $x_peak)/$sigma)**2.0 )*damper
+	set l_c      = $l_1kev_comp + (1.0 - $alpha_h)*(x - 17.383)
+	set l_c_cut  = $l_1kev_comp + (1.0 - $alpha_h)*(x - 17.383)*(1.0 - 10.0**((x-$xref)/3.0))	
+	set l_sc     = 40.0 + lg(10.0**(l_s_2 - 40.0) + 10.0**(l_c - 40.0))
+	set l_sc_cut = 40.0 + lg(10.0**(l_s_2 - 40.0) + 10.0**(l_c_cut - 40.0))
+
+	#---- Bump Gamma ----
+	define x_peak_g ( $x_peak + $distanza )
+
+	define l_peak_g  ( $l_5_sync + $oldrg )
+	set l_gamma =  $l_peak_g - ((x - $x_peak_g)/$sigma)**2.0
+	set l_sc_g  = 40.0 + lg(10.0**(l_sc_cut - 40.0) + 10.0**(l_gamma - 40.0)) 	
+
+	define l_egret_1  ( $l_1kev_comp + (1.0-$alpha_h)*(22.383-17.383)*(1.0-10.0**((22.383-22.0)/2.0)))	
+	define l_egret_2  ( $l_peak_g - ((22.383-$x_peak_g)/$sigma)**2.0 )
+	define l_egret_t  ( 40.0 + lg(10.0**($l_egret_1-40.0)+10.0**($l_egret_2-40.0)))
+
+	define l_tev_1  ( $l_1kev_comp + (1.0-$alpha_h)*(26.082-17.383)*(1.0-10.0**((26.082-22.0)/2.0)))	
+	define l_tev_2  ( $l_peak_g - ((26.082-$x_peak_g)/$sigma)**2.0 )
+	define l_tev_t  ( 40.0 + lg(10.0**($l_tev_1-40.0)+10.0**($l_tev_2-40.0)) )
+
+	define ratio_rg   ($l_egret_t-$l_5_sync-12.685)
+	define alrg       (($l_egret_t-$l_5_sync-12.685)/12.685/-1)
+
+	define ratio_rtev ($l_tev_t-$l_5_sync-16.384)
+	define alrtev     (($l_tev_t-$l_5_sync-16.384)/16.384/-1)
+	echo "     >--------------------------------  "
+
+	#--------------------
+	#
+	#set dimen(nulnu) = $numero 
+	set dimen(nulnu) = dimen(x)
+	do i=0,dimen(x)-1 {
+	   if (x[$i] <= $x_junct) {
+	      	set nulnu[$i] = l_s_1[$i] 
+	   } else {
+		set nulnu[$i] = l_sc_g[$i] 
+           }
+	}
+	# set _left  = -1
+	# set _right = dimen(x)
+	# define i20     (_ifloor(x, 18.68))
+	# define l_20kev $(nulnu[$i20])
+
+	if ($ratio > -5.5) { ctype 3 } else { ctype 5 } 
+	## ctype $color
+	expand 2.5
+	lweight 2
+	if ( $?lt ) { ltype $lt } else { ltype 3 }
+	connect x nulnu
+	connect x l_sc_cut
+
+	ctype 2 
+	ltype 2 
+
+	# EXIT arrays are:
+	#   x      for frequencies
+	#   nulnu  for SED
+
+#---------------------------------------------------------------------------
+# seds_radio_exp2_quiet 9	: distanza tra picchi costante 
+##         	  arg[1]=L_radio
+##		  arg[2]=damping length 	 (best Heidel = 300)
+##		  arg[3]=x_junction 		 (best Heidel = 11.698)
+##		  arg[4]=distanza tra i 2 picchi (best Heidel = 8.0)
+##		  arg[5]=radio spectral index
+##		  arg[6]=L_1kev/L_5GHz ratio
+##		  arg[7]=eta1
+##		  arg[8]=eta2
+##		  arg[9]=nuL_gamma/nuL_5GHz ratio
+#   the only difference with the previous macro is in the way they deal
+#   with the relative normalization of the Gamma component.
+# 
+seds_comp_exp2_quiet 09
+
+	echo " seds_comp_exp2_quiet does not exist "
+	echo " use seds_comp_exp2 instead "
+
+#---------------------------------------------------------------------------
+# seds_comp_dd 9   : relazione ottimizzata da Davide Donato
+##         	  arg[1]=L_radio
+##		  arg[2]=damping length 	 (best Heidel = 300)
+##		  arg[3]=x_junction 		 (best Heidel = 11.698)
+##		  arg[4]=distanza tra i 2 picchi (best Heidel = 8.0)
+##		  arg[5]=radio spectral index
+##		  arg[6]=L_1kev/L_5GHz ratio
+##		  arg[7]=eta1
+##		  arg[8]=eta2
+##		  arg[9]=nuL_gamma/nuL_5GHz ratio
+#   The IC/sync ratio is adjustable.
+#   the MAIN difference with the previous macro's 
+#   is that variables are properly defined instead of being 1-D vectors
+#
+#   THIS IS THE ONLY REALLY CORRECT MACRO TO COMPUTE/DRAW SEDs.
+#   --REMOVED-- --REMOVED-- --REMOVED-- --REMOVED-- --REMOVED--
+# 
+seds_comp_dd 09
+
+	echo " seds_comp_dd has been removed"
+	echo " It is the same of seds_comp_exp2 with two different values "
+	echo " for l_radio_0 and x_peak_00, namely: "
+	echo "     l_radio_0 = 43.0   instead of 42.5 "
+	echo "     x_peak_0  = 14.25  instead of 14.5 "
+
+#--------------------------------------------------------------------------
+# compute_family_of_seds
+compute_family_of_seds
+
+        ## define first_x  9.0
+        ## define last_x  27.1
+        ## define step_x   0.05
+        ## set x = $first_x,$last_x,$step_x
+        ## define ir $( (9.7 - $first_x)/$step_x )
+
+	set trial_lr = 40,47,0.1
+	foreach 9 < xp lp a_ro a_rx a_ox lr > {
+	   set dimen(trial_$9) = dimen(trial_lr)
+	}
+
+	do 9=0,dimen(trial_lr)-1 {
+	   seds_comp_exp2 $(trial_lr[$9]) 2000 11.7 8.3 0.2 -6.5 0 0 3.5
+	   set trial_xp[$9]   = $x_peak
+	   set trial_lp[$9]   = $l_peak
+	   set trial_a_ro[$9] = $alro
+	   set trial_a_rx[$9] = $alrx
+	   set trial_a_ox[$9] = $alox
+	   set nln_sed_$9 = nulnu
+	}
+
+#--------------------------------------------------------------------------
+# compute_family_of_seds_N   <number of SEDs>
+compute_family_of_seds_N 01
+
+	define lr1 (41.5)
+	define lr2 (46.0)
+	define lr1 (41.0)
+	define lr2 (45.5)
+	define lr1 (40.5)
+	define lr2 (45.0)
+
+	set trial_lr = $lr1, $lr2, $( ($lr2-$lr1)/$1 )
+	foreach 9 < xp lp a_ro a_rx a_ox sigma xp_ic a_1gev> {
+	   set dimen(trial_$9) = dimen(trial_lr)
+	}
+
+	set aar = 0.3 - 0.5/($lr2 - $lr1)*(trial_lr - $lr1)
+	do 9=0,dimen(trial_lr)-1 {
+	   # seds_comp_exp2 $(trial_lr[$9]) 2000 11.7 8.3 0.2 -6.5 0 0 3.5
+
+	   seds_comp_exp2 $(trial_lr[$9]) 2000 11.7 8.3 $(aar[$9]) -6.5 0 0 3.5
+	   set trial_xp[$9]   = $x_peak
+	   set trial_lp[$9]   = $l_peak
+	   set trial_a_ro[$9] = $alro
+	   set trial_a_rx[$9] = $alrx
+	   set trial_a_ox[$9] = $alox
+	   set trial_sigma[$9] = $sigma
+	   set trial_xp_ic[$9] = $x_peak_g
+	   set trial_a_1gev[$9] = 1.  - (nulnu[297] - nulnu[277])
+	   set sed_family_nln_$9 = nulnu
+	   set sed_family_nu_$9  = x
+	}
+
+#--------------------------------------------------------------------------
+# xrm_flux_limits 
+xrm_flux_limits
+
+        # 
+	# sensitivity for 100ks NET
+	#
+        set sens_biff = < 2.98e-4   1.25e-4   4.24e-5   1.32e-5   2.40e-5   >
+        set sens_aux  = < 2.2205e-7 8.8829e-7 3.5543e-6 2.3491e-5 9.6314e-6 >
+
+        # 'fudge' scales the sensitivity to 1-week worth of seconds,
+        # which takes into account the 75% efficiency due to SAA passages.
+        #
+	echo "-------------------------------------------------------"
+	echo " The 'gross' number of days is : "
+	echo "   -   7 - for 1 week (of course) "
+	echo "   - 174 - for 2-years of survey "
+	define ndays ? { How many days on-source (gross) : }
+        define fudge  $(sqrt(1.0e5/(($ndays*86400.0)*0.75)))
+        set sens = $fudge*sens_aux*sens_biff
+
+	set e1 = < 10 20 40  80  10 >
+	set e2 = < 20 40 80 200 200 >
+
+	#---------------------------------------------
+        # sensitivity (ph/cm2/s) for Fermi
+        #
+	define nugamma1 (22.384)
+	define nugamma2 (23.384)
+	set sensg  = < -12.79 -12.49 -12.19 >  # for 2-yrs
+	set avec   = <   0.5     1.0    1.8  >
+
+	#
+	#  Fermi sensitivity for 10^5 seconds
+	#   obtained scaling the 2-yrs of survey,
+	#   that corresponds to a net exposure of 11.929e6 seconds.
+	#
+	set sensg = sensg + lg(10.62)   
+
+        set sensg = lg($fudge) + sensg
+	set sensg2 = sensg - (avec-1)*($nugamma2 - $nugamma1)
+
+	set edum    = < $(e1[0]) $(e2[0]) $(e1[1]) $(e2[1]) $(e1[2]) $(e2[2]) $(e1[3]) $(e2[3]) >
+	set sensdum = < $(sens[0]) $(sens[0]) $(sens[1]) $(sens[1]) $(sens[2]) $(sens[2]) $(sens[3]) $(sens[3]) >
+	set edum    = lg(edum) + 17.384
+	set sensdum = lg(sensdum)
+
+	ctype 2 
+	ltype 0
+	lweight 5
+	connect edum sensdum
+
+	do i=1,2 {
+	   ctype 2 
+	   ptype 4 3 
+	   relocate $nugamma1 $(sensg[$i])
+	   dot 
+	   draw     $nugamma2 $(sensg2[$i])
+	   dot 
+	}
+	lweight 2
+
+#--------------------------------------------------------------------------
+# read_ratio_vs_peak [<h0>] [<gfactor>] [<redshift>]
+#    NOT SURE WHY IT WOULD BE INTERESTING.
+#
+read_ratio_vs_peak 03
+
+	if(!$?1) {
+	   define cosmo ? < H_0           : >
+	   define gfac  ? < IC/sync ratio : >
+	   define reds  ? < Redshift      : >
+	   define 1 $cosmo
+	   define 2 $gfac
+	   define 3 $reds
+	}
+	define cosmo $1
+	define gfac  $2
+	define reds  $3
+
+	data "/home/gfossati/Science/Fermi/simulations/old/results_monitor/monitor_h"$1_lr42_allpeak_$(sprintf('%3.1f',$2)).dat
+	read  { epeak 1 z 2 xrm_10_20 3 xrm_20_40 4 xrm_40_80 5 xrm_80_200 6 xrm_10_200 7 glast 8 }  
+	# print { epeak z xrm_10_20 xrm_20_40 xrm_40_80 xrm_80_200 xrm_10_200 glast }  
+
+	foreach 4 < 10_20 20_40 40_80 80_200 10_200 > {
+	   # set xrm_$4 = lg(xrm_$4) if( z == $3 )
+	   set xrm_$4 = lg(xrm_$4) if( abs(z-$3) < 0.01 )
+	}
+	set glast = lg(glast) if( abs(z-$3) < 0.01 )
+	set epeak = epeak     if( abs(z-$3) < 0.01 )
+	foreach 4 < 10_20 20_40 40_80 80_200 10_200 > {
+	   set ratio_g_$4 = xrm_$4 - ( glast + lg(1.602e-4) )
+	}
+
+	set lim_week = < 0.3107E-10 0.5213E-10 0.7076E-10 0.1456E-09 0.1085E-09 0.9979E-08 > 
+	set lim_2yrs = < 0.6227E-11 0.1045E-10 0.1418E-10 0.2918E-10 0.2175E-10 0.2000E-08 >
+	set lim_week[5] = lim_week[5]*1.602e-4
+	set lim_2yrs[5] = lim_2yrs[5]*1.602e-4
+
+	set ratio_limits = lg(lim_2yrs/lim_2yrs[5])
+	set lim_week = lg(lim_week)
+	set lim_2yrs = lg(lim_2yrs)
+
+	echo "-------------------------------------------------------"
+	echo " [1]  10 -  20"
+	echo " [2]  20 -  40"
+	echo " [3]  40 -  80"
+	echo " [4]  80 - 200"
+	echo " [5]  10 - 200"
+	define toplot ? { Which X-ray band to plot ? }
+	if( $toplot == 1 ) {
+	   define lab_y "F_{10-20keV}"
+	   define 5 "10_20"
+	   define y1  0.03
+	   define y2 35.0
+	}
+	if( $toplot == 2 ) {
+	   define lab_y "F_{20-40keV}"
+	   define 5 "20_40"
+	   define y1   0.03
+	   define y2 125.0
+	}
+	if( $toplot == 3 ) {
+	   define lab_y "F_{40-80keV}"
+	   define 5 "40_80"
+	   define y1   0.03
+	   define y2 125.0
+	}
+	if( $toplot == 4 ) {
+	   define lab_y "F_{80-200keV}"
+	   define 5 "80_200"
+	   define y1   0.05
+	   define y2 125.0
+	}
+	if( $toplot == 5 ) {
+	   define lab_y "F_{10-200keV}"
+	   define 5 "10_200"
+	   define y1   0.08
+	   define y2 105.0
+	}
+
+	location 5500 27000 5500 30000
+	expand 1.5 
+	ctype 2 
+	limits 12.3 18.9 $(lg($y1)) $(lg($y2))
+	ticksize -1 0 -1 0 
+	box 
+
+	xlabel \\nu_{peak,sync} [Hz]
+	ylabel $lab_y/F_{Fermi}
+
+	relocate  ( $gx1 $( $gy2+700 ) )
+	expand 1.1
+	putlabel 6 z=$(sprintf('%4.2f',$reds))  IC/sync=$(sprintf('%3.1f',$gfac)) 
+	expand 1.5
+
+	ctype 2 
+	ltype 0
+	connect epeak ratio_g_$5
+	ctype 3 
+	ltype 4 
+	relocate 11 $(ratio_limits[$($toplot-1)]) 
+	draw     21 $(ratio_limits[$($toplot-1)]) 
+	ctype 2 
+	ltype 0
+
+#--------------------------------------------------------------------------
+# flux_vs_peak [<h0>] [<gfactor>] [<redshift>]
+# 
+flux_vs_peak 03
+
+	if(!$?1) {
+	   define cosmo ? < H_0           : >
+	   define gfac  ? < IC/sync ratio : >
+	   define reds  ? < Redshift      : >
+	   # define 1 $h0
+	   define 1 $cosmo
+	   define 2 $gfac
+	   define 3 $reds
+	}
+	define cosmo 50
+
+	define h0    $1
+	define gfac  $2
+	define reds  $3
+	echo " H_0 = "$h0
+	define 1 $cosmo
+
+	#---------------------------------------------
+	#
+	if(substr('$2',0,1) == 's' || substr('$2',0,1) == 'i' ) {
+	   if(substr('$2',0,1) == 's' ) {
+	      data "/home/gfossati/Science/Fermi/simulations/old/results_monitor/monitor_h"$1_lp45_allpeak_sy$(sprintf('%3.1f',atof(substr('$2',2,2)))).dat
+	   } 
+	   if ( substr('$2',0,1) == 'i' ) {
+	      data "/home/gfossati/Science/Fermi/simulations/old/results_monitor/monitor_h"$1_lp45_allpeak_ic$(sprintf('%3.1f',atof(substr('$2',2,2)))).dat
+	   }
+	} else {
+	   data "/home/gfossati/Science/Fermi/simulations/old/results_monitor/monitor_h"$1_lr42_allpeak_$(sprintf('%3.1f',float($2))).dat
+	}
+	read  { epeak 1 z 2 xrm_10_20 3 xrm_20_40 4 xrm_40_80 5 xrm_80_200 6 xrm_10_200 7 glast 8 }  
+
+	#---------------------------------------------
+	#
+	foreach 4 < 10_20 20_40 40_80 80_200 10_200 > {
+	   set xrm_$4 = lg(xrm_$4) if( abs(z-$3) < 0.01 )
+	}
+	set glast = lg(glast) if( abs(z-$3) < 0.01 )
+	set epeak = epeak     if( abs(z-$3) < 0.01 )
+	set glast = glast + lg(1.602e-4) 
+
+	set lim_week = < 0.3107E-10 0.5213E-10 0.7076E-10 0.1456E-09 0.1085E-09 0.9979E-08 > 
+	set lim_2yrs = < 0.6227E-11 0.1045E-10 0.1418E-10 0.2918E-10 0.2175E-10 0.2000E-08 >
+	set lim_week[5] = lim_week[5]*1.602e-4
+	set lim_2yrs[5] = lim_2yrs[5]*1.602e-4
+
+	set lim_week = 2*lim_week     # fudge to make the ratio to the 2yrs equal to 10 = sqrt(100)
+	set lim_week = lg(lim_week)
+	set lim_2yrs = lg(lim_2yrs)
+
+	if(substr('$2',0,1) == 's' || substr('$2',0,1) == 'i' ) {
+  	   echo "-------------------------------------------------------"
+	   echo " The listed fluxes are for L_peak = 45.0 "
+	   echo " They can be rescaled to any other value of "
+	   echo "   the peak luminosity, OR "
+	   echo " assigning at each x_peak its 'natural' L_radio [give '0'] "
+	   define lresc (45.0)
+	   define lresc ? { Rescale to L_peak = }
+	   if( $lresc > 0 ) {
+	      set vlresc = epeak*0 + $lresc - 45.0 
+	   } else {
+              set p = epeak
+              set aux1 = (0.011 + sqrt(5.e-7 + (0.011 - 0.00421875*(15. - p))**2.) - 0.00421875*(15. - p))**0.333333333 
+              set x = 5.33333 + 0.16798947/aux1 - (26.6667*aux1)/1.25992105 
+              set vlresc = x + 42.2 - 42.0 
+	   }
+
+	} else {
+	   echo "-------------------------------------------------------"
+	   echo " The listed fluxes are for L_radio = 42.0 "
+	   echo " They can be rescaled to any other value of "
+	   echo "   the radio luminosity, OR "
+	   echo " assigning at each x_peak its 'natural' L_radio [give '0'] "
+	   define lresc (42.0)
+	   define lresc ? { Rescale to L_radio = }
+	   if( $lresc > 0 ) {
+	      set vlresc = epeak*0 + $lresc - 42.0 
+	   } else {
+              set p = epeak
+              set aux1 = (0.011 + sqrt(5.e-7 + (0.011 - 0.00421875*(15. - p))**2.) - 0.00421875*(15. - p))**0.333333333 
+              set x = 5.33333 + 0.16798947/aux1 - (26.6667*aux1)/1.25992105 
+              set vlresc = x + 42.2 - 42.0
+	   }
+
+	}
+
+	foreach 4 < 10_20 20_40 40_80 80_200 10_200 > {
+	   set xrm_$4 = xrm_$4 + vlresc + 2*lg($h0/50.0)
+	}
+	set glast = glast + vlresc + 2*lg($h0/50.0)
+
+	echo "-------------------------------------------------------"
+	echo " [1]  10 -  20 "
+	echo " [2]  20 -  40 "
+	echo " [3]  40 -  80 "
+	echo " [4]  80 - 200 "
+	echo " [5]  10 - 200 "
+	define toplot ? { Which X-ray band to plot ? }
+	if( $toplot == 1 ) {
+	   define lab_y "F_{10-20keV}"
+	   define 5 "10_20"
+	   define y1  -14.0
+	   define y2   -8.0
+	}
+	if( $toplot == 2 ) {
+	   define lab_y "F_{20-40keV}"
+	   define 5 "20_40"
+	   define y1  -14.0
+	   define y2   -8.0
+	}
+	if( $toplot == 3 ) {
+	   define lab_y "F_{40-80keV}"
+	   define 5 "40_80"
+	   define y1  -14.0
+	   define y2   -8.0
+	}
+	if( $toplot == 4 ) {
+	   define lab_y "F_{80-200keV}"
+	   define 5 "80_200"
+	   define y1  -14.0
+	   define y2   -8.0
+	}
+	if( $toplot == 5 ) {
+	   define lab_y "F_{10-200keV}"
+	   define 5 "10_200"
+	    # define y1  -14.0
+	   define y1  -12.5
+	   define y2   -8.0
+	}
+
+	lweight 3
+	ltype 0
+	location 5500 29000 5500 30000
+	expand 1.5 
+	ctype 2 
+	ticksize -1 0 0.25 1
+	limits 12.3 18.9 $y1 $y2
+	box 
+
+	expand 1.7
+	xlabel \\nu_{peak,sync} [Hz]
+	ylabel log($lab_y) , log(F_{LAT}) [erg/cm^2/s]
+
+	relocate  ( $gx1 $( $gy2+700 ) )
+	expand 1.1
+	# if( $lresc > 0 ) {
+	#   putlabel 6 z=$(sprintf('%4.2f',$reds))  L_{radio}=$(sprintf('%5.3f',$lresc))  # IC/sync=$(sprintf('%3.1f',$gfac)) 
+	#} else {
+	#   putlabel 6 z=$(sprintf('%4.2f',$reds))  L_{radio}= {\it F}(\\nu_{peak})  # IC/sync=$(sprintf('%3.1f',$gfac)) 
+	#}
+	expand 1.5
+
+	lweight 15 ctype 2 ltype 0
+	connect epeak xrm_$5
+
+	lweight 20 ctype 4 ltype 0 
+	connect epeak glast
+
+	lweight  3 ctype 2 ltype 2 
+	connect epeak glast
+
+	lweight  6 ctype 2 ltype 4 
+	relocate 11 $(lim_week[$($toplot-1)]) 
+	draw     21 $(lim_week[$($toplot-1)]) 
+
+	lweight 15 ctype 4 ltype 0
+	 # relocate 12 $(lg(2)+lim_week[5])
+	 # draw     19 $(lg(0.5)+lim_week[5])
+	relocate 12 $(lg(1.5)+lim_week[5])
+	draw     19 $(lg(1.5)+lim_week[5])
+	
+	lweight  4 ctype 2 ltype 4
+	 # relocate 12 $(lg(2)+lim_week[5])
+	 # draw     19 $(lg(0.5)+lim_week[5])
+	relocate 12 $(lg(1.5)+lim_week[5])
+	draw     19 $(lg(1.5)+lim_week[5])
+	lweight 3 ctype 2 ltype 0
+
+	expand 2.4
+	lweight 15 ctype 2 ltype 0
+	relocate ( $( $gx2 + 2000) $($gy1) )
+	draw     ( $( $gx2 + 2000) $($gy1 + 4000) )
+	lweight 3 
+	angle 90 
+	putlabel 6  $lab_y
+	
+	lweight 20 ctype 4 ltype 0 
+	relocate ( $( $gx2 + 2000) $(0.5*($gy1+$gy2) + 2000) )
+	draw     ( $( $gx2 + 2000) $(0.5*($gy1+$gy2) + 6000) )
+	lweight  3 ctype 2 ltype 2 
+	relocate ( $( $gx2 + 2000) $(0.5*($gy1+$gy2) + 2000) )
+	draw     ( $( $gx2 + 2000) $(0.5*($gy1+$gy2) + 6000) )
+	ctype 4
+	putlabel 6  F_{LAT}
+	angle 0
+
+#--------------------------------------------------------------------------
+# flux_vs_peak_glast [<h0>] [<gfactor>] [<redshift>]
+#   Valid values for IC/sync ratio are: 
+#    for Lr=42 :     0.1 / 0.3 / 1.0 / 10.0 /
+#        Lp=45 :    ic10.0 / sy1.0 / sy10.0
+# 
+flux_vs_peak_glast 03
+
+	if(!$?1) {
+	   define cosmo ? < H_0           : >
+	   echo " Valid values for IC/sync ratio are: "
+	   echo "    0.1 / 0.3 / 1.0 / 10.0 "
+	   echo "   ic10.0 / sy1.0 / sy10.0 "
+	   define gfac  ? < IC/sync ratio : >
+	   define reds  ? < Redshift      : >
+	   # define 1 $h0
+	   define 1 $cosmo
+	   define 2 $gfac
+	   define 3 $reds
+	}
+	define cosmo 50
+
+	define h0    $1
+	define gfac  $2
+	define reds  $3
+	echo " H_0 = "$h0
+	define 1 $cosmo
+
+	#---------------------------------------------
+	#
+	if(substr('$2',0,1) == 's' || substr('$2',0,1) == 'i' ) {
+	   if(substr('$2',0,1) == 's' ) {
+	      data "/home/gfossati/Science/Fermi/simulations/old/results_monitor/monitor_h"$1_lp45_allpeak_sy$(sprintf('%3.1f',atof(substr('$2',2,2)))).dat
+	   } 
+	   if ( substr('$2',0,1) == 'i' ) {
+	      data "/home/gfossati/Science/Fermi/simulations/old/results_monitor/monitor_h"$1_lp45_allpeak_ic$(sprintf('%3.1f',atof(substr('$2',2,2)))).dat
+	   }
+	} else {
+	   data "/home/gfossati/Science/Fermi/simulations/old/results_monitor/monitor_h"$1_lr42_allpeak_$(sprintf('%3.1f',float($2))).dat
+	}
+	read  { epeak 1 z 2 glast 8 }  
+
+	#---------------------------------------------
+	#
+	set glast = lg(glast)   if( abs(z-$3) < 0.01 )
+	set epeak = epeak       if( abs(z-$3) < 0.01 )
+	# set glast = glast + lg(1.602e-4) 
+
+	set lim_week = < 0.3107E-10 0.5213E-10 0.7076E-10 0.1456E-09 0.1085E-09 0.9979E-08 > 
+	set lim_2yrs = < 0.6227E-11 0.1045E-10 0.1418E-10 0.2918E-10 0.2175E-10 0.2000E-08 >
+	# set lim_week[5] = lim_week[5]*1.602e-4
+	# set lim_2yrs[5] = lim_2yrs[5]*1.602e-4
+
+	set lim_week = 2*lim_week     # fudge to make the ratio to the 2yrs equal to 10 = sqrt(100)
+	set lim_week = lg(lim_week)
+	set lim_2yrs = lg(lim_2yrs)
+
+	define lim_1month $(lg(4.4e-9)+0.70)
+	define lim_1year  $(lg(4.4e-9))
+	define lim_2years $(lg(4.4e-9)-0.20)
+	define lim_5years $(lg(4.4e-9)-0.47)
+
+	if(substr('$2',0,1) == 's' || substr('$2',0,1) == 'i' ) {
+  	   echo "-------------------------------------------------------"
+	   echo " The listed fluxes are for L_peak = 45.0 "
+	   echo " They can be rescaled to any other value of "
+	   echo "   the peak luminosity, OR "
+	   echo " assigning at each x_peak its 'natural' L_radio [give '0'] "
+	   define lresc (45.0)
+	   define lresc ? { Rescale to L_peak = }
+	   if( $lresc > 0 ) {
+	      set vlresc = epeak*0 + $lresc - 45.0 
+	      define lrcol 3 
+	   } else {
+              set p = epeak
+              set aux1 = (0.011 + sqrt(5.e-7 + (0.011 - 0.00421875*(15. - p))**2.) - 0.00421875*(15. - p))**0.333333333 
+              set x = 5.33333 + 0.16798947/aux1 - (26.6667*aux1)/1.25992105 
+              set vlresc = x + 42.2 - 42.0 
+	      define lrcol 4 
+	   }
+
+	} else {
+	   echo "-------------------------------------------------------"
+	   echo " The listed fluxes are for L_radio = 42.0 "
+	   echo " They can be rescaled to any other value of "
+	   echo "   the radio luminosity, OR "
+	   echo " assigning at each x_peak its 'natural' L_radio [give '0'] "
+	   define lresc (42.0)
+	   define lresc ? { Rescale to L_radio = }
+	   if( $lresc > 0 ) {
+	      set vlresc = epeak*0 + $lresc - 42.0 
+	      define lrcol 3 
+	   } else {
+              set p = epeak
+              set aux1 = (0.011 + sqrt(5.e-7 + (0.011 - 0.00421875*(15. - p))**2.) - 0.00421875*(15. - p))**0.333333333 
+              set x = 5.33333 + 0.16798947/aux1 - (26.6667*aux1)/1.25992105 
+              set vlresc = x + 42.2 - 42.0
+	      define lrcol 4
+	   }
+
+	}
+
+	set glast = glast + vlresc + 2*lg($h0/50.0)
+
+	lweight 3
+	ltype 0
+	location 5500 29000 5500 30000
+	expand 1.5 
+	ctype 2 
+	ticksize -1 0 0.25 1
+	# limits 12.3 18.9 $y1 $y2
+	limits 12.3 18.9 -12 -4 
+	limits 12.5 17.6 -12 -4 
+	box 
+
+	expand 1.7
+	xlabel \\nu_{peak,sync} [Hz]
+	ylabel log(F_\gamma) [erg/cm^2/s]
+
+	relocate  ( $gx1 $( $gy2+700 ) )
+	expand 1.1
+	# if( $lresc > 0 ) {
+	#   putlabel 6 z=$(sprintf('%4.2f',$reds))  L_{radio}=$(sprintf('%5.3f',$lresc))  # IC/sync=$(sprintf('%3.1f',$gfac)) 
+	#} else {
+	#   putlabel 6 z=$(sprintf('%4.2f',$reds))  L_{radio}= {\it F}(\\nu_{peak})  # IC/sync=$(sprintf('%3.1f',$gfac)) 
+	#}
+	expand 1.5
+
+	lweight 15 ctype $lrcol ltype 0 connect epeak glast  if( epeak <= 17.3 )
+	lweight  3 ctype 2      ltype 2 connect epeak glast  if( epeak <= 17.3 )
+
+	lweight  4 ctype 2 ltype 4
+	## relocate 12 $(lim_week[5])
+	## draw     19 $(lim_week[5])
+
+	relocate 12 $lim_1month
+	draw     19 $lim_1month
+	relocate 12 $lim_2years
+	draw     19 $lim_2years
+
+	# slanted line showing the dependence on spectral index
+	## relocate 13 -7.95 draw 17 -8.68
+
+	lweight 3 ctype 2 ltype 0
+
+#--------------------------------------------------------------------------
+# read_flux_vs_z [<h0>] [<xpeak>] [<gfactor>]
+#      Valid values for IC/sync ratio: 0.1 / 0.3 / 1.0 / 10.0 
+# 
+read_flux_vs_z 03
+
+	if(!$?1) {
+           define cosmo ? <           H_0 : >
+           define xpk   ? <        X_peak : >
+           echo           "   Valid values for IC/sync ratio: "
+	   echo           "     0.1 / 0.3 / 1.0 / 10.0 "
+           define gfac  ? < IC/sync ratio : >
+
+	   define 1 $cosmo
+	   define 2 $xpk
+	   define 3 $gfac
+	}
+	define cosmo $1
+	define xpk   $2
+	define gfac  $3
+
+	data "/home/gfossati/Science/Fermi/simulations/old/results_monitor/monitor_h"$1_lr42_$(sprintf('%5.2f',float($2)))_$(sprintf('%3.1f',float($3))).dat
+	define lradio   read 4 2
+	define lxray    read 4 3
+	define lrnative read 4 5
+	lines 11 94 
+	read  { z 1 xrm_10_20 2 xrm_20_40 3 xrm_40_80 4 xrm_80_200 5 xrm_10_200 6 glast 7 }  
+
+	echo "---------------------------------------------"
+	echo "> L_radio    : "$lradio
+	echo "> L_xray     : "$lxray
+	echo "> L_r_native : "$lrnative "(for Peak @ "$(sprintf('%5.2f',float($xpk)))" )"
+	echo "---------------------------------------------"
+
+	foreach 4 < 10_20 20_40 40_80 80_200 10_200 > {
+	   set xrm_$4 = lg(xrm_$4)
+	}
+	set glast = lg(glast)
+	set lim_week = < 0.3107E-10 0.5213E-10 0.7076E-10 0.1456E-09 0.1085E-09 0.9979E-08 > 
+	set lim_2yrs = < 0.6227E-11 0.1045E-10 0.1418E-10 0.2918E-10 0.2175E-10 0.2000E-08 >
+	set lim_week = 2*lim_week  # fudge to make the ratio to the 2yrs equal to 10 = sqrt(100)
+	set a = lim_week/lim_2yrs
+	set lim_week = lg(lim_week)
+	set lim_2yrs = lg(lim_2yrs)
+
+#---------------------------------------------------------------------------
+# draw_flux_vs_z  [<h0>] [<xpeak>] [<gfactor>]
+#
+draw_flux_vs_z 101
+
+	if( $?1 ) {
+	   define passargs "$1"
+	} else {
+	   define passargs ""
+	}
+	read_flux_vs_z $passargs
+
+	define plot_g_only ? < Plot only LAT curves [0|1] : >
+
+	location 5500 27000 5500 29000
+	location 5500 29500 5500 29000
+	location 5500 29000 5500 30000
+	expand 1.5 
+	ctype 2 
+	ticksize -1 0 0.25 1.0 
+
+	if( $plot_g_only ) {
+	   define ymin (-12) 
+	   define ymax ( -4) 
+	   define box4 (  0)
+	} else {
+	   define ymin (-16) 
+	   define ymax ( -8) 
+	   define box4 (  3)
+	}
+	# limits -2.1 $(lg(4.2)) -16 -8 
+        # limits -2.1 $(lg(4.2)) -12 -4
+        limits -2.1 $(lg(4.2)) $ymin $ymax
+	lweight 3
+	box 1 2 0 $box4
+	xlabel Redshift
+
+	if( $plot_g_only ) {
+	   ylabel log(F_\gamma) [ph/cm^2/s]
+	} else {
+	   ylabel log(F_X) [erg/cm^2/s]
+	}
+
+	echo "----------------------------------------"
+	echo "> nu_peak    = "$(sprintf('%5.2f',float($xpk))) 
+	echo "> L_R        = "$(sprintf('%5.2f',float($lradio)))  
+	echo "> IC/sync    = "$(sprintf('%3.1f',float($gfac)))  
+	echo "> L_r,native = "$(sprintf('%5.2f',float($lrnative)))
+	echo "----------------------------------------"
+
+	define native ? < Lr=42 or Native or OTHER [1|2|4x] : >
+	if( $native == 1 ) {
+	    set flux_corr = 0*xrm_10_20
+	    define lrused $lradio
+	}
+	if( $native == 2 ) {
+	    set flux_corr = 0*xrm_10_20 + $lrnative - $lradio
+	    define lrused $lrnative
+	}
+	if( $native >  2 ) {
+	    define lrnative $native
+	    set flux_corr = 0*xrm_10_20 + $lrnative - $lradio
+	    define lrused $lrnative
+	}
+
+	define dolabels ? < Print labels with parameters [y|n]: >
+	if( substr('$dolabels',0,1) == 'y' ) { 
+	   relocate  ( $gx1 $( $gy2+2100 ) )
+	   expand 1.1
+	   putlabel 6 \\nu_{peak}=$(sprintf('%4.1f',float($xpk)))  IC/sync=$(sprintf('%3.1f',float($gfac)))
+	   relocate  ( $gx1 $( $gy2+700 ) )
+	   putlabel 6 L_R=$(sprintf('%5.2f',float($lradio)))   L_{r,native}=$(sprintf('%5.2f',float($lrnative)))   L_{r,used}=$(sprintf('%5.2f',float($lrused)))
+	   expand 1.5
+	}
+
+
+	# define whatlim ? <       What flux limit [week|2yrs] : >
+	# if( substr('$whatlim',0,1) == 'w' ) { set lim_flux = lim_week }
+	# if( substr('$whatlim',0,1) == '2' ) { set lim_flux = lim_2yrs }
+
+	if( $plot_g_only ) { 
+	   echo " Skipping plotting XRM curves"
+	} else {
+	   echo $(xrm_10_20[0])
+	   ctype 2 ltype 0 connect (lg(z)) (xrm_10_20+flux_corr)  ltype 4 relocate -3 $(lim_flux[0]) draw 1 $(lim_flux[0])
+
+	   set _flux=xrm_10_20+flux_corr
+	   sub_dot 0
+
+	   # ctype 2 ltype 0 connect (lg(z)) (xrm_20_40+flux_corr)  ltype 4 relocate -3 $(lim_flux[1]) draw 1 $(lim_flux[1])
+
+	   ctype 5 ltype 0 connect (lg(z)) (xrm_40_80+flux_corr)  ltype 4 relocate -3 $(lim_flux[2]) draw 1 $(lim_flux[2])
+	   set _flux=xrm_40_80+flux_corr
+	   sub_dot 2
+
+	   # ctype 5 ltype 0 connect (lg(z)) (xrm_80_200+flux_corr) ltype 4 relocate -3 $(lim_flux[3]) draw 1 $(lim_flux[3])
+
+	   ctype 4 ltype 0 connect (lg(z)) (xrm_10_200+flux_corr) ltype 4 relocate -3 $(lim_flux[4]) draw 1 $(lim_flux[4]) 
+	   set _flux=xrm_10_200+flux_corr
+	   sub_dot 4
+	}
+
+	lweight 3 
+	ctype 2 
+	ltype 0 
+
+	if( $plot_g_only == 0 ) {
+           limits -2.1 $(lg(4.2)) -12 -4
+           box 3 3 3 2
+           relocate ( $($gx2 + 4000) $( 0.5*($gy1+$gy2) ) ) 
+           angle 90
+           putlabel 5 log(F_\gamma) [ph/cm^2/s]
+           angle 0
+	}
+
+	if( $xpk <= 14.0                 ) { define xpkcol 3 }
+	if( $xpk >  14.0 && $xpk <= 15.0 ) { define xpkcol 4 }
+	if( $xpk >  15.0 && $xpk <= 16.0 ) { define xpkcol 6 }
+	if( $xpk >= 16.0                 ) { define xpkcol 5 }
+
+	lweight 5 
+	ctype $xpkcol
+	ltype 0 
+	connect (lg(z)) (glast+flux_corr) 
+
+	define lim_1month $(lg(4.4e-9)+0.70)
+	define lim_1year  $(lg(4.4e-9))
+	define lim_2years $(lg(4.4e-9)-0.20)
+	define lim_5years $(lg(4.4e-9)-0.47)
+
+	   ctype 2 
+	   ltype 4 
+	   lweight 3
+	# relocate -3 $lim_1month
+	# draw      1 $lim_1month
+	# relocate -3 $lim_1year
+	# draw      1 $lim_1year
+	# relocate -3 $lim_5years
+	# draw      1 $lim_5years
+
+	foreach 9 < 1month 2years > { 
+	   ctype 2 
+	   ltype 4 
+	   lweight 3
+	   relocate -3 $lim_$9 draw 1 $lim_$9
+	   set _flux = glast + flux_corr
+	   ctype $xpkcol
+	   lweight 5 
+	   sub_dot_new $lim_$9
+	}
+
+        # foreach 9 < week 2yrs > { 
+        #    set lim_flux = lim_$9
+        #    ctype 2 
+        #    ltype 4 
+        #    lweight 3
+        #    relocate -3 $(lim_flux[5]) draw 1 $(lim_flux[5]) 
+        #    set _flux = glast + flux_corr
+        #    ctype $xpkcol
+        #    lweight 5 
+        #    sub_dot 5
+        # }
+
+	ltype 0 ctype 2 
+	lweight 3 
+
+	if( substr('$dolabels',0,1) == 'y' ) { 
+
+           expand 1.2
+           define step 1250 
+           relocate ( $($gx1 + 1250) $($gy1 + 1250) )
+           ctype 3 putlabel 6 Fermi
+           
+           if( $plot_g_only == 0 ) { 
+              relocate ( $($gx1 + 1250) $($gy1 + 1250 + 1*$step) ) ctype 4 putlabel 6 XRM 10-200 keV
+              relocate ( $($gx1 + 1250) $($gy1 + 1250 + 2*$step) ) ctype 5 putlabel 6 XRM 40-80 keV
+              relocate ( $($gx1 + 1250) $($gy1 + 1250 + 3*$step) ) ctype 2 putlabel 6 XRM 10-20 keV
+           }
+           
+           relocate ( $($gx2 - 1250) $($gy1 + 1250 ) )
+           ctype 2 putlabel 4 for L_R=$(sprintf('%5.2f',float($lrused)))
+	}
+
+sub_dot 1
+
+	# echo index=$1
+	set _z  = reverse(z)
+	set _lz = lg(_z)
+	set _f  = reverse(_flux)
+	set _ff = $(lim_flux[$1])-1,(lim_flux[$1])+1,0.001
+	define _idx 1000
+	interp2 _f _lz _ff _zz
+	define saveexp $expand
+	relocate $(_zz[$_idx]) $(_ff[$_idx]) ptype 4 3 expand 2.5 dot  expand $saveexp
+
+	ltype 1 
+	draw $(_zz[$_idx]) $fy1
+
+	foreach var < _z _lz _f _ff _zz > {
+	  delete $var
+	}
+
+sub_dot_new 1
+
+	# echo index=$1
+	set _z  = reverse(z)
+	set _lz = lg(_z)
+	set _f  = reverse(_flux)
+	set _ff = $1-1,$1+1,0.001
+	define _idx 1000
+	interp2 _f _lz _ff _zz
+	define saveexp $expand
+	relocate $(_zz[$_idx]) $(_ff[$_idx]) ptype 4 3 expand 2.5 dot  expand $saveexp
+
+	ltype 1 
+	draw $(_zz[$_idx]) $fy1
+
+	foreach var < _z _lz _f _ff _zz > {
+	  delete $var
+	}
+
+
+#--------------------------------------------------------------------------
+# intflux [<band>] [<E1>] [<E2>] [<z>] 
+intflux 04
+
+	if( $?1 ) { 
+	   define band  $1
+	   define e1obs $2
+	   define e2obs $3
+	   # lumdist $4
+	   systemcall cosmo_calculator.py $4 | egrep -v Age >!  /tmp/lumdist
+	   data "/tmp/lumdist"
+	   define lumdist read 1 3 
+
+	   if ( substr('$band',0,1) == 'g' ) {
+	      define units "MeV"
+	   } else {
+	      define units "keV"
+	   }
+	} else { 
+	   define band  ? { Band [x/g] ? }
+	   if substr('$band',0,1) == 'g' ) {
+	      define e1obs ? { E_1 MeV (observed): }
+	      define e2obs ? { E_2 MeV (observed): }
+	      define units "MeV"
+	   } else {
+	      define e1obs ? { E_1 keV (observed): }
+	      define e2obs ? { E_2 keV (observed): }
+	      define units "keV"
+	   }
+	   lumdist 
+	}
+
+	set fnu = (nulnu - x) - 2*$lumdist - 1.09920986
+	set nnu = fnu - ( x - 17.384 - 8.795 )
+
+	define e1 $($e1obs*(1. + $z))
+	define e2 $($e2obs*(1. + $z))
+
+	if( substr('$band',0,1) == 'x' ) { 
+	   define nu1 $(lg($e1) + 17.384)
+	   define nu2 $(lg($e2) + 17.384)
+	} else {
+	   define nu1 $(lg($e1) + 20.860)
+	   define nu2 $(lg($e2) + 20.860)
+	}
+
+	define dumfl 0
+	define dumfn 0
+	define i     0
+
+	do 1=1,$(dimen(nulnu)-2) {
+	   if( x[$1] > $nu1 && x[$1] < $nu2 ) {
+	      define i ($i+1)
+	      define de    ( 0.5*(10.0**x[$($1+1)] - 10.0**x[$($1-1)]) )
+	      define dfl   ( 10.0**fnu[$1]*$de )
+	      define dumfl ( $dumfl + $dfl )
+	      define dfn   ( 10.0**nnu[$1]*$de )
+	      define dumfn ( $dumfn + $dfn )
+	      relocate $(x[$1]) $(nulnu[$1]) dot
+	   }
+	}
+	# echo contribs: $i
+
+	echo [$(sprintf('%6.1f',$e1obs))-$(sprintf('%6.1f',$e2obs))] $units = [$(sprintf('%6.1f',$e1))-$(sprintf('%6.1f',$e2))] z=$(sprintf('%5.3f',$z))  F= $(sprintf('%.4e',$dumfl)) / N= $(sprintf('%.4e',$dumfn))
+	# echo [$(sprintf('%6.1f',$e1obs))-$(sprintf('%6.1f',$e2obs))] $units = [$(sprintf('%6.1f',$e1))-$(sprintf('%6.1f',$e2))] z=$(sprintf('%5.3f',$z))  N= $(sprintf('%.5e',$dumfn))
+
+
+#--------------------------------------------------------------------------
+# loop_intflux
+loop_intflux
+
+	define l_r ?      <  L_Radio : >
+	define redshift ? < Redshift : >
+
+	if( $l_r > 0 ) { 
+	   define l_ra $l_r
+	   seds_comp_radio $l_r 2000.0 11.7 8.3 0.2 -6.5 1.8 0.5
+	} else {
+	   echo " Using previous synthetic SED "
+	}
+
+	echo "** L_radio  = "$(sprintf('%5.2f',$l_ra))
+	echo "** redshift = "$(sprintf('%5.2f',$redshift))
+	echo "-------------------------------------------------------"
+	intflux  x  10  20 $redshift 
+	intflux  x  20  40 $redshift 
+	intflux  x  40  80 $redshift 
+	intflux  x  80 200 $redshift
+	intflux  x  10 200 $redshift
+	echo "-------------------------------------------------------"
+	intflux  g 100 30e3 $redshift
+	echo "-------------------------------------------------------"
+
+#--------------------------------------------------------------------------

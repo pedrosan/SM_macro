@@ -1,0 +1,1158 @@
+#-------------------------------------------------------------------------------
+# read_raw_whipple_spec
+read_raw_whipple_spec
+
+	data "/home/gfossati/Science/Mkn421/2001/Whipple/whipple_spec.txt"
+	do i=1,10 { 
+	   read row e_$i $($i*8-2)
+	   read row f_$i $($i*8-1)
+	   read row ef_$i $($i*8)
+	   set f_$i  = f_$i*1e7
+	   set ef_$i = ef_$i*1e7
+	}
+
+	define vec_a " e_7 f_1 ef_1 f_2 ef_2 f_3 ef_3 f_4 ef_4 f_5 ef_5"
+	define vec_b     " f_6 ef_6 f_7 ef_7 f_8 ef_8 f_9 ef_9 f_10 ef_10"
+
+	define fmt_a " %5.3f   %8.4f %7.4f   %8.4f %7.4f   %8.4f %7.4f   %8.4f %7.4f   %8.4f %7.4f"
+	define fmt_b       "   %8.4f %7.4f   %8.4f %7.4f   %8.4f %7.4f   %8.4f %7.4f   %8.4f %7.4f"
+
+	# print '$!fmt_a $!fmt_b\n' < $!vec_a $!vec_b >
+
+	# arrays e_$i f_$i ef_$i are defined for 10 epochs.
+	# they contain the differential whipple flux.
+
+#-------------------------------------------------------------------------------
+# plot_whipple_spectra
+plot_whipple_spectra
+
+	ptype 4 3 
+	data "/home/gfossati/Science/Mkn421/2001/Whipple/whipple_spectra_all_krennrich.dat"
+	define nspec 10
+
+	read < escale 1 e_err_d 2 e_err_u 3 > 
+	set lg_e_err_d = lg(escale) - lg(escale - e_err_d)
+	set lg_e_err_u = lg(escale + e_err_u) - lg(escale)
+
+	set sortref = < -1 >
+	do 1=1,$nspec { 
+	   read < f_$1 $(2+2*$1)  err_f_$1 $(2+2*$1+1) >
+
+	   set conv          = 4.1356e-31*(1.6022*escale)*(2.418e26*escale)
+           set f_$1          = f_$1*1e-7*conv
+           set err_f_$1      = err_f_$1*1e-7*conv
+
+	   # set f_$1     = f_$1*1e-11*escale  
+	   # set err_f_$1 = err_f_$1*1e-11*escale 
+	   set e_$1     = escale     if( f_$1 > 1e-19 )
+	   set err_f_$1 = err_f_$1   if( f_$1 > 1e-19 )
+	   set f_$1     = f_$1       if( f_$1 > 1e-19 )
+	   set sortref  = sortref CONCAT < $(sum(f_$1/1e-10)) >
+	}
+	set counter = 1,$nspec,1
+	set order   = $nspec,1,-1
+	set sortref = sortref if(sortref > 0 )
+	sort  < sortref counter >
+	print < counter sortref >
+	#set counter=reverse(counter)
+	#print < counter order >
+
+	reset_graph
+	limits -1 $(lg(20.)) -12.5 -8.5
+	ticksize -1 0 -1 0 
+	expand 1.5
+	box
+	xlabel Energy [TeV]
+	ylabel E*F_E   Flux
+
+	define mult (5)
+	do 1=1,$nspec {
+	   define 2 $(counter[$($1-1)])
+	   echo [$1] spectrum : $2
+	   set lgf   = lg(f_$2)
+	   set err_f = err_f_$2
+	   define cc $( ($1 % 6) + 2 )
+	   ctype $cc
+	   ltype 2
+	   connect (lg(e_$2)) lgf
+	   ltype 0 
+	   logerr  (lg(e_$2)) lgf err_f
+	   points  (lg(e_$2)) lgf
+	   relocate $(lg(0.1)+ 0.04 + 0.04*$2) $(lgf[0])
+	   if($1 != 5 ) {
+	       putlabel 5 $2
+	   } else {
+	       putlabel 5 *$2*
+	   }
+	}
+	# ctype 2
+	# relocate (  $gx1  $( $gy2 + 800 ) )
+	# putlabel 6 Mrk421: Whipple spectra for March 19 2001
+
+	ctype 2
+	expand 1.25
+	relocate ( $(0.5*($gx1+$gx2) )  $( $gy2 + 800 ) )
+	putlabel 5 Mrk421: Whipple spectra for March 19 2001
+	relocate ( $( $gx2 + 800 )  $( $gy2 ) )
+	angle -90
+	putlabel 6 "Krennrich Analysis"
+	angle 0
+
+#-------------------------------------------------------------------------------
+# read_whipple_spectra_2redux
+read_whipple_spectra_2redux
+
+	foreach 9 < "k" "r" > {
+
+           if( substr('$9',0,1) == 'k' ) { 
+              data "/home/gfossati/Science/Mkn421/2001/Whipple/whipple_spectra_all_krennrich.dat"
+              define nspec 10
+           }
+           if( substr('$9',0,1) == 'r' ) { 
+              data "/home/gfossati/Science/Mkn421/2001/Whipple/whipple_spectra_all_rebillot.dat"
+              define nspec 7
+           }
+
+           read < escale_$9 1 e_err_d_$9 2 e_err_u_$9 3 > 
+           set lg_e_err_d_$9 = lg(escale_$9) - lg(escale_$9 - e_err_d_$9)
+           set lg_e_err_u_$9 = lg(escale_$9 + e_err_u_$9) - lg(escale_$9)
+	
+           set sortref = < -1 >
+           do 1=1,$nspec { 
+              read < f_$9_$1 $(2+2*$1)  err_f_$9_$1 $(2+2*$1+1) >
+              # set f_$9_$1          = f_$9_$1*1e-11*escale_$9
+	      set conv             = 4.1356e-31*(1.6022*escale_$9)*(2.418e26*escale_$9)
+              set f_$9_$1          = f_$9_$1*1e-7*conv
+              set err_f_$9_$1      = err_f_$9_$1*1e-7*conv
+	      set check_ul_$9_$1   = f_$9_$1/err_f_$9_$1
+	      
+              set e_$9_$1          = escale_$9       if( f_$9_$1 > 1e-19 )
+              set lg_e_err_d_$9_$1 = lg_e_err_d_$9   if( f_$9_$1 > 1e-19 )
+              set lg_e_err_u_$9_$1 = lg_e_err_u_$9   if( f_$9_$1 > 1e-19 )
+              set err_f_$9_$1      = err_f_$9_$1     if( f_$9_$1 > 1e-19 )
+              set check_ul_$9_$1   = check_ul_$9_$1  if( f_$9_$1 > 1e-19 )
+              set f_$9_$1          = f_$9_$1         if( f_$9_$1 > 1e-19 )
+              # set sortref          = sortref CONCAT < $(sum(f_$9_$1/1e-10)) >
+           }
+	}
+
+#-------------------------------------------------------------------------------
+# plot_whipple_spectra_single
+#    Needs "read_whipple_spectra_2redux" to read the data
+plot_whipple_spectra_single
+
+	define whichdata ? < What analysis, Krennrich or Rebillot [k|n] : >
+	define whichone  ? <              What sequential number [1-10] : >
+	define 2 $whichone
+
+	if( substr('$whichdata',0,1) == 'k' ) { 
+	   define 9 "k"
+	   define sp_color 3 
+	}
+	if( substr('$whichdata',0,1) == 'r' ) { 
+	   define 9 "r"
+	   define sp_color 5 
+	}
+
+	# define rescale ? < Rescale (shift) spectra [y|n] : >
+	define rescale "n"
+
+	ptype 4 3 
+	# data whipple_spectra_all.dat
+
+	if( substr('$rescale',0,1) == 'y' ) { 
+	   define xmin  $(lg(0.1))
+	   define xmax  $(lg(15))
+	   define ymin -15
+	   define ymax  -4.8
+	   define mult   5
+	} else {
+	   # define ymin -12.5
+	   # define ymax  -8.5
+	   define xmin  $(lg(0.1))
+	   define xmax  $(lg(15))
+	   define ymin  $(lg(5e-12))
+	   define ymax  $(lg(1e-9))
+	   define mult   1
+	}
+
+	reset_graph
+	# limits -1 $(lg(20.)) $ymin $ymax
+	limits $xmin $xmax $ymin $ymax
+	ticksize -1 0 -1 0 
+	expand 1.5
+	box
+	xlabel Energy [TeV]
+	ylabel E*F_E  [erg cm^{-2} s^{-1}]
+
+	foreach 8 < lge lgf err_f > { set $8 local } 
+	set lge   = lg(e_$9_$2)
+	set lgf   = lg(f_$9_$2)
+	set err_f = err_f_$9_$2
+
+	ctype $sp_color
+	ltype 2
+	connect  lge lgf
+	ltype 0 
+	logerr   lge lgf err_f
+	errorbar lge lgf lg_e_err_d_$9_$2 3
+	errorbar lge lgf lg_e_err_u_$9_$2 1
+	points   lge lgf
+
+	# Prepares array to be used in case of spectral fitting
+	set fitx=lge
+	set fity=lgf
+	set fitw=0.5*(lg(f_$9_$2+err_f_$9_$2)-lg(f_$9_$2-err_f_$9_$2))
+
+	ctype 2
+	expand 1.25
+	relocate ( $(0.5*($gx1+$gx2) )  $( $gy2 + 800 ) )
+	putlabel 5 "Mrk421: Whipple spectra for March 19 2001"
+
+	if( substr('$whichdata',0,1) == 'k' ) { 
+	    define str_label "Krennrich Analysis"
+	    define gyy $gy2
+	    define lab_dir 6
+	}
+	if( substr('$whichdata',0,1) == 'r' ) { 
+	    define str_label "Rebillot Analysis"
+	    define gyy $gy1
+	    define lab_dir 4
+	}
+	relocate ( $( $gx2 + 800 )  $( $gyy ) )
+	angle -90
+	ctype $sp_color
+	putlabel $lab_dir "$!str_label #$!whichone"
+	angle 0
+	ctype 2 
+
+#-------------------------------------------------------------------------------
+# plot_whipple_spectra_resc 
+#           *** THE GOOD ONE to plot Krennrich and Rebillot SEDs ***
+plot_whipple_spectra_resc
+
+	define whichdata ? < What analysis, Krennrich or Rebillot [k|n] : >
+
+	if( substr('$whichdata',0,1) == 'k' ) { 
+	   data "/home/gfossati/Science/Mkn421/2001/Whipple/whipple_spectra_all_krennrich.dat"
+	   define nspec 10
+	}
+	if( substr('$whichdata',0,1) == 'r' ) { 
+	   data "/home/gfossati/Science/Mkn421/2001/Whipple/whipple_spectra_all_rebillot.dat"
+	   define nspec 7
+	}
+
+	define rescale ? < Rescale (shift) spectra [y|n] : >
+
+	ptype 4 3 
+	# data whipple_spectra_all.dat
+
+	read < escale 1 e_err_d 2 e_err_u 3 > 
+	set lg_e_err_d = lg(escale) - lg(escale - e_err_d)
+	set lg_e_err_u = lg(escale + e_err_u) - lg(escale)
+	
+	set sortref = < -1 >
+	do 1=1,$nspec { 
+	   read < f_$1 $(2+2*$1)  err_f_$1 $(2+2*$1+1) >
+
+	   set conv          = 4.1356e-31*(1.6022*escale)*(2.418e26*escale)
+           set f_$1          = f_$1*1e-7*conv
+           set err_f_$1      = err_f_$1*1e-7*conv
+	   set check_ul_$1   = f_$1/err_f_$1
+	   # print < f_$1 check_ul_$1 >
+
+	   set e_$1          = escale       if( f_$1 > 1e-19 )
+	   set lg_e_err_d_$1 = lg_e_err_d   if( f_$1 > 1e-19 )
+	   set lg_e_err_u_$1 = lg_e_err_u   if( f_$1 > 1e-19 )
+	   set err_f_$1      = err_f_$1     if( f_$1 > 1e-19 )
+	   set check_ul_$1   = check_ul_$1  if( f_$1 > 1e-19 )
+	   set f_$1          = f_$1         if( f_$1 > 1e-19 )
+	   set sortref       = sortref CONCAT < $(sum(f_$1/1e-10)) >
+	}
+	set counter = 1,$nspec,1
+	set order   = $nspec,1,-1
+	set sortref = sortref if(sortref > 0 )
+	sort  < sortref counter >
+	print < counter sortref >
+	#set counter=reverse(counter)
+	#print < counter order >
+
+	if( substr('$rescale',0,1) == 'y' ) { 
+	   define xmin  $(lg(0.1))
+	   define xmax  $(lg(15))
+	   define ymin -15
+	   define ymax  -4.8
+	   define mult   5
+	} else {
+	   define xmin  $(lg(0.1))
+	   define xmax  $(lg(15))
+	   define ymin  $(lg(5e-12))
+	   define ymax  $(lg(1e-9))
+	   define mult   1
+	}
+
+	reset_graph
+	# limits -1 $(lg(20.)) $ymin $ymax
+	limits $xmin $xmax $ymin $ymax
+	ticksize -1 0 -1 0 
+	expand 1.5
+	box
+	xlabel Energy [TeV]
+	ylabel E*F_E   Flux
+
+	foreach vec < lge lgf err_f lg_e_err_d lg_e_err_u > {
+	   set good_$vec local
+	   set bad_$vec  local
+	}
+
+	# define mult (5)
+	define threshold (1.5)
+	define upper {{m -10 0 10 0 m 0 0 0 -2000 -200 -1700 0 -1850 200 -1700 0 -2000 }}
+
+	do 1=1,$nspec {
+	   define 2 $(counter[$($1-1)])
+	   echo [$1] spectrum : $2
+	   set lgf   = lg(f_$2) + ($1-5)*lg($mult)
+	   set err_f = err_f_$2*$mult**($1-5)
+	   define cc $( ($1 % 6) + 2 )
+	   ctype $cc
+
+	   set lge             = lg(e_$2)
+	   set good_lge        = lg(e_$2)       if( check_ul_$2 > $threshold )
+	   set good_lgf        = lgf            if( check_ul_$2 > $threshold )
+	   set good_err_f      = err_f          if( check_ul_$2 > $threshold )
+	   set good_lg_e_err_d = lg_e_err_d_$2  if( check_ul_$2 > $threshold )
+	   set good_lg_e_err_u = lg_e_err_u_$2  if( check_ul_$2 > $threshold )
+
+	   ltype 2
+	   # connect  good_lge good_lgf
+	   connect  lge lgf
+
+	   ltype 0
+	   ptype 4 3 
+	   logerr   good_lge good_lgf good_err_f
+	   errorbar good_lge good_lgf good_lg_e_err_d 3
+	   errorbar good_lge good_lgf good_lg_e_err_u 1
+	   points   good_lge good_lgf
+
+	   if( dimen(good_lgf) < dimen(lgf) ) {
+	      set bad_lge        = lg(e_$2)       if( check_ul_$2 <= $threshold )
+	      set bad_lgf        = lgf            if( check_ul_$2 <= $threshold )
+	      set bad_err_f      = err_f          if( check_ul_$2 <= $threshold )
+	      set bad_lg_e_err_d = lg_e_err_d_$2  if( check_ul_$2 <= $threshold )
+	      set bad_lg_e_err_u = lg_e_err_u_$2  if( check_ul_$2 <= $threshold )
+
+	      errorbar bad_lge bad_lgf bad_lg_e_err_d 3
+	      errorbar bad_lge bad_lgf bad_lg_e_err_u 1
+	      ptype 4 3 
+	      points   bad_lge bad_lgf
+	      ptype $upper
+	      points   bad_lge bad_lgf
+
+	   } else {
+	      echo "    > No upper limits found "
+	   }
+
+	   relocate $(lg(0.1)+ 0.04 + 0.04*$2) $(lgf[0])
+	   if($1 != 5 ) {
+	       putlabel 5 $2
+	   } else {
+	       putlabel 5 *$2*
+	   }
+	}
+
+	ctype 2
+	expand 1.25
+	relocate ( $(0.5*($gx1+$gx2) )  $( $gy2 + 800 ) )
+	putlabel 5 "Mrk421: Whipple spectra for March 19 2001"
+	relocate ( $( $gx2 + 800 )  $( $gy2 ) )
+	angle -90
+	if( substr('$whichdata',0,1) == 'k' ) { putlabel 6 "Krennrich Analysis" }
+	if( substr('$whichdata',0,1) == 'r' ) { putlabel 6 "Rebillot Analysis" }
+	angle 0
+
+#-------------------------------------------------------------------------------
+# compare_whipple_spectra
+#   Probably a duplicate of "plot_whipple_spectra_resc"
+compare_whipple_spectra
+
+	define whichdata ? < What analysis, Krennrich or Rebillot [k|n] : >
+
+	if( substr('$whichdata',0,1) == 'k' ) { 
+	   data "/home/gfossati/Science/Mkn421/2001/Whipple/whipple_spectra_all_krennrich.dat"
+	   define nspec 10
+	}
+	if( substr('$whichdata',0,1) == 'r' ) { 
+	   data "/home/gfossati/Science/Mkn421/2001/Whipple/whipple_spectra_all_rebillot.dat"
+	   define nspec 7
+	}
+
+	define rescale ? < Rescale (shift) spectra [y|n] : >
+
+	ptype 4 3 
+	# data whipple_spectra_all.dat
+
+	read < escale 1 e_err_d 2 e_err_u 3 > 
+	set lg_e_err_d = lg(escale) - lg(escale - e_err_d)
+	set lg_e_err_u = lg(escale + e_err_u) - lg(escale)
+	
+	set sortref = < -1 >
+	do 1=1,$nspec { 
+	   read < f_$1 $(2+2*$1)  err_f_$1 $(2+2*$1+1) >
+
+	   set conv          = 4.1356e-31*(1.6022*escale)*(2.418e26*escale)
+           set f_$1          = f_$1*1e-7*conv
+           set err_f_$1      = err_f_$1*1e-7*conv
+	   set check_ul_$1   = f_$1/err_f_$1
+
+	   # set f_$1          = f_$1*1e-11*escale  
+	   # set err_f_$1      = err_f_$1*1e-11*escale 
+	   set e_$1          = escale       if( f_$1 > 1e-19 )
+	   set lg_e_err_d_$1 = lg_e_err_d   if( f_$1 > 1e-19 )
+	   set lg_e_err_u_$1 = lg_e_err_u   if( f_$1 > 1e-19 )
+	   set err_f_$1      = err_f_$1     if( f_$1 > 1e-19 )
+	   set check_ul_$1   = check_ul_$1  if( f_$1 > 1e-19 )
+	   set f_$1          = f_$1         if( f_$1 > 1e-19 )
+	   set sortref       = sortref CONCAT < $(sum(f_$1/1e-10)) >
+	}
+	set counter = 1,$nspec,1
+	set order   = $nspec,1,-1
+	set sortref = sortref if(sortref > 0 )
+	sort  < sortref counter >
+	print < counter sortref >
+	#set counter=reverse(counter)
+	#print < counter order >
+
+	if( substr('$rescale',0,1) == 'y' ) { 
+	   define ymin -15
+	   define ymax  -4.8
+	   define mult   5
+	} else {
+	   define ymin -12.5
+	   define ymax  -8.5
+	   define mult   1
+	}
+
+	reset_graph
+	limits -1 $(lg(20.)) $ymin $ymax
+	ticksize -1 0 -1 0 
+	expand 1.5
+	box
+	xlabel Energy [TeV]
+	ylabel E*F_E   Flux
+
+	# define mult (5)
+	do 1=1,$nspec {
+	   define 2 $(counter[$($1-1)])
+	   echo [$1] spectrum : $2
+	   set lgf   = lg(f_$2) + ($1-5)*lg($mult)
+	   set err_f = err_f_$2*$mult**($1-5)
+
+	   define cc $( ($1 % 6) + 2 )
+	   ctype $cc
+	   ltype 2
+	   connect  (lg(e_$2)) lgf
+	   ltype 0 
+	   logerr   (lg(e_$2)) lgf err_f
+	   errorbar (lg(e_$2)) lgf lg_e_err_d_$2 3
+	   errorbar (lg(e_$2)) lgf lg_e_err_u_$2 1
+	   points   (lg(e_$2)) lgf
+	   relocate $(lg(0.1)+ 0.04 + 0.04*$2) $(lgf[0])
+	   if($1 != 5 ) {
+	       putlabel 5 $2
+	   } else {
+	       putlabel 5 *$2*
+	   }
+	}
+
+	ctype 2
+	expand 1.25
+	relocate ( $(0.5*($gx1+$gx2) )  $( $gy2 + 800 ) )
+	putlabel 5 "Mrk421: Whipple spectra for March 19 2001"
+	relocate ( $( $gx2 + 800 )  $( $gy2 ) )
+	angle -90
+	if( substr('$whichdata',0,1) == 'k' ) { putlabel 6 "Krennrich Analysis" }
+	if( substr('$whichdata',0,1) == 'r' ) { putlabel 6 "Rebillot Analysis" }
+	angle 0
+
+#-------------------------------------------------------------------------------
+# plot_revised_Gamma
+plot_revised_Gamma
+
+	define whichdata ? < What analysis, Krennrich or Rebillot [k1|k2|r] : >
+
+	define str_date "March 19"
+
+	#-------------------------
+	# Krennrich reduction
+	if( substr('$whichdata',0,1) == 'k' ) { 
+	   if( substr('$whichdata',1,1) == '1' ) { 
+              data "/home/gfossati/Science/Mkn421/2001/Whipple/krennrich_spectral_index_formatted.dat"
+              lines  9 15 read < t 1 dt 2 Gamma 3 err_Gamma 4 >
+              lines 20 31 read < t2 1 rate 2 err_rate 3 >
+              set dt2 = 14./60.
+	      set err_Gamma_u = err_Gamma
+	      set err_Gamma_d = err_Gamma
+	      define gcolor_r 3
+	      define gcolor_g 3
+	   }
+	   if( substr('$whichdata',1,1) == '2' ) { 
+              data "/home/gfossati/Science/Mkn421/2001/Whipple/krennrich_icrc_spectral_index_formatted.dat"
+              read < t 1 dt 2 Gamma 5 err_Gamma 6 rate 9 err_rate 10 >
+	      set t2 = t
+	      set dt = dt/2.
+              set dt2 = 14./60.
+	      set err_Gamma_u = err_Gamma
+	      set err_Gamma_d = err_Gamma
+	      define gcolor_r 7
+	      define gcolor_g 7
+	      define str_date "March 25"
+	   }
+	}
+	#-------------------------
+
+	#-------------------------
+	# Rebillot reduction
+	if( substr('$whichdata',0,1) == 'r' ) { 
+	   # light curve is still read from Krennrich analysis
+           data "/home/gfossati/Science/Mkn421/2001/Whipple/krennrich_spectral_index_formatted.dat"
+           lines 20 31 read < t2 1 rate 2 err_rate 3 >
+           set dt2 = 14./60.
+
+           data "/home/gfossati/Science/Mkn421/2001/Whipple/rebillot_spectral_index_formatted.dat"
+	   define whichred ? < Fit with cutoff [y|n] : >
+	   if( substr('$whichred',0,1) == 'n' ) { 
+	       lines 16 22
+	       define gcolor_r 3
+	       define gcolor_g 5
+	   } else {
+	       lines 27 33
+	       define gcolor_r 3
+	       define gcolor_g 4
+	   }
+	   read < t 1 dt 2 Gamma 6 err_Gamma_u 7 err_Gamma_d 8 >
+           set t = (t - 51987.0)*24
+	   set dt = dt*24
+	}
+	#-------------------------
+
+	window 1 -2 1 1 
+	limits 3 11 3.25 1.6
+	limits 3 11 3.7  1.45
+	expand 1.5 
+	ctype 2 
+	ticksize 0 0 0 0
+	box
+	xlabel UTC Time [hrs. of $str_date]
+	ylabel \Gamma
+
+	ctype $gcolor_g ptype 4 3 expand 1.8
+	error_x  t Gamma dt
+	errorbar t Gamma err_Gamma_u 2
+	errorbar t Gamma err_Gamma_d 4
+	points   t Gamma
+
+	ctype 2
+	window 1 -2 1 2
+	limits 3 11 0 18 
+	expand 1.5 
+	ticksize 0 0 0 0
+	box 0 2 0 0 
+	ylabel \gamma\ rate
+
+	ctype $gcolor_r ptype 4 3 expand 1.8
+	error_x t2 rate dt2
+	error_y t2 rate err_rate
+	points  t2 rate
+	ctype 2
+	window 1 1 1 1
+
+	ctype 2
+	expand 1.25
+	relocate ( $(0.5*($gx1+$gx2) )  $( $gy2 + 800 ) )
+	putlabel 5 Mrk421: Whipple spectra for $str_date
+
+	expand 1
+	ctype $gcolor_g
+	if( substr('$whichdata',0,1) == 'k' )   { define yp (3) define str_lab "Krennrich w/ cutoff" }
+	if( substr('$whichdata',0,1) == 'r' ) { 
+	   if( substr('$whichred',0,1) == 'n' ) { define yp (2) define str_lab "Rebillot" }
+	   if( substr('$whichred',0,1) == 'y' ) { define yp (1) define str_lab "Rebillot w/ Cutoff" }
+	}
+	relocate ( $( $gx1 + 800 )  $( 0.5*($gy1+$gy2) - 750*$yp ) )
+	putlabel 6 $str_lab
+	ctype 2
+
+#-------------------------------------------------------------------------------
+# plot_revised_Gamma_x
+plot_revised_Gamma_x
+
+	define whichdata ? < What analysis, Krennrich or Rebillot [k1|k2|r] : >
+	define whichdate ? <              What date 19, 25, all [19|25|all] : >
+	define whatmodel ? <                 What fit model [sbkn|splh|spl] : >
+
+	define str_date "March 19"
+
+	#-------------------------
+	# Krennrich reduction
+	if( substr('$whichdata',0,1) == 'k' ) { define 8 "krennrich" } 
+	if( substr('$whichdata',0,1) == 'r' ) { define 8 "rebillot" } 
+
+	define 7 $whatmodel
+	data "/home/gfossati/Science/Mkn421/2001/Whipple/$!8_matching_x_and_tev_$!7.dat"
+	if( substr('$whatmodel',0,2) == 'sp' ) { 
+	   read < f_2_10 4 >
+	   read < Gamma_x_1  5 err_Gamma_x_1_d  6 err_Gamma_x_1_u  7 >
+	   set Gamma_x_2 = 0*Gamma_x_1 + 100
+	   set err_Gamma_x_2_d = 0*Gamma_x_1 + 50
+	   set err_Gamma_x_2_u = 0*Gamma_x_1 + 50
+	}
+	if( substr('$whatmodel',0,2) == 'sb' ) { 
+	   read < f_2_10 5 >
+	   read < Gamma_x_1  7 err_Gamma_x_1_d  8 err_Gamma_x_1_u  9 >
+	   read < Gamma_x_2 10 err_Gamma_x_2_d 11 err_Gamma_x_2_u 12 >
+	}
+
+	# fake 10% uncertainty on x-ray flux
+	set f_2_10 = f_2_10*1e10
+	set err_f_2_10 = 0.1*f_2_10
+
+	data "/home/gfossati/Science/Mkn421/2001/Whipple/$!8_matching_x_and_tev_times.dat"
+	read < tx 4 tx1 5 tx2 6 dtx 7 >
+	set dtx = dtx/2.
+
+	#-----------------------------------------------------------
+	set test_tx = tx
+	if( substr('$whichdate',0,1) == '1' ) {
+	   foreach 9 < tx  tx1  tx2  dtx \
+	              f_2_10 err_f_2_10  \
+ 	              Gamma_x_1  err_Gamma_x_1_d  err_Gamma_x_1_u \
+	              Gamma_x_2  err_Gamma_x_2_d  err_Gamma_x_2_u > {
+	       set $9 = $9   if( test_tx < 100e3 )
+	   }
+	   define trefsec (0.0)
+	   define gcolor_fx  3 
+	   define gcolor_gx1 3 
+	   define gcolor_gx2 5 
+	   define txmin  3 
+	   define txmax 11
+	}
+
+	if( substr('$whichdate',0,1) == '2' ) {
+	   foreach 9 < tx  tx1  tx2  dtx \
+	              f_2_10 err_f_2_10  \
+ 	              Gamma_x_1  err_Gamma_x_1_d  err_Gamma_x_1_u \
+	              Gamma_x_2  err_Gamma_x_2_d  err_Gamma_x_2_u > {
+	       set $9 = $9   if( test_tx > 100e3 )
+	   }
+	   define trefsec (518400)
+	   define gcolor_fx  4 
+	   define gcolor_gx1 7 
+	   define gcolor_gx2 6 
+	   define txmin  3 
+	   define txmax 11
+	   define str_date "March 25"
+	}
+
+	if( substr('$whichdate',0,1) == 'a' ) {
+	   foreach 9 < tx  tx1  tx2 > {
+	       set tmp1_$9 = $9  if( test_tx < 100e3 )
+	       set tmp2_$9 = $9  if( test_tx > 100e3 )
+	       # subtract 5.5 days from second section time variables
+	       set tmp2_$9 = tmp2_$9 - 475200
+	       set $9 = tmp1_$9 CONCAT tmp2_$9
+	   }
+	   define trefsec (0)
+	   define gcolor_fx  3 
+	   define gcolor_gx1 3 
+	   define gcolor_gx2 5 
+	   define txmin  3 
+	   define txmax 24
+	   define str_date "March 19, 25"
+	}
+	if( substr('$whatmodel',0,2) == 'sp' ) { define gcolor_gx1 4 }
+	#-----------------------------------------------------------
+	set tx  = (tx  - $trefsec)/3600.
+	set tx1 = (tx1 - $trefsec)/3600.
+	set tx2 = (tx2 - $trefsec)/3600.
+	set dtx = dtx/3600.
+
+	window 1 -2 1 1 
+	limits $txmin $txmax 3.25 1.75
+	expand 1.5 
+	ctype 2 
+	ticksize 0 0 0 0
+	box
+	xlabel UTC Time [hrs. of $str_date]
+	ylabel \Gamma_x 
+
+	ctype $gcolor_gx1 ptype 4 3 expand 1.8
+	error_x  tx Gamma_x_1 dtx
+	errorbar tx Gamma_x_1 err_Gamma_x_1_u 2
+	errorbar tx Gamma_x_1 err_Gamma_x_1_d 4
+	points   tx Gamma_x_1
+
+	ctype $gcolor_gx2 ptype 4 3 expand 1.8
+	error_x  tx Gamma_x_2 dtx
+	errorbar tx Gamma_x_2 err_Gamma_x_2_u 2
+	errorbar tx Gamma_x_2 err_Gamma_x_2_d 4
+	points   tx Gamma_x_2
+
+	ctype 2
+	window 1 -2 1 2
+	limits $txmin $txmax 3 15 
+	expand 1.5 
+	ticksize 0 0 0 0
+	box 0 2 0 0 
+	ylabel F_{2-10 keV}
+
+	ctype $gcolor_fx ptype 4 3 expand 1.8
+	error_x tx f_2_10 dtx
+	error_y tx f_2_10 err_f_2_10
+	points  tx f_2_10
+	ctype 2
+	window 1 1 1 1
+
+	ctype 2
+	expand 1.25
+	relocate ( $(0.5*($gx1+$gx2) )  $( $gy2 + 800 ) )
+	putlabel 5 Mrk421: Whipple spectra for $str_date
+	
+	ctype 2
+
+################################################################################
+#-------------------------------------------------------------------------------
+# test_pl_cutoff
+test_pl_cutoff 101
+
+        if($?1) {
+            if(substr('$1',0,2) == '-h' ){
+               echo "-----------------------------------------------"
+               echo " pl_cutoff: "
+               echo " "
+               echo " USAGE: "
+               echo "    > pl_cutoff K=2e-10 g=3.1 efold=4.3 "
+               echo "  or"
+               echo "    > pl_cutoff (in this case it draws the line in black) "
+               echo " "
+               echo "-----------------------------------------------"
+               return
+            } else {
+               # define silentparsing 1
+	       echo $1
+               mparsep $1
+               define silentparsing 0
+            }
+        }
+
+	echo $K
+	echo $g
+	echo $efold
+	set lg_eee = $(lg(0.3)),$(lg(10.5)),0.01
+	define lgK $(lg($K))
+	#define g (2.1)
+	#define efold (4.3)
+
+	set lg_fff = $lgK - ($g-2)*lg_eee - 0.4343*(10.**lg_eee/4.3)
+
+	connect lg_eee lg_fff
+
+#-------------------------------------------------------------------------------
+# init_pl_cutoff
+init_pl_cutoff
+
+	echo "*** Model is: POWER LAW + EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "    Give initial guess for parameters: "
+	define var0 ? < Normalization                  : >
+	define var1 ? < Power Law Photon Index [Gamma] : > 
+	define var2 ? < Cutoff Energy                  : >
+	
+	define var0 (lg($var0))
+	# define var1 (lg(var1))
+	# define var2 (lg(var2/$xs))
+
+	set parvec = < $var0 $var1 $var2 >
+	
+##-------------------------------------------------------------------------------
+## pl_cutoff 2  f(x,a)
+pl_cutoff 2
+
+        set $0 =  $2[0] - ($2[1]-2)*$1 - 0.4343*10.0**$1/$2[2]
+
+##---------------------------------------------------------------------------
+## der_pl_cutoff 3   : df(x,a,j)
+der_pl_cutoff 3
+
+	if($3 == 0) { 
+	   set $0 = 1 + 0*$1
+	}
+
+	if($3 == 1) { 
+	   set $0 = -$1
+	}
+
+	if($3 == 2) { 
+	   set $0 = 0.434*10.0**($1)/($3*$3)
+	}
+
+##-------------------------------------------------------------------------------
+## exit_pl_cutoff
+exit_pl_cutoff
+
+	# set parvec = 10.**parvec
+	# set parvec[2] = parvec[2]*$xs
+	set parvec[0] = 10.0**$(parvec[0])
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+	define var2 $(parvec[2])
+
+	echo "-----------------------------------------------------------------------" 
+	echo "*** Model is: POWER LAW + EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "  "
+	echo "  - Normalization                  :" $(parvec[0])
+	echo "  - Power Law Photon Index [Gamma] :" $(parvec[1])
+	echo "  - Cutoff Energy                  :" $(parvec[2])
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 =" $_newchi "/"$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+	set ydum = $testfunc(xdum,_a)
+	#set xdum = xdum*$xs + $x0
+
+#-------------------------------------------------------------------------------
+# init_pl_fixed_cutoff
+init_pl_fixed_cutoff
+
+	echo "*** Model is: POWER LAW + EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "    Give initial guess for parameters: "
+	define var0 ? < Normalization                  : >
+	define var1 ? < Power Law Photon Index [Gamma] : > 
+	define fixed_efold ? < Cutoff Energy : >
+	
+	define var0 (lg($var0))
+	# define var1 (lg(var1))
+	# define var2 (lg(var2/$xs))
+
+	set parvec = < $var0 $var1 >
+	
+##-------------------------------------------------------------------------------
+## pl_fixed_cutoff 2  f(x,a)
+pl_fixed_cutoff 2
+
+        set $0 =  $2[0] - ($2[1]-2)*$1 - 0.4343*10.0**$1/$fixed_efold
+
+##---------------------------------------------------------------------------
+## der_pl_fixed_cutoff 3   : df(x,a,j)
+der_pl_fixed_cutoff 3
+
+	if($3 == 0) { 
+	   set $0 = 1 + 0*$1
+	}
+
+	if($3 == 1) { 
+	   set $0 = -$1
+	}
+
+##-------------------------------------------------------------------------------
+## exit_pl_fixed_cutoff
+exit_pl_fixed_cutoff
+
+	# set parvec = 10.**parvec
+	# set parvec[2] = parvec[2]*$xs
+	set parvec[0] = 10.0**$(parvec[0])
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+
+	echo "-----------------------------------------------------------------------" 
+	echo "*** Model is: POWER LAW + EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "  "
+	echo "  - Normalization                  :" $(parvec[0])
+	echo "  - Power Law Photon Index [Gamma] :" $(parvec[1])
+	echo "  - Cutoff Energy                  :" $fixed_efold
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 =" $_newchi "/"$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+	set ydum = $testfunc(xdum,_a)
+	#set xdum = xdum*$xs + $x0
+
+#-------------------------------------------------------------------------------
+# init_ff_linear
+init_ff_linear
+
+	echo "-----------------------------------------------------------------------" 
+	echo "*** Model is: LINEAR (e.g. Power Law for LOG-LOG data) *** "
+	echo "    Give initial guess for parameters: "
+	define var0 ? < Normalization   : >
+	define var1 ? < Slope           : >
+
+	echo " a = "$var0
+	echo " b = "$var1
+	
+	# define var0 (lg($var0))
+	# define var1 (lg(var1))
+	# define var2 (lg(var2/$xs))
+
+	set parvec = < $var0 $var1 >
+	
+##-------------------------------------------------------------------------------
+## ff_linear 2  f(x,a)
+ff_linear 2
+
+        set $0 =  $2[0] + $2[1]*$1 
+
+##---------------------------------------------------------------------------
+## der_ff_linear 3   : df(x,a,j)
+der_ff_linear 3
+
+	if($3 == 0) { 
+	   set $0 = 1
+	}
+
+	if($3 == 1) { 
+	   set $0 = $1
+	}
+
+##-------------------------------------------------------------------------------
+## exit_ff_linear
+exit_ff_linear
+
+	# set parvec = 10.**parvec
+	# set parvec[2] = parvec[2]*$xs
+	# set parvec[0] = 10.0**$(parvec[0])
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+
+	echo "-----------------------------------------------------------------------" 
+	echo "*** Model is: LINEAR (e.g. Power Law for LOG-LOG data) *** "
+	echo "  "
+	echo "  - Normalization                  :" $(parvec[0])
+	echo "  - Slope                          :" $(parvec[1])
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 =" $_newchi "/"$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+	set ydum = $testfunc(xdum,_a)
+	set xdum = xdum*$xs + $fit_x0
+
+#-------------------------------------------------------------------------------
+# init_poly_3rd
+init_poly_3rd
+
+	echo "-----------------------------------------------------------------------" 
+	echo "*** Model is: THIRD DEGREE POLYNOMIAL *** "
+	echo "    Give initial guess for parameters: "
+	define var0 ? < Normalization   : >
+	define var1 ? < Slope           : >
+
+	echo " a = "$var0
+	echo " b = "$var1
+	
+	# define var0 (lg($var0))
+	# define var1 (lg(var1))
+	# define var2 (lg(var2/$xs))
+
+	set parvec = < $var0 $var1 >
+	
+##-------------------------------------------------------------------------------
+## poly_3rd 2  f(x,a)
+poly_3rd 2
+
+        set $0 =  $2[0] + $2[1]*$1 
+
+##---------------------------------------------------------------------------
+## der_poly_3rd 3   : df(x,a,j)
+der_poly_3rd 3
+
+	if($3 == 0) { 
+	   set $0 = 1
+	}
+
+	if($3 == 1) { 
+	   set $0 = $1
+	}
+
+##-------------------------------------------------------------------------------
+## exit_poly_3rd
+exit_poly_3rd
+
+	# set parvec = 10.**parvec
+	# set parvec[2] = parvec[2]*$xs
+	# set parvec[0] = 10.0**$(parvec[0])
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+
+	echo "-----------------------------------------------------------------------" 
+	echo "*** Model is: LINEAR (e.g. Power Law for LOG-LOG data) *** "
+	echo "  "
+	echo "  - Normalization                  :" $(parvec[0])
+	echo "  - Slope                          :" $(parvec[1])
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 =" $_newchi "/"$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+	set ydum = $testfunc(xdum,_a)
+	set xdum = xdum*$xs + $fit_x0
+
+#---------------------------------------------------------------------------
+# my_fit 01 : define outside of this routine the following arrays: 
+#               fitx, fity, fitw 
+#             It assumes that "fity" has to be POSITIVE (?? NOT SURE ??)
+my_fit 01
+
+	define chatter 1
+
+        if(!$(is_macro(mdeclare_rect))) {
+            echo "WARNING: this macro REQUIRES matrix.sm"
+            return
+        }
+
+	if($?1) { 
+	   define itercheck $1
+	} else {
+	   define itercheck 10
+	}
+
+	echo "-------------------------------------------------------------"
+	echo " *** DATA Section ***"
+	define end "dummy"
+
+	echo " * Going ahead assuming arrays fitx, fity, fitw are defined... "
+
+	define t1 ?   {                                      Min. X : }
+	define t2 ?   {                                      MAX. X : }
+
+	define syst ? { Systematic Error to be added to Y-data [0-1]: }
+
+	# define outside of this routine the following arrays: fitx, fity, fitw 
+	set pass_x = fitx      if(fitx>$t1 && fitx<$t2 ) 
+	set pass_y = fity      if(fitx>$t1 && fitx<$t2 ) 
+	set pass_w = fitw      if(fitx>$t1 && fitx<$t2 ) 
+
+	sort < pass_x pass_y pass_w >
+
+	# #--- scaling X array ---#
+	# define logorlinx ? {              Use LOG or LIN for X data [1|2]: } 
+	# if($logorlinx == 1) { 
+	#     define x0 $(sqrt($t1*$t2))
+	#     echo  middle of the LOG band is : $x0
+	#     set pass_x = lg(pass_x)
+	# } else {
+	#     define x0 $(($t1+$t2)/2)
+	#     echo  middle of the LIN band is : $x0
+	# }
+	# define x0 ?     {                                 Reference X : }
+	# if($logorlinx == 1) { 
+	#     define x0 (lg($x0))
+	# }
+	# 
+	# #--- scaling Y array ---#
+	# define logorliny ? {              Use LOG or LIN for Y data [1|2]: } 
+	# if($logorliny == 1) { 
+	#     set pass_w = (lg(pass_y+pass_w) - lg(pass_y-pass_w))/2.
+	#     set pass_y = lg(pass_y)
+	# }
+	# set pass_w = (1 + $syst)*pass_w
+	# if($whaterr != 1) { 
+	#    set pass_w = 0*pass_y + $whaterr
+	# }
+
+	define xs (1)
+	echo " Using predefined fit_x0="$fit_x0" to shift X axis"
+	# define xs ?     { Scale to rescale X values : }
+	# NOTE : XS needs to be SERIOUSLY re-visited 
+
+	# preparing dummy-x array for plotting purposes
+	# if( $x0 <  $(pass_x[0]) ) {
+	#    define xstart $x0
+	# } else {
+	#    define xstart $(pass_x[0])
+	# }
+	define xstart $(pass_x[0])
+	define xstep ((pass_x[$(dimen(pass_x)-1)]-$xstart)/100.)
+	set xdum = $xstart,$(pass_x[$(dimen(pass_x)-1)]*1.05),$xstep
+
+	# set pass_x = (pass_x - $x0)/$xs
+	# set xdum   = (xdum - $fit_x0)/$xs
+
+	echo "-------------------------------------------------------------"
+	define testfunc  ? {                          Test Function Name : }
+
+	init_$testfunc
+
+	set parstep  = parvec/10.
+	set parsigma = 0*parvec
+
+	define flambda  0.0001
+	define conv 10
+	define iter 0
+
+	while { $conv > 0.1 } {
+	    define iter ($iter+1)
+	    echo "======== Main_Fit iteration ["$iter"] ...calling" curfit
+
+	    curfit pass_x pass_y pass_w 1 parvec parstep parsigma $flambda
+
+	    set pass_x   = _x
+	    set pass_y   = _y
+	    set pass_w   = _sigmay
+	    set parvec   = _a
+	    set parstep  = _deltaa
+	    set parsigma = _sigmaa
+
+	    if($chatter == 1) { 
+	       echo     Old Chi^2 = $_oldchi
+	       echo     New Chi^2 = $_newchi
+	    }
+
+	    define conv ($_oldchi-$_newchi)
+	    if($(int($iter/$itercheck)*$itercheck) == $iter) { 
+	       print { _a }
+	       echo === $_newchi ===
+	       define goahead ? { Ten steps done, go ahead ? [y/n] }
+	       if(substr('$goahead',0,1) == 'n') {
+		   define conv 0.01
+	       }
+	    }
+	}
+
+	echo "-----------------------------------------"
+	echo " Chi^2 = "$_newchi "/"$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-----------------------------------------"
+	print '  %14.7f\n' { _a}
+	echo "-----------------------------------------"
+
+        set ff = $testfunc(_x,_a)
+        set chisq_dev  = (pass_y - ff)**2./pass_w/pass_w
+	set delchi_dev = chisq_dev*(pass_y - ff)/abs(pass_y - ff)
+	set sigma_dev  = sqrt(chisq_dev)*(pass_y - ff)/abs(pass_y - ff)
+
+	exit_$testfunc
+
+	page
+
+	define drawornot ? { Draw "fit" [2-8 == color/ or 0] }
+	if($drawornot >= 2) { 
+	    ctype $drawornot
+	    lweight 3
+	    ltype 0
+	    connect xdum ydum
+	    ctype 2 
+	    ltype 0 
+	}
+
+	foreach var { _a _b _aux _newchivec _oldchivec _x _y _sigmay _weight _deltaa _sigmaa _ycalc } {
+	   delete $var
+	}
+
+	do n=0,$($nterms-1) {
+	   delete _alpha_$n
+	   delete _array_$n
+	   delete _dyda_$n
+	}
+
+#-------------------------------------------------------------------------------

@@ -1,0 +1,287 @@
+The tar file includes the following files:
+
+spectro.sh - Sets environment variable
+spectro.sm - SM macros
+README.spectro - This description
+spectra.lis - List of ~60,000 reduced spectra
+
+spectro.sm is a series of SM macros designed for reading and plotting SDSS
+spectra, written by Michael Strauss and Vijay Narayanan.  They require
+access to the SDSS spectra themselves, and a series of auxiliary files
+that do things like list all the spectra, and the relationship between
+plate number and MJD.   There are two versions of the SDSS spectra
+available, in two different formats: that output by the Chicago
+spectro 1d pipeline, and that output by Dave Schlegel's spectrum
+analysis package using IDL.  The code can handle both cases. 
+
+This uses some fairly advanced SM tools for reading FITS files, and
+will not work on old versions of SM.  Many thanks to Robert Lupton for
+making the necessary changes to the code.  See the bottom of this note
+for information on this latest version of the code, and how to get it.   
+
+This code is by no means thoroughly tested.  Please direct requests
+for changes or enhancements, problems you might be having, etc., to
+Michael Strauss (strauss@astro.princeton.edu) and Vijay Narayanan
+(vijay@astro.princeton.edu).
+
+Directories for these are included in the shell script spectro.sh,
+which, at Princeton, looks like this:
+
+setenv SPECDIR /peyton/scr/ginka0/vijay/sdss_spectra
+setenv DIAGDIR /peyton/scr/ginka0/vijay/sdss_spectra/diag_file
+setenv TSOBJDIR /peyton/scr/ginka0/vijay/sdss_spectra/tsObj
+setenv SPECTRO_DATA /u/dss/data/2d_v4
+setenv IDLSPEC2D_DIR /u/schlegel/idlspec2d
+setenv LISTDIR /u/strauss/spectro_sm
+setenv SPECTRA_LIS $LISTDIR/spectra.lis
+
+(Note that if you use bash, you will want to change 'setenv' to
+'export', and put an = sign between the second and third columns.)
+
+If you are using the IDL reductions only, the only two of these you
+need to define are SPECTRO_DATA and IDLSPEC2D_DIR (environment
+variables the same as if you were running IDL itself; see
+spectro.princeton.edu for more information). 
+
+SPECDIR is the location of the Chicago spectro1d files, which assumes a
+series of subdirectories with names given by the plate numbers
+(three-digit format, e.g., 308).
+
+DIAGDIR is a directory containing the spDiag1d files output by
+spectro1d. 
+
+TSOBJDIR is a directory containing the tsObj files for each plate, as
+created by Annis and Vanden Berk.
+
+SPECTRO_DATA is the location of the Schlegel output files, which assumes
+a series of subdirectories with names given by the plate numbers
+(4-digit format, e.g., 0308).
+
+IDLSPEC2D_DIR is the location of a series of spectral templates, used
+by the IDL analysis. 
+
+LISTDIR is the location (directory) containing spectra.lis.  
+ 
+SPECTRA_LIS is a summary of all spectra that we have, created from the
+spDiag1d files.   Note that this is based on a variety of different
+versions of both 1d and 2d, and so the results are of varying
+quality. 
+
+In the directory where you have spectro.sm, You can load in these
+macros into SM with the following commands:
+
+"
+source spectro.sh # sets up the environmental variables
+sm		  # start your SM
+input_new spectro.sm	  # load in the macros in spectro.sm. This is
+			  # a standard SM command, despite its
+			  # suspicious sounding name.
+onedout 306 20		  # to plot the spectrum in Plate #306, Fiber 20
+			  # (a  beautiful CV!)
+"
+
+The basic routine in spectro.sm is
+onedout <plate> <fiber> <redshift>
+a synonym is 
+plotone <plate> <fiber> <redshift>
+
+This shows the spectrum of a single object, as indicated by plate and
+fiber (redshift is an optional parameter).  The default is to show the
+spectro1d output, in four panels: 
+  The full spectrum (with a 5-pixel boxcar smoothing), together with the
+estimated error array, and the wavelength of strong emission and
+absorption lines where they should be at the determined (or input
+redshift).  The redshift and classification information are
+indicated.  The rest wavelength scale is indicated along the top. 
+  Three zoom-ins of the spectrum (with a 3-pixel boxcar smoothing)
+centered on regions where strong emission and absorption lines should be. 
+  Written to the screen are the target selection flags for the object
+in question, and the run, rerun, column, field, id, and gri fiber
+magnitudes (from the spDiag1d files). 
+
+  Note that this assumes a single MJD for each plate.  For plates
+observed on more than one MJD, it chooses the first MJD.  To choose
+the second one, type
+define mjd_index 2
+(reset it to one if you want to go onto the next plate!)
+You can also type
+define set_mjd <numerical value> 
+if you know the MJD value itself. 
+
+  This routine loads up all information from the tsObj file for each
+object (if the tsObj file exists on disk).  So arrays of dimension 1
+are defined for all tsObj parameters.  Magnitudes are called
+petroMag2, modelMag2, and *not* petroCounts2 and counts_model2 etc.
+
+  You can switch to the Schlegel idl outputs by typing
+define idl 1
+
+define idl 0 sends it back to the Chicago outputs. 
+
+  There are a series of logical variables that one can use to
+manipulate the way these plots are made.  Read the code for the full
+list, but some of the interesting ones are:
+define onepanel 1 #Show just one panel, not 4; good for making plots
+		  including many spectra
+
+define putlabel 0 #Leave all the auxiliary labelling off. 
+
+define plot_err 0 #Don't plot the error array
+
+There is a wrapper for onedout, called:
+interactive <plate> <fiber>
+
+A synonym is 
+plotspec <plate> <fiber>
+
+Once the spectrum is plotted, one has the ability to interact with
+it.  Type h or ? at the prompt for a full list of the choices; among the
+interesting ones are:
+
+z - Enter a different redshift
+l and u - Change upper and lower y limit of the plot.
+xl and xu - Change upper and lower x limit of the plot
+s - Change smoothing
+r - Restore plot to the defaults
+m - Show the mask array
+t - Superpose the best-fit spectral template (works only with idl outputs)
+d - Show the difference between the spectrum and its template
+f - Change the fiber number
+
+Note that the code isn't terribly robust against typos.  For example,
+if the argument you give for changing the fiber number is invalid, the
+code will crash. 
+
+There are a number of wrappers around this:
+
+find_spec <ra> <dec> [minsep]
+will plot up the spectrum of the object at the (decimal degree, J2000)
+position given, by looking for matching entries within minsep
+(default=1) arcsec in the SPECTRA_LIS file.  
+
+find_speclist <infile> <colRA> <colDec> <outfile> [minsep]
+Reads infile, which has RA and Dec listed in columns <colRA> and
+<ColDec>, and find matching entries in the SPECTRA_LIS file within
+minsep arcsec. 
+
+look <plate> [start] [end]
+
+will plot up all the spectra in a given plate, between fibers <start>
+and <end> (default is start = 1, end = 640).  This, by default, writes
+a comment file on the disk for the plate, which you can add to via the 
+c command at the prompt. 
+
+looklist <filename>
+
+will plot up the spectra listed in the file, whose first two columns
+are assumed to be plate and fiber number, respectively.
+
+output_target <choice> <criterion>
+
+This reads the file listed in SPECTRA_LIS, and pulls out all objects
+which satisfy a given criterion.  choice = 1 says create an ascii file
+of these objects; choice = 2 says plot them to the screen one at a
+time (using plotspec).  The criterion can be any SM-compatible logical
+string; it can refer to plates, or various of the target selection
+categories.  A number of useful logical vectors are defined
+internally; e.g., 
+qso
+is set to one for objects targetted as qso.
+Similarly, brg, main_gal, rosat, star, serendip, standard_star are all
+defined; see the code for more. 
+Some examples:
+If you want to look at all standard stars interactively (from the
+total of 100 plates we've got thus far!), you would type:
+output_target 2 standard_star
+
+If you want all the qsos from plate 231:
+output_target 2 (qso&&_plate==231)
+
+If you want a list on the disk of all main galaxies that are also
+targetted as ROSAT sources and FIRST sources:
+output_target 1 (main_gal&&rosat&&first)
+
+A few other routines that may be useful:
+-----------------------------------------
+rd_spDiag1d <filename> [fiber] Read the spDiag1d file, and load the
+results into a series of vectors.  These will be 640 elements, unless
+one specifies a a specific fiber.
+
+rd_tsObj <plate> <fiber> [filename]
+Read the  plate tsObj file for a given plate, and fiber (if the
+tsObj file exists on disk)
+It creates 1-dimensional arrays of all Photo parameters for this 
+object. By default, it outputs the following quantities to the
+terminal.
+plate fiber run rerun camCol field id psfMag[0-4] reddening[0-4]
+The other Photo parameters are available as 1-d vectors, and you
+can print them using a command like
+    "print {fiberMag3 petroR902 deV_L4}"
+If [filename] is specified, the (default) parameter output is 
+appended to the file.
+If the plate tsObj file does not exist, this macro quits politely.
+
+spectra_list (no arguments)
+Reads the full list of spDiag1d files, to create a master file of all
+spectra, called spectra.lis.
+
+read_spec (no arguments)
+Reads the contents of spectra.lis
+
+eqw <plate> <fiber> <wavelength>
+Puts you in an interactive mode to measure the equivalent width of a
+line at the wavelength you specify.  You indicate the region over
+which to fit the continuum, and the range of the line.  There is also
+an option to fit lines in batch mode. (type help eqw for details). 
+
+nwindow nx ny n
+Puts up a window on an array of nx, ny, in the nth place
+
+There are many different terminal windows of different shapes
+and sizes to view the spectra:
+xterm, xterm_l, xterm_b, xterm_s etc (please look in spectro.sm
+for all the types of available windows)
+We find xterm_l and xterm_b to be convenient for plotting the full
+spectrum  using "onedout".
+
+return_target <primTarget>
+Given a primary Target flag (read in as primTarget by rd_spDiag1d, for
+example), this routine translates this flag into English
+
+return_sectarget <secTarget>
+Given a secondary Target flag (read in as secTarget by rd_spDiag1d, for
+example), this routine translates this flag into English
+
+***********The latest version of SM*************************
+
+As was indicated above, you need the latest version of SM (i.e., as of
+November 2000) in order to run these routine. 
+
+ If you have a valid SM license, you can get the latest version with
+the commands:
+
+	cvs -d :pserver:smuser@babayaga.princeton.edu:/u/rhl/cvsroot login
+	(For the password, please contact Michael Strauss
+	  (strauss@astro.princeton.edu) or Vijay Narayanan (vijay@astro.princeton.edu))
+	cvs co -r SM2_4_8 sm
+	cd sm
+	set_opts
+answer questions
+read and remove copyright notice as requested
+	make
+maybe followed by:
+	make install
+
+This version of SM, V2_4_8, has support for integer vectors.  This
+means that you can reliably read e.g. photo's flags and perform
+logical operations on them, e.g.
+	flags & 0x10000
+	flags & (1 << 20)
+
+The downside is that this was quite a lot of work rather deep in SM's
+belly, and THERE ARE PROBABLY NEW BUGS.  If you find any, please report
+them to Robert (rhl@astro.princeton.edu), and he promises to fix them
+ASAP.  If you wish, you can do this with the SM bug page at
+	http://www.astro.princeton.edu/cgi-bin/gnatsweb.pl
+
+

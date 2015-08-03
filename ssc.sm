@@ -1,0 +1,1561 @@
+#------------------------------------------------------------------------------
+# time_saver
+time_saver
+
+	plot_sed_ic_split cut_2keV_5eV_500eV
+	ctype 4 ltype 0 connect (lg_nu_test-26.384) (lg_nuItot_test+lg(abs_frac))
+
+	define icplot "cut_2keV_50eV_500eV"
+	ctype 6 ltype 1 connect (lg_nu_$icplot - 26.384) (lg_nuI11_$icplot + lg(abs_frac)-0.02)
+
+	define icplot "cut_2keV_5eV_50eV"
+	ctype 5 ltype 1 connect (lg_nu_$icplot - 26.384) (lg_nuI11_$icplot + lg(abs_frac)-0.02)
+	ctype 5 ltype 3 connect (lg_nu_$icplot - 26.384) (lg_nuI21_$icplot + lg(abs_frac)-0.02)
+	
+#------------------------------------------------------------------------------
+# integrate_lgf  <x> <y>
+#                <x> is logarithmically spaced but values are not log
+#                <y> values are not log
+integrate_lgf 2
+
+	echo " * Entering 'integrate_lgf' "
+	set x=10.**$1
+	set y=10.**$2
+	set xL=pop(-1,x)
+	set xH=pop(1,x)
+	set yL=pop(-1,y)
+	set yH=pop(1,y)
+	set _int_ = 0.5*(xH-xL)*(yH+yL)
+	define integral $(sum(_int_))
+
+#---------------------------------------------------------------------------
+# run_ssc [ <R> <lh> <bfield> <gmin> <gmax> <slope> <delta>]
+# USAGE:
+#      > run_ssc r=10  lh=1e-4  b=0.02  g1=10   g2=3e6   s=2   d=10 
+#                NOTE: r in units of 1e15 cm
+#
+#  or
+#      > run_ssc   (in this case it prompts for all parameters)
+#
+run_ssc 08
+
+        # define_physical_constants
+
+	define lext (1e-20)
+
+	if($?1) {
+	    if(substr('$1',0,2) == '-h' ){ 
+               echo " run_ssc: "
+	       echo " "
+               echo " USAGE: "
+               echo "    > run_ssc r=10  lh=1e-4  lext=1e-5  b=0.02  g1=10   g2=3e6   s=2    d=10 "
+               echo "    > run_ssc r=10  lh=1e-4  lext=1e-5  b=0.15  g1=2e5  g2=3e6   s=3.5  d=20 "
+	       echo "  "
+	       echo " NOTE: radius is in units of 1e15 cm" 
+	       echo "  or"
+               echo "    > run_ssc   (in this case it prompts for all parameters)"
+	       echo " "
+	       return
+	    } else {
+	       foreach n < 1 2 3 4 5 6 7 > { parsing $$n }
+	    }
+	} else {
+	    define r   ? < R_blob (units of 1e15) : >
+	    define lh  ? <   injected compactness : >
+	    define b   ? <         magnetic field : >
+	    define g1  ? <              gamma_min : >
+	    define g2  ? <              gamma_max : >
+	    define s   ? <                  slope : >
+	    define d   ? <                  delta : >
+	}
+	if( $r < 1e6 ) { 
+	   define r ($r*1e15) 
+	} else { 
+	   define r $r
+	}
+
+	#------------------------------------------------------------
+	define CODE "Check"
+	define CODE "Check_new"
+	define bits "64"
+
+	echo " Available incarnations of the code : "
+	# echo " [1] Check_SEDs_oldrun.x "
+	# echo " [2] Check_SEDs.x "
+	# echo " [3] Check_new_SEDs.x "
+	echo " [4] Check_new_SEDs_64.x "
+	echo " [5] ssc1.x "
+	echo " [6] current_chatty.x "
+	echo " [7] gf.x "
+	define whichcode ? <           Running... : >
+	#------------------------------------------------------------
+
+	if( $whichcode == 1 ) { define CODENAME "Check_SEDs_oldrun.x" }
+	if( $whichcode == 2 ) { define CODENAME "Check_SEDs.x" }
+	if( $whichcode == 3 ) { define CODENAME "Check_new_SEDs.x" }
+	if( $whichcode == 4 ) { define CODENAME "Check_new_SEDs_64.x" }
+	if( $whichcode == 5 ) { define CODENAME "ssc1.x" }
+	if( $whichcode == 6 ) { define CODENAME "current_chatty.x" }
+	if( $whichcode == 7 ) { define CODENAME "gf.x" }
+
+	define name ? < ID name for this run\'s files: >
+
+	set input_var = < $r $lh $lext $b $g1 $g2 $s $d > 
+	set input_description = < "R" "l_h" "l_ext" "B" "g1" "g2" "s" "doppler" >
+	local define print_noheader 1
+	print MAIN.input < input_var input_description >
+
+	# systemcall "$!CODE"_SEDs_"$!bits".x
+	systemcall "$!CODENAME"
+	systemcall cp MAIN.input           $name.MAIN.input
+	systemcall cp output_sed.dat       output_"$!name"_sed.dat
+	systemcall cp output_electrons.dat output_"$!name"_electrons.dat
+
+  	define mec2   8.1871111059e-7
+  	define emc2   8.1871111059e-7
+	define sigmaT 6.6524e-25
+	define c      2.99792e10
+
+	define r    ( $r/1e15 )
+	define Lh   ( $lh*$r*1e15*$mec2*$c/$sigmaT )
+	define Urad ( $lh/($r*1e15)*$mec2/(4*$pi*$sigmaT) )
+	define Ub   ( $b*$b/(8*$pi) )
+
+	echo "-----------------------------------------------------------------"
+	echo "> Lh     = " $Lh
+	echo "> Urad   = " $Urad
+	echo "> Ub     = " $Ub
+	echo "> Ub/Urad= " $($Ub/$Urad)
+	echo "-----------------------------------------------------------------"
+
+#---------------------------------------------------------------------------
+# check_input_parms 09
+check_input_parms 09
+
+	define check 0
+	foreach n < 1 2 3 4 5 6 7 8 9 > {
+	   if($?$n) { define check ($check + 2**($n-1)) }
+	}
+
+#---------------------------------------------------------------------------
+# read_sed_params  <filecode>  :    [as in $filecode.MAIN.input]
+read_sed_params 1
+
+	read_params_sed $1
+	
+#---------------------------------------------------------------------------
+# read_params_sed  <filecode>  :    [as in $filecode.MAIN.input]
+read_params_sed 01
+	
+	if( !$?1 ) {
+           echo " read_params_sed: "
+	   echo " "
+           echo " USAGE: "
+           echo "    > read_params_sed <file ID>  [as in <file ID>.MAIN.input] "
+	   echo "                      ^^^^^^^^^ "
+	   echo " "
+	   return
+	}
+
+	echo " * Entering 'read_params_sed' "
+	data $1.MAIN.input
+	define r  read 1 1
+	define lh read 2 1
+	define b  read 4 1
+	define g1 read 5 1
+	define g2 read 6 1
+	define s  read 7 1
+	define d  read 8 1
+	define r  ($r/1e15)
+	echo r=$r lh=$lh b=$b g1=$g1 g2=$g2 s=$s d=$d
+
+#---------------------------------------------------------------------------
+# compute_physics   : needs to know $r $lh $b $g1 $g2 $s $d
+compute_physics 
+	
+  	define mec2    8.1871111059e-7
+  	define emc2    8.1871111059e-7
+	define sigmaT  6.6524e-25
+	define c       2.99792e10
+	define pi      3.1415
+	define hplanck 6.626176e-27
+
+	define Lh   ( $lh*$r*1e15*$mec2*$c/$sigmaT )
+	define Urad ( $lh/($r*1e15)*$mec2/(4*$pi*$sigmaT) )
+	define Ue   ( $lh/($r*1e15)*$mec2/(4*$pi*$sigmaT) )
+	define Ub   ( $b*$b/(8*$pi) )
+
+	define peak_sync (2.8e6*$g2**2.*$b*$d)
+	if( $peak_sync > 2.4e10 ) { 
+	    define pop $(sprintf('%8.2f',$(13400./($peak_sync/2.418e14)/1e4))) 
+	    define pop "$!pop um"
+    	}
+	if( $peak_sync > 5e13 ) { 
+	    define pop $(sprintf('%8.2f',$(13400./($peak_sync/2.418e14)))) 
+	    define pop "$!pop A"
+	}
+	if( $peak_sync > 2.4e15 ) { 
+	    define pop $(sprintf('%8.4f',$($peak_sync/2.418e14))) 
+	    define pop "$!pop eV"
+	}
+	if( $peak_sync > 2.4e16 ) {
+	    define pop $(sprintf('%8.4f',$($peak_sync/2.418e17))) 
+	    define pop "$!pop keV"
+	}
+
+	echo "-----------------------------------------------------------------"
+	echo "> Lh     = " $Lh
+	echo "> Urad   = " $Urad
+	echo ">(Ue     = " $Ue ")"
+	echo "> Ub     = " $Ub
+	echo "> Ub/Urad= " $($Ub/$Urad)
+	echo ">      Sync. Peak [log]= " $(sprintf('%.4g',$(lg($peak_sync))))    [$pop]
+	echo "-----------------------------------------------------------------"
+
+#---------------------------------------------------------------------------
+# read_grid_sed  [ <R> <lh> <bfield> <gmin> <gmax> <slope> <delta> ]
+# USAGE:
+#     > read_grid_sed r=10  lh=1e-4  b=0.02  g1=10   g2=3e6   s=2   d=10 
+#   or
+#     > read_grid_sed <file ID>  [as in <file ID>.MAIN.input] 
+#
+read_grid_sed 07
+
+	echo " * Entering 'read_grid_sed' "
+
+	if( !$?1 ) {
+           echo " read_grid_sed: "
+	   echo " "
+           echo " USAGE: "
+           echo "    > read_grid_sed r=10  lh=1e-4  b=0.02  g1=10   g2=3e6   s=2   d=10 "
+           echo "  or"
+           echo "    > read_grid_sed <file ID>  [as in <file ID>.MAIN.input] "
+	   echo "                    ^^^^^^^^^ "
+	   echo " "
+	   return
+	} else {
+	   if( $?1 && substr('$1',0,2) == '-h' ) {
+              echo " read_grid_sed: "
+	      echo " "
+              echo " USAGE: "
+              echo "    > read_grid_sed r=10  lh=1e-4  b=0.02  g1=10   g2=3e6   s=2   d=10 "
+              echo "  or"
+              echo "    > read_grid_sed <file ID>  [as in <file ID>.MAIN.input] "
+	      echo " "
+	      return
+	   }
+	}
+
+	#--- if ok parse or read input file ----------------------------------
+	if($?2) {
+	    foreach n < 1 2 3 4 5 6 7 > { parsing $$n }
+	    compute_physics
+
+	    define silentpars 1
+	    plot_grid_ele $1 $2 $3 $4 $5 $6 $7 noplot
+	    define silentpars delete
+
+	    define datafilename "sed_$!1_$!2_$!3_$!4_$!5_$!6.dat" 
+	    data "dat/$!datafilename"
+	} else {
+	    read_params_sed $1
+	    compute_physics
+	    plot_grid_ele $1 noplot
+	    data output_$1_sed.dat
+	}
+	verbose 0
+	read ! < x 1 y 2 >
+	verbose 1
+	if($?2){
+	   set x = x + lg($d/10)
+	   set y = y + 4.*lg($d/10)
+	} else {
+	#   set x = x + lg($d/10)
+	#   set y = y + 4.*lg($d/10)
+	}
+	return 
+
+#---------------------------------------------------------------------------
+# plot_grid_sed [ <flux/lum> <R> <lh> <bfield> <gmin> <gmax> <slope> <delta> ]
+# USAGE:
+#    > plot_grid_sed <flux/lum> z=0.031 r=20 lh=1e-4 b=0.02 g1=10  g2=3e6  s=2  d=10
+# OR
+#    > plot_grid_sed <flux/lum> z=0.031 <file ID>  [as in: output_ID_sed.dat]
+#         
+plot_grid_sed 09
+
+	echo " * Entering 'plot_grid_sed' "
+
+	if( !$?1 || !$?2 || !$?3 ) {
+           echo " plot_grid_sed: "
+	   echo " "
+           echo " USAGE: "
+           echo "    > plot_grid_sed <flux/lum> z=0.031 r=20 lh=1e-4 b=0.02 g1=10  g2=3e6  s=2  d=10"
+           echo " OR"
+           echo "    > plot_grid_sed <flux/lum> z=0.031 <file ID>  [as in: output_ID_sed.dat]"
+	   echo "                    ^^^^^^^^^^ ^^^^^^^ ^^^^^^^^^"
+	   return
+	}
+	if( $?1 && substr('$1',0,2) == '-h' ) {
+           echo " plot_grid_sed: "
+	   echo " "
+           echo " USAGE: "
+           echo "    > plot_grid_sed <flux/lum> z=0.031 r=20 lh=1e-4 b=0.02 g1=10  g2=3e6  s=2  d=10"
+           echo " OR"
+           echo "    > plot_grid_sed <flux/lum> z=0.031 <file ID>  [as in: output_ID_sed.dat]"
+	   echo "                    ^^^^^^^^^^ ^^^^^^^ ^^^^^^^^^"
+	   return
+	}
+
+	if(!$(is_macro(lumdist))) {
+	    echo "WARNING: this macro REQUIRES 'lumdist' included in astro_tools.sm"
+	    return
+	}
+
+	if($?4) {
+	   read_grid_sed $3 $4 $5 $6 $7 $8 $9
+	} else {
+	   read_grid_sed $3 
+	}
+	parsing $2
+
+	#---------------------------------
+	define pltype (substr('$1',0,1))
+
+	if( '$pltype' == 'l' ) {
+	   #define ymin  39
+	   #define ymax  47
+	   define ymin  41
+	   define ymax  48
+	   define ystr "log(\\nu L_\\nu)"
+	   define ydumcut 30
+	}
+	if( '$pltype' == 'f' ) {
+	   #define ymin -13
+	   #define ymax  -8.5
+	   #define ymin -14.5
+	   # define ymin -12.0
+	   # define ymin -14.0
+	   # define ymax  -8.5
+	   define ymin -13.0
+	   define ymax  -8.5
+	   # define ymin -11.0
+	   # define ymax  -7.0
+	   define ystr "log(\\nu F_\\nu)"
+	   # calls lumdist... which has to be loaded already
+	   # lumdist 70.0 0.0 $z
+	   systemcall cosmo_calculator.py $z | egrep -v Age >!  /tmp/lumdist
+	   data "/tmp/lumdist"
+	   define lumdist read 1 3 
+
+	   echo "> d_L = "$(10.**$lumdist)" cm"
+	   set x = x - lg(1+$z)
+	   set y = y - lg(4.*$pi) - 2.*$lumdist
+	   define ydumcut -13 
+	   echo "> log(Luminosity Distance) = "$lumdist
+	   echo "> log(4\pi d_L^2)          = "$(lg(4.*$pi) + 2.*$lumdist)
+	}
+
+	reset_graph
+	limits  9.0  28.2 $ymin $ymax
+	limits 15.0  28.0 $ymin $ymax
+	limits  8.0  28.0 $ymin $ymax
+	limits 15.0  29.0 $ymin $ymax
+	limits 13.5  29.0 $ymin $ymax
+	#limits 24.5 29.0 $ymin $ymax
+	limits  8.0  28.0 $ymin $ymax
+	ticksize 0 0 0 0 
+	box 
+	xlabel log(\\nu)
+	ylabel $ystr
+
+        ltype 2 ctype 4
+	#             2kev   20kev 0.3TeV 10TeV
+	set tmp_nu_kev = < 2 20 0.3e9 10e9 >
+	set tmp_nu = lg(tmp_nu_kev) + 17.384
+	foreach nu tmp_nu {
+           relocate $nu -20   
+           draw     $nu  50
+	}
+        ltype 0 
+	ctype 3
+
+	echo " "
+	echo "-----------------------------"
+	define cty ? < Color : >
+	ctype $cty
+	## connect x y
+
+	echo "-----------------------------"
+	echo " What IR bkg absorption :"
+	echo " [0] none"
+	echo " [1] Stecker 1999, low IIRF"
+	echo " [2] Stecker 1999, high IIRF"
+	echo " [3] de Jager & Stecker 2002, baseline model"
+	echo " [4] de Jager & Stecker 2002, fast-evolution model"
+
+	define what_debra_abs ? < Pick one : >
+
+	#set myeV= x - 14.384
+	local set myTeV= x - 26.384
+	if( $what_debra_abs == 0 ) { 
+	  # set abs_frac = 1 + 0*lg_xc
+	  set abs_frac = 1 + 0*x
+	} else {
+	  if( $what_debra_abs == 1 ) { 
+	     echo "Computing DEBRA absorption...: Stecker 1999, low IIRF"
+	     tau_stecker_array 1 $z myTeV
+	  }
+	  if( $what_debra_abs == 2 ) { 
+	     echo "Computing DEBRA absorption...: Stecker 1999, high IIRF"
+	     tau_stecker_array 2 $z myTeV
+	  }
+	  if( $what_debra_abs == 3 ) { 
+	     echo "Computing DEBRA absorption...: de Jager & Stecker 2002, baseline model"
+	     tau_stecker_array 3 $z myTeV
+	  }
+	  if( $what_debra_abs == 4 ) { 
+	     echo "Computing DEBRA absorption...: de Jager & Stecker 2002, fast-evolution model"
+	     tau_stecker_array 4 $z myTeV
+	  }
+	}
+	#ltype 1 
+	connect x (y + lg(abs_frac))
+	#ltype 0
+	ctype 2
+
+	#
+	#___ actual data plot section ends here ___
+
+	#--- alpha_X ---#
+	define ex1 2.0
+	define ex2 8.0
+	define x1 (lg($ex1*2.418e17))
+	define x2 (lg($ex2*2.418e17))
+	set dumx = x if(x>=$x1 && x<=$x2)
+	set dumy = y if(x>=$x1 && x<=$x2)
+	define ix (dimen(dumx)-1)
+
+	define ax ( (dumy[$ix] - dumy[0])/(dumx[0] - dumx[$ix]) + 1 )
+	echo > alpha_x[$ex1-$ex2 keV] = $ax
+	relocate  $(dumx[0])   $(dumy[0])
+	draw      $(dumx[$ix]) $(dumy[$ix])
+
+	#--- alpha_g ---#
+	define eg1 0.5
+	define eg2 4.0
+	define x1 (lg($eg1*2.418e26))
+	define x2 (lg($eg2*2.418e26))
+	set dumx = x if(x>=$x1 && x<=$x2 && y>= $ydumcut)
+	set dumy = y if(x>=$x1 && x<=$x2 && y>= $ydumcut)
+	define ix (dimen(dumx)-1)
+
+        if($ix >= 5) {
+	    define ag ( (dumy[$ix] - dumy[0])/(dumx[0] - dumx[$ix]) + 1 )
+	    relocate  $(dumx[0])   $(dumy[0])
+	    draw      $(dumx[$ix]) $(dumy[$ix])
+	    echo > alpha_g[$eg1-$eg2 TeV] = $ag
+	} else {
+	    define highE  $( 10.**(x[(dimen(x)-3)]-23.384) )
+	    echo > IC component dies at $(sprintf('%5.0f',$highE)) GeV
+	}
+	echo "-----------------------------------------------------------------"
+	return
+	###########################
+
+	if($?4) {
+	    define SAVEexpand $expand
+	    expand 1.01
+	    foreach n < 3 4 5 6 7 8 9 > {
+	       define silentpars 1
+	       parsing $$n
+	       define silentpars delete
+	       grelocate 0.05 $(1-0.05*($n-2))
+	       putlabel 6 $$n
+	    }
+	    define expand $SAVEexpand 
+	}
+	return
+
+#---------------------------------------------------------------------------
+# plot_grid_ele  [ <R> <lh> <bfield> <gmin> <gmax> <slope> <delta> <noplot> ]
+# USAGE:
+#      > plot_grid_ele r=20  lh=1e-4  b=0.02  g1=10  g2=3e6  s=2  d=10  [<plot|noplot>] 
+#  or
+#      > plot_grid_ele <file ID>  [as in: output_ID_electrons.dat]
+#
+plot_grid_ele 08
+
+	echo " * Entering 'plot_grid_ele' "
+
+	if( !$?1 ) {
+           echo " plot_grid_ele: "
+	   echo " "
+           echo " USAGE: "
+           echo "    > plot_grid_ele r=20  lh=1e-4  b=0.02  g1=10  g2=3e6  s=2  d=10  [<plot|noplot>] "
+	   echo "  or"
+           echo "    > plot_grid_ele <file ID>  [as in: output_ID_electrons.dat]"
+	   echo "                    ^^^^^^^^^ "
+	   echo " "
+	   return
+	}
+	if( $?1 && substr('$1',0,2) == '-h' ) {
+           echo " plot_grid_ele: "
+	   echo " "
+           echo " USAGE: "
+           echo "    > plot_grid_ele r=20  lh=1e-4  b=0.02  g1=10  g2=3e6  s=2  d=10  [<plot|noplot>] "
+	   echo "  or"
+           echo "    > plot_grid_ele <file ID>  [as in: output_ID_electrons.dat]"
+	   echo "                    ^^^^^^^^^ "
+	   echo " "
+	   return
+	}
+
+	define plotflag 1
+	define check 0
+	foreach n < 1 2 3 4 5 6 7 8 > {
+	   if($?$n) { define check ($check + 2**($n-1)) }
+	}
+
+	if($check == 3) {
+	    if(substr('$2',0,2) == 'no' ) { define plotflag 0 }
+	    if(substr('$2',0,2) == 'pl' ) { define plotflag 1 }
+	}
+	if($check  > 3 && $?8 ) {
+	    if(substr('$8',0,2) == 'no' ) { define plotflag 0 }
+	    if(substr('$8',0,2) == 'pl' ) { define plotflag 1 }
+	}
+
+	if($check >= 127) {
+	    foreach n < 1 2 3 4 5 6 7 > { 
+	        parsing $$n 
+	    }
+	    compute_physics
+
+	    define datafilename "ele_$!1_$!2_$!3_$!4_$!5_$!6.dat"
+	    data "ele/$!datafilename"
+	} else {
+	    read_params_sed $1
+	    compute_physics
+	    data output_$1_electrons.dat
+	}
+
+	# verbose 0
+	read ! < lg_g 1 lg_Ug 2 lg_Pg 3 Ur 4 >
+	# verbose 1
+	#Note: lg_Ug = lg( Ng * Rblob * sigmaT * g^2 )
+	set lg_Ng  = lg_Ug - 2*lg_g - lg($sigmaT) - lg($r*1e15)
+	set lg_gNg = lg_g + lg_Ng + lg($emc2)
+
+	integrate_lgf lg_g lg_Ng
+	echo " > Electron Number Density:" $integral
+	integrate_lgf lg_g lg_gNg
+	echo " > Electron Energy Density:" $integral
+
+	set lg_Ug = lg_Ug + lg_g
+	set lg_Pg = lg_Pg + lg_g
+	set g = 10.0**lg_g
+
+	# cooling rates
+	set dotgIC = 4./3.*($sigmaT*$c)/$emc2*g**2.*Ur
+	set dotgSy = 4./3.*($sigmaT*$c)/$emc2*g**2.*($b*$b/(8.*$pi))
+	set tcool_IC = g/dotgIC
+	set tcool_Sy = g/dotgSy
+	set tcool_tot = g/(dotgIC+dotgSy)
+	set tcool_obs = tcool_tot/$d
+
+	if($plotflag) { 
+	   echo "** Minimum gamma for t_cool_obs"
+	   echo "**  t_cool_obs   lg(g)     lg(nu)"
+	   set _dum_lg_g local 
+	   set _dum_lg_g = lg_g     if( tcool_obs < 3e4 )
+	   echo "       30 ks     "$(_dum_lg_g[0])  $(lg(2.8e6*$b*$d)+2*$(_dum_lg_g[0])) 
+	   set _dum_lg_g = lg_g     if( tcool_obs < 2e4 )
+	   echo "       20 ks     "$(_dum_lg_g[0])  $(lg(2.8e6*$b*$d)+2*$(_dum_lg_g[0])) 
+	   set _dum_lg_g = lg_g     if( tcool_obs < 1e4 )
+	   echo "       10 ks     "$(_dum_lg_g[0])  $(lg(2.8e6*$b*$d)+2*$(_dum_lg_g[0])) 
+	   set _dum_lg_g = lg_g     if( tcool_obs < 5e3 )
+	   echo "        5 ks     "$(_dum_lg_g[0])  $(lg(2.8e6*$b*$d)+2*$(_dum_lg_g[0])) 
+	}
+
+	#---------------------------------------
+	# finding the synchrotron peak
+	#
+	set testg  = lg_g 
+	set testug = lg_Ug
+	set testUr = Ur
+	sort < testug testg testUr >
+	set testg =reverse(testg)
+	set testug=reverse(testug)
+	set testUr=reverse(testUr)
+	define lg_gpeak $(testg[0]) 
+	define Ur_peak  $(testUr[0]) 
+	define gpeak (10.**$lg_gpeak)
+
+	set _dum_tcool = tcool_obs   if( lg_g < $lg_gpeak ) 
+	define  tcool_gpeak  $(_dum_tcool[dimen(_dum_tcool)-1])
+	echo "-----------------------------------------------------------------"
+	echo " > t_cool_obs(gpeak) = "$tcool_gpeak" [s]"
+	echo " > U_rad(gpeak)      = "$Ur_peak
+	echo " > U_B               = "$($b/8/3.1415)
+
+	define real_peak_sync (2.8e6*$gpeak**2.*$b*$d)
+	if( $real_peak_sync > 2.4e10 ) { 
+	    define pop $(sprintf('%8.2f',$(13400./($real_peak_sync/2.418e14)/1e4))) 
+	    define pop "$!pop um"
+	}
+	if( $real_peak_sync > 5e13 ) { 
+	    define pop $(sprintf('%8.2f',$(13400./($real_peak_sync/2.418e14)))) 
+	    define pop "$!pop A"
+	}
+	if( $real_peak_sync > 2.4e15 ) { 
+	    define pop $(sprintf('%8.4f',$($real_peak_sync/2.418e14))) 
+	    define pop "$!pop eV"
+	}
+	if( $real_peak_sync > 2.4e16 ) {
+	    define pop $(sprintf('%8.4f',$($real_peak_sync/2.418e17))) 
+	    define pop "$!pop keV"
+	}
+
+	# echo "-----------------------------------------------------------------"
+	echo " > REAL gamma_peak [log]= " $lg_gpeak
+	echo " > REAL Sync. Peak [log]= " $(sprintf('%.4g',$(lg($real_peak_sync))))  [$pop]
+	echo "-----------------------------------------------------------------"
+
+	if(!$plotflag) { return }
+	#-----------------------------------------------------------------
+	# skips the plotting section if called with the 'noplot' switch
+	#-----------------------------------------------------------------
+
+	echo "** slope of the N(g) distribution in different ranges of lg(g)"
+	set _g1=< 1 2 3 4 5 6 >
+	set _g2=< 2 3 4 5 6 7 >
+	do i=0,5 {
+	  set _lg_Ug = lg_Ug  if(lg_g>=_g1[$i] && lg_g<=_g2[$i])
+  	  set _lg_g  = lg_g   if(lg_g>=_g1[$i] && lg_g<=_g2[$i])
+	  if( dimen(_lg_Ug) > 10 ) { 
+	     lsq _lg_g _lg_Ug 
+	     echo   $(_g1[$i])-$(_g2[$i]) : $(-1*($a-3))
+	  }
+	}
+	echo "-----------------------------------------------------------------"
+
+	reset_graph
+	expand 1.2
+	#---- window 1: electron spectrum ----#
+	window 1 -3 1 1 
+	limits -0.1 7.1 lg_Ug 
+	ticksize 0.25 1 0 0 
+	box 1 2 3 0 
+	xlabel log(\gamma)
+	ylabel log(\gamma^3 N_\gamma)
+	ctype 3
+	connect lg_g lg_Ug 
+	ctype 2
+	ltype 1
+	relocate $lg_gpeak -6 
+	draw     $lg_gpeak 10
+	ltype 0 
+
+	#---- window 2:  ----#
+	# window 1 -3 1 2 
+	# range 0 4 
+	# limits -0.1 7.1 lg_Pg 
+	# box 0 2 3 0 
+	# ylabel log(\gamma P_\gamma)
+	# ctype 3
+	# connect lg_g lg_Pg 
+	# ctype 2
+	# range 0 0 
+
+	#---- window 2: Energy density ----#
+	# window 1 -3 1 3 
+	window 1 -3 1 2 
+	limits -0.1 7.1 Ur
+	box 0 2 3 0 
+	ylabel U_{rad}
+	ctype 3
+	connect lg_g Ur
+	ctype 2
+	ltype 1
+	relocate $lg_gpeak -2 
+	draw     $lg_gpeak 10
+	ltype 0 
+
+	#---- window 3: cooling times ----#
+	window 1 -3 1 3 
+	limits -0.1 7.1 (lg(tcool_tot))
+	box 0 2 3 0 
+	ylabel log(t_{cool}) [s]
+	ctype 6 connect lg_g (lg(tcool_IC))
+	        relocate ( $($gx1 + 0.25*($gx2-$gx1)) $($gy2+ 600) )
+		putlabel 5 Inv. Compt.
+	ctype 4 connect lg_g (lg(tcool_Sy))
+	        relocate ( $($gx1 + 0.50*($gx2-$gx1)) $($gy2+ 600) )
+		putlabel 5 Sychro
+	ctype 3 connect lg_g (lg(tcool_tot))
+	        relocate ( $($gx1 + 0.75*($gx2-$gx1)) $($gy2+ 600) )
+		putlabel 5 Total
+	ctype 2
+	ltype 1
+	relocate $lg_gpeak -2 
+	draw     $lg_gpeak 10
+	relocate -2 $(lg($tcool_gpeak*$d)) 
+	draw     10 $(lg($tcool_gpeak*$d))
+	ltype 0 
+
+
+#------------------------------------------------------------------------------
+# sed_ic_split   [<FILEFLAG>]
+# USAGE: 
+#    > sed_ic_split <file ID>    [as in <file ID>.MAIN.input] 
+# REQUIRES: macro 'shift' in tools.sm
+# 
+sed_ic_split 01
+
+	if( $?1 ) {
+	if( substr('$1',0,2) == '-h' ) {
+           echo " sed_ic_split: "
+	   echo " "
+           echo " USAGE: "
+           echo "    > sed_ic_split <file ID>    [as in <file ID>.MAIN.input] "
+	   echo " "
+	   return
+	}
+	}
+
+	if(!$(is_macro(shift))) {
+	    echo "WARNING: this macro REQUIRES tools.sm"
+	    return
+	}
+
+	if(!$?1) {
+	    define fileflag ? < File Name : >
+	    define 1 $fileflag
+	}
+	read_params_sed $1
+	define B $b
+	define doppler $d
+
+	compute_physics
+
+	#---- read photon number spectrum
+	data output_$1_sed.dat
+	verbose 0
+	read ! < lg_nu 1 lg_Nx 2 >
+	verbose 1
+	set lg_nu = lg_nu - lg($d)
+	set lg_Nx = lg_Nx - 4.*lg($d)
+
+	set lg_Nx      = lg_Nx - 2.0*lg_nu
+	set lg_xs      = lg_nu - 20.0916
+	set save_lg_xs = lg_xs 
+	set lg_xc      = lg_xs
+	
+	#--- just rebuilding the arrays ---#
+	#define Nph 300
+	define Nph $(dimen(lg_nu))
+	set iph=1,$Nph,1
+	define Ne  (3*$Nph)
+	define g0  1.001
+
+	# NOT USED ANYWHERE ELSE
+	set ie =1,$Ne-1,1
+	set eg=$g0*($g2/$g0)**((ie-1)/($Ne-1))
+	set lg_eg=lg(eg)
+
+	#---- read electron number spectrum
+	data output_$1_electrons.dat
+	verbose 0
+	read ! < lg_g 1 lg_Ng 2 >
+	define Ne (dimen(lg_g))
+	verbose 1
+	set testg  = lg_g 
+	set testug = lg_Ng
+	sort < testug testg >
+	set testg =reverse(testg)
+	set testug=reverse(testug)
+	define lg_gpeak $(testg[0]) 
+	define gpeak (10.**$lg_gpeak)
+
+	define intr_peak_sync ($nu_crit*$gpeak**2.*$b)
+	define obs_peak_sync  ($nu_crit*$gpeak**2.*$b*$d)
+
+	echo "-------------------------------------------------------"
+	echo "** Gamma_peak         : " $gpeak   $lg_gpeak
+	echo "** Synchro Peak Obs.  : " $obs_peak_sync
+	echo "** Synchro Peak Intr. : " $intr_peak_sync
+	echo "-------------------------------------------------------"
+
+	#--- now really transform it to number spectrum
+	set lg_Ng = lg_Ng - 2.*lg_g
+	vecminmax lg_g lg_g1 lg_g2
+	echo "  Electron spectrum (from data file): "
+	echo "     g_min (lg_g1): "$lg_g1
+	echo "     g_max (lg_g2): "$lg_g2
+
+	#-----------------------------------------------------------
+	# SPLIT
+	#-----------------------------------------------------------
+	define what_gb ? <                             Use "natural" split [y/n] : >
+	if( substr('$what_gb',0,1) == 'y' ) {
+	   define nu_b    ( $intr_peak_sync )
+	   define gb      ( sqrt($nu_b/$nu_crit/$B) )
+	   define lg_gb   ( lg($gb) )
+	   define adhoc_e ( $nu_b/$nu_keV*$d )
+	} else {
+	   define adhoc_e   ? <                Split electrons at (obs.) Energy [keV]: >
+	   # define adhoc_nus ? < Split photons   at Energy [keV]: >
+
+	   define adhoc_nu_b ( $adhoc_e*$nu_keV/$d )
+	   define adhoc_gb   ( sqrt($adhoc_nu_b/$nu_crit/$B) )
+	   define gb         $adhoc_gb
+	   define lg_gb      ( lg($adhoc_gb) )
+	}
+	#
+	#---> defines "lg_gb" in both cases
+
+	define lg_xsb     ( (lg($nu_crit) + 2.*$lg_gb + lg($B)) - lg(511.*$nu_keV) )
+
+	#-----------------------------------------------------------
+	# MINIMUM
+	#-----------------------------------------------------------
+	echo "   Minimum defined lg_xs1 : "$(lg_xs[0])  "lg(nu) = "$(lg_xs[0] + 20.0916)
+	define what_xs1 ? <                        Use "natural" minimum xs [y/n] : >
+	if( substr('$what_xs1',0,1) == 'y' ) {
+	   define cut_lg_xs1 $lg_xs1
+	} else {
+	   define adhoc_xs1 ? <            Cutoff seed photons at Energy (obs.)[keV]: > 
+	   define cut_lg_xs1  ( lg($adhoc_xs1/511.0/$d) )
+	}
+	define lg_xs1     ( lg_xs[0] )
+	echo " > lg_xs1, cut_lg_xs1 : "$lg_xs1 $cut_lg_xs1
+	#
+	#---> defines "$lg_xs1" and "$cut_lg_xs1", and they are different
+
+	#-----------------------------------------------------------
+	# MAXIMUM
+	#-----------------------------------------------------------
+	define lg_xs2     ( lg_xs[$($Nph-1)] )
+	echo "   Maximum defined lg_xs2 : "$lg_xs2  "lg(nu) = "$($lg_xs2 + 20.0916)
+	define adhoc_xs2 ? < High-E cutoff on seed photons at Energy (obs.) [keV]: >
+	define cut_lg_xs2 ( lg($adhoc_xs2/511.0/$d) )
+
+	define lg_xs2     ( lg_xs[$($Nph-1)] )
+	define lg_xs_max  ( (lg($nu_crit) + 2.*$lg_g2 + lg($B)) - lg(511.*$nu_keV) )
+	#
+	#---> defines "$lg_xs2" and "$cut_lg_xs2", and they are different
+
+	#------------------------------------------------------
+	# rebuilds a lg_xs array that is null above lg_xs_max
+	define ixs2 (ifloor(lg_xs,$lg_xs_max))
+	set lg_xs_l = lg_xs if( lg_xs <= $lg_xs_max )
+	set lg_xs_h = 1,$Nph-$ixs2-1
+	set lg_xs_h = lg_xs_h*0
+
+	set lg_xs   = lg_xs_l concat lg_xs_h
+
+	## write  pip1  "new run"
+	## write  pip2  "new run"
+	## write  pip3  "new run"
+	## write  test_indices.log "new run"
+
+	foreach vec < x1 x1a x1b x1c x2 x2a x2b x2c x2d > {
+	    set dimen(lg_$vec) = $(dimen(lg_xs))
+	}
+
+	##################
+	#### 1,1 case ####
+	##################
+	echo "** Doing case : 1,1"
+	#--- lower integration boundary ---#
+	#set lg_x1a = 0*lg_xs+  $lg_xs1 
+	set lg_x1a = fill(lg_x1a,$lg_xs1)
+	set lg_x1b = fill(lg_x1b,$cut_lg_xs1)
+	set lg_x1c = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = setmax(lg_x1a,lg_x1b,lg_x1c)
+
+	#--- upper integration boundary ---#
+	set lg_x2a = fill(lg_x2a,$lg_xsb)
+	set lg_x2b = fill(lg_x2b,$cut_lg_xs2)
+	set lg_x2c = lg(3./4.) + lg_xc - 2.*$lg_g1
+	set lg_x2d = lg(3./4.) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c,lg_x2d)
+
+	SUB_INTEGRATION
+	verbose 0
+	set lg_nuI11   = lg(Ixx)+lg_xc
+	verbose 1
+
+	##################
+	#### 1,2 case ####
+	##################
+	echo "** Doing case : 1,2"
+	#--- lower integration boundary ---#
+	set lg_x1a = fill(lg_x1a,$lg_xsb)
+	set lg_x1b = fill(lg_x1b,$cut_lg_xs1)
+	set lg_x1c = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = setmax(lg_x1a,lg_x1b,lg_x1c)
+
+	#--- upper integration boundary ---#
+	set lg_x2a = fill(lg_x2a,$lg_xs2)
+	set lg_x2b = fill(lg_x2b,$cut_lg_xs2)
+	set lg_x2c = lg(3./4.) + lg_xc - 2.*$lg_g1
+	set lg_x2d = lg(3./4.) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c,lg_x2d)
+
+	SUB_INTEGRATION
+	verbose 0
+	set lg_nuI12   = lg(Ixx)+lg_xc
+	verbose 1
+
+	##################
+	#### 2,1 case ####
+	##################
+	echo "** Doing case : 2,1"
+	#--- lower integration boundary ---#
+	set lg_x1a = fill(lg_x1a,$lg_xs1)
+	set lg_x1b = fill(lg_x1a,$cut_lg_xs1)
+	set lg_x1c = lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = setmax(lg_x1a,lg_x1b,lg_x1c)
+
+	#--- upper integration boundary ---#
+	set lg_x2a = fill(lg_x2a,$lg_xsb)
+	set lg_x2b = fill(lg_x2b,$cut_lg_xs2)
+	set lg_x2c = lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x2d = lg(3./4.) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c,lg_x2d)
+
+	SUB_INTEGRATION
+	verbose 0
+	set lg_nuI21   = lg(Ixx)+lg_xc
+	verbose 1
+
+	##################
+	#### 2,2 case ####
+	##################
+	echo "** Doing case : 2,2"
+	#--- lower integration boundary ---#
+	set lg_x1a = fill(lg_x1a,$lg_xsb)
+	set lg_x1b = fill(lg_x1b,$cut_lg_xs1)
+	set lg_x1c = lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = setmax(lg_x1a,lg_x1b,lg_x1c)
+
+	#--- upper integration boundary ---#
+	#set lg_x2a = 0*lg_xs+   $lg_xc2
+	set lg_x2a = fill(lg_x2a,$lg_xs2)
+	set lg_x2b = fill(lg_x2b,$cut_lg_xs2)
+	set lg_x2c = lg(3./4.) + lg_xc -  2.*$lg_gb
+	set lg_x2d = lg(3./4.) - lg_xc
+	set lg_x2  = setmin(lg_x2a,lg_x2b,lg_x2c,lg_x2d)
+
+	SUB_INTEGRATION
+	verbose 0
+	set lg_nuI22   = lg(Ixx)+lg_xc
+	verbose 1
+
+	# WARNING: 0.75 is a fudge factor... to be explained....
+	foreach var < 11 12 21 22 > {
+	   set lg_nuI$var = lg_nuI$var + 4.*lg(0.75*$doppler)
+	}
+
+	define icname ? < Suffix for the IC split spectra arrays : >
+	set lg_xc_$icname = lg_xc
+	set lg_nu_$icname = lg_xc + lg(511) + lg($nu_keV) + lg($doppler)
+
+	set Itot = lg_xc*0 
+	foreach 1 < 11 12 21 22 > {
+	  set Itot = Itot + 10.**lg_nuI$1
+	}
+	set lg_nuItot = lg(Itot)
+
+	foreach 1 < 11 12 21 22 tot > {
+	    set lg_nuI$1_$icname = lg_nuI$1
+	}
+	echo "  adhoc E : "$adhoc_e
+	define adhoc_e_$icname $adhoc_e
+
+	return
+
+##------------------------------------------------------------------------------
+SUB_INTEGRATION
+
+	echo " * getting into integration routine... "
+	## write + pip1  "new component"
+	## write + pip2  "new component"
+	## write + pip3  "new component"
+	
+	#--- indices for lower/upper int. boundary ---#
+	set i_xs  = iph-1
+	set i_xs1 = int( ($Nph-1)*(lg_x1-$lg_xs1)/($lg_xs2-$lg_xs1) )
+	set i_xs2 = int( ($Nph-1)*(lg_x2-$lg_xs1)/($lg_xs2-$lg_xs1) )
+	#
+	# as it is, lg_xs[i_xs1] is lower than the input lg_x1
+	# maybe should add+1, i_xs1 => i_xs1+1
+
+	## write + test_indices.log "---- new component ----"
+	## write + test_indices.log " lg_xs1 cut_lg_xs1 : " $(20.0916+$lg_xs1) $(20.0916+$cut_lg_xs1)
+	## write + test_indices.log " lg_xs2 cut_lg_xs2 : " $(20.0916+$lg_xs2) $(20.0916+$cut_lg_xs2)
+	## write + test_indices.log " lg_xsb            : " $lg_xsb
+
+	#--- selects only pair of indices with separation > 1 ---#
+	set i_xs_check = i_xs1*0
+	do 1=0,dimen(i_xs1)-1 {
+	   if( i_xs2[$1] > i_xs1[$1]+1 ) {
+	      set i_xs_check[$1] = 1 
+	   }
+	}
+
+	set dum_x1 = lg_x1 + 20.0916
+	set dum_x2 = lg_x2 + 20.0916
+	set dum_xc = lg_xc + 20.0916
+	## print + test_indices.log ' %4.0f   %9.5f   %4d %4d   %1.0f   %9.5f   %9.5f\n'  < i_xs dum_xc i_xs1 i_xs2 i_xs_check dum_x1 dum_x2 >
+
+	#-----------------------------------------------------------
+	# Getting the list of indices for which the IC component 
+	#  has contributions to the integral
+	#-----------------------------------------------------------
+	set good_i_xc = iph - 1  if( i_xs_check > 0 )
+	if( dimen(good_i_xc) == 0 ) {
+	   echo " !!! Quitting SUB_INTEGRATION ..."
+	   set Ixx=0*lg_xc - 1000
+	   return
+	}
+	vecminmax good_i_xc i1 i2
+	set Ixx=0*lg_xc
+
+	#-----------------------------------------------------------
+	# do-loop over the lg_xc for which there is a non-trivial
+	# interval of lg_xs for the integration.
+	#-----------------------------------------------------------
+	do 1=$i1,$i2 {
+	   define j1 $( i_xs1[$1] )
+	   define j2 $( i_xs2[$1] )
+	   ## write + pip1 >>> [$1] $j1 $j2  $(lg_xc[$1]+20.09+lg($d))  $(lg_xs[$j1]+20.09+lg($d)) $(lg_xs[$j2]+20.09+lg($d))
+	   ## write + pip2 >>> [$1] $j1 $j2" lg_xc :"$(lg_xc[$1]) $(lg_xc[$1]+20.0916)" -- obs nu : "$(lg_xc[$1]+20.09+lg($d))  $(lg_xs[$j1]+20.09+lg($d)) $(lg_xs[$j2]+20.09+lg($d))
+
+	   set tmp_lg_xs1 = save_lg_xs  if( i_xs >= $j1 && i_xs <= $j2 )
+	   set tmp_lg_Nx1 = lg_Nx       if( i_xs >= $j1 && i_xs <= $j2 )
+	   set tmp_lg_xs2 = tmp_lg_xs1
+	   set tmp_lg_Nx2 = tmp_lg_Nx1
+	   shift tmp_lg_xs2 -1
+	   shift tmp_lg_Nx2 -1
+
+	   ## write + pip3 >>> [$1] "dimen(tmp_lg_xs2) " $(dimen(tmp_lg_xs2)) "tmp_lg_xs2[last] = " $(tmp_lg_xs2[dimen(tmp_lg_xs2)-2]) $(tmp_lg_xs2[dimen(tmp_lg_xs2)-1])
+
+	   foreach name < xs1 xs2 Nx1 Nx2 >  {
+	      set tmp_lg_$name=pop(-1,tmp_lg_$name)
+	   }
+	   ## write + pip3 "                                                   tmp_lg_xs2[last] = " $(tmp_lg_xs2[dimen(tmp_lg_xs2)-2]) $(tmp_lg_xs2[dimen(tmp_lg_xs2)-1])
+
+	   ## set dum=$j1,$j2
+	   ## set dum=dum-$j1
+	   ## #!! don't understand this loop !!
+	   ## #!! it cuts the last component of each array... ? !!
+	   ## #!! Maybe for the matching of the low-high ends of the intervals
+	   ## foreach name < xs1 xs2 Nx1 Nx2 >  {
+	   ##    # echo " --- "$1" --- "
+	   ##    # echo "  before : "$name $(dimen(tmp_lg_$name))
+	   ##    set tmp_lg_$name = tmp_lg_$name   if( dum < $($j2-$j1) )
+	   ##    # echo "  after  : "$name $(dimen(tmp_lg_$name))
+	   ## }
+
+	   # set ic1 = int( ($Ne-1)/2.*(lg(3./4.) + lg_xc[$1] - tmp_lg_xs1)/$lg_g2 + 0.5 )
+	   # set ic2 = int( ($Ne-1)/2.*(lg(3./4.) + lg_xc[$1] - tmp_lg_xs2)/$lg_g2 + 0.5 )
+	   set ic1 = int( ($Ne-1)/2.*(lg(3./4.) + lg_xc[$1] - tmp_lg_xs1)/($lg_g2-$lg_g1) + 0.5 )
+	   set ic2 = int( ($Ne-1)/2.*(lg(3./4.) + lg_xc[$1] - tmp_lg_xs2)/($lg_g2-$lg_g1) + 0.5 )
+	   
+	   # another odd looking loop!
+	   define filter "ic1 <= $Ne-1 && ic1 > 1 && ic2 <= $Ne-1 && ic2 > 1"
+	   foreach name < xs1 xs2 Nx1 Nx2 >  {
+	      set tmp_lg_$name = tmp_lg_$name   if( $!filter )
+	      # echo "  after-after : "$name $(dimen(tmp_lg_$name))
+	   }
+	   set tmp_ic1 = ic1   if( $!filter )
+	   set tmp_ic2 = ic2   if( $!filter )
+	   set ic1 = tmp_ic1
+	   set ic2 = tmp_ic2
+
+	   set tmp_lg_g1  =  lg_g[ic1]
+	   set tmp_lg_g2  =  lg_g[ic2]
+	   set tmp_lg_Ng1 = lg_Ng[ic1]
+	   set tmp_lg_Ng2 = lg_Ng[ic2]
+	   set dum_xs1 = tmp_lg_xs1 + 20.0916
+	   set dum_xs2 = tmp_lg_xs2 + 20.0916
+
+	   set insum1 = (10.0**tmp_lg_g1)*(10.0**tmp_lg_Ng1)*(10.0**tmp_lg_Nx1)
+	   set insum2 = (10.0**tmp_lg_g2)*(10.0**tmp_lg_Ng2)*(10.0**tmp_lg_Nx2)
+	   set insum  = 0.5*(insum1 + insum2)
+	   ## print + pip2 '   %4d  %4d      %6.4f   %6.4f      %8.4f   %8.4f      %9.5f   %9.5f  %8.4e %8.4e %8.4e\n' < ic1 ic2 tmp_lg_g1 tmp_lg_g2 tmp_lg_Ng1 tmp_lg_Ng2 dum_xs1 dum_xs2 insum1 insum2 insum >
+	   set dxs    = (10.0**tmp_lg_xs2) - (10.0**tmp_lg_xs1)
+	   define sum  ( sum(insum*dxs) )
+	   set Ixx[$1] = 0.5*$sigmaT*$c*$sum
+	   ## write + pip2 "  xc = "$(lg_xc[$1]+20.09+lg($d))" / Sum = "$sum"  / Ixx = "$(Ixx[$1])
+	   ## write + pip2 "----------------------------------------"
+	}
+	#-----------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# plot_sed_ic_split : plots the results of sed_ic_split...
+#                   : REQUIRES: stecker.sm
+#                   : NOTE: the actual plot X coord. is x=E/mec2
+plot_sed_ic_split 01
+
+	if(!$(is_macro(tau_stecker_array))) {
+	    echo "WARNING: this macro REQUIRES stecker.sm"
+	    return
+	}
+
+	if( $?1 ) {
+	   if( substr('$1',0,2) == '-h' ) {
+              echo " plot_sed_ic_split: "
+	      echo " "
+              echo " USAGE: "
+              echo "    > plot_sed_ic_split [<data suffix>]  [as assigned by 'sed_ic_split']" 
+	      echo " "
+	      return
+	   } else {
+	      define ploticname $1
+	   }
+	} else {
+	   define ploticname   ? < Suffix for the IC split spectra to plot : >
+	}
+
+	define gev_or_tev   ? <  GeV or TeV inverse Compton peak  [g|t] : >
+	define want2rescale ? <    Flux units of Arbitrary units  [f|a] : >
+
+	#--- test for redshift ---#
+	define _test $(whatis(z))
+	echo $_test
+	if( $_test > 1 ) {
+	   echo "Redshift : "$z
+	} else {
+	   define z ? < Redshift : >
+	}
+
+	define adhoc_e ($adhoc_e_$ploticname)
+
+	set lg_xc = lg_xc_$ploticname
+	#NOTUSED# set all_lg_nuI = < -1000 > 
+	#NOTUSED# foreach 1 < 11 12 21 22 > {
+	#NOTUSED#   set all_lg_nuI = all_lg_nuI concat lg_nuI$1_$ploticname
+	#NOTUSED# }
+	#NOTUSED# set all_lg_nuI = all_lg_nuI   if( all_lg_nuI > -800 )
+
+	set Itot = lg_xc*0 
+	foreach 1 < 11 12 21 22 > {
+	  set Itot = Itot + 10.**lg_nuI$1_$ploticname 
+	}
+	vecminmax Itot dum top
+	echo "        nuFnu max. is: " $top
+
+	set lg_Itot = lg(Itot)  
+	vecminmax lg_Itot dum top
+	echo "  log of nuFnu max is: " $top
+
+	if( substr('$want2rescale',0,1) == 'a' ) {
+	   echo "Using rescaled fluxes ...."
+	   foreach 1 < 11 12 21 22 > {
+	      set lg_nuI$1 = lg_nuI$1_$ploticname - $top
+	   }
+	   set lg_Itot = lg_Itot - $top
+	} else {
+	   echo "Using actual fluxes for plot...."
+	   foreach 1 < 11 12 21 22 > {
+	      set lg_nuI$1 = lg_nuI$1_$ploticname 
+	   }
+	}
+
+	# limits, in units of mec2  mec2=20.0916
+	if( substr('$gev_or_tev',0,1) == 'g' ) {
+	   define xw1  0.0
+	   define xw2  7.5
+	}
+	if( substr('$gev_or_tev',0,1) == 't' ) {
+	   define xw1tev ( 0.06)
+	   define xw2tev (12.00)
+	   define xw1  $(lg($xw1tev) + 26.384 - 20.0916) # 4.0 #5.0
+	   define xw2  $(lg($xw2tev) + 26.384 - 20.0916) # 4.0 #5.0
+	}
+
+	# location 5500 30000 5500 28000
+	location 7000 29000 6000 28000
+	ctype 2 
+	ltype 0 
+	if( substr('$want2rescale',0,1) == 'a' ) {
+	   define ylabunits "[arb. units]"
+	   define ylim1 -2.5
+	   define ylim2 0.4
+	} else {
+	   define ylabunits "[erg/cm^2/s]"
+	   define ylim1 $($top-2.5) 
+	   define ylim2 $($top+0.4)
+	   # define ylim1 -12.3
+	   define ylim1 -10.5
+	   define ylim2  -8.2
+	   define ylim1 -11.7
+	   define ylim2  -9.4
+	}
+	limits $xw1 $xw2 $ylim1 $ylim2
+	ticksize 0.2 1 0 0 
+	box 3 2 3 0
+	# ylabel log(\\nu F_\\nu)    [arb. units]
+	ylabel log(\\nu F_\\nu) $ylabunits
+	relocate ( $(0.5*($gx1+$gx2)) $($gy2+2500) )
+
+	if( substr('$gev_or_tev',0,1) == 'g' ) {
+	     putlabel 5 Energy [GeV]
+	}
+	if( substr('$gev_or_tev',0,1) == 't' ) {
+	     putlabel 5 Energy [TeV]
+	}
+
+	echo "-----------------------------"
+	echo " What IR bkg absorption :"
+	echo " [0] none"
+	echo " [1] Stecker 1999, low IIRF"
+	echo " [2] Stecker 1999, high IIRF"
+	echo " [3] de Jager & Stecker 2002, baseline model"
+	echo " [4] de Jager & Stecker 2002, fast-evolution model"
+
+	define what_debra_abs ? < Pick one : >
+	if( $what_debra_abs == 0 ) { 
+	  set abs_frac = 1 + 0*lg_xc
+	} else {
+	  # local set myeV= lg_xc + lg(511*2.418e17) + lg($doppler) - 14.384
+	  set myTeV= lg_xc + lg(511*$nu_keV) + lg($doppler) - 26.384
+	  if( $what_debra_abs == 1 ) { 
+	     echo "Computing DEBRA absorption...: Stecker 1999, low IIRF"
+	     tau_stecker_array 1 $z myTeV
+	  }
+	  if( $what_debra_abs == 2 ) { 
+	     echo "Computing DEBRA absorption...: Stecker 1999, high IIRF"
+	     tau_stecker_array 2 $z myTeV
+	  }
+	  if( $what_debra_abs == 3 ) { 
+	     echo "Computing DEBRA absorption...: de Jager & Stecker 2002, baseline model"
+	     tau_stecker_array 3 $z myTeV
+	  }
+	  if( $what_debra_abs == 4 ) { 
+	     echo "Computing DEBRA absorption...: de Jager & Stecker 2002, fast-evolution model"
+	     tau_stecker_array 4 $z myTeV
+	  }
+	}
+
+	# four sub-components
+	if( substr('$ploticname',0,2) == 'pp' ) { ctype 6 }
+	ltype 1 connect (lg_xc+lg($doppler)) (lg_nuI11 + lg(abs_frac))
+	ltype 2 connect (lg_xc+lg($doppler)) (lg_nuI12 + lg(abs_frac))
+	ltype 5 connect (lg_xc+lg($doppler)) (lg_nuI21 + lg(abs_frac))
+	ltype 3 connect (lg_xc+lg($doppler)) (lg_nuI22 + lg(abs_frac))
+
+	# Total spectrum
+	lweight 3 
+	ctype 3
+	if( substr('$ploticname',0,2) == 'pp' ) { ctype 5 }
+	ltype 0 connect (lg_xc+lg($doppler)) (lg_Itot+0.02 + lg(abs_frac))
+	lweight 3
+	ctype 2
+
+	echo "---------------------------------------------"
+	echo "  [1,1] [........]  dotted"
+	echo "  [1,2] [- - - - ]  dashed"
+	echo "  [2,1] [-.-.-.-.]  dot-dashed"
+	echo "  [2,2] [-- -- --]  long dashed"
+	#echo "  [2,1] [-- -- --]  long dashed"
+	#echo "  [2,2] [-.-.-.-.]  dot-dashed"
+	echo "---------------------------------------------"
+
+	# attempt at labeling the components...a poor one...
+	define flag_do_labels 0
+	if( $flag_do_labels ) {
+	if( substr('$ploticname',0,2) != 'pp' ) {
+	expand 1.1
+	define 8 "11"
+	set tmpx = lg_xc      if( (lg_xc+lg($doppler)) > $fx1 )
+	set tmpy = lg_nuI$8   if( (lg_xc+lg($doppler)) > $fx1 )
+	define lx $(tmpx[0]+lg($doppler)+0.035*($fx2-$fx1))
+	define ly $(tmpy[0]-0.025*($fy2-$fy1))
+	echo $lx $ly
+	relocate $lx $ly
+	putlabel 5 1,1
+
+	define 8 "12"
+	set tmpx = lg_xc      if( (lg_xc+lg($doppler)) > $fx1 )
+	set tmpy = lg_nuI$8   if( (lg_xc+lg($doppler)) > $fx1 )
+	define lx $(tmpx[0]+lg($doppler)+0.035*($fx2-$fx1))
+	define ly $(tmpy[0]-0.025*($fy2-$fy1))
+	echo $lx $ly
+	relocate $lx $ly
+	putlabel 5 1,2
+	
+	define 8 "21"
+	set tmpx = lg_xc      if( (lg_nuI$8+ lg(abs_frac)) > $fy1 )
+	set tmpy = lg_nuI$8   if( (lg_nuI$8+ lg(abs_frac)) > $fy1 )
+	define lx $(tmpx[dimen(tmpx)-1]+lg($doppler)-0.035*($fx2-$fx1))
+	define ly $(tmpy[0]+0.025*($fy2-$fy1))
+	echo $lx $ly
+	relocate $lx $ly
+	putlabel 5 2,1
+	
+	define 8 "22"
+	set tmpx = lg_xc      if( (lg_nuI$8+ lg(abs_frac)) > $fy1 )
+	set tmpy = lg_nuI$8   if( (lg_nuI$8+ lg(abs_frac)) > $fy1 )
+	define lx $(tmpx[0]+lg($doppler)+0.035*($fx2-$fx1))
+	define ly $(tmpy[0]+0.025*($fy2-$fy1))
+	echo $lx $ly
+	relocate $lx $ly
+	putlabel 5 2,2
+	expand 1.5
+	foreach v < tmpx tmpy lx ly > { delete $v }
+	}
+	}
+	#--- end of poor labeling ---#
+
+	#--- fake box for frequency scale (bottom) ---#
+	define nu1 $($fx1 + 20.0916)
+	define nu2 $($fx2 + 20.0916)
+	limits $nu1 $nu2 $ylim1 $ylim2
+	ticksize 0.2 1 0 0 
+	notation -2 4 -4 4 
+	box 1 3 3 3 
+	xlabel log(\\nu)  [Hz]  (observed)
+
+	## plot_hegra_spec 90a
+
+	#--- fake box for Energy scale (top) ---#
+	if( substr('$gev_or_tev',0,1) == 'g' ) {
+	   define nu1 $($fx1 - 23.384)
+	   define nu2 $($fx2 - 23.384)
+	}
+	if( substr('$gev_or_tev',0,1) == 't' ) {
+	   define nu1 $($fx1 - 26.384)
+	   define nu2 $($fx2 - 26.384)
+	}
+	limits $nu1 $nu2 $ylim1 $ylim2
+	ticksize -1 100 0 0 
+	notation -2 4 -4 4 
+	box 3 3 1 3 
+
+	#--- prints miscellaneous info ---#
+	relocate ( $($gx1+1500)  $($gy2-1500) )
+	# putlabel 6 E_{obs,split}=$(sprintf('%5.2f',$adhoc_e)) [keV]
+
+	relocate ( $gx1 $($gy1-4200) )
+	define nu_b_obs ($obs_peak_sync/2.418e17)
+	putlabel 6 \\nu_{p,obs}=$(sprintf('%5.2f',$nu_b_obs)) [keV]    B=$B   \delta=$doppler 
+
+	define saveexp $expand
+	expand 1.2
+	relocate ( $($gx2+1500) $gy1 )
+	angle 90
+	putlabel 6 \gamma_b=$(sprintf('%.1t',$gb))    \gamma_1=$(sprintf('%.1t',$g1))     \gamma_2=$(sprintf('%.1t',$g2)) 
+	angle 0
+	expand $saveexp
+
+	ctype 4
+	ltype 1
+	if( substr('$gev_or_tev',0,1) == 'g' ) {
+	    define band1 0.6e3
+	    define band2 4.0e3
+	}
+	if( substr('$gev_or_tev',0,1) == 't' ) {
+	    define band1 0.4
+	    define band2 4.0
+	}
+	relocate $(lg($band1))  $(0.99*$fy2)
+	draw     $(lg($band1))  $(1.01*$fy1)
+	relocate $(lg($band2))  $(0.99*$fy2)
+	draw     $(lg($band2))  $(1.01*$fy1)
+	ltype 0
+	ctype 2
+
+#------------------------------------------------------------------------------
+# skn  <gamma*x> : full Klein-Nishina cross section.
+skn 1
+
+	set kn_cs_full = 0.75*((1+alpha)/alpha**3.*(2.*alpha*(1+alpha)/(1+2*alpha)-ln(1+2*alpha))\
+	                        + ln(1+2*alpha)/(2*alpha) - (1+3*alpha)/(1+2*alpha)**2)
+
+#---------------------------------------------------------------------------
+# plot_sed_3 [ <flux/lum> <R> <lh> <bfield> <gmin> <gmax> <slope> <delta> ]
+# USAGE:
+#    > plot_sed_3 <flux/lum> z=0.031 r=20 lh=1e-4 b=0.02 g1=10  g2=3e6  s=2  d=10
+# OR
+#    > plot_sed_3 <flux/lum> z=0.031 <file ID>  [as in: output_ID_sed.dat]
+#         
+plot_sed_3 09
+
+	if( !$?1 || !$?2 || !$?3 ) {
+           echo " plot_sed_3: "
+	   echo " "
+           echo " USAGE: "
+           echo "    > plot_sed_3 <flux/lum> z=0.031 r=20 lh=1e-4 b=0.02 g1=10  g2=3e6  s=2  d=10"
+           echo " OR"
+           echo "    > plot_sed_3 <flux/lum> z=0.031 <file ID>  [as in: output_ID_sed.dat]"
+	   echo "                 ^^^^^^^^^^ ^^^^^^^ ^^^^^^^^^"
+	   return
+	}
+	if( $?1 && substr('$1',0,2) == '-h' ) {
+           echo " plot_sed_3: "
+	   echo " "
+           echo " USAGE: "
+           echo "    > plot_sed_3 <flux/lum> z=0.031 r=20 lh=1e-4 b=0.02 g1=10  g2=3e6  s=2  d=10"
+           echo " OR"
+           echo "    > plot_sed_3 <flux/lum> z=0.031 <file ID>  [as in: output_ID_sed.dat]"
+	   echo "                 ^^^^^^^^^^ ^^^^^^^ ^^^^^^^^^"
+	   return
+	}
+
+	if(!$(is_macro(lumdist))) {
+	    echo "WARNING: this macro REQUIRES 'lumdist' included in astro_tools.sm"
+	    return
+	}
+
+	if($?4) {
+	   read_grid_sed $3 $4 $5 $6 $7 $8 $9
+	} else {
+	   read_grid_sed $3 
+	}
+	parsing $2
+
+	#---------------------------------
+	define pltype (substr('$1',0,1))
+
+	if( '$pltype' == 'l' ) {
+	   define ymin  41
+	   define ymax  48
+	   define ystr "log(\\nu L_\\nu)"
+	   define ydumcut 30
+	}
+	if( '$pltype' == 'f' ) {
+	   define xmin_all  13.5
+	   define xmax_all  29.0
+	   define ymin_all -12.99
+	   define ymax_all  -8.5
+	   #
+	   define xmin_x    16.5
+	   define xmax_x    18.99
+	   define ymin_x   -11.5
+	   define ymax_x    -9.01
+	   #
+	   define xmin_g    24.5
+	   define xmax_g    29.0
+	   define ymin_g   -13.0
+	   define ymax_g    -8.5
+
+	   define ystr "log(\\nu F_\\nu)"
+	   # calls lumdist... which has to be loaded already
+	   # lumdist 70.0 0.0 $z
+	   systemcall cosmo_calculator.py $z | egrep -v Age >!  /tmp/lumdist
+	   data "/tmp/lumdist"
+	   define lumdist read 1 3 
+
+	   echo "  > dL = "$(10.**$lumdist) " cm"
+	   set x = x - lg(1+$z)
+	   set y = y - lg(4.*$pi) - 2.*$lumdist
+	   define ydumcut -13 
+	}
+
+	echo "-----------------------------"
+	echo " What IR bkg absorption :"
+	echo " [0] none"
+	echo " [1] Stecker 1999, low IIRF"
+	echo " [2] Stecker 1999, high IIRF"
+	echo " [3] de Jager & Stecker 2002, baseline model"
+	echo " [4] de Jager & Stecker 2002, fast-evolution model"
+
+	define what_debra_abs ? < Pick one : >
+
+	#set myeV= x - 14.384
+	local set myTeV= x - 26.384
+	if( $what_debra_abs == 0 ) { 
+	  set abs_frac = 1 + 0*lg_xc
+	} else {
+	  if( $what_debra_abs == 1 ) { 
+	     echo "Computing DEBRA absorption...: Stecker 1999, low IIRF"
+	     tau_stecker_array 1 $z myTeV
+	  }
+	  if( $what_debra_abs == 2 ) { 
+	     echo "Computing DEBRA absorption...: Stecker 1999, high IIRF"
+	     tau_stecker_array 2 $z myTeV
+	  }
+	  if( $what_debra_abs == 3 ) { 
+	     echo "Computing DEBRA absorption...: de Jager & Stecker 2002, baseline model"
+	     tau_stecker_array 3 $z myTeV
+	  }
+	  if( $what_debra_abs == 4 ) { 
+	     echo "Computing DEBRA absorption...: de Jager & Stecker 2002, fast-evolution model"
+	     tau_stecker_array 4 $z myTeV
+	  }
+	}
+
+	define cty ? < Color : >
+
+	reset_graph
+	expand 1.1
+	#----------------------------
+	# full SED
+	window -2 -2 1:2 2
+	limits $xmin_all $xmax_all $ymin_all $ymax_all
+	ticksize 0 0 0 0 
+	box 3 2 1 0
+
+	ctype $cty
+	connect x (y + lg(abs_frac))
+	ctype 2
+
+	plot_sed_data
+
+        # ltype 2 ctype 4
+	# #             2kev   15kev 0.5TeV 10TeV
+	# foreach nu < 17.684 18.559 26.083 27.383 > { 
+        #    relocate $nu -20   
+        #    draw     $nu  50
+	# }
+	# ctype 2
+        # ltype 0 
+
+	#----------------------------
+	# X SED
+	window -2 -2 1 1
+	limits $xmin_x $xmax_x $ymin_x $ymax_x
+	ticksize 0 0 0 0 
+	box 1 2 3 3
+
+	ctype $cty
+	connect x (y + lg(abs_frac))
+	ctype 2
+
+	plot_sed_data
+
+	#----------------------------
+	# gamma SED
+	window -2 -2 2 1
+	limits $xmin_g $xmax_g $ymin_g $ymax_g
+	ticksize 0 0 0 0 
+	box 1 3 3 2
+
+	ctype $cty
+	connect x (y + lg(abs_frac))
+	ctype 2
+
+	plot_sed_data
+
+	expand 1.5
+	#----------------------------
+	# labels
+	window 1 1 1 1 
+	xlabel log(\\nu)
+	ylabel $ystr
+
+	#
+	#___ actual data plot section ends here ___
+
+	return
+	
+#------------------------------------------------------------------------------
+#  REMEMBER: 
+#    * Load macro file "tools.sm"
+#    * Load macro file "astro_tools.sm"
+#------------------------------------------------------------------------------

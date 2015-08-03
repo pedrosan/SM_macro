@@ -1,0 +1,144 @@
+#---------------------------------------------------------------------------
+# batse_flux
+batse_flux
+
+	data "../batse_flux.dat"
+	read { tflux 1 flux 2 eflux 3 }
+
+	location 6000 31000 12000 31000
+	window 1 1 1 1
+	limits 10050 10650 0.000 0.010
+	ticksize 0 0 0 0 
+	ctype 2 
+	expand 1.5 
+	box 
+	expand 2.0 
+	xlabel TJD [days]
+	ylabel F_{1keV} [cts/s/cm^2]
+	
+	define check ? { Compute again the LC or simply RE-plot ? [1/2] }
+
+	if($check == 1) { 
+
+	define tstep ? { Time Step ? }
+	set tdum=10100,10600,$tstep
+
+	define ndata (dimen(flux))
+	define ndum  (dimen(tdum))
+
+	set dimen(newlc)  = $ndum
+	set dimen(enewlc) = $ndum
+	set dimen(cnewlc) = $ndum
+
+	define first (0)
+
+
+	do 1=0,$($ndum-2) {
+	   do 2=$first,$($ndata-1) {
+	      if(tflux[$2] > tdum[$1] && tflux[$2] <= tdum[$($1+1)]) {
+		 define first ($2)
+		 set newlc[$1] =  newlc[$1] +  flux[$2]
+		 set enewlc[$1] = enewlc[$1] + eflux[$2]**2.
+		 set cnewlc[$1] = cnewlc[$1] + 1
+	      }
+	   }
+	}
+
+	set  newlc = newlc/cnewlc
+	set enewlc = sqrt(enewlc)/cnewlc
+
+	}
+
+	ctype 2 
+	ptype 4 3 
+	expand 2.5 
+	points  (tdum+0.5*$tstep) newlc         if(enewlc > 0)
+	error_y (tdum+0.5*$tstep) newlc enewlc  if(enewlc > 0)
+	ctype 2 
+	expand 1.5
+
+#---------------------------------------------------------------------------
+# batse_flux2
+batse_flux2
+
+	data "../batse_flux.dat"
+	read { tflux 1 flux 2 eflux 3 }
+
+	lweight 2 
+	notation -4 5 -4 4 
+	location 6000 31000 12000 31000
+	window 1 1 1 1
+	limits 10050 10650 -0.8 7.0
+	ticksize 0 0 0 0 
+	ctype 2 
+	expand 1.5 
+	box 
+	expand 2.0 
+	xlabel TJD [days]
+	ylabel F_{20-100keV} [erg/cm^2/s]
+	
+	define check ? { Compute again the LC or simply RE-plot ? [1/2] }
+
+	if($check == 1) { 
+
+	define tstep ? { Time Step ? }
+	set tdum=10100,10600,$tstep
+
+	define ndata (dimen(flux))
+	define ndum  (dimen(tdum))
+
+	set dimen(newlc)  = $ndum
+	set dimen(enewlc) = $ndum
+	set dimen(cnewlc) = $ndum
+
+	define first (0)
+
+
+	do 1=0,$($ndum-2) {
+	   do 2=$first,$($ndata-1) {
+	      if(tflux[$2] > tdum[$1] && tflux[$2] <= tdum[$($1+1)]) {
+		 define first ($2)
+		 set newlc[$1] =  newlc[$1] +  flux[$2]
+		 set enewlc[$1] = enewlc[$1] + eflux[$2]**2.
+		 set cnewlc[$1] = cnewlc[$1] + 1
+	      }
+	   }
+	}
+
+	set  newlc = newlc/cnewlc
+	set enewlc = sqrt(enewlc)/cnewlc
+
+	}
+
+	set  newlc_20_100 =  newlc*6.8662e-8/1.e-10 if(enewlc > 0)
+	set enewlc_20_100 = enewlc*6.8662e-8/1.e-10 if(enewlc > 0)
+	set ttdum = tdum+0.5*$tstep if(enewlc > 0)
+
+	ctype 2 
+	ptype 4 3 
+	expand 2.5 
+	points  ttdum newlc_20_100   
+	error_y ttdum newlc_20_100 enewlc_20_100 
+	ctype 2 
+	expand 1.5
+
+
+	lweight 1 
+	relocate 10461 -2 
+	draw     10461  8
+	relocate 10476 -2
+	draw     10476  8
+
+	relocate 10282.085 -2 
+	draw     10282.085  8
+	relocate 10285.357 -2
+	draw     10285.357  8
+
+	relocate 10270 6.4
+	putlabel 4 SAX-SVP
+
+	relocate 10488 6.4
+	putlabel 6 SAX-AO1
+
+
+#---------------------------------------------------------------------------

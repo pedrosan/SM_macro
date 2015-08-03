@@ -1,0 +1,532 @@
+#---------------------------------------------------------------------------
+# help.comparison 
+help.comparison 
+
+	echo "-------------------------------------------"
+	echo "  * readdata  "
+	echo "  * readsingle"
+	echo "  * sn 	"
+	echo "  * ratio"
+	echo "  *"
+	echo "  * wapo1"
+	echo "  * wapo_plot"
+	echo "  * wapo2	"
+	echo "  * residuals"
+	echo "  * delchi"
+	echo "  * ratio_and"
+	echo "-------------------------------------------"
+
+#---------------------------------------------------------------------------
+# post <nomefile> 
+post 1
+	dev postencap $1
+
+#---------------------------------------------------------------------------
+# give_label <label-text>
+give_label 111
+
+	relocate (31000 29000) 
+	putlabel 4 $1
+
+#---------------------------------------------------------------------------
+# readdata  	Legge i dati dai file originali
+readdata 02
+
+	echo ----------------------------------------------
+	echo * si aspetta file con nome del tipo
+	echo *        instrument.extension.dat
+	echo ----------------------------------------------
+
+	if($?1 == 0) {
+	   define instr    ? {Instrument ?}
+	   define howmany  ? {How many files are going to be loaded ?}
+	   define 1 $instr
+	   define 2 $howmany
+	}
+	define instr    $1
+	define howmany  $2
+
+	echo  * reading the instrument matrix file to get energy vector
+
+	data $1.matrix
+	read { energy1 3 energy2 4 }
+	set energy    = (energy1+energy2)/2.
+	set lg_energy = lg((energy1+energy2)/2.)
+	data morr_par.dat
+	read {e 1 a 2 b 3 c 4}
+
+	vecminmax energy1 emin emax
+	define emin_lim (lg(0.95*$emin))
+	define emax_lim (lg(1.15*$emax))
+
+	do 3=1,$2 {
+	   readsingle $3
+	}
+
+
+#---------------------------------------------------------------------------
+# readsingle	Legge i dati dai file originali
+readsingle 13
+
+	echo ----------------------------------------------
+	echo * si aspetta file con nome del tipo
+	echo *        instrument.extension.dat
+	echo ----------------------------------------------
+
+	if(!$?2) {
+	   define datafileext$1 ? {Data file Extension for spectrum $!!1 ?}
+	   define datatime$1    ? {Esposure Time (ora scaling factor) for spectrum $!!1 ?}
+	   define 2 $datafileext$1
+	   define 3 $datatime$1
+	}
+	define ordernumber   $1
+	define datafileext$1 $2
+	define datatime$1    $3
+	define 4 $instr
+
+	data $4.$2.dat
+	read cts_$1  3 
+	 
+	set cts_$1 = ($3/$datatime1)*cts_$1
+	set err_$1 = sqrt(cts_$1)
+	set sn_$1  = cts_$1/err_$1
+
+#---------------------------------------------------------------------------
+# sn 	produce vettori di conteggi rebinnati ad un certo valore 
+#       del rapporto segnale-rumore (senza background).
+#	Chiede quale spettro "governi" il rebinning e rebinna
+#	INPUT : prima di eseguire RILEGGE SEMPRE i file originali ("readdata").
+#	OUTPUT: cts_xxxx  [vettore] conteggi rebinnati 
+#	      : err_xxxx  [vettore] errore su cts_xxxx 
+#	      : sn_xxxx   [vettore] S/N
+#	      : ratio, err_ratio, sn_ratio [vettori]
+sn
+	readdata
+	define labflag "sn"
+
+	define leading ? {What source is gonna lead the rebinning ? }
+	define sn_min  ? {Minimum required S/N : }
+	define divide  ? {What source is to be the reference ? }
+
+	define maxindex (dimen(cts_$1))
+	echo $maxindex
+	do 2=1,$howmany {
+	   set dimen(tmp_reb_$2)  = $maxindex
+	}
+	set dimen(tmp_en_low)   = $maxindex
+	set dimen(tmp_en_high)  = $maxindex
+	define maxindex (dimen(cts_$1)-1)
+
+	define cts_dum   (0)
+	define sn_dum    (0)
+	define reb_index (0)
+	define flag      (0)
+
+	echo "maxindex = "$maxindex
+
+	set tmp_en_low[0]  = energy1[0] 
+	echo $(tmp_en_low[0])
+
+	do i=0,$maxindex {
+	   define cts_dum  ($cts_dum + $(cts_$!leading[$i]))
+	   define sn_dum   (sqrt($cts_dum))
+	   echo "[$!i]: counts and S/N are :" $cts_dum" --- " $sn_dum
+
+	   do other=1,$howmany {
+	     set tmp_reb_$!other[$reb_index] = tmp_reb_$!other[$reb_index]+$(cts_$!other[$i])
+	   }
+
+	   if ($sn_dum > $sn_min) {
+	       if ($reb_index < $maxindex ) {
+		  set tmp_en_low[$reb_index+1] = energy1[$i+1]
+	       }
+	       set  tmp_en_high[$reb_index] = energy2[$i] 
+	       set tmp_reb_$!leading[$reb_index] = $cts_dum
+	       echo "Closing new bin ($!new_bin_number)"
+	       echo "Its definitive S/N is : " $sn_dum
+	       echo "Its (higher) energy limit is : " $(energy2[$i])
+	       if ($reb_index < $maxindex ) {
+	          define reb_index  ($reb_index + 1)
+	          define new_bin_number ($reb_index+1)
+	          echo \n
+	          echo "----- Opening new bin ("$new_bin_number")-----"
+	       }
+	       define cts_dum 0
+	       if ($reb_index == $maxindex) {define flag 3} 
+           }
+	   if ($i == $maxindex && $flag == 0 ) { 
+	       echo "  "
+	       echo "  ...ending and closing this last bin even though"
+	       echo "  not achieved the required S/N ratio. "
+	       echo "  index is : " $reb_index
+	       set   tmp_en_low[$reb_index+1] = tmp_en_low[$reb_index]
+	       set  tmp_en_high[$reb_index] = energy2[$i] 
+	       set tmp_reb_$!leading[$reb_index] = $cts_dum
+           }
+	}
+
+	define new_maxindex ($reb_index+1)
+	set dimen(en_low)     = $new_maxindex
+	set dimen(en_high)    = $new_maxindex
+	do 1=1,$howmany {
+	   set dimen(cts_$1)  = $new_maxindex
+	}
+
+	define new_maxindex ($reb_index)
+	do j=0,$new_maxindex {
+	   set   en_low[$j]   = tmp_en_low[$j]
+	   set  en_high[$j]   = tmp_en_high[$j]
+	   do 1=1,$howmany {
+	      set cts_$1[$j]  = tmp_reb_$1[$j]
+	   }
+	}
+
+	do 1=1,$howmany {
+	   set err_$1    = sqrt(cts_$1)
+	   set sn_$1     = 1./sqrt(cts_$1)
+	   set lg_cts_$1 = lg(cts_$1)
+	   set lg_err_cts_$1_up   = lg((cts_$1+err_$1)/cts_$1)
+	   set lg_err_cts_$1_down = lg(cts_$1/(cts_$1-err_$1))
+	   set strip_$1_up   = lg(cts_$1+err_$1)
+	   set strip_$1_down = lg(cts_$1-err_$1)
+	}
+
+	set energy = (en_low+en_high)/2.
+	set lg_energy = lg((en_low+en_high)/2.)
+
+	do 1=1,$howmany {
+	   define 2 $divide
+	   set     ratio_$1_$2 =  cts_$1/cts_$2
+	   set err_ratio_$1_$2 = (cts_$1/cts_$2)*sqrt(1./cts_$1+1./cts_$2)
+	   set  sn_ratio_$1_$2 =  ratio_$1_$2/err_ratio_$1_$2
+	   set  lg_ratio_$1_$2 =  lg(ratio_$1_$2)
+	   set lg_err_ratio_$1_$2_up   = lg((ratio_$1_$2+err_ratio_$1_$2)/ratio_$1_$2)
+	   set lg_err_ratio_$1_$2_down = lg(ratio_$1_$2/(ratio_$1_$2-err_ratio_$1_$2))
+	   set ratio_strip_$1_$2_up   = lg(ratio_$1_$2+err_ratio_$1_$2)
+	   set ratio_strip_$1_$2_down = lg(ratio_$1_$2-err_ratio_$1_$2)
+	}
+
+
+	define cts_dum        delete 
+	define sn_dum         delete
+	define max_index      delete
+	define new_max_index  delete
+	define reb_index      delete
+	define new_bin_number delete
+	define flag           delete
+
+
+#---------------------------------------------------------------------------
+# reb	produce vettori di conteggi rebinnati secondo un 
+#	vettore di raggruppamento dei canali pre-definito.
+#	Rebinna tutti gli spettri in input parallelamente.
+#	INPUT : prima di eseguire RILEGGE SEMPRE i file originali ("readdata").
+#	OUTPUT: cts_xxxx  [vettore] conteggi rebinnati 
+#	      : err_xxxx  [vettore] errore su cts_xxxx 
+#	      : sn_xxxx   [vettore] S/N
+#	      : ratio, err_ratio, sn_ratio [vettori]
+reb
+
+	readdata
+	define labflag "reb"
+
+	echo ----------------------------------------------
+	define divide  ? {What source is to be the reference ? }
+
+	echo ----------------------------------------------
+	echo 
+	define rebinfile ? {What is the "grouping file" ? }
+	data $instr.$rebinfile
+	## read { reb1 1 reb2 2 dreb 3 }
+	## set reb2 = reb1+dreb-1
+	read { reb1 1 reb2 2 }
+
+	define rebmaxindex (dimen(reb1))
+	echo $rebmaxindex
+	do 2=1,$howmany {
+	   set dimen(tmp_reb_$2)  = $rebmaxindex
+	}
+	set dimen(en_low)   = $rebmaxindex
+	set dimen(en_high)  = $rebmaxindex
+
+	do 2=0,$(dimen(reb1)-1) {
+	   set en_low[$2]  = energy1[$(reb1[$2]-reb1[0])]
+	   set en_high[$2] = energy2[$(reb2[$2]-reb1[0])]
+	   ## set en_high[$2] = energy2[$(reb2[$2]-reb1[0]-1)]
+	}
+	echo $(en_low[0])
+	echo $(en_high[$(dimen(reb1)-1)])
+
+
+	do 1=1,$howmany {
+	   do 2=0,$(dimen(reb1)-1) {
+	      define start  (reb1[$2]-reb1[0])
+	      define stop   (reb2[$2]-reb1[0])
+	      echo * start and stop : $start,$stop
+	      do 3=$start,$stop {
+		 set tmp_reb_$1[$2] = tmp_reb_$1[$2] + cts_$1[$3]
+	      }
+	   }
+	   set cts_$1 = tmp_reb_$1
+	}
+
+	set energy    =    (en_low+en_high)/2.
+	set lg_energy = lg((en_low+en_high)/2.)
+
+	do 1=1,$howmany {
+	   set err_$1    = sqrt(cts_$1)
+	   set sn_$1     = 1./sqrt(cts_$1)
+	   set lg_cts_$1 = lg(cts_$1)
+	   set lg_err_cts_$1_up   = lg((cts_$1+err_$1)/cts_$1)
+	   set lg_err_cts_$1_down = lg(cts_$1/(cts_$1-err_$1))
+	   set strip_$1_up   = lg(cts_$1+err_$1)
+	   set strip_$1_down = lg(cts_$1-err_$1)
+	}
+
+
+	do 1=1,$howmany {
+	   define 2 $divide
+	   set     ratio_$1_$2 =  cts_$1/cts_$2
+	   set err_ratio_$1_$2 = (cts_$1/cts_$2)*sqrt(1./cts_$1+1./cts_$2)
+	   set  sn_ratio_$1_$2 =  ratio_$1_$2/err_ratio_$1_$2
+	   set  lg_ratio_$1_$2 =  lg(ratio_$1_$2)
+	   set lg_err_ratio_$1_$2_up   = lg((ratio_$1_$2+err_ratio_$1_$2)/ratio_$1_$2)
+	   set lg_err_ratio_$1_$2_down = lg(ratio_$1_$2/(ratio_$1_$2-err_ratio_$1_$2))
+	   set ratio_strip_$1_$2_up   = lg(ratio_$1_$2+err_ratio_$1_$2)
+	   set ratio_strip_$1_$2_down = lg(ratio_$1_$2-err_ratio_$1_$2)
+	}
+
+
+#---------------------------------------------------------------------------
+# ratio	  Plotta i counts ed il rapporto in scala LOGARITMICA, 
+#	  usando il valore delle variabili in memoria,
+#	  (i.e. potrebbero essere rebinnate)
+ratio
+
+	define lim1 (10.**$emin_lim)
+	define lim2 (10.**$emax_lim)
+	define lim1 ? {Minimum plotted energy ? }
+	define lim2 ? {Maximum plotted energy ? }
+
+	if ($(is_set(loc_flag,2)) != 1) { location 4500 31500 8500 28500 }
+
+	define min  (20)
+	define max (-10)
+	do 1=1,$howmany {
+	   define 2 $divide
+	   set dum_min = lg_ratio_$1_$2 - lg_err_ratio_$1_$2_down
+	   set dum_max = lg_ratio_$1_$2 + lg_err_ratio_$1_$2_up  
+   	   vecminmax dum_min dum1 dum
+	   vecminmax dum_max dum  dum2
+	   if($dum1 <= $min) {define min $dum1}
+	   if($dum2 >= $max) {define max $dum2}
+	}
+	define ylim_min (lg(0.9*10.**$min))
+	define ylim_max (lg(1.1*10.**$max))
+
+	ctype 2
+	expand 1.5
+	limits $(lg($lim1)) $(lg($lim2)) $ylim_min $ylim_max
+	ticksize -1 2 -1 5
+	ylabel ratio 
+
+	if ($(is_set(loc_flag,2)) != 1) { 
+	      box 1 2 0 0
+	      xlabel Energy (keV)
+	} else {
+	      box 0 2 0 0
+	}
+	define loc_flag delete
+
+	ptype 4 1
+	angle 45
+	lweight 3
+	do 1=1,$howmany {
+	   define 2 $divide
+	   if($1 != $2){
+	      define color (2+$1)
+	      ctype $color
+	      points lg_energy lg_ratio_$1_$2
+	      lweight 1
+	      angle 0
+	      errorbar lg_energy lg_ratio_$1_$2 lg_err_ratio_$1_$2_up   2
+	      errorbar lg_energy lg_ratio_$1_$2 lg_err_ratio_$1_$2_down 4
+	   }
+	}
+
+	do 1=1,$howmany {
+	   relocate (4500 $(6500-1000*($1-1)))
+	   ctype $(2+$1)
+	   putlabel 6 $datafileext$1
+	}
+
+	ticksize -1 5 -1 5 
+	lweight 1
+	ctype 4
+	ltype 1
+	grid
+	ltype 0
+	ctype 2
+
+	if('$labflag' == 'sn'  ) { toplabel "S/N>$!sn_min" }
+	if('$labflag' == 'reb' ) { toplabel "Fixed rebinning $!rebinfile" }
+
+toplabel 1
+
+	define topx ($gx1+200)
+	define topy ($gy2+500)
+
+	expand 1.5
+	ctype 2
+
+	relocate ($topx $topy)	
+	putlabel 6 {\rm $1}
+	define topx delete 
+	define topy delete 
+
+
+#---------------------------------------------------------------------------
+# compare  Plotta i counts ed il rapporto in scala LOGARITMICA, 
+#	  usando il valore delle variabili in memoria,
+#	  (i.e. potrebbero essere rebinnate)
+compare
+
+	if ($(is_set(loc_flag,2)) != 1) { location 4500 31500 8500 28500 }
+
+	define min  (20)
+	define max (-10)
+	do 1=1,$howmany {
+	   set dum_min = lg_cts_$1 - lg_err_cts_$1_down
+	   set dum_max = lg_cts_$1 + lg_err_cts_$1_up  
+   	   vecminmax dum_min dum1 dum
+	   vecminmax dum_max dum  dum2
+	   if($dum1 <= $min) {define min $dum1}
+	   if($dum2 >= $max) {define max $dum2}
+	}
+	define ylim_min (lg(0.9*10.**$min))
+	define ylim_max (lg(1.1*10.**$max))
+
+	ctype 2
+	expand 1.5
+	limits $emin_lim $emax_lim $ylim_min $ylim_max
+	ticksize -1 2 -1 5
+	ylabel counts
+
+	if ($(is_set(loc_flag,2)) != 1) { 
+	      box 1 2 0 0
+	      xlabel Energy (keV)
+	} else {
+	      box 0 2 0 0
+	}
+	define loc_flag delete
+
+	ptype 4 1
+	angle 45
+	lweight 3
+	do 1=1,$howmany {
+	   define color (2+$1)
+	   ctype $color
+	   points lg_energy lg_cts_$1
+	   lweight 1
+	   angle 0
+	   errorbar lg_energy lg_cts_$1 lg_err_cts_$1_up   2
+	   errorbar lg_energy lg_cts_$1 lg_err_cts_$1_down 4
+	}
+	angle 0
+
+	do 1=1,$howmany {
+	   relocate (4500 $(6500-1000*($1-1)))
+	   ctype $(2+$1)
+	   putlabel 6 $datafileext$1
+	}
+
+	ticksize -1 5 -1 5 
+	lweight 1
+	ctype 4
+	ltype 1
+	grid 0 1 
+	ltype 0
+	ctype 2
+
+	if('$labflag' == 'sn'  ) { toplabel "S/N>$!sn_min" }
+	if('$labflag' == 'reb' ) { toplabel "Fixed rebinning $!rebinfile" }
+
+#---------------------------------------------------------------------------
+# ratiostrip	  Plotta i counts ed il rapporto in scala LOGARITMICA, 
+#	  usando il valore delle variabili in memoria,
+#	  (i.e. potrebbero essere rebinnate)
+ratiostrip
+
+	define lim1 (10.**$emin_lim)
+	define lim2 (10.**$emax_lim)
+	define lim1 ? {Minimum plotted energy ? }
+	define lim2 ? {Maximum plotted energy ? }
+
+	if ($(is_set(loc_flag,2)) != 1) { location 4500 31500 8500 28500 }
+
+	define min  (20)
+	define max (-10)
+	do 1=1,$howmany {
+	   define 2 $divide  
+	   set dum_min = ratio_strip_$1_$2_down
+	   set dum_max = ratio_strip_$1_$2_up
+   	   vecminmax dum_min dum1 dum
+	   vecminmax dum_max dum  dum2
+	   if($dum1 <= $min) {define min $dum1}
+	   if($dum2 >= $max) {define max $dum2}
+	}
+	define ylim_min (lg(0.9*10.**$min))
+	define ylim_max (lg(1.1*10.**$max))
+
+	ctype 2
+	expand 1.5
+	# limits -1 0.63 -1.39 0.0
+	limits $(lg($lim1)) $(lg($lim2)) $ylim_min $ylim_max
+	# limits $(lg($lim1)) $(lg($lim2)) -1.5 .8
+	ticksize -1 2 -1 5
+	ylabel ratio 
+
+	if ($(is_set(loc_flag,2)) != 1) { 
+	      box 1 2 0 0
+	      xlabel Energy (keV)
+	} else {
+	      box 0 2 0 0
+	}
+	define loc_flag delete
+
+	do 1=1,$howmany {
+	  define 2 $divide
+	  if($1 != $2){
+	    define color (2+$1)
+	    ctype $color
+	    angle 35 
+	    lweight 1
+	    shed lg_energy ratio_strip_$1_$2_up lg_energy ratio_strip_$1_$2_down 200
+	    ptype 4 1
+	    angle 45
+	    lweight 3
+	    points lg_energy lg_ratio_$1_$2
+	    connect lg_energy ratio_strip_$1_$2_up
+	    connect lg_energy ratio_strip_$1_$2_down
+	  }
+	}
+	angle 0
+
+	do 1=1,$howmany {
+	   relocate (4500 $(6500-1000*($1-1)))
+	   ctype $(2+$1)
+	   putlabel 6 $datafileext$1
+	}
+
+	ticksize -1 5 -1 5 
+	lweight 1
+	ctype 4
+	ltype 1
+	grid
+	ltype 0
+	ctype 2
+
+	if('$labflag' == 'sn'  ) { toplabel "S/N>$!sn_min" }
+	if('$labflag' == 'reb' ) { toplabel "Fixed rebinning $!rebinfile" }
+
+#---------------------------------------------------------------------------

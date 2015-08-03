@@ -1,0 +1,77 @@
+#---------------------------------------------------------------------------
+# read_pds_lucio
+read_pds_lucio
+
+	# set newt_tmp       = newt_$suffix
+	# set newt1_tmp      = newt1_$suffix
+	# set newt2_tmp      = newt2_$suffix
+	# set newbin_tmp     = newbin_$suffix
+	# set counts_tmp     = counts_$suffix
+	# set dt_true_tmp    = dt_true_$suffix
+	# set err_counts_tmp = err_counts_$suffix 
+	# set rate_tmp       = rate_$suffix       
+	# set cvrfr_tmp      = cvrfr_$suffix      
+	# set err_rate_tmp   = err_rate_$suffix  
+
+	data summary_177.dat
+	read { abs_time 6 duration 7 }
+	set abs_time = abs_time - 956707200.0
+	#
+	# note: 956707200.0 is TJD=11660.0 in seconds from 01-01-1970
+
+	define filename ? { ** What l.c. file [ rate_pds_*.dat ] : }
+	define ext      ? { **                     Arrays suffix : } 
+
+	data $filename.dat
+	read < rate_$ext 2 err_rate_$ext 3 >
+
+	set newt_$ext   = abs_time + 0.5*duration 
+	set newt1_$ext  = abs_time 
+	set newt2_$ext  = newt1_$ext + duration
+	set newbin_$ext = duration
+
+	stats rate_$ext mean_$ext width_$ext kurt_$ext
+
+	set cvrfr_$ext   = 0*rate_$ext + 1
+	do i=0,$(dimen(newt_$ext)-1) {
+	   if( rate_$ext[$i] <= 0 ) {
+	      set cvrfr_$ext[$i] = 0.001 
+	   }
+	}
+	set dt_true_$ext = 0*rate_$ext + 1
+	set counts_$ext  = rate_$ext*dt_true_$ext
+	set err_counts_$ext  = rate_$ext*dt_true_$ext
+
+
+#---------------------------------------------------------------------------
+# read_pds_lucio_bands
+read_pds_lucio_bands
+
+	foreach 2 < 12_30 30_50 50_80 80_130 > {
+	  foreach 1 < 1 2 > {
+	     data part$1_$2.ascii
+	     read < n_$1_$2 1 time_$1_$2 2 deadt_$1_$2 3 rate_$1_$2 4 err_rate_$1_$2 5 >
+	     if( $1 == 2 ) { set time_$1_$2 = time_$1_$2 + (957830400.0 - 956707200.0) }
+	  }
+	  foreach 3 < time deadt rate err_rate > {
+	     set $3_$2 = $3_1_$2 CONCAT $3_2_$2
+	  }
+	}
+
+	define binduration (192.0)
+	foreach 2 < 12_30 30_50 50_80 80_130 > {
+	   set newt_$2   = time_$2 + 0.5*$binduration
+	   set newt1_$2  = time_$2 
+	   set newt2_$2  = time_$2 + $binduration
+	   set newbin_$2 = 0.0*time_$2 + $binduration
+	   stats rate_$2 mean_$2 width_$2 kurt_$2
+
+	   set cvrfr_$2      = 0*rate_$2 + 1
+	   set dt_true_$2    = 0*rate_$2 + 1
+	   set counts_$2     = rate_$2*dt_true_$2
+	   set err_counts_$2 = rate_$2*dt_true_$2
+
+	   set sn_$2         = rate_$2/err_rate_$2
+	}
+
+#---------------------------------------------------------------------------

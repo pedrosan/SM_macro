@@ -1,0 +1,161 @@
+#---------------------------------------------------------------------------
+# crings2       : Draw circles in 256 different shades of yellow
+crings2        	
+		local set colours = CTYPE()
+		local set cnames = CTYPE(STRING)
+		print {colours cnames}
+		LIMITS -1 1 -1 1
+		# local set i=0,255,4 CTYPE = i + 256*i 
+		local set i=0,255   CTYPE = i + 256*i 
+		define i local
+		# do i=0,$(dimen(i)-1) {
+		do i=0,255 {
+		   ctype $i  circle 0 0 $($i/256)
+		}
+		define i y
+		define i ? {Restore colourmap? }
+		if('$i' != 'n') {
+		   ctype = colours  ctype = cnames
+		}
+		ctype 0
+		#
+
+#---------------------------------------------------------------------------
+# newcolors    	: 
+newcolors     	
+
+		local set colours = CTYPE()
+		local set cnames = CTYPE(STRING)
+		print {colours cnames}
+		limits 0 8 0 8 
+	
+		local set xr= {0   1   0   1   0.7 0.2 0.8 1   1  }
+		local set xg= {0   1   0   0   1.0 0.2 1   0.2 1  }
+		local set xb= {0   1   0   0   0.7 1   1   1   0  }
+
+		ctype = 255*xr + 255*xg*256 + 255*xb*256*256
+		define i local
+		do i=0,8 {
+		   ctype $i 
+		   relocate $i 4
+		   ptype 4 3 
+		   expand 20
+		   dot 
+		}
+		define i y
+		define i ? {Restore colourmap? }
+		if('$i' != 'n') {
+		   ctype = colours  ctype = cnames
+		}
+		ctype 0
+		#
+
+#---------------------------------------------------------------------------
+# newcolors2   	: 
+newcolors2     	
+
+		local set colours = CTYPE()
+		local set cnames = CTYPE(STRING)
+		print {colours cnames}
+		limits 0 8 0 8 
+
+		##		        2   3   4   5   6   7   8
+		#
+		local set xr = {0   255 0   255 180 100 100 255 255}
+		local set xg = {0   255 0   0   255 150 255 180 255}
+		local set xb = {0   255 0   0   180 255 255 255 0  }
+		local set xr = {0   255 0   255 180 100 200 255 255}
+		local set xg = {0   255 0   0   255 180 255 180 255}
+		local set xb = {0   255 0   0   180 255 255 255 0  }
+
+		ctype = xr + xg*256 + xb*256*256
+		define i local
+		do i=0,8 {
+		   ctype $i 
+		   relocate $i 4
+		   ptype 4 3 
+		   expand 20
+		   dot 
+		}
+		define i y
+		define i ? {Restore colourmap? }
+		if('$i' != 'n') {
+		   ctype = colours  ctype = cnames
+		}
+		ctype 0
+		#
+
+
+
+#---------------------------------------------------------------------------
+# newcolors3    : 
+newcolors3     	
+
+		local set colours = CTYPE()
+		local set cnames = CTYPE(STRING)
+		print {colours cnames}
+		limits 0 18 0 8
+
+		##	            1   2   3   4   5   6   7   8
+		#
+		local set xr1= {0   255 0   255 0   0   0   255 255}
+		local set xg1= {0   255 0   0   255 0   255 0   255}
+		local set xb1= {0   255 0   0   0   255 255 255 0  }
+		##	                  12  13  14  15  16  17  18
+		local set xr2= {0 0   255 0   255 180 100 200 255 255}
+		local set xg2= {0 0   255 0   0   255 180 255 180 255}
+		local set xb2= {0 0   255 0   0   180 255 255 255 0  }
+		local set xr = xr1 concat xr2
+		local set xg = xg1 concat xg2
+		local set xb = xb1 concat xb2
+
+		ctype = xr + xg*256 + xb*256*256
+		define i local
+		do i=0,18 {
+		   ctype $i 
+		   relocate $i 6
+		   ptype 4 3 
+		   expand 10
+		   dot 
+		   expand 1.2
+		   ctype 1 putlabel 5 $i
+		}
+		define i y
+		define i ? {Restore colourmap? }
+		if('$i' != 'n') {
+		   ctype = colours  ctype = cnames
+		}
+		ctype 0
+		#
+#---------------------------------------------------------------------------
+# defcolors
+defcolors
+
+		local set colours = CTYPE()
+		local set cnames = CTYPE(STRING)
+		print {colours cnames}
+		limits 0 8 0 8
+
+		##	            1   2   3   4   5   6   7   8
+		#
+		local set xr1= {0   255 0   255 0   0   0   255 255}
+		local set xg1= {0   255 0   0   255 0   255 0   255}
+		local set xb1= {0   255 0   0   0   255 255 255 0  }
+		
+		local set xr = xr1 
+		local set xg = xg1 
+		local set xb = xb1 
+
+		ctype = xr + xg*256 + xb*256*256
+		define i local
+		do i=0,8 {
+		   ctype $i 
+		   relocate $i 6
+		   ptype 4 3 
+		   expand 10
+		   dot 
+		   expand 1.2
+		   ctype 1 putlabel 5 $i
+		}
+
+#---------------------------------------------------------------------------

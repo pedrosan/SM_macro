@@ -1,0 +1,281 @@
+#------------------------------------------------------------------------------
+# load_ratios
+load_ratios
+
+	define year ? { * What year [1997/1998/2000] : }
+
+	#data ocodes_sax.dat
+	data "/home/gfossati/Science/Mkn421/2000/Spectral/ocodes_sax.dat"
+	if( $year == 1997 ) { lines 1 16 }
+	if( $year == 1998 ) { lines 1 12 }
+	read < ocodes 1.s >
+	
+	if( $year == 1997 ) {
+	   echo --- Summary of analysis runs ---
+	   echo  [1] bkn pl , 1997 data - test 1
+	   echo  [2] bkn pl , 1997 data - test 2
+	   echo  [3] curved , 1997 data - fold=1&2 (test-1)
+	   echo  [4] curved , 1997 data - fold=1&2 (test-2)
+	   define run ? < *** Which analysis run : >
+	   define 1 $run
+
+	   define Ntot 16
+	   if( $run == 1 || $run == 2 ) {
+	       define 2 d97
+	       define 1 bkn_nh
+	   } 
+	   if( $run == 3 || $run == 4 ) {
+	       define fold ? < Which Fold parameter [1|2] : >
+	       define 2 d97
+	       define 1 "f"$fold"a"
+	   }
+	}
+
+	if( $year == 1998 ) {
+	   echo --- Summary of analysis runs ---
+	   echo  [1] bkn pl , 1998a data - test 1
+	   echo  [2] curved , 1998a data - fold=1&2 (test-1)
+	   echo  [3] curved , 1998a data - fold=1&2 (test-2)
+	   define run ? < *** Which analysis run : >
+	   define 1 $run
+
+	   define Ntot 12
+	   if( $run == 1 ) {
+	       define 2 d98a
+	       define 1 bkn_nh
+	   } 
+	   if( $run == 2 || $run == 3 ) {
+	       define fold ? < Which Fold parameter [1|2] : >
+	       define 2 d98a
+	       define 1 "f"$fold"a"
+	   }
+	}
+
+	if( $year == 2000 ) {
+	   echo --- Summary of analysis runs ---
+	   echo  [1] bkn pl , 2000a data - test 1
+	   echo  [2] bkn pl , 2000a data - test 2
+	   echo  [3] curved , 2000a data - fold=1&2&3 (test-1)
+	   echo  [4] curved , 2000a data - fold=1&2   (test-2)
+	   echo  [5] curved , 2000a data - fold=1&2&3 (test-3)
+	   echo " " 
+	   echo  [6] bkn pl , 2000b data - test 3 
+	   echo  [7] curved , 2000b data - fold=1&2 
+	   define run ? < *** Which analysis run : >
+	   define 1 $run
+
+	   define Ntot 113
+	   if( $run == 1 || $run == 2 ) {
+	       define 2 d00a
+	       define 1 bkn_nh
+	   } 
+	   if( $run == 3 || $run == 5 ) {
+	       define fold ? < Which Fold parameter [1|2|3] : >
+	       define 2 d00a
+	       define 1 "f"$fold"a"
+	   }
+	   if( $run == 4 ) {
+	       define fold ? < Which Fold parameter [1|2] : >
+	       define 2 d00a
+	       define 1 "f"$fold"a"
+	   }
+	   if( $run == 6 ) {
+	       define 2 d00b
+	       define 1 bkn_nh
+	   }
+	   if( $run == 7 ) {
+	       define fold ? < Which Fold parameter [1|2] : >
+	       define 2 d00b
+	       define 1 "f"$fold"a"
+	   }
+
+	}
+
+	set dimen(chi2)   = $Ntot
+	set dimen(chi2_1) = $Ntot
+	set dimen(chi2_2) = $Ntot
+	set dimen(worst1) = $Ntot
+	set dimen(worst2) = $Ntot
+	define j 0
+	foreach 3 ocodes {
+	    if( $year == 1997 ) { data "/data/analysis/SAX/Mkn421/1997/Spectral/Run"$run"/QDP/ratio"_$2_$3_$1.qdp }
+	    if( $year == 1998 ) { data "/data/analysis/SAX/Mkn421/1998/Spectral/Run"$run"/QDP/ratio"_$2_$3_$1.qdp }
+	    if( $year == 2000 ) { data "/home/gfossati/Science/Mkn421/2000/Spectral/Run"$run"/QDP/ratio"_$2_$3_$1.qdp }
+	    # data "/home/gfossati/Science/Mkn421/2000/Spectral/Run"$run"/QDP/ratio"_$2_$3_$1.qdp
+	    verbose 0
+	    lines 4 32
+	    read <  lecs_e 1 lecs_rho 3 err_lecs_rho 4 >
+	    lines 34 73
+	    read <  mecs_e 1 mecs_rho 3 err_mecs_rho 4 >
+	    verbose 1
+	    define n $3
+	    set e_$3       = lecs_e CONCAT mecs_e
+	    set rho_$3     = lecs_rho CONCAT mecs_rho
+	    set err_rho_$3 = err_lecs_rho CONCAT err_mecs_rho
+	    set dev        = (rho_$3-1)/err_rho_$3
+	    set chi2_$3    = ((rho_$3-1)/err_rho_$3)**2.0
+	    set chi2[$j]   = sum( chi2_$3 )
+
+	    if( $j == 0 ) {
+	       set alldev = dev
+	    } else {
+	       set alldev = alldev CONCAT dev
+	    }
+	    define j $($j+1)
+	}
+
+	sort < alldev >
+	set probs = < 0.68269 0.95449 0.9973 0.99994 >
+	set probsin  = probs*$(dimen(alldev))
+	set probsout = (1- probs)*$(dimen(alldev))/2.
+
+	set dum = alldev if( abs(alldev)<=1 )
+	define in1sigma $(dimen(dum))
+	set dum = alldev if( alldev > 1 )
+	define above1sigma $(dimen(dum))
+	set dum = alldev if( alldev < -1 )
+	define below1sigma $(dimen(dum))
+
+	set dum = alldev if( abs(alldev)<=2 )
+	define in2sigma $(dimen(dum))
+	set dum = alldev if( alldev > 2 )
+	define above2sigma $(dimen(dum))
+	set dum = alldev if( alldev < -2 )
+	define below2sigma $(dimen(dum))
+
+	set dum = alldev if( abs(alldev)<=3 )
+	define in3sigma $(dimen(dum))
+	set dum = alldev if( alldev > 3 )
+	define above3sigma $(dimen(dum))
+	set dum = alldev if( alldev < -3 )
+	define below3sigma $(dimen(dum))
+
+	set dum = alldev if( abs(alldev)<=4 )
+	define in4sigma $(dimen(dum))
+	set dum = alldev if( alldev > 4 )
+	define above4sigma $(dimen(dum))
+	set dum = alldev if( alldev < -4 )
+	define below4sigma $(dimen(dum))
+
+	set pr0 = < '1-sigma : ' '2-sigma : ' '3-sigma : ' '4-sigma : '>
+	set pr1 = < $in1sigma    $in2sigma    $in3sigma    $in4sigma >
+	set pr2 = < $above1sigma $above2sigma $above3sigma $above4sigma >
+	set pr3 = < $below1sigma $below2sigma $below3sigma $below4sigma >
+
+	define print_noheader 1
+	echo " "
+	echo " ----------- Checking deviations' distribution -------------"
+	echo "                                            should be "
+	echo "                below  within   above   within below/above "
+	echo "                <---   >----<    --->   >----<  <---/---> "
+	print '  %10s    %4d    %4d    %4d    %6.1f   %6.1f\n' < pr0 pr3 pr1 pr2 probsin probsout >
+	echo "------------------------------------------------------------"
+	define print_noheader 0
+
+	delete dev
+
+	define edim $(dimen(e_001))
+	define lastidx $($edim-1)
+	set ii=0,$($edim-1)
+
+	define j 0
+	foreach 3 ocodes {
+	   set _tmp1 = ii
+	   set _tmp2 = chi2_$3
+	   sort < _tmp2 _tmp1 >
+	   set _tmp3 = _tmp2    if( ii < $lastidx )
+	   set chi2_1[$j] = sum( _tmp3 )
+	   set worst1[$j] = _tmp1[$lastidx]
+
+	   set _tmp3 = _tmp2    if( ii < $($lastidx-1) )
+	   set chi2_2[$j] = sum( _tmp3 )
+	   set worst2[$j] = _tmp1[$($lastidx-1)]
+	   define j $($j+1)
+	}
+	# delete _tmp1 
+	# delete _tmp2 
+	# delete _tmp3
+
+	define dof 64
+	set chi2r   = chi2/$dof
+	set chi2r_1 = chi2_1/($dof-1)
+	set chi2r_2 = chi2_2/($dof-2)
+
+	echo " *** All data read ["$n"] ***"
+	echo " *** Created arrays e_NNN, rho_NNN err_rho_NNN "
+	echo "     with NNN=001,...,"$n
+
+	foreach vec < lecs_e lecs_rho err_lecs_rho mecs_e mecs_rho err_mecs_rho > { delete $vec }
+
+	set e_tot       = e_001
+	set lg_e_tot    = lg(e_tot)
+	set rho_tot     = e_001*0
+	set rho_tot2    = e_001*0
+	set err_rho_tot = rho_tot
+
+	foreach 3 ocodes {
+	    set rho_tot  = rho_tot  + rho_$3
+	    set rho_tot2 = rho_tot2 + (rho_$3)**2.
+	    set err_rho_tot = err_rho_tot + (err_rho_$3)**2.
+	}
+
+	set rho_tot  = rho_tot/$n
+	set rho_tot2 = rho_tot2/$n
+	set err_rho_tot = sqrt(err_rho_tot)/$n
+	set sigma_rho_tot = sqrt(rho_tot2 - rho_tot**2.)
+
+#------------------------------------------------------------------------------
+# plot_ratio_tot
+plot_ratio_tot
+
+	location 5500 30000 10000 26000
+	lweight 3 
+	ctype 2 
+	ltype 0 
+	expand 1.5
+	ticksize -1 0 0 0 
+	limits $(lg(0.08)) $(lg(11.5)) 0.2 1.8
+	box
+	xlabel E [keV]
+	ylabel Data/Model Ratio
+
+	ctype 3 
+	ltype 2 
+	relocate -2 1 
+	draw 2 1 
+	ltype 0
+	ctype 2
+
+	define which ? < Which data to plot [tot|001...113] : >
+
+	ptype 4 3 
+	expand 1.01
+	points  lg_e_tot rho_$which
+	if( substr('$which',0,1) == 't' ) {
+	   error_y lg_e_tot rho_$which sigma_rho_$which
+	} else {
+	   error_y lg_e_tot rho_$which err_rho_$which
+	}
+
+#------------------------------------------------------------------------------
+# mark_dot
+mark_dot 01
+
+	if( !$?1 ) {
+	   define ch ? { Channel to mark : }
+	} else {
+	   define ch $1
+	}
+
+	ctype 3 
+	ptype 4 0 
+	relocate $(lg_e_tot[$ch]) $(rho_$which[$ch])
+	dot
+	define n_sigma $(abs(rho_$which[$ch]-1)/err_rho_$which[$ch]) 
+	echo N_sigma = $n_sigma [$($n_sigma**2)]
+	ctype 2
+	ptype 4 3 
+
+
+
+#------------------------------------------------------------------------------

@@ -1,0 +1,2209 @@
+x11land
+	dev x11 -geom 625x500+50+50 -fg white
+
+#-------------------------------------------------------------------------------
+# splot_init
+splot_init
+
+	define SDSS_TOP :
+	define SDSS_HDU :
+	define SDSS_products :
+
+	echo $SDSS_TOP 
+	echo $SDSS_HDU
+	echo $SDSS_products 
+
+	data "$!SDSS_products/objects.dat"
+	read < vecmjd 1 vecplate 2 vecfiber 3 vecz 4 veczerr 5 veczconf 6 > 
+	read < veczstatus 7 veczwarning 8.s vecbesttemp 9 vecspeccln 10 veccoeff0 13 veccoeff1 14 >
+
+	data "$!SDSS_TOP/data/lines.dat"
+	read < linerestwave 2 linemeanoffset 3 lineweight_gal 4 lineweight_qso 5 linename 6.s >
+
+	data "$!SDSS_TOP/data/lines_ratio.dat"
+	read < flux_ratio 6 >
+
+	# data "$!SDSS_products/objects_new_fit_flag.dat"
+	# read < newfitflag 2 >
+
+	set Z_WARNING_NO_SPEC   = 0x1
+	set Z_WARNING_NO_BLUE   = 0x2
+	set Z_WARNING_NO_RED    = 0x4
+	set Z_WARNING_NOT_GAL   = 0x10
+	set Z_WARNING_NOT_QSO   = 0x20
+	set Z_WARNING_NOT_STAR  = 0x40
+	set Z_WARNING_GAL_COEF  = 0x80
+	set Z_WARNING_EMAB_INC  = 0x100
+	set Z_WARNING_AB_INC    = 0x200
+	set Z_WARNING_EM_INC    = 0x400
+	set Z_WARNING_HIZ       = 0x800
+	set Z_WARNING_LOC       = 0x1000
+	set Z_WARNING_LOW_SNG   = 0x2000
+	set Z_WARNING_LOW_SNR   = 0x4000
+	set Z_WARNING_LOW_SNI   = 0x8000
+	set Z_WARNING_4000break = 0x10000
+	set Z_WARNING_CL_MAN    = 0x20000
+	set Z_WARNING_Z_MAN     = 0x40000
+
+	define zflaglist{Z_WARNING_NO_SPEC Z_WARNING_NO_BLUE Z_WARNING_NO_RED Z_WARNING_NOT_GAL Z_WARNING_NOT_QSO Z_WARNING_NOT_STAR Z_WARNING_GAL_COEF Z_WARNING_EMAB_INC Z_WARNING_AB_INC Z_WARNING_EM_INC Z_WARNING_HIZ  Z_WARNING_LOC Z_WARNING_LOW_SNG Z_WARNING_LOW_SNR Z_WARNING_LOW_SNI Z_WARNING_4000break Z_WARNING_CL_MAN  Z_WARNING_Z_MAN}
+
+	define SP_MASK_NOPLUG        0x001
+	define SP_MASK_BADTRACE      0x002
+	define SP_MASK_BADFLAT       0x004
+	define SP_MASK_BADARC        0x008
+	define SP_MASK_MANYBADCOL    0x010
+	define SP_MASK_MANYREJECT    0x020
+	define SP_MASK_LARGESHIFT    0x040
+	define SP_MASK_NEARBADPIX    0x10000
+	define SP_MASK_LOWFLAT       0x20000
+	define SP_MASK_FULLREJECT    0x40000
+	define SP_MASK_PARTIALREJ    0x80000
+	define SP_MASK_SCATLIGHT     0x100000
+	define SP_MASK_CROSSTALK     0x200000
+	define SP_MASK_NOSKY         0x400000
+	define SP_MASK_BRIGHTSKY     0x800000
+	define SP_MASK_NODATA        0x1000000
+	define SP_MASK_COMBINEREJ    0x2000000
+	define SP_MASK_BADFLUXFACTOR 0x4000000
+	define SP_MASK_BADSKYCHI     0x8000000
+	define SP_MASK_REDMONSTER    0x10000000
+	define SP_MASK_EMLINE        0x40000000  
+
+##-------------------------------------------------------------------------------
+## dr5dr6 
+dr5dr6
+	data "$!SDSS_TOP/dr6example.dat"
+	read row dr6r1 5
+	read row dr6r2 4
+	read row dr6r3 3
+	read row dr6r4 2
+	read row dr6r5 1
+	data "$!SDSS_TOP/dr5example.dat"
+	read row dr5r1 4
+	read row dr5r2 3
+	read row dr5r3 2
+	read row dr5r4 1
+
+	set x=1,600
+
+	do i=1,5 {
+		device postlandencap dr6r$i.ps
+		limits x dr6r$i
+		box
+		connect x dr6r$i
+	}
+
+	do i=1,4 {
+		device postlandencap dr5r$i.ps
+		limits x dr5r$i
+		box
+		connect x dr5r$i
+	}
+
+#-------------------------------------------------------------------------------
+# get_src_id   <source #>
+get_src_id 1
+
+	define mjd    $(vecmjd[$1])
+	define plate  $(vecplate[$1])
+	define fiber  $(vecfiber[$1])
+	define coeff0 $(veccoeff0[$1])
+	define coeff1 $(veccoeff1[$1])
+	define z      $(vecz[$1])
+
+	# define srcID  $(sprintf('%5d',$(vecmjd[$1])))"_"$(sprintf('%03d',$(vecplate[$1])))"_"$(sprintf('%03d',$(vecfiber[$1]))) 
+	define srcID  $(sprintf('%5d',$mjd))"_"$(sprintf('%04d',$plate))"_"$(sprintf('%03d',$fiber)) 
+
+#-------------------------------------------------------------------------------
+# splot  <source #>  <smoothing>
+#        plots spectrum $1 with smoothing $2
+splot 2 
+
+	####################
+	splot_init
+
+	define j $($1-1)
+	get_src_id $j
+	echo $srcID
+	####################
+
+	expand 1
+	window 1 1 1 1
+	location 3500 31500 3500 29000
+
+	erase
+	ctype 2
+
+	#-----------------------------------------------------------
+	# reading line fits
+	#-----------------------------------------------------------
+	data "$!SDSS_HDU/"$srcID"_HDU2_T"
+	read < speclines 2 speclinesnsigma 17 speclinerest 20 speclineflag 24 speclinesigma 6 speclineheight 10 speclineEW 13 linespeccontflux 12 >
+	set speclineflag = speclineflag == 1
+
+	set speclinerestsigma = speclinesigma/(1+$z)
+	set speclinerestEW    = speclineEW/(1+$z)
+	set speclineFWHM = 2.355*speclinerestsigma
+	set speclineVEL  = 0.5*speclineFWHM/speclinerest*299292
+
+	data "$!SDSS_HDU/"$srcID"_HDU5_T"
+	define CaBreak     read 2  3 
+	define CaBreak_err read 2  4 
+	define CaBreak_snr read 2 10
+	if( $CaBreak < -9000 ) {
+	    define CaBreak     (0)
+	    define CaBreak_err (0)
+	    define CaBreak_snr (0)
+	} else {
+	    define CaBreak $(1 - $CaBreak)
+	}
+
+	## data "$!SDSS_TOP/data/lines.dat"
+	## read < linerestwave 2 linemeanoffset 3 lineweight_gal 4 lineweight_qso 5 linename 6.s >
+
+	#-----------------------------------------------------------
+	# reading spectrum, continuum fit, etc.
+	#-----------------------------------------------------------
+	data "$!SDSS_HDU/"$srcID"_HDU06"
+	read < lambda 2 spectrum 3 speccont 4 noise 5 specmaskbad 6 specmaskand 17 specmaskor 18 >
+	set cont = spectrum - speccont
+
+	smooth cont     contsmooth $2
+	smooth spectrum spectrumsmooth $2
+	smooth speccont speccontsmooth $2
+
+	foreach 9 < specmaskbad specmaskand specmaskor > {
+           do i=0,dimen($9)-1 {
+	      set $9[$i] = $9[$i] & ($SP_MASK_BRIGHTSKY + $SP_MASK_NOSKY + $SP_MASK_NODATA + $SP_MASK_SCATLIGHT )
+           }
+	}
+
+	#-----------------------------------------------------------
+	window -4 1 1:3 1
+        #limits lambda spectrumsmooth
+	limits lambda speccont
+	box
+	ctype skyblue
+	lweight 2
+	foreach skyline < 5577 6300 6363 > {
+		relocate $skyline $fy1
+		draw     $skyline $fy2
+	}
+	ltype 3
+	lweight 1
+	ctype 2
+
+	#-----------------------------------------------------------
+	# plots markers for lines:
+	#    + GREEN : good lines
+	#    + GRAY  : low significance lines
+	#-----------------------------------------------------------
+	do i=0,43 {
+           if( $(speclines[$i]) > 0 && ! $(speclineflag[$i]) ) {
+              if( $(speclinesnsigma[$i]) > 3 ) { ctype gray50 }
+              if( $(speclinesnsigma[$i]) > 6 ) { ctype green  }
+              relocate $(speclines[$i]) $fy1
+              draw     $(speclines[$i]) $fy2
+              relocate $(speclines[$i]) $(.2*$fy1+.8*$fy2+($fy2-$fy1)*.17*($i/8-int($i/8)))
+              ##label $(linename[$i])
+              putlabel 6 $(linename[$i])
+           }
+	}
+	
+	ltype 0
+	ctype 2
+	xla Wavelength ({\AA})
+        yla Flux (10^{-17} ergs/s/cm^{2}/{\AA})
+	relocate ( 16384 31600 )
+	putlabel 5 $mjd" "$plate" "$fiber":   SPECCLN="$(vecspeccln[$j])"   BESTTEMP="$(vecbesttemp[$j])
+	relocate ( 16384 30850 )
+	putlabel 5 "  Z="$(vecz[$j])"   zConf="$(veczconf[$j])"   zStatus="$(veczstatus[$j])
+	relocate ( 16384 30100 )
+	putlabel 5 "object#="$1"/"$(dimen(vecmjd))"   smoothing="$2"   ["$date"]"
+
+	ptype 0 0
+        # connect lambda spectrumsmooth
+	connect lambda speccont
+	ctype 3
+        # connect lambda cont
+	
+	#-----------------------------------------------------------
+	# plot the bad flags just in case
+	#-----------------------------------------------------------
+	# ctype purple
+	# set dimen(dummyy)=$(dimen(lambda))
+	# set dummyy=$fy1+.03*$fy2+0*dummyy
+	# points lambda dummyy if(specmaskbad)
+	# delete dummyy
+	
+	#-----------------------------------------------------------
+	# plot the reasonable flags (ORANGE)
+	#-----------------------------------------------------------
+	ctype orange
+	connect lambda speccontsmooth   if( specmaskor )
+
+	set dimen(dummyy)=$(dimen(lambda))
+	set dummyy = $fy1 + 0.06*$fy2 + 0*dummyy
+	# points lambda dummyy            if( specmaskor )
+	delete dummyy
+	
+	#-----------------------------------------------------------
+	# fit the continuum
+	#-----------------------------------------------------------
+	ctype 2
+	## cont_fit $j+1
+	
+	#-----------------------------------------------------------
+	# plot the expected spectrum (RED)
+	#-----------------------------------------------------------
+	splot_sdss_fit $1
+
+	#-----------------------------------------------------------
+	# plot new fit (GREEN)
+	#-----------------------------------------------------------
+	## splot_new_fit $1
+	
+	#-----------------------------------------------------------
+	# reads the NEW FIT line properties
+	# NOT USING THIS!
+	#-----------------------------------------------------------
+	## define n $(sprintf('%03d',$1))
+	# data "$!SDSS_TOP/idlfits/compiledfits/mfit"$n".txt"
+	## data "$!SDSS_TOP/idlfits/renamed_fits/"$srcID"_mfit.dat"
+	## read < line 1.s restwave 2 offset 3 eoffset 4 sigma 5 esigma 6 height 7 eheight 8 >
+
+	#-----------------------------------------------------------
+	# pick out the best lines (from SDSS fit)
+	#  draws lines marking them
+	#
+	set oldindex = 0,43
+	# sort < speclinesnsigma speclines speclinerest speclineflag speclinesigma oldindex speclineEW speclinerestEW speclinerestsigma speclineVEL >
+	foreach 9 < speclinesnsigma speclines oldindex > {
+	   set _$9 = $9
+	}
+	sort < _speclinesnsigma _speclines _oldindex >
+	ctype 5
+	do i=38,43 {
+           lweight 2
+           relocate $(_speclines[$i]) $fy1
+           draw     $(_speclines[$i]) $fy2
+           relocate $(_speclines[$i]) $(0.2*$fy1 + 0.8*$fy2 + ($fy2-$fy1)*0.17*(_oldindex[$i]/8-int(_oldindex[$i]/8)))
+           putlabel 6 $(linename[_oldindex[$i]])
+	}
+
+	#-----------------------------------------------------------
+	# NEW best feature selection, "class sensitive" 
+	#-----------------------------------------------------------
+	# BETTER RELOAD THEM because the sort just above here messed up the arrays.
+	## data "$!SDSS_HDU/"$srcID"_HDU2_T"
+	## read < speclines 2 speclinesnsigma 17 speclinerest 20 speclineflag 24 speclinesigma 6 speclineheight 10 speclineEW 13 >
+	## set speclineflag = speclineflag == 1
+
+	## set speclinerestsigma = speclinesigma/(1+$z)
+	## set speclinerestEW    = speclineEW/(1+$z)
+	## set speclineFWHM = 2.355*speclinerestsigma
+	## set speclineVEL  = 0.5*speclineFWHM/speclinerest*299292
+
+	define n2print      (6)
+	define class_check $(vecspeccln[$j])
+
+	if( $class_check == 2 ) { set weight_select = lineweight_gal       }
+	if( $class_check == 3 ) { set weight_select = lineweight_qso       }
+	if( $class_check == 4 ) { set weight_select = lineweight_qso       }
+	if( $class_check <= 1 ) { set weight_select = lineweight_qso*0 + 1 }
+	set lineweight = weight_select
+
+	if( $class_check == 2 ) { set aweight_select = lineweight_qso }
+	if( $class_check == 3 ) { set aweight_select = lineweight_gal }
+	if( $class_check == 4 ) { set aweight_select = lineweight_gal }
+	if( $class_check <= 1 ) { set aweight_select = lineweight_qso*0 + 0 }
+
+	# test if by mistake a feature got fit with a different type (abs. vs. em.)
+	#   than what it should be
+	set dumt = speclineheight*lineweight
+	set test_right_type = lineweight*0 + 1
+	do 9=0,dimen(test_right_type)-1 {
+	   if( dumt[$9] < 0 ) { set test_right_type[$9] = 0 } 
+	}
+
+	# Testing presence of 'good' quality fits to features of the 'other' class
+	set test1 local
+	set test1 = speclines
+	set test2 local
+	set test2 = speclinesigma
+	# set acheck = linename   if( weight_select == 0 && aweight_select != 0 && test1 > 0 && test2 >= 10 )
+	set acheck = aweight_select   if( weight_select == 0 && aweight_select != 0 && test1 > 0 && test2 >= 10 )
+	
+	set alineweight = aweight_select
+	if( dimen(acheck) > 0 ) {
+           foreach 9 < speclinesnsigma speclines speclinerest speclinesigma alineweight linename speclinerestEW speclinerestsigma speclineEW test_right_type > {
+              set a$9 = $9   if( weight_select == 0 && aweight_select != 0 && test1 > 0 && test2 >= 10 )
+           }
+           sort < aspeclinesnsigma aspeclines aspeclinerest aspeclinesigma aalineweight alinename aspeclinerestEW aspeclinerestsigma atest_right_type > 
+           # print < aspeclinesnsigma aspeclines aspeclinerest aspeclinesigma aalineweight alinename aspeclinerestEW aspeclinerestsigma atest_right_type > 
+	   define print_noheader 1
+           write standard "#  "
+           write standard "# Name      lambda_r  lambda_obs  Nsigma  width_obs width_r    EW_r   weight check"
+           write standard "#  "
+	   define fmt " %-10s  %.1f     %.1f   %6.2f    %6.2f  %6.2f     %6.2f   %4.1f   %.0f\n"  
+	   print '$!fmt' < alinename aspeclinerest aspeclines aspeclinesnsigma aspeclinesigma aspeclinerestsigma aspeclinerestEW aalineweight atest_right_type > 
+	   define print_noheader 0
+	} else {
+	   echo "--------------------------------------------------"
+	   echo " No significant features of the other class "
+	   echo "--------------------------------------------------"
+	}
+
+	set test local
+	set test  = speclines        if( weight_select != 0 )
+	set ilist = 0,dimen(test)-1
+
+	foreach 9 < speclinesnsigma speclines speclinerest speclinesigma lineweight linename speclinerestEW speclinerestsigma speclineEW speclineVEL test_right_type > {
+	   set $9 = $9   if( weight_select != 0 )
+	}
+	# after this loop all arrays have reduced dimension equal to ilist, etc.
+
+	set vsort1 local
+	set vsort1 = speclinesnsigma
+	set vsort2 local
+	set vsort2 = speclinesnsigma
+	sort < vsort1 speclinesnsigma speclines speclinerest speclinesigma lineweight linename > 
+	sort < vsort2 speclinerestEW speclinerestsigma speclineEW speclineVEL test_right_type >
+
+	define min_idx $( dimen(speclines) - $n2print - 1)
+	set test1 = speclines
+	foreach 9 < speclinesnsigma speclines speclinerest speclinesigma lineweight linename speclineEW speclinerestEW speclinerestsigma speclineVEL test_right_type > {
+	   set $9 = $9   if( ilist > $min_idx && test1 > 0 )
+	}
+
+	set vsort1 = speclinerest
+	set vsort2 = speclinerest
+	sort < vsort1 speclinerest speclines speclinesnsigma speclinesigma lineweight linename > 
+	sort < vsort2 speclineEW speclinerestEW speclinerestsigma speclineVEL test_right_type > 
+	#print < speclinesnsigma speclines speclinerest speclinesigma lineweight linename speclinerestEW speclinerestsigma test_right_type > 
+	define print_noheader 1
+        write standard "#  "
+        write standard "# Name      lambda_r  lambda_obs  Nsigma  width_obs width_r    EW_r   weight check"
+        write standard "#  "
+	define fmt " %-10s  %.1f     %.1f   %6.2f    %6.2f  %6.2f     %6.2f   %4.1f   %.0f\n"  
+	print '$!fmt' < linename speclinerest speclines speclinesnsigma speclinesigma speclinerestsigma speclinerestEW lineweight test_right_type > 
+	define print_noheader 0
+
+	#-----------------------------------------------------------
+	# prints the best line parameters on the side of the box
+	#
+	window -4 1 4 1
+
+	## set ilist=0,43
+	## # CAREFUL HERE BECAUSE THESE ARRAYS HAVE BEEN RESORTED ABOVE!
+	## foreach 9 < speclinerest speclinesnsigma speclines speclineflag speclinesigma oldindex speclineEW speclinerestEW speclinerestsigma speclineVEL > {
+        ##    set $9=$9    if( ilist >= 38 )
+	## }
+	## sort < speclinerest speclinesnsigma speclines speclineflag speclinesigma oldindex speclineEW speclinerestEW speclinerestsigma speclineVEL >
+
+	expand 0.75
+	do i=0,dimen(speclines)-1 {
+           if( speclinesnsigma[$i] >= 10 ) { ctype 5 } else { ctype 3 }
+           if( speclinesnsigma[$i] >= 25 ) { ctype darkgreen } 
+	   if( test_right_type[$i] == 0 )  { define warn_type "  ***" } else { define warn_type " " }
+           relocate $fx1 $($fy2-($fy2-$fy1)*($i)/6)
+           putlabel 3 $warn_type" "$(linename[$i])"   "$(speclinerest[$i]) \AA
+           relocate $fx1 $uyp
+           relocate ( $xp $($yp-140) )
+           putlabel 3 "  \sigma="$(sprintf('%6.2f',$(speclinesigma[$i]))) \AA"  "[$(sprintf('%5.2f',$(speclinerestsigma[$i])))]
+           relocate $fx1 $uyp
+           relocate ( $xp $($yp-140) )
+           putlabel 3 "  EW="$(sprintf('%6.2f',speclineEW[$i])) \AA"   "[$(sprintf('%6.2f',speclinerestEW[$i]))]
+           relocate $fx1 $uyp
+           relocate ( $xp $($yp-140) )
+           putlabel 3 "  n\sigma="$(sprintf('%6.2f',speclinesnsigma[$i]))
+           relocate $fx1 $uyp
+           relocate ( $xp $($yp-140) )
+           putlabel 3 "  vel.="$(sprintf('%7.1f',speclineVEL[$i])) km/s
+	}
+	if( dimen(acheck) > 0 ) {
+	   set dumabs = acheck   if( acheck < 0 )
+	   ctype 3 
+	   relocate ( $($gx2 - 500) $($gy1 - 1000) )
+	   putlabel 4 "NOTE: "$(dimen(acheck))" ALT features found"
+	   relocate ( $($gx2 - 500) $($gy1 - 1800) )
+	   putlabel 4 "       "$(dimen(dumabs))" are absorption"
+	   ctype 2
+	}
+	expand 1
+	lweight 0
+	#
+	#-----------------------------------------------------------
+
+	window 1 1 1 1
+
+	echo "------------------------------------------------------------"
+	echo "  BLACK   : SDSS data "
+	echo "  RED     : SDSS fit "
+	echo "  GREEN   : new fit "
+	echo "  "
+	echo "  orange  : flag (maskor)"
+	echo "------------------------------------------------------------"
+
+#-------------------------------------------------------------------------------
+# splot_all   <smoothing>
+#        + plots all spectra to PS files
+##        + and also creates features files for each source.
+splot_all 01
+
+	expand 1
+
+	if( $?1 ) {
+	   define smoothfac $1
+	} else {
+	   define smoothfac ? < Smoothing factor : >
+	}
+
+ 	# do ii=425,447 {
+ 	# do ii=1,10 {
+ 	do ii=1,dimen(vecmjd) {
+
+	   echo $ii
+           define n $(sprintf('_%03d',$ii))
+	   get_src_id $($ii-1)
+           
+           device postlandencap splot_gf1_$srcID.ps
+           splot $ii $smoothfac
+           
+	}
+	# x11land
+	device x11
+
+#-------------------------------------------------------------------------------
+# plot_features_all   <smoothing>
+#        + plots all spectra to PS files
+##        + and also creates features files for each source.
+plot_features_all 01
+
+	expand 1
+
+	if( $?1 ) {
+	   define smoothfac $1
+	} else {
+	   define smoothfac ? < Smoothing factor : >
+	}
+
+ 	# do ii=0,447 {
+ 	# do ii=425,447 {
+ 	do ii=1,dimen(vecmjd) {
+
+           define n $(sprintf('_%03d',$ii))
+	   get_src_id $($ii-1)
+           
+           device postlandencap splot_features_gf1_$srcID.ps
+           plot_features_1 $ii $smoothfac
+
+	}
+	# x11land
+	device x11
+
+#-------------------------------------------------------------------------------
+# plot_features_1  <source #>  <smoothing>
+#        + called by 'plot_features_all'
+plot_features_1 2
+
+	####################
+	splot_init
+
+	define j $($1-1)
+	get_src_id $j
+	####################
+
+	# define notsubtracted ? < plot with continuum [1|0] :>
+	define notsubtracted (1)
+
+	erase
+	ctype 2
+	expand 1
+
+	define x_gutter 0.5
+	define y_gutter 0.75
+	location 3500 31500 3500 29000
+
+	# sets how many features to plot
+	define n2print (8)
+
+
+	##data "$!SDSS_TOP/data/lines.dat"
+	##read < linerestwave 2 linemeanoffset 3 lineweight_gal 4 lineweight_qso 5 linename 6.s >
+
+	data "$!SDSS_HDU/"$srcID"_HDU2_T"
+	# read < speclines 2 speclinesnsigma 17 speclinerest 20 speclinesigma 6 speclineheight 10 >
+	read < speclines 2 speclinesnsigma 17 speclinerest 20 speclinesigma 6 speclineheight 10 speclineEW 13 speclinecontflux 12 >
+	## set speclineflag = speclineflag == 1
+
+	set speclinerestsigma = speclinesigma/(1+$z)
+	set speclinerestEW    = speclineEW/(1+$z)
+	set speclineFWHM      = 2.355*speclinerestsigma
+	set speclineVEL       = 0.5*speclineFWHM/speclinerest*299292.
+
+	data "$!SDSS_HDU/"$srcID"_HDU06"
+	read < lambda 2 spectrum 3 speccont 4 noise 5 specmaskbad 6 specmaskand 17 specmaskor 18 >
+
+	data "$!SDSS_HDU/"$srcID"_HDU5_T"
+	define CaBreak     read 2  3 
+	define CaBreak_err read 2  4 
+	define CaBreak_snr read 2 10
+	if( $CaBreak < -9000 ) {
+	    define CaBreak     (0)
+	    define CaBreak_err (0)
+	    define CaBreak_snr (0)
+	} else {
+	    define CaBreak $(1 - $CaBreak)
+	}
+
+	set cont = spectrum - speccont
+	smooth cont     contsmooth     $2
+	smooth spectrum spectrumsmooth $2
+	smooth speccont speccontsmooth $2
+
+	foreach 9 < specmaskbad specmaskand specmaskor > {
+           do i=0,dimen($9)-1 {
+              set $9[$i] = $9[$i] & ($SP_MASK_BRIGHTSKY + $SP_MASK_NOSKY + $SP_MASK_NODATA + $SP_MASK_SCATLIGHT )
+           }
+	}
+	
+	#-----------------------------------------------------------
+	# reads NEW fits, and computes spectrum for NEW fits.
+	#-----------------------------------------------------------
+
+	# TRICK TO SKIP THE IDL NEW FITS PART
+	define skip_new_fits (1)
+	if( $skip_new_fits == 0 ) { 
+
+	define n $(sprintf('%03d',$1))
+	data "$!SDSS_TOP/idlfits/renamed_fits/"$srcID"_mfit.dat"
+	read < line 1.s restwave 2 offset 3 eoffset 4 sigma 5 esigma 6 height 7 eheight 8 >
+
+        set spectrumsimnew = 0*lambda
+	set feature_flag   = 0*sigma + 1
+
+	# define WARNINGstr "problems:  "
+
+	if( dimen(restwave) == 1 && restwave[0] == -1 ) {
+	   echo "--------------------------------------------------"
+	   echo " WARNING: for this object there is no NEW FIT "
+           set spectrumsimnew = 0*lambda - 20 
+	} else {
+           echo "----------------------------------------"
+           do i=0,dimen(height)-1 {
+              if( sigma[$i] == 0 ) { 
+                 echo " PROBLEM with feature #"$i" "$(line[$i])
+		 define lname "$(line[$i])"
+		 # echo $lname
+		 # define WARNINGstr $(sprintf('%s','$WARNINGstr'))" "$(sprintf('%s','$lname'))
+		 # define WARNINGstr "$!WARNINGstr $!lname"
+		 set feature_flag[$i] = 0
+              } else {
+                 set spectrumsimnew = spectrumsimnew + height[$i]*exp(-1.0*(lambda - restwave[$i]*(1+$z)*(1+offset[$i]))**2./(2.*sigma[$i])**2.)
+              }
+           }
+	}
+	}
+	# end of skip_new_fits
+
+	#set oldindex = 0,43
+	#set ilist = 0,43
+
+	#-----------------------------------------------------------
+	# computes spectrum for SDSS fits.
+	#-----------------------------------------------------------
+	set spectrumsim = 0*lambda
+	do i=0,43 {
+	   if( $(speclines[$i]) > 0 ) {
+              set spectrumsim = spectrumsim + speclineheight[$i]*exp(-1.0*(lambda - speclines[$i])**2./(2.*(speclinesigma[$i])**2.))
+	   }
+	}
+	
+	#-----------------------------------------------------------
+	# clips out best features (based on standard SDSS fit), resort
+	#-----------------------------------------------------------
+	define class_check $(vecspeccln[$j])
+
+	if( $class_check == 2 ) { set weight_select = lineweight_gal       }
+	if( $class_check == 3 ) { set weight_select = lineweight_qso       }
+	if( $class_check == 4 ) { set weight_select = lineweight_qso       }
+	if( $class_check <= 1 ) { set weight_select = lineweight_qso*0 + 1 }
+	set lineweight = weight_select
+
+	###
+	# test if by mistake a feature got fit with a different type (abs. vs. em.)
+	#   than what it should be
+	set dumt = speclineheight*lineweight
+	set test_right_type = lineweight*0 + 1
+	do 9=0,dimen(test_right_type)-1 {
+	   if( dumt[$9] < 0 ) { set test_right_type[$9] = 0 } 
+	}
+
+	# BE CAREFUL HERE: the filter on positive flux_ratio excludes absorption lines...
+	set filter = lineweight*0 
+	do 9=0,dimen(filter)-1 {
+	     # if( weight_select[$9] != 0 && flux_ratio[$9] > 0.0 ) { set filter[$9] = 1 }
+	     if( weight_select[$9] != 0 ) { set filter[$9] = 1 }
+	}
+	# set test = speclines   if( weight_select != 0 && flux_ratio > 0.0 )
+	set test = speclines   if( weight_select != 0 )
+	set oldindex = 0,dimen(test)-1
+	set ilist    = 0,dimen(test)-1
+	###
+
+	foreach 9 < speclinesnsigma speclines speclinerest speclinesigma speclinerestsigma lineweight linename speclineEW speclinerestEW flux_ratio test_right_type > {
+	   # set $9 = $9   if( weight_select != 0 )
+	   set $9 = $9   if( filter > 0 )
+	}
+	# after this loop all arrays have reduced dimension equal to ilist, etc.
+
+	#----------------------------------------------------------------------
+	# selects the $n2print best 
+	#----------------------------------------------------------------------
+	set vsort1 local
+	set vsort1 = speclinesnsigma
+	set vsort2 local
+	set vsort2 = speclinesnsigma
+	sort < vsort1 speclinesnsigma speclines speclinerest speclinesigma speclinerestsigma lineweight linename >
+	sort < vsort2 speclineEW speclinerestEW flux_ratio test_right_type > 
+
+	define min_idx $( dimen(speclines) - $n2print - 1)
+	set test2 = speclines
+	foreach 9 < speclinesnsigma speclines speclinerest speclinesigma speclinerestsigma lineweight linename speclineEW speclinerestEW flux_ratio test_right_type > {
+	   set $9 = $9   if( ilist > $min_idx && test2 > 0 )
+	}
+
+	#----------------------------------------------------------------------
+	# re-orders them by wavelength
+	#----------------------------------------------------------------------
+	set vsort1 = speclines
+	set vsort2 = speclines
+	sort < vsort1 speclines speclinesnsigma speclinerest speclinesigma speclinerestsigma lineweight linename >
+	sort < vsort2 speclineEW speclinerestEW flux_ratio test_right_type > 
+
+	do i=0,dimen(speclines)-1 {
+           define _lambdamin $(speclines[$i]-100)
+           define _lambdamax $(speclines[$i]+100)
+           
+           ## set _spectrumsmooth = spectrumsmooth if( lambda > $_lambdamin && lambda < $_lambdamax )
+           set _lambda         = lambda           if( lambda > $_lambdamin && lambda < $_lambdamax )
+           set _speccontsmooth = speccontsmooth   if( lambda > $_lambdamin && lambda < $_lambdamax )
+           set _featurefit     = spectrumsim      if( lambda > $_lambdamin && lambda < $_lambdamax )
+	   if( $skip_new_fits == 0 ) { 
+              set _featurefitnew  = spectrumsimnew   if( lambda > $_lambdamin && lambda < $_lambdamax )
+	   }
+           set _contsmooth     = contsmooth       if( lambda > $_lambdamin && lambda < $_lambdamax )
+	   if( $notsubtracted ) {
+	      # foreach 9 < speccontsmooth featurefit featurefitnew > 
+	      foreach 9 < speccontsmooth featurefit > {
+	         set _$9 = _$9 + _contsmooth
+	      }
+	      set test3 = _speccontsmooth CONCAT _contsmooth
+	   } else {
+	      set test3 = _speccontsmooth 
+	   }
+           
+           ## limits _lambda _spectrumsmooth
+           ## limits _lambda _speccontsmooth
+           limits _lambda test3
+           define _ny $(int(($i+3)/3))
+           define _nx $($i+3-3*$_ny)
+           define _nx $($_nx+1)
+           define _ny $(4-$_ny)
+           
+	   expand 1
+           window 3 3 $_nx $_ny
+           box
+           xlabel $(linename[$i])"  "$(speclinerest[$i])
+
+	   lweight 2
+           ltype 0 ctype 2      connect _lambda _speccontsmooth
+           if( $notsubtracted ) { ltype 0 ctype 7      connect _lambda _contsmooth }
+	   if( speclinesnsigma[$i] >= 10 ) { lweight 4 } else { lweight 2 }
+           ltype 0 ctype 3      connect _lambda _featurefit
+	   if( $skip_new_fits == 0 ) { 
+              ltype 2 ctype green3 connect _lambda _featurefitnew
+	   }
+	   lweight 0
+	   ltype 0 ctype 2
+
+	   define inmargin (500)
+	   if( test_right_type[$i] == 0 ) {
+	      lweight 5
+	      ctype gray50
+	      relocate ( $($gx1+$inmargin) $($gy1+$inmargin) )
+	      draw     ( $($gx2-$inmargin) $($gy2-$inmargin) )
+	      relocate ( $($gx1+$inmargin) $($gy2-$inmargin) )
+	      draw     ( $($gx2-$inmargin) $($gy1+$inmargin) )
+	      ctype 2
+	      lweight 0
+	   }
+
+	}
+
+	echo "------------------------------------------------------------"
+
+	define print_noheader 1
+        write standard "#  "
+        write standard "# Name      lambda_r  lambda_obs  Nsigma  width_obs width_r    EW_r   weight  Fratio  check"
+        write standard "#  "
+	define fmt " %-10s  %.1f     %.1f   %6.2f    %6.2f  %6.2f     %6.2f   %4.1f    %5.1f   %.0f\n"  
+	# print '$!fmt' < linename speclinerest speclines speclinesnsigma speclinesigma speclinerestsigma speclinerestEW lineweight test_right_type > 
+	print '$!fmt' < linename speclinerest speclines speclinesnsigma speclinesigma speclinerestsigma speclinerestEW lineweight flux_ratio test_right_type >
+	define print_noheader 0
+	echo "------------------------------------------------------------"
+
+
+	#-----------------------------------------------------------
+	# Ca-Break (if in the wavelength range for the source z)
+	#-----------------------------------------------------------
+	vecminmax lambda _a _b
+	if( $(4000*(1+$z)) > $_a && $(4000*(1+$z)) < $_b ) {
+           set _spectrumsmooth = spectrumsmooth   if( lambda > $(3750*(1+$z)) && lambda < $(4250*(1+$z)) )
+           set _lambda         = lambda           if( lambda > $(3750*(1+$z)) && lambda < $(4250*(1+$z)) )
+           
+           limits _lambda _spectrumsmooth
+           #define _nx $(int(($i-32)/3))
+           #define _ny $($i-32-3*$_nx)
+           #define _ny $($_ny+1)
+           window 3 3 3 1
+           box
+           xlabel "4000A break"
+
+           connect _lambda _spectrumsmooth
+
+	   if( $CaBreak > 0 ) { ctype 2 } else { ctype 3 }
+	   relocate ( $($gx1+300) $($gy2-500) ) 
+	   putlabel 6 $(sprintf('%6.3f',$CaBreak))
+	   relocate ( $($gx1+300) $($gy2-1100) ) 
+	   putlabel 6 $(sprintf('%6.3f',$CaBreak_err))
+	   if( $CaBreak > 0 ) {
+	      relocate ( $($gx2-100) $($gy1+500) ) 
+	      putlabel 4 $(sprintf('%6.1f',$CaBreak_snr))
+	   }
+	   ctype 2 
+	}
+
+	window 1 1 1 1
+	# relocate ( 16384 31567 )
+	# putlabel 8 $mjd" "$plate" "$fiber":  SPECCLN="$(vecspeccln[$j])"  ZSTATUS="$(veczstatus[$j])
+	# relocate ( 16384 31457 )
+	# putlabel 2 "BESTTEMP="$(vecbesttemp[$j])"  Z="$(vecz[$j])"  ZCONF="$(veczconf[$j])
+
+	relocate ( 16384 31600 )
+	putlabel 5 $mjd" "$plate" "$fiber":   SPECCLN="$(vecspeccln[$j])"   BESTTEMP="$(vecbesttemp[$j])
+	relocate ( 16384 30850 )
+	putlabel 5 "  Z="$(vecz[$j])"   zConf="$(veczconf[$j])"   zStatus="$(veczstatus[$j])
+	relocate ( 16384 30100 )
+	putlabel 5 "object#="$1"/"$(dimen(vecmjd))"   smoothing="$2"   ["$date"]"
+
+	# relocate ( 50 50 )
+	# putlabel 6 $WARNINGstr
+
+	echo "------------------------------------------------------------"
+	echo "  BLACK   : data "
+	echo "  RED     : SDSS fit "
+	echo "  GREEN   : new fit "
+	echo "------------------------------------------------------------"
+
+#-------------------------------------------------------------------------------
+# stat_em_features_1  <source #>  <Nsigma threshold>
+#            + makes multi-box features plot
+#            + writes a features summary file: stat_em_$srcID.txt
+#            + It is the program that computes F_BLR
+stat_em_features_1 2
+
+	####################
+	splot_init
+
+	define j $($1-1)
+	get_src_id $j
+	####################
+
+	# define notsubtracted ? < plot with continuum [1|0] :>
+	define notsubtracted (1)
+
+	# NOTE/TODO:
+	# I should be probably include a test for features that fall within the
+	# observable range for each given object/redshift, but are/are not detected
+
+	define nsthreshold ($2)
+	define n2print (20)
+
+	ctype 2
+	expand 1
+
+	define x_gutter 0.5
+	define y_gutter 0.75
+	location 3500 31500 3500 29000
+
+	##data "$!SDSS_TOP/data/lines.dat"
+	##read < linerestwave 2 linemeanoffset 3 lineweight_gal 4 lineweight_qso 5 linename 6.s >
+
+	##data "$!SDSS_TOP/data/lines_ratio.dat"
+	##read < flux_ratio 6 >
+
+	data "$!SDSS_HDU/"$srcID"_HDU2_T"
+	read < speclines 2 speclinesnsigma 17 speclinerest 20 speclinesigma 6 speclineheight 10 speclineEW 13 speclinecontflux 12 >
+
+	set speclinerestsigma = speclinesigma/(1+$z)
+	set speclinerestEW    = speclineEW/(1+$z)
+	set speclineFWHM      = 2.355*speclinerestsigma
+	set speclineVEL       = 0.5*speclineFWHM/speclinerest*299292.
+
+	data "$!SDSS_HDU/"$srcID"_HDU06"
+	read < lambda 2 spectrum 3 speccont 4 noise 5 specmaskbad 6 specmaskand 17 specmaskor 18 >
+
+	data "$!SDSS_HDU/"$srcID"_HDU5_T"
+	define CaBreak     read 2  3 
+	define CaBreak_err read 2  4 
+	define CaBreak_snr read 2 10
+	if( $CaBreak < -9000 ) {
+	    define CaBreak     (0)
+	    define CaBreak_err (0)
+	    define CaBreak_snr (0)
+	} else {
+	    define CaBreak $(1 - $CaBreak)
+	}
+
+	set cont = spectrum - speccont
+	smooth cont     contsmooth     $2
+	smooth spectrum spectrumsmooth $2
+	smooth speccont speccontsmooth $2
+
+	#-----------------------------------------------------------
+	# reads NEW fits, and computes spectrum for NEW fits.
+	#-----------------------------------------------------------
+	# DELETED: waiting for better times/implementation
+
+	#-----------------------------------------------------------
+	# computes spectrum for SDSS fits.
+	#-----------------------------------------------------------
+	set spectrumsim = 0*lambda
+	do i=0,43 {
+	   if( $(speclines[$i]) > 0 ) {
+              set spectrumsim = spectrumsim + speclineheight[$i]*exp(-1.0*(lambda - speclines[$i])**2./(2.*(speclinesigma[$i])**2.))
+	   }
+	}
+	
+	#-----------------------------------------------------------
+	# clips out best features (based on standard SDSS fit), resort
+	#-----------------------------------------------------------
+	define class_check $(vecspeccln[$j])
+
+	if( $class_check == 2 ) { set weight_select = lineweight_gal       }
+	if( $class_check == 3 ) { set weight_select = lineweight_qso       }
+	if( $class_check == 4 ) { set weight_select = lineweight_qso       }
+	if( $class_check <= 1 ) { set weight_select = lineweight_qso*0 + 1 }
+	set lineweight = weight_select
+
+	# test if by mistake a feature got fit with a different type (abs. vs. em.)
+	#   than what it should be
+	set dumt1 = lineweight*speclineheight
+	set dumt2 = lineweight*speclineEW
+	set test_right_type = lineweight*0 + 1
+	do 9=0,dimen(test_right_type)-1 {
+	   if( dumt1[$9] < 0 || dumt2[$9] < 0 ) { set test_right_type[$9] = 0 } 
+	}
+
+	set filter = lineweight*0 
+	do 9=0,dimen(filter)-1 {
+	     if( weight_select[$9] != 0 && flux_ratio[$9] > 0.0 && test_right_type[$9] == 1 ) { set filter[$9] = 1 }
+	}
+	## print < linename speclinerest lineweight speclineheight speclineEW test_right_type filter >
+	set test = speclines   if( weight_select != 0 && flux_ratio > 0.0 && test_right_type == 1 )
+	set oldindex = 0,dimen(test)-1
+	set ilist    = 0,dimen(test)-1
+
+	foreach 9 < speclinesnsigma speclines speclinerest speclinesigma speclinerestsigma speclineVEL lineweight linename speclineEW speclinerestEW speclinecontflux flux_ratio test_right_type > {
+	   set $9 = $9   if( filter > 0 )
+	}
+	# after this loop all arrays have reduced dimension equal to ilist, etc.
+
+	#----------------------------------------------------------------------
+	# selects the $n2print best (in this program n2print should be generous) 
+	#   because there is a cut in N_sigma below anyway
+	#----------------------------------------------------------------------
+	set vsort1 local
+	set vsort2 local
+	set vsort1 = speclinesnsigma
+	set vsort2 = speclinesnsigma
+	sort < vsort1 speclinesnsigma speclines speclinerest speclinesigma speclinerestsigma speclineVEL >
+	sort < vsort2 lineweight linename speclineEW speclinerestEW speclinecontflux flux_ratio test_right_type >
+
+	define min_idx $( dimen(speclines) - $n2print - 1)
+	set test2 = speclines
+	foreach 9 < speclinesnsigma speclines speclinerest speclinesigma speclinerestsigma speclineVEL lineweight linename speclineEW speclinerestEW speclinecontflux flux_ratio test_right_type > {
+	   set $9 = $9   if( ilist > $min_idx && test2 > 0 )
+	}
+
+	#----------------------------------------------------------------------
+	# re-orders them by wavelength
+	#----------------------------------------------------------------------
+	set vsort1 = speclines
+	set vsort2 = speclines
+	sort < vsort1 speclines speclinesnsigma speclinerest speclinesigma speclinerestsigma speclineVEL >
+	sort < vsort2 lineweight linename speclineEW speclinerestEW speclinecontflux flux_ratio test_right_type >
+
+	#----------------------------------------------------------------------
+	# selection on N_sigma
+	#----------------------------------------------------------------------
+	set test2 = speclinesnsigma
+	foreach 9 < speclinesnsigma speclines speclinerest speclinesigma speclinerestsigma speclineVEL lineweight linename speclineEW speclinerestEW speclinecontflux flux_ratio test_right_type > {
+	   set $9 = $9   if( test2 >= $nsthreshold )
+	}
+
+	#----------------------------------------------------------------------
+	# plotting
+	#----------------------------------------------------------------------
+	do i=0,dimen(speclines)-1 {
+
+           define _lambdamin $(speclines[$i]-100)
+           define _lambdamax $(speclines[$i]+100)
+           
+           ## set _spectrumsmooth = spectrumsmooth if( lambda > $_lambdamin && lambda < $_lambdamax )
+           set _speccontsmooth = speccontsmooth   if( lambda > $_lambdamin && lambda < $_lambdamax )
+           set _lambda         = lambda           if( lambda > $_lambdamin && lambda < $_lambdamax )
+           set _featurefit     = spectrumsim      if( lambda > $_lambdamin && lambda < $_lambdamax )
+           set _contsmooth     = contsmooth       if( lambda > $_lambdamin && lambda < $_lambdamax )
+	   if( $notsubtracted ) {
+	      foreach 9 < speccontsmooth featurefit > {
+	         set _$9 = _$9 + _contsmooth
+	      }
+	      set test3 = _speccontsmooth CONCAT _contsmooth
+	   } else {
+	      set test3 = _speccontsmooth 
+	   }
+           
+           ## limits _lambda _spectrumsmooth
+           ## limits _lambda _speccontsmooth
+           limits _lambda test3
+           define _ny $(int(($i+3)/3))
+           define _nx $($i+3-3*$_ny)
+           define _nx $($_nx+1)
+           define _ny $(4-$_ny)
+           
+	   expand 1
+           window 3 3 $_nx $_ny
+           box
+           xlabel $(linename[$i])"  "$(speclinerest[$i])
+
+	   lweight 2
+           ltype 0 ctype 2      connect _lambda _speccontsmooth
+           if( $notsubtracted ) { ltype 0 ctype 7      connect _lambda _contsmooth }
+	   if( speclinesnsigma[$i] >= 10 ) { lweight 4 } else { lweight 2 }
+           ltype 0 ctype 3      connect _lambda _featurefit
+	   lweight 0
+	   ltype 0 ctype 2
+
+	   define inmargin (500)
+	   if( test_right_type[$i] == 0 ) {
+	      lweight 5
+	      ctype gray50
+	      relocate ( $($gx1+$inmargin) $($gy1+$inmargin) )
+	      draw     ( $($gx2-$inmargin) $($gy2-$inmargin) )
+	      relocate ( $($gx1+$inmargin) $($gy2-$inmargin) )
+	      draw     ( $($gx2-$inmargin) $($gy1+$inmargin) )
+	      ctype 2
+	      lweight 0
+	   }
+
+	}
+
+	echo "------------------------------------------------------------"
+	define outfile stat_em_$srcID.txt
+
+	define print_noheader 1
+	define fmt " %-10s  %.1f     %.1f   %6.2f    %6.2f  %6.2f  %8.2f   %6.2f    %8.2f    %4.1f    %5.1f   %.0f\n"  
+
+        write standard "#    SRC_N= "$($j+1)
+        write standard "#   CLASSN= "$class_check
+        write standard "# BESTTEMP= "$(vecbesttemp[$j])
+        write standard "# REDSHIFT= "$z
+        write standard "# Nsigma_cut= "$nsthreshold
+        write standard "# Name      lambda_r  lambda_obs  Nsigma  width_obs width_r   vel.      EW_r       F_cont   weight  Fratio  check"
+        write standard "#  "
+	if( dimen(linename) > 0 ) { 
+	print '$!fmt' < linename speclinerest speclines speclinesnsigma speclinesigma speclinerestsigma speclineVEL speclinerestEW speclinecontflux lineweight flux_ratio test_right_type >
+	}
+        write standard "#----------------------------------------"
+        # write standard "#  CaBreak= "$CaBreak $CaBreak_err $CaBreak_snr
+        write standard "#  CaBreak= "$(sprintf('%6.3f',$CaBreak)) $(sprintf('%6.3f',$CaBreak_err)) $(sprintf('%6.1f',$CaBreak_snr))
+
+        write   $outfile "#    SRC_N= "$($j+1)
+        write   $outfile "#   CLASSN= "$class_check
+        write + $outfile "# BESTTEMP= "$(vecbesttemp[$j])
+        write + $outfile "# REDSHIFT= "$z
+        write + $outfile "# Nsigma_cut= "$nsthreshold
+        write + $outfile "# Name      lambda_r  lambda_obs  Nsigma  width_obs width_r   vel.      EW_r       F_cont   weight  Fratio  check"
+        write + $outfile "#  "
+	if( dimen(linename) > 0 ) { 
+	print + $outfile '$!fmt' < linename speclinerest speclines speclinesnsigma speclinesigma speclinerestsigma speclineVEL speclinerestEW speclinecontflux lineweight flux_ratio test_right_type >
+	}
+        write + $outfile "#----------------------------------------"
+        # write + $outfile "#  CaBreak= "$CaBreak $CaBreak_err $CaBreak_snr
+        write + $outfile "#  CaBreak= "$(sprintf('%6.3f',$CaBreak)) $(sprintf('%6.3f',$CaBreak_err)) $(sprintf('%6.1f',$CaBreak_snr))
+
+	define print_noheader 0
+	echo "------------------------------------------------------------"
+
+	if( dimen(linename) > 0 ) { 
+	#----------------------------------------------------------------------
+	# plotting
+	#----------------------------------------------------------------------
+	if( $class_check >= 3 ) {
+	    define F_blr       $(sum(speclineEW*speclinecontflux*test_right_type))
+	    define sum_factors $(sum(flux_ratio*test_right_type))
+	    define F_blr       $($F_blr*555.77/$sum_factors*1e-17)
+	    echo "----------------------------------------"
+	    echo " sum(factors) = "$sum_factors
+	    echo "        F_BLR = "$(sprintf('%10.4e',$F_blr))"  [log="$(lg($F_blr))"]"
+	    echo "----------------------------------------"
+            write + $outfile "#----------------------------------------"
+            write + $outfile "# sum(factors) = "$sum_factors
+            write + $outfile "#        F_BLR = "$(sprintf('%10.4e',$F_blr))"  [log= "$(lg($F_blr))" ]"
+            write + $outfile "#----------------------------------------"
+	} else {
+	    echo "----------------------------------------"
+	    echo "  Object is not a Quasar.... "
+            write + $outfile "#----------------------------------------"
+            write + $outfile "#  Object is not a Quasar.... "
+	    define F_blr       $(sum(speclineEW*speclinecontflux*test_right_type))
+	    define sum_factors $(sum(flux_ratio*test_right_type))
+	    if( $sum_factors > 0 ) {
+	       echo "  ...it seems to have some emission lines "
+	       define F_blr       $($F_blr*555.77/$sum_factors*1e-17)
+	       echo " sum(factors) = "$sum_factors
+	       echo "        F_BLR = "$(sprintf('%10.4e',$F_blr))"  [log="$(lg($F_blr))"]"
+               write + $outfile "#  ...it seems to have some emission lines "
+               write + $outfile "# sum(factors) = "$sum_factors
+               write + $outfile "#        F_BLR = "$(sprintf('%10.4e',$F_blr))"  [log= "$(lg($F_blr))" ]"
+	    }
+	    echo "----------------------------------------"
+            write + $outfile "#----------------------------------------"
+	}
+	}
+
+	#-----------------------------------------------------------
+	# Ca-Break (if in the wavelength range for the source z)
+	#-----------------------------------------------------------
+	vecminmax lambda _a _b
+	if( $(4000*(1+$z)) > $_a && $(4000*(1+$z)) < $_b ) {
+           set _spectrumsmooth = spectrumsmooth   if( lambda > $(3750*(1+$z)) && lambda < $(4250*(1+$z)) )
+           set _lambda         = lambda           if( lambda > $(3750*(1+$z)) && lambda < $(4250*(1+$z)) )
+           
+           limits _lambda _spectrumsmooth
+           #define _nx $(int(($i-32)/3))
+           #define _ny $($i-32-3*$_nx)
+           #define _ny $($_ny+1)
+           window 3 3 3 1
+           box
+           xlabel "4000A break"
+
+           connect _lambda _spectrumsmooth
+
+	   if( $CaBreak > 0 ) { ctype 2 } else { ctype 3 }
+	   relocate ( $($gx1+300) $($gy2-500) ) 
+	   putlabel 6 $(sprintf('%6.3f',$CaBreak))
+	   relocate ( $($gx1+300) $($gy2-1100) ) 
+	   putlabel 6 $(sprintf('%6.3f',$CaBreak_err))
+	   if( $CaBreak > 0 ) {
+	      relocate ( $($gx2-100) $($gy1+500) ) 
+	      putlabel 4 $(sprintf('%6.1f',$CaBreak_snr))
+	   }
+	   ctype 2 
+	}
+
+	window 1 1 1 1
+	relocate ( 16384 31600 )
+	putlabel 5 $mjd" "$plate" "$fiber":   SPECCLN="$(vecspeccln[$j])"   BESTTEMP="$(vecbesttemp[$j])
+	relocate ( 16384 30850 )
+	putlabel 5 "  Z="$(vecz[$j])"   zConf="$(veczconf[$j])"   zStatus="$(veczstatus[$j])
+	relocate ( 16384 30100 )
+	putlabel 5 "object#="$1"/"$(dimen(vecmjd))"   smoothing="$2"   ["$date"]"
+
+	echo "------------------------------------------------------------"
+	echo "  BLACK   : data "
+	echo "  RED     : SDSS fit "
+	echo "------------------------------------------------------------"
+
+#-------------------------------------------------------------------------------
+# stat_em_features_all   <Nsigma cut>
+#        + plots all multi-box features summaries to PS files
+stat_em_features_all 01
+
+	expand 1
+
+	if( $?1 ) {
+	   define nsthreshold $1
+	} else {
+	   define nsthreshold ? < Nsigma threshold : >
+	}
+
+ 	## do ii=1,10 {
+ 	do ii=1,dimen(vecmjd) {
+
+           device postlandencap splot_statfeatures_gf1_$srcID.ps
+	   stat_em_features_1 $ii $nsthreshold
+           
+	}
+	device x11
+
+#-------------------------------------------------------------------------------
+# avrg_feature  <feature #>  <Nsigma cut> <window width>  <out 1>  <out 2>  
+#        + the 4th and 5th arguments are the variables to leave results in
+avrg_feature 5 
+
+	define nsthreshold ($2)
+	## define res         ($4)
+	define res         (1)
+
+	reset_graph
+	expand 1.5
+
+	## data "$!SDSS_TOP/data/lines.dat"
+	## read < linerestwave 2 linemeanoffset 3 lineweight_gal 4 lineweight_qso 5 linename 6.s >
+
+	define i $($1-1)
+	set avglambda= $(linerestwave[$i]-$3/2),$(linerestwave[$i]+$3/2),$res
+	set sumspec  = 0*avglambda
+	set nspec    = sumspec
+	define nspecc 0
+
+	verbose 0
+	do j=0,dimen(vecmjd)-1,1 {
+
+	   get_src_id $j
+           
+           data "$!SDSS_HDU/"$srcID"_HDU2_T"
+           read < speclines 2 speclineheight 10 speclinesnsigma 17 > #speclinerest 20 speclineflag 24 speclinesigma 6 speclineheight 10 
+
+	   # should it be using the actual measured redshift?
+           define z $(speclines[$i]/linerestwave[$i]-1)
+           
+           if( $(speclinesnsigma[$i]) > $nsthreshold ) {
+              define nspecc $($nspecc+1)
+              data "$!SDSS_HDU/"$srcID"_HDU06"
+              read < lambda 2 spectrum 3 speccont 4 > #noise 5 specmaskbad 6 specmaskand 17 specmaskor 18 
+              
+              define nlambda $(dimen(lambda))
+              set leftpoints  = wave2pixf(avglambda*(1+$z),$coeff0,$coeff1)
+              set rightpoints = leftpoints+1
+              set leftlambda  = pix2wave(leftpoints,$coeff0,$coeff1)/$(1+$z)
+              set rightlambda = pix2wave(rightpoints,$coeff0,$coeff1)/$(1+$z)
+              set leftpoints  = ( leftpoints<0  || leftpoints>$(dimen(lambda)-1) )  ? $nlambda : leftpoints
+              set rightpoints = ( rightpoints<0 || rightpoints>$(dimen(lambda)-1) ) ? $nlambda : rightpoints
+              set speccont    = speccont CONCAT { 0 }
+              set leftspec    = speccont[leftpoints]
+              set rightspec   = speccont[rightpoints]
+              set sumspec     = sumspec + ((avglambda-leftlambda)/$4*leftspec+(rightlambda-avglambda)/$4*rightspec)/speclineheight[$i]
+              set nspec       = (leftpoints == $nlambda || rightpoints == $nlambda) ? nspec : nspec+1
+           }
+	}
+	echo "------------------------------------------------------------"
+	echo " For feature "$1" ["$(linename[$i])"] found "$nspecc" detections"
+	echo "------------------------------------------------------------"
+	verbose 1
+	set $4=avglambda
+	set $5=sumspec/nspec
+
+	define istr $(sprintf('%02d',$i))
+	## device postlandencap avrg_feature_$istr.ps
+ 	## device x11
+ 	## erase
+
+	ctype 2
+	limits $4 $5
+	box
+	ctype skyblue
+	relocate $(linerestwave[$i]) $fy1
+	draw     $(linerestwave[$i]) $fy2
+	ctype 2
+	connect $4 $5
+	toplabel $(linename[$i])": "$nspecc" spectra averaged (n_\sigma >= "$nsthreshold")"
+
+
+#-------------------------------------------------------------------------------
+# avrg_features_all   <Nsigma threshold>
+#        + runs 'avrg_feature' for all features making PS plots and a table with statistics
+avrg_features_all 1
+
+	define nscut $1
+	do kk=1,44 {
+
+	   device postencap avrg_feature_$(sprintf('%02d',$kk))_ns=$nscut.ps
+           ## avrg_feature $kk $nscut 200 1 avglambda avgspec
+           avrg_feature $kk $nscut 200 avglambda avgspec
+	   # define tmp1 $(sprintf('%02d',$kk))
+	   # define tmp2 $(sprintf('%12s',linename[$($kk-1)]))
+	   # define tmp3 $(sprintf('%7.2f',linerestwave[$($kk-1)]))
+	   # define tmp4 $(sprintf('%3d',$nspecc))
+	   write "avrg_features_nsigma=$!nscut.log" $kk $(linename[$($kk-1)]) $(linerestwave[$($kk-1)]) $nspecc $(lineweight_gal[$($kk-1)]) $(lineweight_qso[$($kk-1)])
+
+	   # write "avrg_features_nsigma=$nsthreshold.log $tmp1 $tmp2 $tmp3 $tmp4
+	   device null
+	}
+	device x11
+
+##-------------------------------------------------------------------------------
+## feature_flip 
+##             BROKEN BROKEN
+feature_flip 1
+
+	define foo n
+	device x11
+	define j 0
+			define dirn 1
+		}
+		if( $j > 424 ) {
+			define j 424
+			define dirn -1
+		}
+		get_src_id $j
+
+		# define mjd    $(vecmjd[$j])
+		# define plate  $(vecplate[$j])
+		# define fiber  $(vecfiber[$j])
+		# define coeff0 $(veccoeff0[$j])
+		# define coeff1 $(veccoeff1[$j])
+
+		data "$!SDSS_HDU/"$srcID"_HDU2_T"
+		read < speclines 2 speclinesnsigma 17 speclinerest 20 speclineflag 24 speclinesigma 6 speclineheight 10 >
+
+		if( $(speclinesnsigma[$1]) > 20 ) {
+			data "$!SDSS_HDU/"$srcID"_HDU06"
+			read < lambda 2 spectrum 3 speccont 4 noise 5 specmaskbad 6 specmaskand 17 specmaskor 18 >
+
+			set lambda = lambda*$(linerestwave[$1]/speclines[$1])
+			define _lambdamin $(linerestwave[$1]-100)
+			define _lambdamax $(linerestwave[$1]+100)
+			set speccont2 = speccont   if( lambda<$_lambdamax && lambda>$_lambdamin )
+			set lambda2   = lambda     if( lambda<$_lambdamax && lambda>$_lambdamin )
+			erase
+			limits lambda2 speccont2
+			box
+			connect lambda2 speccont2
+			toplabel $(linename[$1])": spec"$($j+1)
+			define foo ? < Next/Previous/Quit? >
+			if( '$foo'=='p' ) {
+				define j $($j-1)
+				define dirn -1
+			} else {
+				define j $($j+1)
+				define dirn 1
+			}
+		} else { define j $($j+$dirn) }
+	}
+
+#-------------------------------------------------------------------------------
+# cont_fit <source #>
+#        + fits the continuum [?]
+#        + CURRENTLY NOT USED (it was called by 'splot')
+cont_fit 1
+
+	####################
+	define j $($1-1)
+	get_src_id $j
+	####################
+
+	expand 1
+
+	data "$!SDSS_HDU/"$srcID"_HDU06"
+	read < lambda 2 spectrum 3 specmaskbad 6 specmaskand 17 specmaskor 18 >
+
+	foreach 9 < specmaskbad specmaskand specmaskor > {
+           do i=0,dimen($9)-1 {
+              set $9[$i]=$9[$i] & ($SP_MASK_BRIGHTSKY + $SP_MASK_NOSKY + $SP_MASK_NODATA + $SP_MASK_SCATLIGHT )
+           }
+	}
+
+	set linerestwave_s          = $z*linerestwave
+	set dimen(contsim)          = $(dimen(lambda))
+	set dimen(linerestwave_pix) = $(dimen(linerestwave))
+
+	do i=0,43 {
+           set jlist=0,$(dimen(contsim)-1)
+           set lambda_s=abs(lambda-$(linerestwave[$i]))	    # find the distance from each wavelength pixel to the line
+           sort < lambda_s jlist >			    # sort to put min at front
+           set linerestwave_pix[$i] = $(jlist[0])	    # and pick that index
+	}
+	set dimen(linemask) = $(dimen(lambda))
+	set linemask = 1 - linemask*0		#linemask starts at 1 (true)
+	foreach linecenter linerestwave_pix {
+           set jlist = $linecenter-30,$linecenter+30	
+           set ilist = jlist     if( jlist >= 0 && jlist <= $(dimen(linemask)-1) )
+           foreach i ilist {
+              set linemask[$i]=0	#linemask set to 0 (false) if within 30 of a line
+           }
+	}
+
+	do i=0,dimen(contsim)-1 {
+           set jlist=0,$(dimen(lambda)-1)
+           foreach 9 < lambda spectrum > {
+	      # clip out a 1000 pixel window, and remove linemasked
+	      set $9_s = $9     if( linemask==1 && abs(jlist-$i) <= 500 && ! specmaskor )	
+           }
+           sort < spectrum_s lambda_s >
+           set jlist = 0,$(dimen(lambda_s)-1)
+           set spectrum_ss = spectrum_s     if( jlist < .6*($(dimen(lambda_s))-1) && jlist > .4*($(dimen(lambda_s))-1))
+           set contsim[$i] = $(sum(spectrum_ss)/dimen(spectrum_ss))
+           delete jlist
+           delete spectrum_s
+           delete lambda_s
+           delete spectrum_ss
+	}
+	ctype 5
+	connect lambda contsim
+	ctype 2
+
+#-------------------------------------------------------------------------------
+# splot_sdss_fit <source #>
+#        + plots SDSS spectrum in RED    
+#        + called by 'splot'
+splot_sdss_fit 1
+
+	####################
+	define j $($1-1)
+	get_src_id $j
+	####################
+
+	expand 1
+
+	data "$!SDSS_HDU/"$srcID"_HDU2_T"
+	read < speclines 2 speclinesnsigma 17 speclinerest 20 speclinesigma 6 speclineheight 10 >
+
+	# data "$!SDSS_HDU/"$srcID"_HDU0_I"
+	data "$!SDSS_HDU/"$srcID"_HDU06"
+	read < lambda 2 spectrum 3 speccont 4 >
+
+	set cont = spectrum - speccont
+ 	## set spectrumsim=cont
+	set spectrumsim = 0*cont
+	
+	do i=0,43 {
+	   if( $(speclines[$i]) > 0 ) {
+              set spectrumsim = spectrumsim + speclineheight[$i]*exp(-1.0*(lambda - speclines[$i])**2./(2.*(speclinesigma[$i])**2.))
+	   }
+	}
+
+	lweight 4
+	ctype 3
+	connect lambda spectrumsim 
+	ctype 2
+	lweight 0
+
+#-------------------------------------------------------------------------------
+# splot_new_fit  <source #>
+#        + plots IDL spectrum in GREEN
+#        + called by 'splot'
+splot_new_fit 1
+
+	####################
+	define j $($1-1)
+	get_src_id $j
+	####################
+
+	expand 1
+
+	# data "$!SDSS_HDU/"$srcID"_HDU0_I"
+	data "$!SDSS_HDU/"$srcID"_HDU06"
+	read < lambda 2 spectrum 3 speccont 4 >
+
+	define n $(sprintf('%03d',$1))
+	data "$!SDSS_TOP/idlfits/renamed_fits/"$srcID"_mfit.dat"
+	read < line 1.s restwave 2 offset 3 eoffset 4 sigma 5 esigma 6 height 7 eheight 8 >
+
+	set spectrumsim = 0*lambda
+
+	if( dimen(restwave) == 1 && restwave[0] == -1 ) {
+	   echo "--------------------------------------------------"
+	   echo "WARNING: for this object there is no NEW FIT "
+           set spectrumsim = 0*lambda - 20 
+	} else {
+           do i=0,dimen(height)-1 {
+              if( sigma[$i] == 0 ) {
+                 echo " PROBLEM with feature #"$i" "$(line[$i])
+              } else {
+                 set spectrumsim = spectrumsim + height[$i]*exp(-1.0*(lambda - restwave[$i]*(1+$z)*(1+offset[$i]))**2./(2.*sigma[$i])**2.)
+              }
+           }
+	}
+
+        # erase
+        # limits lambda speccont
+        # ctype black
+        # box
+        # connect lambda speccont
+
+	lweight 4
+	ctype green3
+	connect lambda spectrumsim
+	ctype 2
+	lweight 0
+
+##-------------------------------------------------------------------------------
+## showbt 
+showbt 1
+
+	!gv "$!SDSS_TOP/data/SDSStemplates/Xcorr_"$( vecbesttemp [ $1 ] )" &"
+
+#-------------------------------------------------------------------------------
+# plot_template <template #> 
+#        + plots SDSS template $1
+plot_template 1 
+
+	erase
+	# reset_graph
+	window 1 1 1 1
+	expand 1
+
+	# if($1>=10) {data "$!SDSS_TOP/data/SDSStemplates/Xcorr_0"$1"_HDU2_T" } else { if($1>0) {data "$!SDSS_TOP/data/SDSStemplates/Xcorr_00"$1"_HDU2_T" } else {data "$!SDSS_TOP/data/SDSStemplates/Xcorr_000_HDU2_T" }}
+
+	define n $(sprintf('%02d',$1))
+	data "$!SDSS_TOP/data/SDSStemplates/Xcorr_0"$n"_HDU2_T" 
+
+	if( is_set(whatis(speclines),3)==1) {
+           delete speclines
+	}
+	read < speclines 2 speclinesnsigma 17 speclinerest 20 speclineflag 24 >
+	if( is_set(whatis(speclines),3)==1) {
+	   set speclineflag = speclineflag == 1
+	}
+
+	# if($1>=10) {data "$!SDSS_TOP/data/SDSStemplates/Xcorr_0"$1"_HDU06" } else { if($1>0) {data "$!SDSS_TOP/SDSStemplates/Xcorr_00"$1"_HDU06" } else {data "$!SDSS_TOP/SDSStemplates/Xcorr_000_HDU06" }}
+	data "$!SDSS_TOP/data/SDSStemplates/Xcorr_0"$n"_HDU06"
+	read < lambda 2 spectrum 3 speccont 4 noise 5 >
+	set cont = spectrum - speccont
+
+	limits lambda spectrum
+	limits lambda 0 12
+	box
+	ltype 3
+	lweight 1
+	ctype 2
+
+	if( is_set(whatis(speclines),3)==1 ) {
+	   echo " Plotting lines"
+           do i=0,dimen(speclines)-1 {
+              if( $(speclines[$i]) > 0 ) {
+                 if( $(speclinesnsigma[$i]) > 3 ) { ctype gray50 }
+                 if( $(speclinesnsigma[$i]) > 6 ) { ctype green }
+                 relocate $(speclines[$i]) $fy1
+                 draw $(speclines[$i]) $fy2
+                 relocate $(speclines[$i]) $(.2*$fy1+.8*$fy2+($fy2-$fy1)*.17*($i/8-int($i/8)))
+                 putlabel 6 $(linename[$i])
+                 ##label $(linename[$i])
+              }
+           }
+	}
+
+	ltype 0
+	ctype 2
+	connect lambda spectrum
+	xla Wavelength ({\AA})
+        yla Flux (10^{-17} ergs/s/cm^{2}/{\AA})
+	toplabel "Template "$1
+
+	ptype 0 0
+	ctype 3
+	connect lambda cont
+	ctype 2
+
+##-------------------------------------------------------------------------------
+## flag_lines <source #>
+##        + uses mask to flag suspect lines
+##        + APPARENTLY NOT CALLED BY ANY OTHER PROGRAM
+flag_lines 1  
+
+	####################
+	define j $($1-1)
+	get_src_id $j
+	####################
+
+	expand 1
+
+	# define mjd    $(vecmjd[$j])
+	# define plate  $(vecplate[$j])
+	# define fiber  $(vecfiber[$j])
+	# define coeff0 $(veccoeff0[$j])
+	# define coeff1 $(veccoeff1[$j])
+
+	data "$!SDSS_HDU/"$srcID"_HDU2_T"
+	read < wave 2 sigma 6 restwave 20 flag 24.d >
+
+	data "$!SDSS_HDU/"$srcID"_HDU06"
+	read < lambda 2 specmaskbad 6 specmaskor 18 >
+
+	foreach 9 < specmaskbad specmaskor > {
+           do i=0,dimen($9)-1 {
+              set $9[$i]=$9[$i] & ($SP_MASK_BRIGHTSKY + $SP_MASK_NOSKY + $SP_MASK_NODATA + $SP_MASK_SCATLIGHT )
+           }
+	}
+	set badflag      = flag
+	set orflag       = flag
+	set badflag_mask = specmaskbad
+	set orflag_mask  = specmaskor
+	set wavepix      = (wave > 0) ? wave2pix(wave,$coeff0,$coeff1) : -9999
+
+	do i=0,43 {
+           foreach 9 < badflag orflag > { 
+	      if( wave[$i] > 0 ) {
+           	 if( wavepix[$i]+1<0 || wavepix[$i] > $(dimen($9_mask)-1) ) {    #check if center is valid pixel
+           	    set $9[$i] = $9[$i] + 16
+           	 } else {
+           	 if( $9_mask[wavepix[$i]] || $9_mask[wavepix[$i]+1] ) {
+                    set $9[$i]=$9[$i]+16					#check flags at center
+           	 }
+           	 }
+           	 set jlist = wave2pix(wave[$i]-sigma[$i],$coeff0,$coeff1),wave2pix(wave[$i]+sigma[$i],$coeff0,$coeff1)
+           	 vecminmax jlist jmin jmax
+           	 if( $jmin < 0 || $jmax > $(dimen($9_mask)-1) ) {
+                    set $9[$i]=$9[$i]+32
+           	 } else {
+           	    set $9_s=$9_mask[jlist]
+           	 if( sum($9_s) ) {					#check within one sigma
+           	    set $9[$i]=$9[$i]+32
+           	 }
+           	 }
+              }
+           }
+	}
+
+	# define outname $mjd"_"$plate"_"$fiber"_HDU2"
+	# print "$!SDSS_HDU/"$outname"flags" '%8d%10d\n' {badflag orflag}
+	print "$!SDSS_HDU/"$srcID"_HDU2_flags" '%8d%10d\n' < badflag orflag >
+
+##-------------------------------------------------------------------------------
+## pix2wave  <pixel>  <coeff0>  <coeff1>
+##       + used by 'avrg_feature'
+pix2wave 3 
+
+	set $0=10**($2+$1*$3)
+
+##-------------------------------------------------------------------------------
+## wave2pix <wave> <coeff0> <coeff1>
+##       + used by 'avrg_feature', 'flag_lines'
+wave2pix 3
+
+	set wave2pixilist=0,$(dimen($1)-1)
+	set $0=$1
+	foreach wave2pixi wave2pixilist {
+           if( $0[$wave2pixi] > 0 ) {
+              set $0[$wave2pixi]=(lg($0[$wave2pixi])-$2)/$3
+           } 
+	}
+	set $0=($0-int($0) > 0.5) ? int($0)+1 : int($0)
+
+##-------------------------------------------------------------------------------
+## wave2pixf 
+##       + used by 'avrg_feature'
+wave2pixf 3
+
+	set wave2pixilist=0,$(dimen($1)-1)
+	set $0=$1
+	foreach wave2pixi wave2pixilist {
+           if( $0[$wave2pixi] > 0 ) {
+              set $0[$wave2pixi]=(lg($0[$wave2pixi])-$2)/$3
+           } 
+	}
+	set $0=int($0)
+
+#-------------------------------------------------------------------------------
+# analyze_results  <line name>  <line lambda>  <line title>
+#        + compares SDSS and IDL line fit parameters
+analyze_results 3
+
+	expand 1
+
+	data "$!SDSS_products/lines/$!1_$!2.txt"
+	read < ssigma 5 sesigma 6 sheight 7 seheight 8 >
+
+	data "$!SDSS_TOP/idlfits/$!1_$!2.txt"
+	read < nsigma 5 nesigma 6 nheight 7 neheight 8 >
+
+	set neheight    = neheight    if(ssigma > 0)
+	set nheight     = nheight     if(ssigma > 0)
+	set seheight    = seheight    if(ssigma > 0)
+	set sheight     = sheight     if(ssigma > 0)
+	set nesigma     = nesigma     if(ssigma > 0)
+	set nsigma      = nsigma      if(ssigma > 0)
+	set sesigma     = sesigma     if(ssigma > 0)
+	set ssigma      = ssigma      if(ssigma > 0)
+	set esigmamask  = ( nesigma / sesigma > 5) ? 1 : 0
+	set sesigma     = sesigma     if( esigmamask == 0 )
+	set nesigma     = nesigma     if( esigmamask == 0 )
+	set eheightmask = ( neheight / seheight > 5) ? 1 : 0
+	set seheight    = seheight    if(eheightmask == 0 )
+	set neheight    = neheight    if(eheightmask == 0 )
+	define dummy "y"
+
+	foreach 9 < sigma esigma height eheight > {
+           #erase
+           device postlandencap $1_$2_$9_scatter.ps
+           limits s$9 n$9
+           box
+           points s$9 n$9
+           set x = { -9999 9999 }
+           connect x x
+           xla "SDSS fits"
+           yla "New fits"
+           toplabel $3" - "$9
+           #define dummy ? {Hit enter to continue}
+           
+           device postlandencap $1_$2_$9_hist.ps
+           set dev = n$9 - s$9
+           vecminmax dev a b
+           define step $(($b-$a)/25)
+           set q = $a,$b,$step
+           set h = histogram(dev:q)
+           xla "Deviation (New fit - SDSS fit)"
+           yla "Frequency"
+           ## erase
+           limits q h
+           box
+           histogram q h
+           toplabel $3" - "$9
+           
+	}
+
+#-------------------------------------------------------------------------------
+# analyze_all_results
+#        + calls 'analyze_results' for all spectral features.
+analyze_all_results
+
+	data "$!SDSS_products/shortresults/linenames.txt"
+	read < linenames 1.s linewaves 2.s linetitle 3.s >
+
+	do i=0,43 {
+           analyze_results $(linenames[$i]) $(linewaves[$i]) $(linetitle[$i])
+	}
+	# device x11
+
+#-------------------------------------------------------------------------------
+# lines_vs_z
+lines_vs_z
+
+	reset_graph
+
+	data "$!SDSS_TOP/data/spSpec_lines.dat"
+	read < ll 1  w_gal 3 w_qso 4 lname 5.s >
+
+	define which2plot ? < Plot lines for galaxy or qso [g|q] : >
+	if( substr('$which2plot',0,1) == 'g' ) {
+	   set lw = w_gal
+	} else {
+	   set lw = w_qso
+	}
+
+	limits 3700 9300 -0.1 5.0
+	ticksize 0 0 0 0
+	box
+	xlabel \lambda" "\AA
+	ylabel redshift 
+
+	set z=0,5,0.001
+
+	do 9=0,dimen(ll)-1 { 
+	   define ll $(ll[$9])
+	   define lw $(lw[$9])
+	   set llz = $ll*(1.0+z)
+
+	   if( $lw <  0.0 ) { lweight 2 } else { lweight 1 }
+	   if( $lw <  0.0 ) { ltype 2 } else { ltype 0 }
+	   if( $lw >= 1.0 ) { lweight 1 ctype 5 }
+	   if( $lw >= 2.0 ) { lweight 3 ctype 4 }
+	   if( $lw >= 5.0 ) { lweight 6 ctype 3 }
+
+	   if( $lw != 0.0 ) { connect llz z }
+	   ctype 2
+	}
+
+
+#-------------------------------------------------------------------------------
+# lines_vs_z_alt
+lines_vs_z_alt
+
+	reset_graph
+	location 5500 30000 5500 26000
+
+	data "$!SDSS_TOP/data/spSpec_lines.dat"
+	read < ll 1  w_gal 3 w_qso 4 lname 5.s >
+	data "$!SDSS_TOP/data/lines.dat"
+	read < lname 6.s >
+
+	define which2plot ? < Plot lines for galaxy or qso [g|q] : >
+	if( substr('$which2plot',0,1) == 'g' ) {
+	   set lw = w_gal
+	} else {
+	   set lw = w_qso
+	}
+
+	define zmin (0.001)
+	define zmax (5.0)
+	limits 750 9000 $(lg($zmin)) $(lg($zmax))
+	limits 750 9000 $zmin $zmax
+	ticksize 0 0 0 0
+	box
+	xlabel \lambda"  "[\AA]
+	ylabel redshift 
+
+	set z=$zmin,$zmax,0.001
+
+	set l1z = 3800.0/(1.0+z)
+	set l2z = 9200.0/(1.0+z)
+
+	do 9=0,dimen(ll)-1 { 
+	   define ll $(ll[$9])
+	   define lw $(lw[$9])
+
+	   if( $lw <  0.0 ) { lweight 2 } else { lweight 1 }
+	   if( $lw <  0.0 ) { ltype 2 } else { ltype 0 }
+	   if( $lw >= 1.0 ) { lweight 1 ctype 5 define dy (1500) }
+	   if( $lw >= 2.0 ) { lweight 3 ctype 4 define dy (3000) }
+	   if( $lw >= 5.0 ) { lweight 6 ctype 3 define dy (   0) }
+
+	   if( $lw != 0.0 ) { 
+	      relocate $ll $fy1
+	      draw     $ll $fy2
+	      expand 1.0
+	      lweight 1
+	      relocate ( $( $gx1 + ($gx2-$gx1)/($fx2-$fx1)*($ll-$fx1) )  $($gy2+150+$dy) ) 
+	      angle 90
+	      putlabel 6 $(lname[$9])
+	      angle 0 
+	      expand 2.5
+	      ctype 2
+	   }
+	}
+
+	ctype 7
+	# connect l1z (lg(z))
+	# connect l2z (lg(z))
+	connect l1z z
+	connect l2z z
+	ctype 2
+
+##-------------------------------------------------------------------------------
+## splot_old  <spectrum #>  <smoothing>
+##        plots spectrum $1 with smoothing $2
+splot_old 2 
+
+	####################
+	define j $($1-1)
+	get_src_id $j
+	####################
+
+	expand 1
+	window 1 1 1 1
+	location 3500 31500 3500 29000
+
+	erase
+	ctype 2
+
+	#-----------------------------------------------------------
+	# reading line fits
+	#-----------------------------------------------------------
+	data "$!SDSS_HDU/"$srcID"_HDU2_T"
+	read < speclines 2 speclinesnsigma 17 speclinerest 20 speclineflag 24 speclinesigma 6 speclineheight 10 speclineEW 13 speccont 12 >
+	set speclineflag = speclineflag == 1
+
+	set speclinerestsigma = speclinesigma/(1+$z)
+	set speclinerestEW    = speclineEW/(1+$z)
+	set speclineFWHM = 2.355*speclinerestsigma
+	set speclineVEL  = 0.5*speclineFWHM/speclinerest*299292
+
+	data "$!SDSS_HDU/"$srcID"_HDU5_T"
+	define CaBreak     read 2  3 
+	define CaBreak_err read 2  4 
+	define CaBreak_snr read 2 10
+	if( $CaBreak < -9000 ) {
+	    define CaBreak     (0)
+	    define CaBreak_err (0)
+	    define CaBreak_snr (0)
+	} else {
+	    define CaBreak $(1 - $CaBreak)
+	}
+
+	## data "$!SDSS_TOP/data/lines.dat"
+	## read < linerestwave 2 linemeanoffset 3 lineweight_gal 4 lineweight_qso 5 linename 6.s >
+
+	#-----------------------------------------------------------
+	# reading spectrum, continuum fit, etc.
+	#-----------------------------------------------------------
+	data "$!SDSS_HDU/"$srcID"_HDU06"
+	read < lambda 2 spectrum 3 speccont 4 noise 5 specmaskbad 6 specmaskand 17 specmaskor 18 >
+	set cont = spectrum - speccont
+
+	smooth cont     contsmooth $2
+	smooth spectrum spectrumsmooth $2
+	smooth speccont speccontsmooth $2
+
+	foreach 9 < specmaskbad specmaskand specmaskor > {
+           do i=0,dimen($9)-1 {
+	      set $9[$i] = $9[$i] & ($SP_MASK_BRIGHTSKY + $SP_MASK_NOSKY + $SP_MASK_NODATA + $SP_MASK_SCATLIGHT )
+           }
+	}
+
+	#-----------------------------------------------------------
+	window -4 1 1:3 1
+        #limits lambda spectrumsmooth
+	limits lambda speccont
+	box
+	ctype skyblue
+	lweight 2
+	foreach skyline < 5577 6300 6363 > {
+		relocate $skyline $fy1
+		draw     $skyline $fy2
+	}
+	ltype 3
+	lweight 1
+	ctype 2
+
+	#-----------------------------------------------------------
+	# plots markers for lines:
+	#    + GREEN : good lines
+	#    + GRAY  : low significance lines
+	#-----------------------------------------------------------
+	do i=0,43 {
+           if( $(speclines[$i]) > 0 && ! $(speclineflag[$i]) ) {
+              if( $(speclinesnsigma[$i]) > 3 ) { ctype gray50 }
+              if( $(speclinesnsigma[$i]) > 6 ) { ctype green  }
+              relocate $(speclines[$i]) $fy1
+              draw     $(speclines[$i]) $fy2
+              relocate $(speclines[$i]) $(.2*$fy1+.8*$fy2+($fy2-$fy1)*.17*($i/8-int($i/8)))
+              ##label $(linename[$i])
+              putlabel 6 $(linename[$i])
+           }
+	}
+	
+	ltype 0
+	ctype 2
+	xla Wavelength ({\AA})
+        yla Flux (10^{-17} ergs/s/cm^{2}/{\AA})
+	relocate ( 16384 31600 )
+	putlabel 5 $mjd" "$plate" "$fiber":   SPECCLN="$(vecspeccln[$j])"   BESTTEMP="$(vecbesttemp[$j])
+	relocate ( 16384 30850 )
+	putlabel 5 "  Z="$(vecz[$j])"   zConf="$(veczconf[$j])"   zStatus="$(veczstatus[$j])
+	relocate ( 16384 30100 )
+	putlabel 5 "object#="$1"/"$(dimen(vecmjd))"   smoothing="$2"   ["$date"]"
+
+	ptype 0 0
+        # connect lambda spectrumsmooth
+	connect lambda speccont
+	ctype 3
+        # connect lambda cont
+	
+	#-----------------------------------------------------------
+	# plot the bad flags just in case
+	#-----------------------------------------------------------
+	# ctype purple
+	# set dimen(dummyy)=$(dimen(lambda))
+	# set dummyy=$fy1+.03*$fy2+0*dummyy
+	# points lambda dummyy if(specmaskbad)
+	# delete dummyy
+	
+	#-----------------------------------------------------------
+	# plot the reasonable flags (ORANGE)
+	#-----------------------------------------------------------
+	ctype orange
+	connect lambda speccontsmooth   if( specmaskor )
+
+	set dimen(dummyy)=$(dimen(lambda))
+	set dummyy = $fy1 + 0.06*$fy2 + 0*dummyy
+	# points lambda dummyy            if( specmaskor )
+	delete dummyy
+	
+	#-----------------------------------------------------------
+	# fit the continuum
+	#-----------------------------------------------------------
+	ctype 2
+	## cont_fit $j+1
+	
+	#-----------------------------------------------------------
+	# plot the expected spectrum (RED)
+	#-----------------------------------------------------------
+	splot_sdss_fit $1
+
+	#-----------------------------------------------------------
+	# plot new fit (GREEN)
+	#-----------------------------------------------------------
+	splot_new_fit $1
+	
+	#-----------------------------------------------------------
+	# reads the NEW FIT line properties
+	# NOT USING THIS!
+	#-----------------------------------------------------------
+	## define n $(sprintf('%03d',$1))
+	# data "$!SDSS_TOP/idlfits/compiledfits/mfit"$n".txt"
+	## data "$!SDSS_TOP/idlfits/renamed_fits/"$srcID"_mfit.dat"
+	## read < line 1.s restwave 2 offset 3 eoffset 4 sigma 5 esigma 6 height 7 eheight 8 >
+
+	#-----------------------------------------------------------
+	# pick out the best lines (from SDSS fit)
+	#
+	set oldindex = 0,43
+	# sort < speclinesnsigma speclines speclinerest speclineflag speclinesigma speclineheight oldindex speclineEW speclinerestEW speclinerestsigma speclineVEL >
+	sort < speclinesnsigma speclines speclinerest speclineflag speclinesigma oldindex speclineEW speclinerestEW speclinerestsigma speclineVEL >
+	ctype 5
+	do i=38,43 {
+           lweight 2
+           relocate $(speclines[$i]) $fy1
+           draw     $(speclines[$i]) $fy2
+           relocate $(speclines[$i]) $(0.2*$fy1 + 0.8*$fy2 + ($fy2-$fy1)*0.17*(oldindex[$i]/8-int(oldindex[$i]/8)))
+           ##label    $(linename[oldindex[$i]])
+           putlabel 6 $(linename[oldindex[$i]])
+	}
+
+	#-----------------------------------------------------------
+	# prints the best line parameters on the side of the box
+	#
+	window -4 1 4 1
+	set ilist=0,43
+	# foreach 9 < speclinerest speclinesnsigma speclines speclineflag speclinesigma speclineheight oldindex speclineEW speclinerestEW speclinerestsigma speclineVEL > {
+	foreach 9 < speclinerest speclinesnsigma speclines speclineflag speclinesigma oldindex speclineEW speclinerestEW speclinerestsigma speclineVEL > {
+           set $9=$9    if( ilist >= 38 )
+	}
+
+	# sort < speclinerest speclinesnsigma speclines speclineflag speclinesigma speclineheight oldindex speclineEW speclinerestEW speclinerestsigma speclineVEL >
+	sort < speclinerest speclinesnsigma speclines speclineflag speclinesigma oldindex speclineEW speclinerestEW speclinerestsigma speclineVEL >
+	expand 0.75
+	do i=0,5 {
+		if( speclinesnsigma[$i] >= 10 ) { ctype 5 } else { ctype 3 }
+		if( speclinesnsigma[$i] >= 25 ) { ctype darkgreen } 
+		relocate $fx1 $($fy2-($fy2-$fy1)*($i)/6)
+		putlabel 3 "  "$(linename[oldindex[$i]])"   "$(speclinerest[$i]) \AA
+		relocate $fx1 $uyp
+		relocate ( $xp $($yp-140) )
+		putlabel 3 "  \sigma="$(sprintf('%6.2f',$(speclinesigma[$i]))) \AA"  "[$(sprintf('%5.2f',$(speclinerestsigma[$i])))]
+		relocate $fx1 $uyp
+		relocate ( $xp $($yp-140) )
+		putlabel 3 "  EW="$(sprintf('%6.2f',speclineEW[$i])) \AA"   "[$(sprintf('%6.2f',speclinerestEW[$i]))]
+		relocate $fx1 $uyp
+		relocate ( $xp $($yp-140) )
+		putlabel 3 "  n\sigma="$(sprintf('%6.2f',speclinesnsigma[$i]))
+		relocate $fx1 $uyp
+		relocate ( $xp $($yp-140) )
+		putlabel 3 "  vel.="$(sprintf('%7.1f',speclineVEL[$i])) km/s
+	}
+	expand 1
+	lweight 0
+	#
+	#-----------------------------------------------------------
+
+	window 1 1 1 1
+
+	echo "------------------------------------------------------------"
+	echo "  BLACK   : SDSS data "
+	echo "  RED     : SDSS fit "
+	echo "  GREEN   : new fit "
+	echo "  "
+	echo "  orange  : flag (maskor)"
+	echo "------------------------------------------------------------"
+
+##-------------------------------------------------------------------------------
+## plot_features_old  <source #>  <smoothing>
+##        + called by 'splot_all'
+plot_features_old 2
+
+	####################
+	define j $($1-1)
+	get_src_id $j
+	####################
+
+	erase
+	ctype 2
+	expand 1
+
+	define x_gutter 0.5
+	define y_gutter 0.75
+	location 3500 31500 3500 29000
+
+	## data "$!SDSS_TOP/data/lines.dat"
+	## read < linerestwave 2 linemeanoffset 3 lineweight_gal 4 lineweight_qso 5 linename 6.s >
+
+	data "$!SDSS_HDU/"$srcID"_HDU2_T"
+	read < speclines 2 speclinesnsigma 17 speclinerest 20 speclineflag 24 speclinesigma 6 speclineheight 10 >
+	set speclineflag = speclineflag == 1
+
+	data "$!SDSS_HDU/"$srcID"_HDU06"
+	read < lambda 2 spectrum 3 speccont 4 noise 5 specmaskbad 6 specmaskand 17 specmaskor 18 >
+
+	data "$!SDSS_HDU/"$srcID"_HDU5_T"
+	define CaBreak     read 2  3 
+	define CaBreak_err read 2  4 
+	define CaBreak_snr read 2 10
+	if( $CaBreak < -9000 ) {
+	    define CaBreak     (0)
+	    define CaBreak_err (0)
+	    define CaBreak_snr (0)
+	} else {
+	    define CaBreak $(1 - $CaBreak)
+	}
+
+	set cont = spectrum - speccont
+	smooth cont     contsmooth     $2
+	smooth spectrum spectrumsmooth $2
+	smooth speccont speccontsmooth $2
+
+	foreach 9 < specmaskbad specmaskand specmaskor > {
+           do i=0,dimen($9)-1 {
+              set $9[$i] = $9[$i] & ($SP_MASK_BRIGHTSKY + $SP_MASK_NOSKY + $SP_MASK_NODATA + $SP_MASK_SCATLIGHT )
+           }
+	}
+	
+	#-----------------------------------------------------------
+	# reads NEW fits, and computes spectrum for NEW fits.
+	#-----------------------------------------------------------
+	define n $(sprintf('%03d',$1))
+	data "$!SDSS_TOP/idlfits/renamed_fits/"$srcID"_mfit.dat"
+	read < line 1.s restwave 2 offset 3 eoffset 4 sigma 5 esigma 6 height 7 eheight 8 >
+
+        set spectrumsimnew = 0*lambda
+	set feature_flag = 0*sigma + 1
+
+	# define WARNINGstr "problems:  "
+
+	if( dimen(restwave) == 1 && restwave[0] == -1 ) {
+	   echo "--------------------------------------------------"
+	   echo " WARNING: for this object there is no NEW FIT "
+           set spectrumsimnew = 0*lambda - 20 
+	} else {
+           echo "----------------------------------------"
+           do i=0,dimen(height)-1 {
+              if( sigma[$i] == 0 ) { 
+                 echo " PROBLEM with feature #"$i" "$(line[$i])
+		 define lname "$(line[$i])"
+		 # echo $lname
+		 # define WARNINGstr $(sprintf('%s','$WARNINGstr'))" "$(sprintf('%s','$lname'))
+		 # define WARNINGstr "$!WARNINGstr $!lname"
+		 set feature_flag[$i] = 0
+              } else {
+                 set spectrumsimnew = spectrumsimnew + height[$i]*exp(-1.0*(lambda - restwave[$i]*(1+$z)*(1+offset[$i]))**2./(2.*sigma[$i])**2.)
+              }
+           }
+	}
+	# echo "PROBLEMS: "$WARNINGstr
+
+	set oldindex = 0,43
+	set ilist = 0,43
+
+	#-----------------------------------------------------------
+	# computes spectrum for SDSS fits.
+	#-----------------------------------------------------------
+	#set spectrumsim=cont
+	set spectrumsim = 0*lambda
+	
+	do i=0,43 {
+	   if( $(speclines[$i]) > 0 ) {
+              set spectrumsim = spectrumsim + speclineheight[$i]*exp(-1.0*(lambda - speclines[$i])**2./(2.*(speclinesigma[$i])**2.))
+	   }
+	}
+	
+	#-----------------------------------------------------------
+	# clips out 8 best features (based on standard SDSS fit), resort
+	#-----------------------------------------------------------
+	sort < speclinesnsigma speclines speclinerest speclineflag speclinesigma speclineheight oldindex >
+
+	foreach 9 < speclinesnsigma speclines speclinerest speclineflag speclinesigma speclineheight oldindex > {
+	   set $9 = $9   if( ilist > 35 )
+	}
+
+	sort < speclines speclinesnsigma speclinerest speclineflag speclinesigma speclineheight oldindex >
+
+	# set ilist = 0,7
+	# set ilist = 35,43
+	#-----------------------------------------------------------
+	# 8 best line features
+	#-----------------------------------------------------------
+	do i=0,7 { 
+           ## define _lambdamin $(speclines[$i]-6*speclinesigma[$i])
+           ## define _lambdamax $(speclines[$i]+6*speclinesigma[$i])
+           define _lambdamin $(speclines[$i]-100)
+           define _lambdamax $(speclines[$i]+100)
+           
+           ## set _spectrumsmooth = spectrumsmooth if( lambda > $_lambdamin && lambda < $_lambdamax )
+           set _speccontsmooth = speccontsmooth   if( lambda > $_lambdamin && lambda < $_lambdamax )
+           set _lambda         = lambda           if( lambda > $_lambdamin && lambda < $_lambdamax )
+           set _featurefit     = spectrumsim      if( lambda > $_lambdamin && lambda < $_lambdamax )
+           set _featurefitnew  = spectrumsimnew   if( lambda > $_lambdamin && lambda < $_lambdamax )
+           
+           ## limits _lambda _spectrumsmooth
+           limits _lambda _speccontsmooth
+           #define _nx $(int(($i-32)/3))
+           #define _ny $($i-32-3*$_nx)
+           #define _ny $($_ny+1)
+           define _ny $(int(($i+3)/3))
+           define _nx $($i+3-3*$_ny)
+           define _nx $($_nx+1)
+           define _ny $(4-$_ny)
+           
+	   expand 1
+           window 3 3 $_nx $_ny
+           box
+           xlabel $(linename[$(oldindex[$i])])"  "$(speclinerest[$i])
+
+	   lweight 2
+           ltype 0 ctype 2 connect _lambda _speccontsmooth
+	   lweight 4
+           ltype 0 ctype 3      connect _lambda _featurefit
+           ltype 2 ctype green3 connect _lambda _featurefitnew
+	   lweight 0
+	   ltype 0 ctype 2
+
+	   # if( feature_flag[$i] == 0 ) { 
+	   #   relocate ( $gx2 $gy2 )
+	   #   ctype 3 
+	   #   putlabel 1 X
+	   #   ctype 2
+	   #}
+
+	}
+
+	vecminmax lambda _a _b
+
+	#-----------------------------------------------------------
+	# Ca-Break (if in the wavelength range for the source z)
+	#-----------------------------------------------------------
+	if( $(4000*(1+$z)) > $_a && $(4000*(1+$z)) < $_b ) {
+           set _spectrumsmooth = spectrumsmooth   if( lambda > $(3750*(1+$z)) && lambda < $(4250*(1+$z)) )
+           set _lambda         = lambda           if( lambda > $(3750*(1+$z)) && lambda < $(4250*(1+$z)) )
+           
+           limits _lambda _spectrumsmooth
+           window 3 3 3 1
+           box
+           xlabel "4000A break"
+
+           connect _lambda _spectrumsmooth
+
+	   if( $CaBreak > 0 ) { ctype 2 } else { ctype 3 }
+	   relocate ( $($gx1+300) $($gy2-500) ) 
+	   putlabel 6 $(sprintf('%6.3f',$CaBreak))
+	   relocate ( $($gx1+300) $($gy2-1100) ) 
+	   putlabel 6 $(sprintf('%6.3f',$CaBreak_err))
+	   if( $CaBreak > 0 ) {
+	      relocate ( $($gx2-100) $($gy1+500) ) 
+	      putlabel 4 $(sprintf('%6.1f',$CaBreak_snr))
+	   }
+	   ctype 2 
+	}
+
+	window 1 1 1 1
+
+	relocate ( 16384 31600 )
+	putlabel 5 $mjd" "$plate" "$fiber":   SPECCLN="$(vecspeccln[$j])"   BESTTEMP="$(vecbesttemp[$j])
+	relocate ( 16384 30850 )
+	putlabel 5 "  Z="$(vecz[$j])"   zConf="$(veczconf[$j])"   zStatus="$(veczstatus[$j])
+	relocate ( 16384 30100 )
+	putlabel 5 "object#="$1"/"$(dimen(vecmjd))"   smoothing="$2"   ["$date"]"
+
+	# relocate ( 50 50 )
+	# putlabel 6 $WARNINGstr
+
+	echo "------------------------------------------------------------"
+	echo "  BLACK   : data "
+	echo "  RED     : SDSS fit "
+	echo "  GREEN   : new fit "
+	echo "------------------------------------------------------------"
+
+#-------------------------------------------------------------------------------

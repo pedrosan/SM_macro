@@ -1,0 +1,3386 @@
+#===============================================================================
+## source_list_menu
+source_list_menu
+
+        # define LATarchive    "/home/gfossati/Science/Fermi/data"
+        define LATarchive    "/home/gfossati/Science/Fermi/monitored_objects/data"
+        define SMARTSarchive "/home/gfossati/Science/SMARTS/data/general"
+        define SMARTSarchive "/home/gfossati/Science/SMARTS/data/new"
+
+        set dimen(source_list) = 22.s
+        set source_list= < "  0208-512 " \
+                           "  0235-618 " \
+                           "  0235+164 " \
+                           "  PKS 0528+134 " \
+                           "  PKS 0537-441 " \
+                           " (0716+714)" \
+		           " (0827+243)" \
+                           "  OJ 287 " \
+                           " (Mrk 421)" \
+                           "  3C 273 " \
+                           "  3C 279 " \
+		           "  1329-049 " \
+		           "  1406-076 " \
+		           "  1424-41 " \
+		           " (PKS 1454-354)" \
+                           " (PKS 1502+106)" \
+                           "  1510-089 " \
+		           "  PKS B 1622-297 " \
+                           " (1633+382)" \
+                           " (Mrk 501)" \
+                           "  1730-130 " \
+                           "  2142-75 " \
+                           "  PKS 2155-304 " \
+                           " (BL Lac)" \
+                           "  3C 454.3" >
+
+        # 0035-252  0135-247  0208-512  0235+164  0235-618  0238-3116 0301-243  0316+0904 0402-362  0413-5332 
+        # 0422+004  0454-234  0454-46   0507-6104 0528+134  0531-4827 0537-441  0630-2406 0637-75   0727-11   
+        # 0816-1311 0818-128  0850-1213 1004-217  1059-1134 1127-14   1144-379  1212+078  1244-255  1329-049  
+        # 1335-127  1406-076  1424-41   1508-05   1510-089  1514-241  1610-6649 1622-297  1717-5156 1730-130  
+        # 1749+096  1913-3630 1921-1607 1954-388  1958-179  2052-474  2055-002  2142-75   2155-304  2233-148  
+        # 2227-08   2322-409  2232-488  2240-260  2255-282  2326-502  2331-2148 2345-1555 2345-16   2356-309  
+        # 3C273     3C279     3C446     3C454     OJ287 
+
+
+        if( $?1 ) {
+	   define whatsource $1
+	   define 9 $whatsource
+        } else {
+	   do 9=0,dimen(source_list)-1 {
+	       echo " ["$9"]  "$(source_list[$9])
+	   }
+	   define whatsource ? <  What source : >
+	   define 9 $whatsource
+        }
+
+##-------------------------------------------------------------------------------
+# read_smarts_tab_data  [<src sequence number>]
+read_smarts_tab_data 01
+
+        if( $?1 ) { 
+	   define 9 $1
+        } else { 
+	   source_list_menu 
+	   define 9 $whatsource
+        }
+        # define 9 $1
+
+        if( $9 ==  0 ) { define srcNAME "0208-512" }
+        if( $9 ==  1 ) { define srcNAME "0235+164" }
+        if( $9 ==  2 ) { define srcNAME "0235-618" }
+        if( $9 ==  3 ) { define srcNAME "0528+134" }
+        if( $9 ==  4 ) { define srcNAME "0537-441" }
+        if( $9 ==  5 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        if( $9 ==  6 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        if( $9 ==  7 ) { define srcNAME "OJ287" }
+        if( $9 ==  8 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        if( $9 ==  9 ) { define srcNAME "3C273" }
+        if( $9 == 10 ) { define srcNAME "3C279" }
+        if( $9 == 11 ) { define srcNAME "1329-049" }
+        if( $9 == 12 ) { define srcNAME "1406-076" }
+        if( $9 == 13 ) { define srcNAME "1424-41" }
+        if( $9 == 14 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        if( $9 == 15 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        if( $9 == 16 ) { define srcNAME "1510-089" }
+        if( $9 == 17 ) { define srcNAME "1622-297" }
+        if( $9 == 18 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        if( $9 == 19 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        if( $9 == 20 ) { define srcNAME "1730-130" }
+        if( $9 == 21 ) { define srcNAME "2142-75" }
+        if( $9 == 22 ) { define srcNAME "2155-304" }
+        if( $9 == 23 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        if( $9 == 24 ) { define srcNAME "3C454" }
+
+        #if( $9 ==  0 ) { define srcNAME "/0208" }
+        #if( $9 ==  1 ) { define srcNAME "/0235" }
+        #if( $9 ==  2 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" } 
+        #if( $9 ==  3 ) { define srcNAME "/0528" }
+        #if( $9 ==  4 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        #if( $9 ==  5 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        #if( $9 ==  6 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        #if( $9 ==  7 ) { define srcNAME "/OJ287" }
+        #if( $9 ==  8 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        #if( $9 ==  9 ) { define srcNAME "/3C273" }
+        #if( $9 == 10 ) { define srcNAME "/3C279" }
+        #if( $9 == 11 ) { define srcNAME "/1406" }
+        #if( $9 == 12 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        #if( $9 == 13 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        #if( $9 == 14 ) { define srcNAME "/1510" }
+        #if( $9 == 15 ) { define srcNAME "/1622" }
+        #if( $9 == 16 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        #if( $9 == 17 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        #if( $9 == 18 ) { define srcNAME "/1730" }
+        #if( $9 == 19 ) { define srcNAME "/2155" }
+        #if( $9 == 20 ) { echo "DATA NOT AVAILABLE FOR THIS OBJECT" }
+        #if( $9 == 21 ) { define srcNAME "/3C454" }
+
+        # Cleaning previous arrays to avoid confusion
+        #  'emag' included to make sure obsolete arrays are removed
+        foreach 8 < mjd mag err_mag emag > {
+        foreach 9 < b v r j h k > {
+	     delete $8_$9
+        }
+        }
+
+	#------------------------------
+        define_extinction
+	#------------------------------
+
+        define flag_extinction ?  < Deredden magnitudes [0|1] : > 
+
+        data "$!SMARTSarchive/$!srcNAME""_B_mag.dat"
+        read < mjd_b 2 mag_b 4 err_mag_b 5 > 
+        sort < mjd_b   mag_b   err_mag_b >
+        data "$!SMARTSarchive/$!srcNAME""_V_mag.dat"
+        read < mjd_v 2 mag_v 4 err_mag_v 5 >
+        sort < mjd_v   mag_v   err_mag_v   >
+        data "$!SMARTSarchive/$!srcNAME""_R_mag.dat"
+        read < mjd_r 2 mag_r 4 err_mag_r 5 >
+        sort < mjd_r   mag_r   err_mag_r   >
+        data "$!SMARTSarchive/$!srcNAME""_J_mag.dat"
+        read < mjd_j 2 mag_j 4 err_mag_j 5 >
+        sort < mjd_j   mag_j   err_mag_j   >
+
+        # ad hoc fix for the weird magnitudes of 0208
+        foreach 9 < mjd mag err_mag > { 
+	   set _$9_j = $9_j  if( mag_j > 11 ) 
+        }
+        foreach 9 < mjd mag err_mag > { 
+	   set $9_j = _$9_j
+        }
+
+        #data "$!SMARTSarchive""$!srcNAME""_H_mag.dat"
+        #read < mjd_h 2 mag_h 4 err_mag_h 5 >
+        #sort < mjd_h   mag_h   err_mag_h   >
+        data "$!SMARTSarchive/$!srcNAME""_K_mag.dat"
+        read < mjd_k 2 mag_k 4 err_mag_k 5 > 
+        sort < mjd_k   mag_k   err_mag_k   > 
+ 
+        # ??? Not sure what's this for?
+        #foreach 8 < b v r j h k > 
+        foreach 8 < b v r j k > { 
+	   set orig_mag_$8 = mag_$8
+	   set orig_mjd_$8 = mjd_$8
+        }
+
+        # probably unnecessary with new *_cal files
+        #foreach 8 < b v r j h k > 
+        foreach 8 < b v r j k > { 
+	   set filter = abs(mag_$8)
+	   foreach 9 < mjd mag err_mag > {
+	      set $9_$8 = $9_$8   if( filter < 999 )   # changed to match the dummy table values
+	   }
+	   if( $flag_extinction == 1 ) {
+	      echo " A_"$8" = "$A_$8
+	      set mag_$8 = mag_$8 - $A_$8
+	   }
+	   # set mjd_$8 = mjd_$8 - 2400000.5
+        }
+
+        #----------------------------------------
+        # special handling filter cases
+        #----------------------------------------
+        if( $whatsource == 0 ) {
+	   set filter = mag_k
+	   foreach 9 < mjd mag err_mag > {
+	      set $9_k = $9_k   if( filter >= 11 )   
+	   }
+        }
+        #----------------------------------------
+
+        define str_b "B"
+        define str_v "V"
+        define str_r "R"
+        define str_j "J"
+        define str_h "H"
+        define str_k "K"
+
+        # Ritaban (from Mead)
+        # log(F_B, mJy) = 6.629 - 0.4*B
+        # log(F_V, mJy) = 6.561 - 0.4*V
+        # log(F_R, mJy) = 6.489 - 0.4*R
+        # log(F_J, mJy) = 6.201 - 0.4*J
+        # log(F_K, mJy) = 5.806 - 0.4*K
+
+        # Extinction for 0208-512
+        # A_B = 0.093
+        # A_V = 0.072
+        # A_R = 0.058
+        # A_J = 0.019
+        # A_K = 0.008
+        # UBVRI: 0.094  0.078  0.059  0.047  0.032 
+        # SDSS ugriz: 0.092  0.071  0.049  0.037  0.027 
+        # UKIRT JHKL': 0.015  0.010  0.007  0.003
+
+        #define s0b  (4440)    # GF
+        define s0b  (4255)    # RC
+        define nu_b (14.833)
+
+        #define s0v  (3480) 
+        #define nu_v (14.732)
+        define s0v  (3636)    # MB
+        define s0v  (3639)    # RC
+        define nu_v ( lg(3.0e10/5.45e-5) )
+
+        #define s0r  (3010)    # GF
+        define s0r  (3083)    # RC
+        define nu_r (14.632)
+
+        define nu_j (14.382)
+        define s0j  (1510)    # GF
+        define s0j  (1670)    # MB
+        define s0j  (1588)    # RC
+        define nu_j ( lg(3.0e10/1.25e-4) )
+
+        #define s0h  (981)    # GF
+        #define nu_h (14.236)
+        define s0h  (980)    # MB
+        define nu_h ( lg(3.0e10/1.65e-4) )
+
+        define s0k  (614)    # GF
+        define s0k  (640)    # RC
+        define nu_k (14.136)
+
+        define f0 ( 1 )
+        #foreach 8 < b v r j h k > 
+        foreach 8 < b v r j k > { 
+	   define f0 $s0$8
+	   set f_$8         = $f0*10.0**(-0.4*mag_$8)
+	   set lg_f_$8      = lg(f_$8) + 3.0 
+	   set err_lg_f_$8  = 0.4*err_mag_$8
+	   set erru_lg_f_$8 = err_lg_f_$8
+	   set errd_lg_f_$8 = err_lg_f_$8
+	}
+
+	#---------------------------
+
+##------------------------------------------------------------
+## define_extinction [for selected objects]
+define_extinction
+        
+        define A_b (0.0)   
+        define A_v (0.0)   
+        define A_r (0.0)   
+        define A_j (0.0)   
+        define A_h (0.0)   
+        define A_k (0.0)
+
+        # 0208-512     
+        if( $whatsource == 0 ) {
+           define A_b (0.078)   
+           define A_v (0.059)   
+           define A_r (0.047)   
+           define A_j (0.015)   
+           define A_h (0.010)   
+           define A_k (0.007)
+        }
+
+        # 0235+164     
+        if( $whatsource == 1 ) {
+           define A_b (0.287)   
+           define A_v (0.217)   
+           define A_r (0.172)   
+           define A_j (0.056)   
+           define A_h (0.036)   
+           define A_k (0.024)
+        }
+        
+        # 0528+134     
+        if( $whatsource == 3 ) {
+           define A_b (3.043)   
+           define A_v (2.301)   
+           define A_r (1.820)   
+           define A_j (0.595)   
+           define A_h (0.377)   
+           define A_k (0.253)
+        }
+        
+        # OJ287        
+        if( $whatsource == 7 ) {
+           define A_b (0.103)   
+           define A_v (0.078)   
+           define A_r (0.062)   
+           define A_j (0.020)   
+           define A_h (0.013)   
+           define A_k (0.009)
+        }
+        
+        # 3c273        
+        if( $whatsource == 9 ) {
+           define A_b (0.075)   
+           define A_v (0.057)   
+           define A_r (0.045)   
+           define A_j (0.015)   
+           define A_h (0.009)   
+           define A_k (0.006)
+        }
+        
+        # 3c279        
+        if( $whatsource == 10 ) {
+           define A_b (0.104)   
+           define A_v (0.078)   
+           define A_r (0.062)   
+           define A_j (0.020)   
+           define A_h (0.013)   
+           define A_k (0.009)
+        }
+        
+        # 1406-076     
+        if( $whatsource == 11 ) {
+           define A_b (0.123)   
+           define A_v (0.093)   
+           define A_r (0.074)   
+           define A_j (0.024)   
+           define A_h (0.015)   
+           define A_k (0.010)
+        }
+        
+        # 1510-089     
+        if( $whatsource == 14 ) {
+           define A_b (0.350)   
+           define A_v (0.265)   
+           define A_r (0.209)   
+           define A_j (0.068)   
+           define A_h (0.043)   
+           define A_k (0.029)
+        }
+        
+        # 1622-29      
+        if( $whatsource == 15 ) {
+           define A_b (1.564)   
+           define A_v (1.183)   
+           define A_r (0.936)   
+           define A_j (0.306)   
+           define A_h (0.194)   
+           define A_k (0.130)
+        }
+        
+        # 1730-130     
+        if( $whatsource == 18 ) {
+           define A_b (1.851)   
+           define A_v (1.400)   
+           define A_r (1.107)   
+           define A_j (0.362)   
+           define A_h (0.229)   
+           define A_k (0.154)
+        }
+        
+        # 2155-304     
+        if( $whatsource == 19 ) {
+           define A_b (0.078)   
+           define A_v (0.059)   
+           define A_r (0.047)   
+           define A_j (0.015)   
+           define A_h (0.010)   
+           define A_k (0.007)
+        }
+        
+        # 3c454.3      
+        if( $whatsource == 21 ) {
+           define A_b (0.388)   
+           define A_v (0.294)   
+           define A_r (0.232)   
+           define A_j (0.076)   
+           define A_h (0.048)   
+           define A_k (0.032)
+        }
+        
+
+# load_0208_swift
+load_0208_swift
+
+        data "/home/gfossati/Science/SMARTS/0208/swift_lc_0208.txt"
+        read < _mjd_x 1 _rate_x 3 _erate_x 4 > 
+        set mjd_x   = _mjd_x     if( _erate_x > -1 )
+        set rate_x  = _rate_x    if( _erate_x > -1 )
+        set erate_x = _erate_x   if( _erate_x > -1 )
+
+	# For Gamma=1.6, for 1 c/s ==> K=5.925e-3
+	# For Gamma=1.7, for 1 c/s ==> K=6.133e-3
+        set f_x         = rate_x*9.826e-12
+        set lg_f_x      = lg(f_x)
+        set erru_lg_f_x = lg((rate_x + erate_x)/rate_x) 
+        set errd_lg_f_x = lg(rate_x/(rate_x + erate_x)) 
+	#set erru_lg_f_x = lg((rate_x + erate_x)/rate_x) 
+	#set errd_lg_f_x = lg(rate_x/(rate_x + erate_x)) 
+
+        set mag_x      = -2.5*lg_f_x
+        set err_mag_x  = -2.5*0.5*(erru_lg_f_x + errd_lg_f_x)
+
+        define str_x "X"
+
+# load_ritaban_fermi
+load_ritaban_fermi
+
+        data "/home/gfossati/Science/SMARTS/0208/all_2sigma_fixed.dat"
+        read < mjd_rc_2x 1 gamma_rc2x 2 flux_rc_2x 3 err_flux_rc_2x 4 TS_rc2x 5 > 
+        data "/home/gfossati/Science/SMARTS/0208/all_2sigma_free.dat"
+        read < mjd_rc_2  1 gamma_rc2  2 flux_rc_2  3 err_flux_rc_2  4 TS_rc2  5 > 
+        data "/home/gfossati/Science/SMARTS/0208/all_5sigma_fixed.dat"
+        read < mjd_rc_5x 1 gamma_rc5x 2 flux_rc_5x 3 err_flux_rc_5x 4 TS_rc5x 5 > 
+        data "/home/gfossati/Science/SMARTS/0208/all_5sigma_free.dat"
+        read < mjd_rc_5  1 gamma_rc5  2 flux_rc_5  3 err_flux_rc_5  4 TS_rc5  5 > 
+
+        foreach 9 < 2x 2 5x 5 > {
+	   set f_rc_$9         = flux_rc_$9
+	   set lg_f_rc_$9      = lg(flux_rc_$9)
+	   set erru_lg_f_rc_$9 = lg((f_rc_$9+err_flux_rc_$9)/f_rc_$9)
+	   set errd_lg_f_rc_$9 = lg(f_rc_$9/(f_rc_$9+err_flux_rc_$9))
+	   set mag_rc_$9       = -2.5*lg(flux_rc_$9)
+	   set err_mag_rc_$9   = -2.5*0.5*(errd_lg_f_rc_$9+erru_lg_f_rc_$9)
+	   define str_rc_$9 "RC"$9
+	}
+
+#-------------------------------------------------------------------------------
+# read_lat_data  [<src sequence number>]
+read_lat_data 01
+
+        if( $?1 ) { 
+	   define 9 $1
+	} else { 
+	   source_list_menu 
+	   define 9 $whatsource
+	}
+
+        if( $9 ==  0 ) { data "$!LATarchive/FSSC_flux_0208-512.dat" }
+        if( $9 ==  1 ) { data "$!LATarchive/FSSC_flux_PKS_0235-618.dat" }
+        if( $9 ==  2 ) { data "$!LATarchive/FSSC_flux_0235+164.dat" }
+        if( $9 ==  3 ) { data "$!LATarchive/FSSC_flux_PKS_0528+134.dat" }
+        if( $9 ==  4 ) { data "$!LATarchive/FSSC_flux_PKS_0537-441.dat" }
+        if( $9 ==  5 ) { data "$!LATarchive/FSSC_flux_0716+714.dat" }
+        if( $9 ==  6 ) { data "$!LATarchive/FSSC_flux_0827+243.dat" }
+        if( $9 ==  7 ) { data "$!LATarchive/FSSC_flux_OJ_287.dat" }
+        if( $9 ==  8 ) { data "$!LATarchive/FSSC_flux_Mrk_421.dat" }
+        if( $9 ==  9 ) { data "$!LATarchive/FSSC_flux_3C_273.dat" }
+        if( $9 == 10 ) { data "$!LATarchive/FSSC_flux_3C_279.dat" }
+        if( $9 == 11 ) { data "$!LATarchive/FSSC_flux_PKS_1329-049.dat" }
+        if( $9 == 12 ) { data "$!LATarchive/FSSC_flux_1406-076.dat" }
+        if( $9 == 13 ) { data "$!LATarchive/FSSC_flux_PKS_1424-41.dat" }
+        if( $9 == 14 ) { data "$!LATarchive/FSSC_flux_PKS_1454-354.dat" }
+        if( $9 == 15 ) { data "$!LATarchive/FSSC_flux_PKS_1502+106.dat" }
+        if( $9 == 16 ) { data "$!LATarchive/FSSC_flux_1510-089.dat" }
+        if( $9 == 17 ) { data "$!LATarchive/FSSC_flux_PKS_B_1622-297.dat" }
+        if( $9 == 18 ) { data "$!LATarchive/FSSC_flux_1633+382.dat" }
+        if( $9 == 19 ) { data "$!LATarchive/FSSC_flux_Mrk_501.dat" }
+        if( $9 == 20 ) { data "$!LATarchive/FSSC_flux_1730-130.dat" }
+        if( $9 == 21 ) { data "$!LATarchive/FSSC_flux_PKS_2142.75.dat" }
+        if( $9 == 22 ) { data "$!LATarchive/FSSC_flux_PKS_2155-304.dat" }
+        if( $9 == 23 ) { data "$!LATarchive/FSSC_flux_BL_Lac.dat" }
+        if( $9 == 24 ) { data "$!LATarchive/FSSC_flux_3C_454.3.dat" }
+ 
+        read <  mjd 1 dt 2 \
+	        f_lat_all  3 ef_lat_all  4 flag_ul_lat_all  5 \
+	        f_lat_high 6 ef_lat_high 7 flag_ul_lat_high 8 \
+	        f_lat_low  9 ef_lat_low 10 flag_ul_lat_low 11 >
+
+        set dummy_f  = f_lat_all*0 + 99
+        set dummy_ef = f_lat_all*0 + 9999
+        set dummy_sn = f_lat_all*0 
+        set dummy_ul = f_lat_all*0 + 1 
+
+        foreach 9 < lat_all lat_low lat_high > {
+	   set flag_ul_$9 = ( ef_$9 > 0 )    ? flag_ul_$9 : dummy_ul
+	   set flag_ul_$9 = ( ef_$9 < f_$9 ) ? flag_ul_$9 : dummy_ul
+	   set f_$9       = (  f_$9 > 0 )    ?       f_$9 : dummy_f 
+	   set ef_$9      = ( ef_$9 > 0 )    ?      ef_$9 : dummy_ef 
+	   set mjd_$9     = mjd
+	   set dt_$9      = dt
+	   set lg_f_$9    = lg(f_$9)
+	   set mag_$9     = -2.5*lg(f_$9)
+	}
+
+        define smoothing_width (3)
+        foreach 9 < lat_all lat_low lat_high > {
+	   set sn_$9 = ( ef_$9 > 0 ) ? f_$9/ef_$9 : dummy_sn
+	   set sf_$9 = myvsmooth(f_$9,$smoothing_width)
+	   set lg_sf_$9 = lg(sf_$9)
+	}
+
+        set counter = 1,dimen(mjd),1
+
+        set r_all_low        = f_lat_all/f_lat_low
+        set sr_all_low       = sf_lat_all/sf_lat_low
+        set flag_ul_all_low  = flag_ul_lat_all + 2*flag_ul_lat_low
+        set mjd_all_low      = mjd_lat_all
+        set dt_all_low       = dt_lat_all
+
+        set r_all_high       = f_lat_all/f_lat_high
+        set sr_all_high      = sf_lat_all/sf_lat_high
+        set flag_ul_all_high = flag_ul_lat_all + 2*flag_ul_lat_high
+        set mjd_all_high     = mjd_lat_all
+        set dt_all_high      = dt_lat_all
+
+        set r_low_high       = f_lat_low/f_lat_high
+        set sr_low_high      = sf_lat_low/sf_lat_high
+        set flag_ul_low_high = flag_ul_lat_low + 2*flag_ul_lat_high
+        set mjd_low_high     = mjd_lat_all
+        set dt_low_high      = dt_lat_all
+
+	#---------------------------------------
+	# Preparing LAT daily data arrays
+	#---------------------------------------
+        # Fluxes
+        #---------
+	# MAIN band
+        foreach 9 < mjd dt f sf ef lg_f mag > { 
+	   foreach 8 < lat_all > { 
+	      set $9_dgood = $9_$8   if( flag_ul_$8 == 0  && dt_$8 < 1.0 )
+	      set $9_dul   = $9_$8   if( flag_ul_$8 == 1  && dt_$8 < 1.0 )
+	      set $9_wgood = $9_$8   if( flag_ul_$8 == 0  && dt_$8 > 1.0 )
+	      set $9_wul   = $9_$8   if( flag_ul_$8 == 1  && dt_$8 > 1.0 )
+
+	      # for legacy reasons
+	      set dgood_$9 = $9_dgood
+	      set dul_$9   = $9_dul  
+	      set wgood_$9 = $9_wgood
+	      set wul_$9   = $9_wul  
+	   }
+	}
+
+	# by individual bands
+        foreach 9 < mjd dt f sf ef lg_f > { 
+           foreach 8 < lat_all lat_low lat_high > { 
+              set dgood_$9_$8 = $9_$8   if( flag_ul_$8 == 0  && dt_$8 < 1.0 )
+              set dul_$9_$8   = $9_$8   if( flag_ul_$8 == 1  && dt_$8 < 1.0 )
+              set wgood_$9_$8 = $9_$8   if( flag_ul_$8 == 0  && dt_$8 > 1.0 )
+              set wul_$9_$8   = $9_$8   if( flag_ul_$8 == 1  && dt_$8 > 1.0 )
+           }
+	}
+        #---------
+        # ratios
+        #---------
+        foreach 9 < mjd dt r sr > { 
+           foreach 8 < all_low all_high low_high > { 
+              set dgood_$9_$8 = $9_$8   if( flag_ul_$8 == 0  && dt_$8 < 1.0 )
+              set dul_$9_$8   = $9_$8   if( flag_ul_$8 == 1  && dt_$8 < 1.0 )
+              set wgood_$9_$8 = $9_$8   if( flag_ul_$8 == 0  && dt_$8 > 1.0 )
+              set wul_$9_$8   = $9_$8   if( flag_ul_$8 == 1  && dt_$8 > 1.0 )
+           }
+	}
+	#---------------------------------------
+
+        echo "------------------------------------------------------------"
+        echo "  The LIGHT CURVE arrays are labeled in the following way:"
+        echo "    lat_all  = 0.1-300 GeV "
+        echo "    lat_low  = 0.3-1.0 GeV "
+        echo "    lat_high = 1.0-300 GeV "
+        echo "  Array names are : " 
+        echo "     mjd_#   dt_#   f_#   ef_#  flag_ul_#   sn_#   sf_#  "
+        echo " "
+        echo "  Moreover the following RATIOS are defined:"
+        echo "    all_low  = 0.1-300 GeV/0.3-1.0 GeV "
+        echo "    all_high = 0.1-300 GeV/1.0-300 GeV "
+        echo "    low_high = 0.3-1.0 GeV/1.0-300 GeV "
+        echo "  Array names are : " 
+        echo "     mjd_#   dt_#   r_#         flag_ul_#          sr_#  "
+        echo " "
+        echo "------------------------------------------------------------"
+
+#-------------------------------------------------------------------------------
+# plot_lat_lc 
+#             Plots the full band LAT light curve
+plot_lat_lc
+
+        reset_graph
+        location 5500 31000  8500 29000
+
+        source_list_menu
+        define 9 $whatsource
+
+        read_lat_data $9
+
+        #-------------------------------------------------
+        set dmjd = mjd_dgood CONCAT mjd_dul
+        sort < dmjd >
+        define tmin $(dmjd[0])
+        define tmax $(dmjd[dimen(dmjd)-1])
+
+        echo " Data arrays Time range : "$tmin "-" $tmax
+        echo " Calling jd.x to check today\'s date "
+        systemcall jd.x | egrep mjd | tee /tmp/today_mjd
+        data "/tmp/today_mjd"
+        define today_mjd read 1 3 
+        echo $today_mjd
+
+	# define tmin $(dmjd[0] - 15)
+	# define tmax $(dmjd[dimen(dmjd)-1] + 15)
+        define tmin $(54688 - 15)
+        define tmax $(int($today_mjd) + 15 )
+
+        define tmin ? < Plot start time : >
+        define tmax ? < Plot end   time : >
+	#---------------------------------------
+	
+        range 0 3 
+	# limits $tmin $tmax $(lg(1e-8)) $(lg(7e-6))
+        limits $tmin $tmax (lg(f_dgood))
+        notation -5 5 -4 4 
+        ticksize 0 0 -1 0 
+
+	#---------------------------------------
+        window 1 -2 1 1
+        box 1 2 0 0 
+        xlabel Time [MJD]
+
+	#---------------------------------------
+	# daily averages
+	#---------------------------------------
+        ptype 4 3 
+        expand 0.5
+        ctype 2 
+        points mjd_dul   (lg(f_dul))
+        ctype 3 
+        expand 1.25
+        points mjd_dgood (lg(f_dgood))   
+        expand 0.5
+        logerr mjd_dgood (lg(f_dgood)) ef_dgood
+
+        ctype 2 
+        expand 1.5
+
+	#---------------------------------------
+        window 1 -2 1 2
+        box 0 2 0 0 
+
+	#---------------------------------------
+	# weekly averages
+	#---------------------------------------
+        ptype 4 3 
+        expand 0.5
+        ctype 6 
+        points mjd_wul (lg(f_wul))
+        ctype 5 
+        expand 1.25
+        points mjd_wgood (lg(f_wgood))   
+        expand 0.5
+        logerr mjd_wgood (lg(f_wgood)) ef_wgood
+
+        ctype 5 
+	# histogram wgood_mjd (lg(wgood_f))
+
+        ctype 2
+        expand 1.1
+        define str_top ? < Top label string : > 
+        relocate ( $gx1 $($gy2+750) )
+        putlabel 6 $str_top
+
+        ctype 2 
+        expand 1.5
+        window 1 1 1 1
+        ylabel "Flux 0.1-300 GeV [c.g.s.]"
+
+#-------------------------------------------------------------------------------
+# plot_lat_lc_with_hr  
+#      the plotted ratio is 0.3-1/1-300 GeV, more like a softness ratio!
+plot_lat_lc_with_hr
+
+        reset_graph
+        location 5500 31000  8500 29000
+
+        source_list_menu
+        define 9 $whatsource
+
+        read_lat_data $9
+
+        #DEL# #---------------------------------------
+        #DEL# # Preparing data arrays
+        #DEL# #---------------------------------------
+        #DEL# # Fluxes
+        #DEL# #---------
+        #DEL# # daily
+        #DEL# foreach 9 < mjd dt f sf ef > { 
+        #DEL#    foreach 8 < lat_all lat_low lat_high > { 
+        #DEL#       set dgood_$9_$8 = $9_$8   if( flag_ul_$8 == 0  && dt_$8 < 1.0 )
+        #DEL#       set dul_$9_$8   = $9_$8   if( flag_ul_$8 == 1  && dt_$8 < 1.0 )
+        #DEL#    }
+        #DEL# }
+        #DEL# # weekly
+        #DEL# foreach 9 < mjd dt f sf ef > { 
+        #DEL#    foreach 8 < lat_all lat_low lat_high > { 
+        #DEL#       set wgood_$9_$8 = $9_$8   if( flag_ul_$8 == 0  && dt_$8 > 1.0 )
+        #DEL#       set wul_$9_$8   = $9_$8   if( flag_ul_$8 == 1  && dt_$8 > 1.0 )
+        #DEL#    }
+        #DEL# }
+        #DEL# #---------
+        #DEL# # ratios
+        #DEL# #---------
+        #DEL# foreach 9 < mjd dt r sr > { 
+        #DEL#    foreach 8 < all_low all_high low_high > { 
+        #DEL#       set dgood_$9_$8 = $9_$8   if( flag_ul_$8 == 0  && dt_$8 < 1.0 )
+        #DEL#       set dul_$9_$8   = $9_$8   if( flag_ul_$8 >= 1  && dt_$8 < 1.0 )
+        #DEL#       set wgood_$9_$8 = $9_$8   if( flag_ul_$8 == 0  && dt_$8 > 1.0 )
+        #DEL#       set wul_$9_$8   = $9_$8   if( flag_ul_$8 >= 1  && dt_$8 > 1.0 )
+        #DEL#    }
+        #DEL# }
+        #DEL# #---------------------------------------
+
+        set vgood_ratio = r_low_high    if( dt_lat_low > 1 && sn_lat_low >= 3 && sn_lat_high >=3 && flag_ul_lat_low == 0 && flag_ul_low_high == 0 )
+        set vgood_mjd   = mjd_low_high  if( dt_lat_low > 1 && sn_lat_low >= 3 && sn_lat_high >=3 && flag_ul_lat_low == 0 && flag_ul_low_high == 0 )
+
+        set dmjd = dgood_mjd_low_high CONCAT dul_mjd_low_high
+        sort < dmjd >
+        define tmin $(dmjd[0])
+        define tmax $(dmjd[dimen(dmjd)-1])
+
+        echo " Data arrays Time range : "$tmin "-" $tmax
+        echo " calling jd.x to check today\'s date "
+        systemcall jd.x | egrep mjd | tee /tmp/today_mjd
+        data "/tmp/today_mjd"
+        define today_mjd read 1 3 
+        echo $today_mjd
+
+	# define tmin $(dmjd[0] - 15)
+	# define tmax $(dmjd[dimen(dmjd)-1] + 15)
+        define tmin $(54688 - 15)
+        define tmax $(int($today_mjd) + 15 )
+
+        define tmin ? < Plot start time : >
+        define tmax ? < Plot end   time : >
+	#---------------------------------------
+	
+        notation -5 5 -4 4 
+
+	#=======================================
+	# l.c.: bottom window
+	#---------------------------------------
+        window 1 -2 1 1
+        range 0 3
+        limits $tmin $tmax (lg(dgood_f_lat_all))
+        ticksize 0 0 -1 0 
+        box 1 2 0 0 
+        xlabel "Time [MJD]"
+        ylabel "F_{0.1-300 GeV} [c.g.s.]"
+
+	#---------------------------------------
+	# daily averages
+	#---------------------------------------
+        ptype 4 3 
+        expand 0.5
+        ctype 2 
+        points dul_mjd_lat_all   (lg(dul_f_lat_all))
+
+        ctype 3 
+        expand 1.25
+        points dgood_mjd_lat_all (lg(dgood_f_lat_all))   
+        expand 0.5
+        logerr dgood_mjd_lat_all (lg(dgood_f_lat_all)) dgood_ef_lat_all
+
+        ctype 5 
+        expand 0.90
+        points wgood_mjd_lat_all (lg(wgood_f_lat_all))   
+
+	ctype 2 
+	expand 1.5
+
+	#=======================================
+	# HR: top window
+	#---------------------------------------
+	range 0 0 
+	window 1 -2 1 2
+	limits $tmin $tmax wgood_r_low_high
+	limits $tmin $tmax -0.1 7.6
+	limits $tmin $tmax -0.1 11.1
+	limits $tmin $tmax 11.1 -0.1
+	ticksize 0 0 0 0 
+	box 0 2 0 0 
+	ylabel "F_{0.3-1 GeV}/F_{1-300 GeV}"
+
+	ptype 4 3 
+	expand 0.5
+	ctype 6 
+	points wul_mjd_low_high wul_r_low_high
+
+	ctype 3 
+	expand 1.25
+	points dgood_mjd_low_high dgood_sr_low_high
+
+	ctype 5 
+	expand 1.25
+	points wgood_mjd_low_high wgood_r_low_high
+
+	# expand 0.5
+	# logerr good_mjd_low_high (lg(good_lat_all)) good_ef_lat_all
+	ctype 4 
+	ptype 4 0 
+	expand 1.5
+	points vgood_mjd vgood_ratio
+
+	ctype 5 
+	# histogram wgood_mjd (lg(wgood_lat_all))
+
+	ctype 2
+	expand 1.1
+	define str_top ? < Top label string : > 
+	relocate ( $gx1 $($gy2+750) )
+	putlabel 6 $str_top
+
+	ctype 2 
+	expand 1.5
+	window 1 1 1 1
+	# ylabel  Flux 0.1-300 GeV [c.g.s.]
+
+##-------------------------------------------------------------------------------
+## hr_vs_flux
+##             !!! BROKEN BROKEN BROKEN !!!
+##     ad hoc for 3C454 (maybe)
+##     Need to run after 'plot_lat_lc_with_hr' to have the arrays properly setup
+hr_vs_flux
+
+        #DEL# #---------------------------------------
+        #DEL# # Preparing data arrays
+        #DEL# #---------------------------------------
+        #DEL# # Fluxes
+        #DEL# #---------
+        #DEL# # daily
+        #DEL# foreach 9 < mjd dt f sf ef > { 
+        #DEL#    foreach 8 < lat_all lat_low lat_high > { 
+        #DEL#       set dgood_$9_$8 = $9_$8   if( flag_ul_low_high == 0  && dt_$8 < 1.0 )
+        #DEL#       set dul_$9_$8   = $9_$8   if( flag_ul_low_high >= 1  && dt_$8 < 1.0 )
+        #DEL#       set wgood_$9_$8 = $9_$8   if( flag_ul_low_high == 0  && dt_$8 > 1.0 )
+        #DEL#       set wul_$9_$8   = $9_$8   if( flag_ul_low_high >= 1  && dt_$8 > 1.0 )
+        #DEL#    }
+        #DEL# }
+        #DEL# 
+        #DEL# #---------
+        #DEL# # ratios
+        #DEL# #---------
+        #DEL# foreach 9 < mjd dt r sr > { 
+        #DEL#    foreach 8 < all_low all_high low_high > { 
+        #DEL#       set dgood_$9_$8 = $9_$8   if( flag_ul_$8 == 0  && dt_$8 < 1.0 )
+        #DEL#       set dul_$9_$8   = $9_$8   if( flag_ul_$8 >= 1  && dt_$8 < 1.0 )
+        #DEL#       set wgood_$9_$8 = $9_$8   if( flag_ul_$8 == 0  && dt_$8 > 1.0 )
+        #DEL#       set wul_$9_$8   = $9_$8   if( flag_ul_$8 >= 1  && dt_$8 > 1.0 )
+        #DEL#    }
+        #DEL# }
+        #DEL# #---------------------------------------
+
+	reset_graph
+
+	limits -6.5 -4.4 7.5 0.5
+	ticksize -1 0 0 0 
+	box
+	xlabel "F_{0.1-300 GeV} [c.g.s.]"
+	ylabel "F_{0.3-1 GeV}/F_{1-300 GeV}"
+
+	echo "------------------------------"
+	echo " Options for plotting : "
+	echo "  [1] smoothed daily  data "
+	echo "  [2]          daily  data "
+	echo "  [3]          weekly data "
+	define flag_what ? < What to plot : >
+	if( $flag_what == 1 ) { 
+	   ctype 2 
+	   points (lg(dgood_sf_lat_all)) dgood_sr_low_high
+	   ctype 5
+	   points (lg(dgood_sf_lat_all)) dgood_sr_low_high  if( dgood_mjd_lat_all < 54800 )
+	   ctype 3
+	   points (lg(dgood_sf_lat_all)) dgood_sr_low_high  if( dgood_mjd_lat_all > 55050 )
+	}
+	if( $flag_what == 2 ) { 
+           ctype 2 
+           points (lg(dgood_f_lat_all))  dgood_r_low_high
+           ctype 5
+           points (lg(dgood_f_lat_all))  dgood_r_low_high  if( dgood_mjd_lat_all < 54800 )
+           ctype 3
+           points (lg(dgood_f_lat_all))  dgood_r_low_high  if( dgood_mjd_lat_all > 55050 )
+	}
+	if( $flag_what == 3 ) { 
+           ctype 2 
+           points (lg(wgood_f_lat_all))  wgood_r_low_high
+           ctype 5
+           points (lg(wgood_f_lat_all))  wgood_r_low_high  if( wgood_mjd_lat_all < 54800 )
+           ctype 3
+           points (lg(wgood_f_lat_all))  wgood_r_low_high  if( wgood_mjd_lat_all > 55050 )
+	}
+	ctype 2 
+
+	echo "----------------------------------------------------------------------"
+	echo "  blue are earlier times, MJD < 54800 "
+	echo "  red  are later   times, MJD > 55050 "
+	echo "----------------------------------------------------------------------"
+
+#-------------------------------------------------------------------------------
+# plot_lat_and_smarts
+plot_lat_and_smarts
+
+	reset_graph
+	location 5500 31000 8500 29000
+
+	source_list_menu
+	define 9 $whatsource
+
+	read_smarts_tab_data $9
+	read_lat_data        $9
+
+	define whatsmarts ? < Which SMARTS band [b|r|v|j|k] : >
+	define 7 $whatsmarts
+
+        #-------------------------------------------------
+	# It uses Fermi/LAT data for the time limits
+        #-------------------------------------------------
+	set dmjd = mjd_dgood CONCAT mjd_dul
+	sort < dmjd >
+	define tmin $(dmjd[0])
+	define tmax $(dmjd[dimen(dmjd)-1])
+
+	echo " Data arrays Time range : "$tmin "-" $tmax
+	echo " calling jd.x to check today\'s date "
+	systemcall jd.x | egrep mjd | tee /tmp/today_mjd
+	data "/tmp/today_mjd"
+	define today_mjd read 1 3 
+	echo $today_mjd
+
+	# define tmin $(dmjd[0] - 15)
+	# define tmax $(dmjd[dimen(dmjd)-1] + 15)
+	define tmin $(54688 - 15)
+	define tmax $(int($today_mjd) + 15 )
+
+	define tmin ? < Plot start time : >
+	define tmax ? < Plot end   time : >
+
+	range 0 2 
+	range 0 3 
+
+	#---------------------------------------
+	# Fermi/LAT daily averages
+	#---------------------------------------
+	#limits $tmin $tmax $(lg(1e-8)) $(lg(7e-6))
+	limits $tmin $tmax (lg(f_dgood))
+	notation -5 5 -4 4 
+	ticksize 0 0 -1 0 
+
+	#---------------------------------------
+	window 1 -2 1 1
+	box 1 2 0 0 
+	xlabel "Time [MJD]"
+	ylabel "F_{LAT} [c.g.s.]"
+
+	ptype 4 3 
+	expand 0.5
+	ctype 2 
+	ctype grey60
+	points mjd_dul (lg(f_dul))
+	ctype 3 
+	expand 1.25
+	points mjd_dgood (lg(f_dgood))   
+	expand 0.5
+	logerr mjd_dgood (lg(f_dgood)) ef_dgood
+
+	ctype 2 
+	expand 1.5
+
+	#---------------------------------------
+	# smarts 
+	#---------------------------------------
+	window 1 -2 1 2
+	limits $tmin $tmax lg_f_$7
+	box 0 2 0 0 
+	ylabel F_$7 [mJy]
+
+	ptype 4 3 
+	expand 0.5
+	ctype 5 
+	expand 1.25
+	points mjd_$7 lg_f_$7
+
+	ctype 5 
+	# histogram wgood_mjd (lg(wgood_f))
+
+	ctype 2
+	expand 1.1
+	define str_top ? < Top label string : > 
+	relocate ( $gx1 $($gy2+750) )
+	putlabel 6 $str_top
+
+	ctype 2 
+	expand 1.5
+	window 1 1 1 1
+
+#-------------------------------------------------------------------------------
+# plot_lat_and_smarts_1box
+plot_lat_and_smarts_1box
+
+	reset_graph
+	location 5500 29000  8500 29000
+
+	source_list_menu
+	define 9 $whatsource
+
+	read_smarts_tab_data $9
+	read_lat_data        $9
+
+	define whatsmarts ? < Which SMARTS band [b|r|v|j|k] : >
+	define 7 $whatsmarts
+
+        #-------------------------------------------------
+	# It uses Fermi/LAT data for the time limits
+        #-------------------------------------------------
+	set dmjd = mjd_dgood CONCAT mjd_dul
+	sort < dmjd >
+	define tmin $(dmjd[0])
+	define tmax $(dmjd[dimen(dmjd)-1])
+
+	echo " Data arrays Time range : "$tmin "-" $tmax
+	echo " calling jd.x to check today\'s date "
+	systemcall jd.x | egrep mjd | tee /tmp/today_mjd
+	data "/tmp/today_mjd"
+	define today_mjd read 1 3 
+	echo $today_mjd
+
+	# define tmin $(dmjd[0] - 15)
+	# define tmax $(dmjd[dimen(dmjd)-1] + 15)
+	define tmin $(54688 - 15)
+	define tmax $(int($today_mjd) + 15 )
+
+	define tmin ? < Plot start time : >
+	define tmax ? < Plot end   time : >
+
+	#---------------------------------------
+	# Fermi/LAT daily averages
+	#---------------------------------------
+	range 0 2 
+	range 0 3 
+	limits $tmin $tmax $(lg(1e-8)) $(lg(7e-6))
+	limits $tmin $tmax (lg(f_dgood))
+	notation -5 5 -4 4 
+	ticksize 0 0 -1 0 
+
+	#---------------------------------------
+	ctype 3 
+	box 0 2 0 4
+	ylabel "F_{LAT} [c.g.s.]"
+	ctype 2 
+	box 1 4 0 4
+	xlabel "Time [MJD]"
+
+	ptype 4 3 
+	expand 0.5
+	ctype 2 
+	points mjd_dul (lg(f_dul))
+	ctype 3 
+	expand 1.25
+	points mjd_dgood (lg(f_dgood))   
+	expand 0.5
+	logerr mjd_dgood (lg(f_dgood)) ef_dgood
+
+	ctype 2 
+	expand 1.5
+
+	#---------------------------------------
+	# smarts 
+	#---------------------------------------
+	limits $tmin $tmax lg_f_$7
+	#box 0 4 0 4 
+	ctype 5
+	box 4 4 4 2 
+	# ylabel F_$7 [arb.]
+
+	ptype 4 3 
+	expand 0.5
+	ctype 5 
+	expand 1.25
+	points mjd_$7 lg_f_$7
+
+	ctype 5 
+	# histogram wgood_mjd (lg(wgood_fa))
+
+	ctype 2
+	expand 1.1
+	define str_top ? < Top label string : > 
+	relocate ( $gx1 $($gy2+750) )
+	putlabel 6 $str_top
+
+	ctype 2 
+	expand 1.5
+	window 1 1 1 1
+
+#-------------------------------------------------------------------------------
+# plot_2smarts_1box
+#           Light curve data needs to be already loaded, also for Fermi/LAT
+plot_2smarts_1box
+
+	reset_graph
+	location 5500 29000  8500 29000
+
+	define whatsmarts1 ? < Which SMARTS band [b|r|v|j|k] : >
+	define whatsmarts2 ? < Which SMARTS band [b|r|v|j|k] : >
+	define 7 $whatsmarts1
+	define 8 $whatsmarts2
+
+        #-------------------------------------------------
+	# It uses Fermi/LAT data for the time limits
+        #-------------------------------------------------
+	set dmjd = mjd_dgood CONCAT mjd_dul
+	sort < dmjd >
+	define tmin $(dmjd[0])
+	define tmax $(dmjd[dimen(dmjd)-1])
+
+	echo " LAT Data arrays Time range : "$tmin "-" $tmax
+	echo " calling jd.x to check today\'s date "
+	systemcall jd.x | egrep mjd | tee /tmp/today_mjd
+	data "/tmp/today_mjd"
+	define today_mjd read 1 3 
+	echo $today_mjd
+
+	# define tmin $(dmjd[0] - 15)
+	# define tmax $(dmjd[dimen(dmjd)-1] + 15)
+	define tmin $(54688 - 15)
+	define tmax $(int($today_mjd) + 15 )
+
+	define tmin ? < Plot start time : >
+	define tmax ? < Plot end   time : >
+
+	range 0 2 
+	range 0 3 
+	notation -5 5 -4 4 
+	ticksize 0 0 -1 0 
+
+	#---------------------------------------
+	# SMARTS band 1
+	#---------------------------------------
+	limits $tmin $tmax lg_f_$7
+	ctype 3 
+	box 0 2 0 4
+	ylabel F_$7 [arb.]
+	ctype 2 
+	box 1 4 0 4
+	xlabel "Time [MJD]"
+
+	ptype 4 3 
+	expand 0.5
+	ctype 3 
+	expand 1.25
+	points mjd_$7 lg_f_$7
+
+	ctype 2 
+	expand 1.5
+
+	#---------------------------------------
+	# SMARTS band 2
+	#---------------------------------------
+	limits $tmin $tmax lg_f_$8
+	ctype 5
+	box 4 4 4 2 
+	# ylabel f_$7 [arb.]
+
+	ptype 4 3 
+	expand 0.5
+	ctype 5 
+	expand 1.25
+	points mjd_$8 lg_f_$8
+
+	#---------------------------------------
+	# top label
+	#---------------------------------------
+	ctype 2
+	expand 1.1
+	define str_top ? < Top label string : > 
+	relocate ( $gx1 $($gy2+750) )
+	putlabel 6 $str_top
+
+	ctype 2 
+	expand 1.5
+	window 1 1 1 1
+
+#-------------------------------------------------------------------------------
+# plot_smarts_vs_smarts  [IN PROGRESS]
+#           Light curve data needs to be already loaded, also for Fermi/LAT
+plot_smarts_vs_smarts
+
+	reset_graph
+	location 5500 29000 5500 29000
+
+	define whatsmarts1 ? < Which SMARTS band [b|r|v|j|k] : >
+	define whatsmarts2 ? < Which SMARTS band [b|r|v|j|k] : >
+	define 1 $whatsmarts1
+	define 2 $whatsmarts2
+
+	if( is_vector(lg_f_$1x$2) == 0 ) {
+	   echo " "
+	   echo "!!! WARNING !!!"
+	   echo "    Light curves for these two bands have not been matched "
+	   echo "    Run 'match_2lc' before to run this macro "
+	   echo " " 
+	   return
+	}
+
+        #-------------------------------------------------
+	# It uses Fermi/LAT data for the time limits
+        #-------------------------------------------------
+	set dmjd = mjd_dgood CONCAT mjd_dul
+	sort < dmjd >
+	define tmin $(dmjd[0])
+	define tmax $(dmjd[dimen(dmjd)-1])
+
+	echo " LAT Data arrays Time range : "$tmin "-" $tmax
+	echo " calling jd.x to check today\'s date "
+	systemcall jd.x | egrep mjd | tee /tmp/today_mjd
+	data "/tmp/today_mjd"
+	define today_mjd read 1 3 
+	echo $today_mjd
+
+	# define tmin $(dmjd[0] - 15)
+	# define tmax $(dmjd[dimen(dmjd)-1] + 15)
+	define tmin $(54688 - 15)
+	define tmax $(int($today_mjd) + 15 )
+
+	define tmin ? < Plot start time : >
+	define tmax ? < Plot end   time : >
+
+	range 3 3 
+	notation -5 5 -5 5
+	ticksize -1 0 -1 0 
+
+	#---------------------------------------
+	# SMARTS band 1
+	#---------------------------------------
+	limits lg_f_$1x$2 lg_f_$2x$1
+	ctype 2 
+	box 1 2 0 0 
+
+	define s "str_$!1"
+	xlabel F_$$s [arb.]
+	define s "str_$!2"
+	ylabel F_$$s [arb.]
+
+	ptype 4 3 
+	expand 0.5
+	ctype 3 
+	expand 1.25
+	points lg_f_$1x$2 lg_f_$2x$1
+
+	ctype 2 
+	expand 1.5
+
+	#---------------------------------------
+	# top label
+	#---------------------------------------
+        ## ctype 2
+        ## expand 1.1
+        ## define str_top ? < Top label string : > 
+        ## relocate ( $gx1 $($gy2+750) )
+        ## putlabel 6 $str_top
+
+	ctype 2 
+	expand 1.5
+	window 1 1 1 1
+
+#-------------------------------------------------------------------------------
+# plot_many  [*** GOOD ONE ***]
+#      + it plots FLUX light curves for a set of SMARTS filters AND LAT
+plot_many 
+
+	reset_graph
+	location 7500 27500 4500 31000
+
+	source_list_menu
+	define 9 $whatsource
+
+	read_smarts_tab_data $9
+	read_lat_data        $9
+
+	define whatsmarts ? < Which SMARTS bands [a string e.g. "b v j k"] : >
+	set whatsmarts = < $!whatsmarts >
+
+        #-------------------------------------------------
+	# It uses Fermi/LAT data for the time limits
+        #-------------------------------------------------
+	set dmjd = mjd_dgood CONCAT mjd_dul
+	sort < dmjd >
+	define tmin $(dmjd[0])
+	define tmax $(dmjd[dimen(dmjd)-1])
+
+	echo " Data arrays Time range : "$tmin "-" $tmax
+	echo " calling jd.x to check today\'s date "
+	systemcall jd.x | egrep mjd | tee /tmp/today_mjd
+	data "/tmp/today_mjd"
+	define today_mjd read 1 3 
+	## echo $today_mjd
+
+	define tmin (54688)
+	define tmax $(int($today_mjd))
+
+	define tmin ? < Plot start time : >
+	define tmax ? < Plot end   time : >
+
+	define tfrac (0.05)
+	define dttot $( $tmax - $tmin )
+	# echo $dttot
+	define tmin $($tmin - $tfrac*$dttot)
+	define tmax $($tmax + $tfrac*$dttot )
+	#---------------------------------------
+
+	#---------------------------------------
+	# Time filtering data arrays
+	#---------------------------------------
+	# daily Fermi/LAT
+	set lat_time_good = mjd_dgood
+	set lat_time_ul   = mjd_dul
+	foreach 9 < mjd dt f ef > { 
+	   set $9_dgood = $9_dgood   if( lat_time_good >= $tmin && lat_time_good <= $tmax )
+	   set $9_dul   = $9_dul     if( lat_time_ul   >= $tmin && lat_time_ul   <= $tmax )
+	}
+	delete lat_time
+
+	# smarts
+	foreach 7 whatsmarts {
+	   set smart_time_$7 = mjd_$7
+           set mjd_$7  = mjd_$7      if( smart_time_$7 >= $tmin && smart_time_$7 <= $tmax )
+           set lg_f_$7 = lg_f_$7     if( smart_time_$7 >= $tmin && smart_time_$7 <= $tmax )
+	   delete smart_time_$7
+	}
+	#---------------------------------------
+
+	range 0 3 
+	range 0 2 
+
+	define nyboxes $(-1*(dimen(whatsmarts)+1))
+
+	window 1 1 1 1 
+	limits $tmin $tmax 0 1 
+	ctype 4 
+	lweight 1 ltype 1 
+	foreach date <       54648 55013 55378 55743 > { 
+	   relocate $date $fy1
+	   draw     $date $fy2
+	}
+	lweight 1 ltype 4 
+	foreach date < 54466 54832 55197 55562 55927 > { 
+	   relocate $date $fy1
+	   draw     $date $fy2
+	}
+	lweight 3 
+	ltype 0
+	ctype 2
+
+	#---------------------------------------
+	# Fermi/LAT daily averages
+	#---------------------------------------
+	limits $tmin $tmax $(lg(1e-8)) $(lg(7e-6))
+	limits $tmin $tmax (lg(f_dgood))
+	notation -5 5 -1 1 
+	# ticksize 0 0 -1 0 
+	ticksize 0 0 0 0
+	ticksize 0 0 0.25 1 
+
+	#---------------------------------------
+	# window 1 -5 1 1
+	window 1 $nyboxes 1 1
+	expand 1.25
+	box 1 2 0 0 
+	xlabel "Time [MJD]"
+	ylabel "log(flux)"
+
+	ptype 4 3 
+	expand 0.5
+	ctype 2 
+	ctype grey60
+	points mjd_dul (lg(f_dul))
+	ctype 3 
+	expand 1.25
+	points mjd_dgood (lg(f_dgood))   
+	expand 0.5
+	logerr mjd_dgood (lg(f_dgood)) ef_dgood
+
+	ctype 2 
+	expand 1.5
+
+	#---------------------------------------
+	# smarts 
+	#---------------------------------------
+	define j (1)
+	foreach 7 whatsmarts {
+	   define j $($j+1)
+	   window 1 $nyboxes 1 $j
+	   limits $tmin $tmax lg_f_$7
+	   ctype 2 
+	   expand 1.25
+	   box 0 2 0 0 
+	   relocate ( $($gx1 - 2500) $(0.5*($gy1+$gy2)) ) 
+	   angle 90
+	   if( substr('$7',0,1) == 'a' ) { 
+	      define ylab "\alpha($(substr('$7',1,0)))"
+	      putlabel 5 $ylab
+	   } else {
+	      ## define ylab $7
+	      ## define ylab "str_$!7"
+	      define s "str_$!7"
+	      #putlabel 5 log($$s flux)
+	      putlabel 5 log(flux)
+	   } 
+	   ## ylabel $$ylab
+	   angle 0
+	   relocate ( $($gx2+1000) $(0.5*($gy1+$gy2)) ) 
+	   putlabel 6 $$s
+
+           ptype 4 3 
+           expand 0.5
+           ctype 5 
+	   if( substr('$7',0,1) == 'a' ) { ctype orange } 
+           expand 1.25
+           points mjd_$7 lg_f_$7
+	}
+	#ctype 5 
+	# histogram wgood_mjd (lg(wgood_fa))
+
+        # ctype 2
+        # expand 1.1
+        # define str_top ? < Top label string : > 
+        # relocate ( $gx1 $($gy2+750) )
+        # putlabel 6 $str_top
+
+	ctype 2 
+	expand 1.5
+	window 1 1 1 1
+	relocate ( $( 0.5*($gx1+$gx2) ) $( $gy2 + 750) )
+	putlabel 5 $(source_list[$whatsource])
+
+#-------------------------------------------------------------------------------
+# plot_many_smarts  [*** GOOD ONE ***]
+#      + it plots MAGNITUDE light curves for a set of SMARTS filters
+#      + NO LAT DATA 
+plot_many_smarts  
+
+	reset_graph
+	location 7500 27500 4500 31000
+
+	source_list_menu
+	define 9 $whatsource
+
+	read_smarts_tab_data $9
+
+	define whatsmarts ? < Which SMARTS bands [a string e.g. "b v j k"] : >
+	set whatsmarts = < $!whatsmarts >
+
+        #-------------------------------------------------
+	# It uses Fermi/LAT data for the time limits
+        #-------------------------------------------------
+	set dmjd = mjd_b CONCAT mjd_v CONCAT mjd_r CONCAT mjd_j
+	sort < dmjd >
+	define tmin $(dmjd[0])
+	define tmax $(dmjd[dimen(dmjd)-1])
+
+	echo " Data arrays Time range : "$tmin "-" $tmax
+	echo " calling jd.x to check today\'s date "
+	systemcall jd.x | egrep mjd | tee /tmp/today_mjd
+	data "/tmp/today_mjd"
+	define today_mjd read 1 3 
+	## echo $today_mjd
+
+	define tmin (54688)
+	define tmax $(int($today_mjd))
+
+	define tmin ? < Plot start time : >
+	define tmax ? < Plot end   time : >
+
+	define tfrac (0.05)
+	define dttot $( $tmax - $tmin )
+	# echo $dttot
+	define tmin $($tmin - $tfrac*$dttot)
+	define tmax $($tmax + $tfrac*$dttot )
+	#---------------------------------------
+
+	#---------------------------------------
+	# Time filtering data arrays
+	#---------------------------------------
+	foreach 7 whatsmarts {
+	   set smart_time_$7 = mjd_$7
+           set mjd_$7     = mjd_$7         if( smart_time_$7 >= $tmin && smart_time_$7 <= $tmax )
+           set lg_f_$7    = lg_f_$7        if( smart_time_$7 >= $tmin && smart_time_$7 <= $tmax )
+           set mag_$7     = mag_$7         if( smart_time_$7 >= $tmin && smart_time_$7 <= $tmax )
+           set err_mag_$7 = err_mag_$7     if( smart_time_$7 >= $tmin && smart_time_$7 <= $tmax )
+	   delete smart_time_$7
+	}
+	#---------------------------------------
+
+	#range 0 3 
+	#range 0 2 
+
+	define nyboxes $(-1*(dimen(whatsmarts)))
+
+	window 1 1 1 1 
+	limits $tmin $tmax 0 1 
+	ctype 4 
+	lweight 1 ltype 1 
+	foreach date <       54648 55013 55378 55743 > { 
+	   relocate $date $fy1
+	   draw     $date $fy2
+	}
+	lweight 1 ltype 4 
+	foreach date < 54466 54832 55197 55562 55927 > { 
+	   relocate $date $fy1
+	   draw     $date $fy2
+	}
+	lweight 3 
+	ltype 0
+	ctype 2
+
+	notation -5 5 0 0 
+	ticksize 0 0 0.25 1 
+
+	#---------------------------------------
+	# smarts 
+	#---------------------------------------
+	define j (0)
+	foreach 7 whatsmarts {
+	   define j $($j+1)
+	   window 1 $nyboxes 1 $j
+	   define_limits_gf 3.5 mag_$7 testmin_$7 testmax_$7
+	   define_limits_gf 4.5 mag_$7 testmin_$7 testmax_$7
+	   limits $tmin $tmax mag_$7
+	   limits $tmin $tmax $testmax_$7 $testmin_$7
+	   ctype 2 
+	   expand 1.25
+	   if( $j == 1 ) { 
+	      box 1 2 0 0 
+	      xlabel "Time [MJD]"
+	   } else {
+	      box 0 2 0 0 
+	   }
+	   relocate ( $($gx1 - 2500) $(0.5*($gy1+$gy2)) ) 
+	   angle 90
+	   if( substr('$7',0,1) == 'a' ) { 
+	      define ylab "\alpha($(substr('$7',1,0)))"
+	      putlabel 5 $ylab
+	   } else {
+	      ## define ylab $7
+	      ## define ylab "str_$!7"
+	      define s "str_$!7"
+	      #putlabel 5 $$s mag
+	      putlabel 5  mag
+	   } 
+	   angle 0
+	   relocate ( $($gx2+1000) $(0.5*($gy1+$gy2)) ) 
+	   putlabel 6 $$s
+
+           ptype 4 3 
+           expand 0.5
+           ctype 5 
+	   if( substr('$7',0,1) == 'b' ) { ctype blue3   } 
+	   if( substr('$7',0,1) == 'v' ) { ctype green3  } 
+	   if( substr('$7',0,1) == 'r' ) { ctype red2    } 
+	   if( substr('$7',0,1) == 'j' ) { ctype magenta } 
+	   #
+	   if( substr('$7',0,1) == 'a' ) { ctype orange  } 
+           expand 1.25
+           points mjd_$7 mag_$7
+           error_y mjd_$7 mag_$7 err_mag_$7
+	}
+
+	ctype 2 
+	expand 1.5
+	window 1 1 1 1
+	relocate ( $( 0.5*($gx1+$gx2) ) $( $gy2 + 750) )
+	putlabel 5 $(source_list[$whatsource])
+
+#-------------------------------------------------------------------------------
+# plot_many_smarts_new  [*** GOOD ONE ***]
+##      + it plots MAGNITUDE light curves for a set of SMARTS filters
+plot_many_smarts_new  
+
+	reset_graph
+	location 7500 27500 4500 31000
+
+	source_list_menu
+	define 9 $whatsource
+
+	read_smarts_tab_data $9
+
+	if( $what_source == 0 ) { 
+	   load_0208_swift
+	}
+
+	define whatsmarts ? < Which SMARTS bands [a string e.g. "b v j k"] : >
+	set whatsmarts = < $!whatsmarts >
+
+        #-------------------------------------------------
+	# It uses Fermi/LAT data for the time limits
+        #-------------------------------------------------
+	set dmjd = mjd_b CONCAT mjd_v CONCAT mjd_r CONCAT mjd_j
+	sort < dmjd >
+	define tmin $(dmjd[0])
+	define tmax $(dmjd[dimen(dmjd)-1])
+
+	echo " Data arrays Time range : "$tmin "-" $tmax
+	echo " calling jd.x to check today\'s date "
+	systemcall jd.x | egrep mjd | tee /tmp/today_mjd
+	data "/tmp/today_mjd"
+	define today_mjd read 1 3 
+	## echo $today_mjd
+
+	define tmin (54688)
+	define tmax $(int($today_mjd))
+
+	define tmin ? < Plot start time : >
+	define tmax ? < Plot end   time : >
+
+	define tfrac (0.05)
+	define dttot $( $tmax - $tmin )
+	# echo $dttot
+	define tmin $($tmin - $tfrac*$dttot)
+	define tmax $($tmax + $tfrac*$dttot )
+	#---------------------------------------
+
+	#---------------------------------------
+	# Time filtering data arrays
+	#---------------------------------------
+	foreach 7 whatsmarts {
+	   set smart_time_$7 = mjd_$7
+           set mjd_$7       = mjd_$7         if( smart_time_$7 >= $tmin && smart_time_$7 <= $tmax )
+           set lg_f_$7      = lg_f_$7        if( smart_time_$7 >= $tmin && smart_time_$7 <= $tmax )
+           set erru_lg_f_$7 = erru_lg_f_$7   if( smart_time_$7 >= $tmin && smart_time_$7 <= $tmax )
+           set errd_lg_f_$7 = errd_lg_f_$7   if( smart_time_$7 >= $tmin && smart_time_$7 <= $tmax )
+           set mag_$7       = mag_$7         if( smart_time_$7 >= $tmin && smart_time_$7 <= $tmax )
+           set err_mag_$7   = err_mag_$7     if( smart_time_$7 >= $tmin && smart_time_$7 <= $tmax )
+	   delete smart_time_$7
+	}
+	#---------------------------------------
+
+	define nyboxes $(-1*(dimen(whatsmarts)))
+
+	window 1 1 1 1 
+	limits $tmin $tmax 0 1 
+	ctype 4 
+	lweight 1 ltype 1 
+	foreach date <       54648 55013 55378 55743 > { 
+	   relocate $date $fy1
+	   draw     $date $fy2
+	}
+	lweight 1 ltype 4 
+	foreach date < 54466 54832 55197 55562 55927 > { 
+	   relocate $date $fy1
+	   draw     $date $fy2
+	}
+	lweight 3 
+	ltype 0
+	ctype 2
+
+	notation -5 5 0 0 
+	ticksize 0 0 0.25 1 
+
+	#---------------------------------------
+	# smarts 
+	#---------------------------------------
+	define j (0)
+	foreach 7 whatsmarts {
+	   define j $($j+1)
+	   window 1 $nyboxes 1 $j
+	   define_limits_gf 3.5 lg_f_$7 testmin_$7 testmax_$7
+	   define_limits_gf 2.2 lg_f_$7 testmin_$7 testmax_$7
+	   limits $tmin $tmax lg_f_$7
+	   #limits $tmin $tmax $testmax_$7 $testmin_$7
+	   limits $tmin $tmax $testmin_$7 $testmax_$7
+	   ctype 2 
+	   expand 1.25
+	   if( $j == 1 ) { 
+	      box 1 2 0 0 
+	      xlabel "Time [MJD]"
+	   } else {
+	      box 0 2 0 0 
+	   }
+	   relocate ( $($gx1 - 2500) $(0.5*($gy1+$gy2)) ) 
+	   angle 90
+	   if( substr('$7',0,1) == 'a' ) { 
+	      define ylab "\alpha($(substr('$7',1,0)))"
+	      putlabel 5 $ylab
+	   } else {
+	      define s "str_$!7"
+	      putlabel 5 lg(flux)
+	   } 
+	   angle 0
+	   relocate ( $($gx2+1000) $(0.5*($gy1+$gy2)) ) 
+	   putlabel 6 $$s
+
+           ptype 4 3 
+           expand 0.5
+           ctype 5 
+	   if( substr('$7',0,1) == 'b' ) { ctype blue3   } 
+	   if( substr('$7',0,1) == 'v' ) { ctype green3  } 
+	   if( substr('$7',0,1) == 'r' ) { ctype red2    } 
+	   if( substr('$7',0,1) == 'j' ) { ctype magenta } 
+	   if( substr('$7',0,1) == 'x' ) { ctype grey50  } 
+	   if( substr('$7',0,1) == 'R' ) { ctype brown   } 
+	   #
+	   if( substr('$7',0,1) == 'a' ) { ctype orange  } 
+           expand 1.25
+           points mjd_$7 lg_f_$7
+           #error_y mjd_$7 lg_f_$7 err_lg_f_$7
+           errorbar mjd_$7 lg_f_$7 erru_lg_f_$7 2
+           errorbar mjd_$7 lg_f_$7 errd_lg_f_$7 4
+	}
+
+	ctype 2 
+	expand 1.5
+	window 1 1 1 1
+	relocate ( $( 0.5*($gx1+$gx2) ) $( $gy2 + 750) )
+	putlabel 5 $(source_list[$whatsource])
+
+##-------------------------------------------------------------------------------
+## define_limits_gf  <IN: range> <IN: array> <OUT: low limit> <OUT: high limit>
+define_limits_gf 4
+
+        foreach 7 < _r r a b m s dum1 dum2 ll hl > { define $7 local }
+        set _v local
+
+        if( is_vector($1) ) {
+           set _v = $1
+           define _r $2
+        } else {
+           set _v = $2
+           define _r $1
+        }
+	if( $_r < 0 ) { 
+	   define flag_strict (1) 
+	} else {
+	   define flag_strict (0) 
+	}
+	define _r $(abs($_r))
+
+        vecminmax _v a b 
+        mystats   _v m s dum1 dum2
+        define d $($b-$a)
+        echo "*----------------------------------------"
+	echo "* average and sigma =" $m $s 
+        echo "* data span = "$d" ("$a" - "$b")"
+
+	set _v_clip = _v  if( abs(_v-$m) <= 3*$s ) 
+        vecminmax _v_clip a b 
+        mystats   _v_clip m s dum1 dum2
+        define d $($b-$a)
+        echo "* AFTER CLIPPING "
+	echo "* average and sigma =" $m $s 
+        echo "* data span = "$d" ("$a" - "$b")"
+
+        if( $d <= $_r ) {
+           echo "* Limits with range = "$_r" : OK"
+           define r $_r
+        } else {
+           bell 
+           echo "* Limits with range = "$_r" : NOT OK"
+           define r $($d*1.1)
+           echo "* Redefined to range= "$r
+        }
+        define ll $( 0.5*($a+$b) - 0.5*$r )
+        define hl $( 0.5*($a+$b) + 0.5*$r )
+        echo "* limits = "$ll" - "$hl" (margins : "$($a-$ll)" , "$($b-$hl)")"
+        #define lowlim  $( $m - 0.5*$r )
+        #define highlim $( $m + 0.5*$r )
+
+        define $3 $ll
+        define $4 $hl
+        echo "*----------------------------------------"
+
+#-------------------------------------------------------------------------------
+# match_2lc
+#            It matches two light SMARTS curves, 
+#            and it also defines the spectral index between them.
+match_2lc 
+
+	source_list_menu
+	define 9 $whatsource
+	read_smarts_tab_data $9
+	read_lat_data $9
+
+	echo "+-----------------------------------------------------------"
+	echo "|    B : "$(dimen(mjd_b))"  ,  Time interval : "$(sprintf('%11.5f',$(mjd_b[0])))" - "$(sprintf('%11.5f',$(mjd_b[dimen(mjd_b)-1])))
+	echo "|    V : "$(dimen(mjd_v))"  ,  Time interval : "$(sprintf('%11.5f',$(mjd_v[0])))" - "$(sprintf('%11.5f',$(mjd_v[dimen(mjd_v)-1])))
+	echo "|    R : "$(dimen(mjd_r))"  ,  Time interval : "$(sprintf('%11.5f',$(mjd_r[0])))" - "$(sprintf('%11.5f',$(mjd_r[dimen(mjd_r)-1])))
+	echo "|    J : "$(dimen(mjd_j))"  ,  Time interval : "$(sprintf('%11.5f',$(mjd_j[0])))" - "$(sprintf('%11.5f',$(mjd_j[dimen(mjd_j)-1])))
+	echo "|    K : "$(dimen(mjd_k))"  ,  Time interval : "$(sprintf('%11.5f',$(mjd_k[0])))" - "$(sprintf('%11.5f',$(mjd_k[dimen(mjd_k)-1])))
+	echo "+-----------------------------------------------------------"
+	echo "| Band names can be: " 
+	echo "|   b , v , r , j , k , lat_all , dgood "
+	echo "| "
+	define band2lc_1 ? < First  band : >
+	define band2lc_2 ? < Second band : >
+
+	define 1 $band2lc_1
+	define 2 $band2lc_2
+	define 3 $1$2
+
+	#define eps (0.005)
+	define eps_min ? < Threshold [minutes] : > 
+	define eps $($eps_min/60/24)
+
+	# input arrays
+	set t1   = mjd_$1
+	set lgf1 = lg_f_$1
+	set mag1 = mag_$1
+	set t2   = mjd_$2
+	set lgf2 = lg_f_$2
+	set mag2 = mag_$2
+
+	# working arrays
+	set t1x     = t1
+	set lgf1x   = t1*0 - 50
+	set mag1x   = t1*0 - 50
+	set idx1x   = t1*0 - 50
+	set t2x     = t1
+	set lgf2x   = t1*0 - 50
+	set mag2x   = t1*0 - 50
+	set idx2x   = t1*0 - 50
+
+	set torig1x = t1*0 - 50
+	set torig2x = t1*0 - 50 
+	set dtx     = t1*0 - 50
+
+	#define 6 "x2_$1_vs_$2"
+	#define 7 "x2_$2_vs_$1"
+	#define 6 "x2_$1_vs_$2_$1"
+	#define 7 "x2_$1_vs_$2_$2"
+	define 6 "x2_$1_vs_$2"
+
+	# flag arrays keeping track of actually matching entries
+	set flag_$6_$1 = 0*t1 
+	set idx_$6_$1  = 0*t1 - 1 
+	set flag_$6_$2 = 0*t2 
+	set idx_$6_$2  = 0*t2 - 1 
+
+	define i2r (0)
+	define largest_overall_dt  (0)
+	do i1=0,dimen(t1)-1 {
+	   define nmatch (0)
+	   define smallest_dt (100)
+	   set vec_dt = < 0 > 
+	   set vec_i1 = < 0 > 
+	   set vec_i2 = < 0 > 
+
+	   do i2=$i2r,dimen(t2)-1 {
+	      define dt $( abs(t1[$i1] - t2[$i2]) )
+	      if( $dt < $smallest_dt ) {
+	         define smallest_dt $dt
+	      } 
+	      if( $dt <= $eps ) { 
+	         if( $dt > $largest_overall_dt ) {
+	            define largest_overall_dt $dt
+	         } 
+		 define nmatch $( $nmatch + 1 )
+		 define i2r    $($i2+1)
+
+		 set vec_dt = vec_dt CONCAT < $dt > 
+		 set vec_i1 = vec_i1 CONCAT < $($i1+1) > 
+		 set vec_i2 = vec_i2 CONCAT < $($i2+1) > 
+	         
+		 set torig1x[$i1] = t1[$i1]
+		 set torig2x[$i1] = t2[$i2]
+		 set     dtx[$i1] = $dt
+
+		 set idx1x[$i1] = $i1
+		 set idx2x[$i1] = $i2
+		 set lgf1x[$i1] = lgf1[$i1]
+		 set lgf2x[$i1] = lgf2[$i2]
+		 set mag1x[$i1] = mag1[$i1]
+		 set mag2x[$i1] = mag2[$i2]
+
+		 set flag_$6_$1[$i1] = 1
+		 set  idx_$6_$1[$i1] = $i2
+		 set flag_$6_$2[$i2] = 1
+		 set  idx_$6_$2[$i2] = $i1
+	      }
+	   }
+	   define tt $( sprintf('%11.5f',$(t1[$i1])) )
+	   # echo " N_matches["$(sprintf('%4d',$i1))"] "$( sprintf('%11.5f',$(t1[$i1])) )" = "$nmatch"   smallest dt = "$( sprintf('%10.3f',$(60*24*$smallest_dt)))" minutes"
+	   if( $nmatch > 1 ) { 
+	      echo " WARNING >>>> WARNING >>>>> more than one match "
+	      set vec_dt_min = 60*24*vec_dt
+	      foreach 5 < i1 i2 dt dt_min >  {
+	         set vec_$5 = pop(1,vec_$5)
+	      }
+	      print < vec_i1 vec_i2 vec_dt vec_dt_min > 
+	   }
+	}
+
+	print '  %12.6f  %6.2f  %5d     %12.6f  %6.2f  %5d    %10.6f\n' < torig1x mag1x idx1x torig2x mag2x idx2x dtx >
+
+	# NOTE: all the '*x' arrays have dimensions equal to the primary band arrays.
+	#       Here they are all trimmed to eliminate entries without a match.
+	set filter     = lgf1x 
+	set  mjd_$6_$1 = t1x      if( filter > -50 )
+	set lg_f_$6_$1 = lgf1x    if( filter > -50 )
+	set  mag_$6_$1 = mag1x    if( filter > -50 )
+       #set  mjd_$6_$2 = t2x      if( filter > -50 )
+	set  mjd_$6_$2 = torig2x  if( filter > -50 )
+	set lg_f_$6_$2 = lgf2x    if( filter > -50 )
+	set  mag_$6_$2 = mag2x    if( filter > -50 )
+
+	# colors with magnitudes 
+	set  mjd_$6_diff_$1$2 = mjd_$6_$1
+	set  mag_$6_diff_$1$2 = mag_$6_$1 - mag_$6_$2
+	set  mjd_$6_diff_$2$1 = mjd_$6_diff_$1$2
+	set  mag_$6_diff_$2$1 = mag_$6_$2 - mag_$6_$1
+
+	# spectral indices
+	set  mjd_$6_alpha_$1$2 = mjd_$6_$1
+	set lg_f_$6_alpha_$1$2 = (lg_f_$6_$1 - lg_f_$6_$2)/($nu_$2 - $nu_$1)
+	set  mjd_$6_alpha_$2$1 = mjd_$6_alpha_$1$2
+	set lg_f_$6_alpha_$2$1 = lg_f_$6_alpha_$1$2
+
+	echo "----------------------------------------------------------------------"
+	echo "  Input light curves : "
+	echo "    Band "$1" with "$(dimen(lg_f_$1))" data points "
+	echo "    Band "$2" with "$(dimen(lg_f_$2))" data points "
+	echo "  "
+	echo "  Matching threshold is "$eps" days, or "$($eps*24.*60.)" min. or "$($eps*86400.)" seconds"
+	echo "  largest_overall_dt = "$( sprintf('%10.3f',$(60.*24.*$largest_overall_dt)))" minutes"
+	echo "  "
+	echo "  Output light curves have "$(dimen(lg_f_$6_$1))" data points"
+	echo "----------------------------------------------------------------------"
+	echo "  Generated matching light curves with names : "
+	echo "     mjd_"$6"_"$1"     lg_f_"$6"_"$1"  mag_"$6"_"$1"  : band-1 matched to band-2 data"
+	echo "     mjd_"$6"_"$2"     lg_f_"$6"_"$2"  mag_"$6"_"$2"  : band-2 matched to band-1 data"
+	echo "     mjd_"$6"_diff_"$1$2" mag_"$6"_diff_"$1$2"  (magnitude differences)" 
+	echo "     mjd_"$6"_diff_"$2$1" mag_"$6"_diff_"$2$1"  (magnitude differences)" 
+	echo "     mjd_"$6"_alpha_"$2$1"  lg_f_"$6"_alpha_"$2$1" (spectral index between "$2" and "$1" bands)"
+	echo "     mjd_"$6"_alpha_"$1$2"  lg_f_"$6"_alpha_"$1$2" (spectral index between "$1" and "$2" bands)"
+	echo "----------------------------------------------------------------------"
+        echo "  Also created four arrays to keep track of the matches starting from "
+	echo "    the original arrays: " 
+	echo "      flag_"$6"_"$1" and idx_"$6"_"$1
+	echo "      flag_"$6"_"$2" and idx_"$6"_"$2
+	echo "----------------------------------------------------------------------"
+	
+	define sfx ? < Suffix for renaming arrays : >
+	define 8 $sfx 
+	foreach 9 < mjd_$6_$1 lg_f_$6_$1 mag_$6_$1 \
+	            mjd_$6_$2 lg_f_$6_$2 mag_$6_$2 \
+                    mjd_$6_alpha_$2$1 lg_f_$6_alpha_$2$1 \
+                    mjd_$6_alpha_$1$2 lg_f_$6_alpha_$1$2 \
+                    flag_$6_$1 idx_$6_$1 \
+                    flag_$6_$2 idx_$6_$2 > {
+	   set $9_$8 = $9
+	}
+
+##-------------------------------------------------------------------------------
+# match_3lc 
+#            It uses two sets of arrays created with 'match_2lc'
+match_3lc
+
+	echo           "----------------------------------------"
+	echo           " Band names can be: " 
+	echo           "   b , v , r , j , k , lat_all , dgood "
+	echo           " "
+	define band3lc_1 ? < PRIMARY band : >
+	define band3lc_2 ? < Second  band : >
+	define band3lc_3 ? < Third   band : >
+
+	define 1 $band3lc_1
+	define 2 $band3lc_2
+	define 3 $band3lc_3
+
+	define 6 "x2_$1_vs_$2"
+	define 7 "x2_$1_vs_$3"
+	define 5 "x3_$1_vs_$2_vs_$3"
+
+	# NOTE:
+	# flag_x2_$1_vs_$2_$1  marks the elements of $1 matching $2
+	#  idx_x2_$1_vs_$2_$1  contains the indices of $2 matching the $1 elements
+
+	set flag_mix = flag_$6_$1 * flag_$7_$1
+
+	#------------------------------
+	# it uses the original arrays
+	set  mjd1 = mjd_$1
+	set lg_f1 = lg_f_$1
+	set  mag1 = mag_$1
+	#
+	set  mjd2 = mjd_$2
+	set lg_f2 = lg_f_$2
+	set  mag2 = mag_$2
+	#
+	set  mjd3 = mjd_$3
+	set lg_f3 = lg_f_$3
+	set  mag3 = mag_$3
+	#------------------------------
+
+	set  mjd_x3_1 = mjd1*0 - 50 
+	set lg_f_x3_1 = mjd1*0 - 50
+	set  mag_x3_1 = mjd1*0 - 50
+	#
+	set  mjd_x3_2 = mjd1*0 - 50
+	set lg_f_x3_2 = mjd1*0 - 50
+	set  mag_x3_2 = mjd1*0 - 50
+	#
+	set  mjd_x3_3 = mjd1*0 - 50
+	set lg_f_x3_3 = mjd1*0 - 50
+	set  mag_x3_3 = mjd1*0 - 50
+
+	do 9=0,dimen(mjd1)-1 {
+	   if( flag_mix[$9] == 1 ) {
+	      echo $9 $(idx_$6_$1[$9]) $(idx_$7_$1[$9])
+
+	      set  mjd_x3_1[$9] =  mjd1[$9]
+	      set lg_f_x3_1[$9] = lg_f1[$9]
+	      set  mag_x3_1[$9] =  mag1[$9]
+
+	      set  mjd_x3_2[$9] =  mjd2[idx_$6_$1[$9]]
+	      set lg_f_x3_2[$9] = lg_f2[idx_$6_$1[$9]]
+	      set  mag_x3_2[$9] =  mag2[idx_$6_$1[$9]]
+
+	      set  mjd_x3_3[$9] =  mjd3[idx_$7_$1[$9]]
+	      set lg_f_x3_3[$9] = lg_f3[idx_$7_$1[$9]]
+	      set  mag_x3_3[$9] =  mag3[idx_$7_$1[$9]]
+	   }
+	}
+
+	# trimming 
+	foreach 8 { mjd lg_f mag } {
+	   foreach 9 < 1 2 3 > {
+	      set $8_x3_$9 = $8_x3_$9  if( flag_mix == 1 )
+	      set $8_$5_$$9 = $8_x3_$9 
+	   }
+	}
+
+	set alpha_$5_$1$2 = (lg_f_$5_$1 - lg_f_$5_$2)/($nu_$2 - $nu_$1)
+	set alpha_$5_$1$3 = (lg_f_$5_$1 - lg_f_$5_$3)/($nu_$3 - $nu_$1)
+	set alpha_$5_$2$3 = (lg_f_$5_$2 - lg_f_$5_$3)/($nu_$3 - $nu_$2)
+
+	set  mjd_alpha_$5_$1$2 = mjd_$5_$1
+	set  mjd_alpha_$5_$1$3 = mjd_$5_$1
+	set  mjd_alpha_$5_$2$3 = mjd_$5_$1
+	set lg_f_alpha_$5_$1$2 = alpha_$5_$1$2
+	set lg_f_alpha_$5_$1$3 = alpha_$5_$1$3
+	set lg_f_alpha_$5_$2$3 = alpha_$5_$2$3
+
+	set      alpha_$5_$2$1 =      alpha_$5_$1$2 
+	set      alpha_$5_$3$1 =      alpha_$5_$1$3 
+	set      alpha_$5_$3$2 =      alpha_$5_$2$3 
+	set  mjd_alpha_$5_$2$1 =  mjd_alpha_$5_$1$2
+	set  mjd_alpha_$5_$3$1 =  mjd_alpha_$5_$1$3
+	set  mjd_alpha_$5_$3$2 =  mjd_alpha_$5_$2$3
+	set lg_f_alpha_$5_$2$1 = lg_f_alpha_$5_$1$2
+	set lg_f_alpha_$5_$3$1 = lg_f_alpha_$5_$1$3
+	set lg_f_alpha_$5_$3$2 = lg_f_alpha_$5_$2$3
+
+	echo "----------------------------------------------------------------------"
+	echo "  Made arrays : "
+	echo "     mjd_"$5"_[band] , mag_"$5"_[band] , lg_f_"$5"_[band] "
+	echo "     alpha_"$5"_[band1][band2]  alpha_"$5"_[band1][band3] alpha_"$5"_[band2][band3] "
+	echo "----------------------------------------------------------------------"
+	
+	define memostr ? < String for renaming arrays : >
+	define 8 $memostr 
+	foreach 9 < \
+                    mjd_$5_$1  lg_f_$5_$1  mag_$5_$1 \
+                    mjd_$5_$2  lg_f_$5_$2  mag_$5_$2 \
+                    mjd_$5_$3  lg_f_$5_$3  mag_$5_$3 \
+                    alpha_$5_$1$2  mjd_alpha_$5_$1$2  lg_f_alpha_$5_$1$2 \
+                    alpha_$5_$1$3  mjd_alpha_$5_$1$3  lg_f_alpha_$5_$1$3 \
+                    alpha_$5_$2$3  mjd_alpha_$5_$2$3  lg_f_alpha_$5_$2$3 \
+                    alpha_$5_$2$1  mjd_alpha_$5_$2$1  lg_f_alpha_$5_$2$1 \
+                    alpha_$5_$3$1  mjd_alpha_$5_$3$1  lg_f_alpha_$5_$3$1 \
+                    alpha_$5_$3$2  mjd_alpha_$5_$3$2  lg_f_alpha_$5_$3$2 > {
+	    set $9_$8 = $9
+        }
+
+#-------------------------------------------------------------------------------
+# plot_alpha_vs_alpha
+plot_alpha_vs_alpha
+
+        reset_graph
+
+        define band_aa_1 ? < PRIMARY band : >
+        define band_aa_2 ? < Second  band : >
+        define band_aa_3 ? < Third   band : >
+
+        define 1 $band_aa_1
+        define 2 $band_aa_2
+        define 3 $band_aa_3
+
+        ctype 2
+        limits 2.5 0 2.5 0 
+        limits 2.0 -0.5 2.0 -0.5
+        limits 2.0 0.0 2.0 0.0
+        limits 2.0 0.0 2.2 0.2
+        limits 1.9 0.1 2.2 0.4
+       #limits 4.0 0.0 4.0 0.0 
+        ticksize 0 0 0 0 
+        box
+        xlabel \alpha_{$1$2}
+        ylabel \alpha_{$1$3}
+
+        ctype 4 
+        ltype 2 
+        relocate 6 6 draw 0 0
+        ltype 1 
+        relocate 6 6.5 draw 0 0.5
+        ltype 0 
+        ctype 2 
+
+        define 5 "x3_$1_vs_$2_vs_$3"
+
+        define mint local 
+        define maxt local 
+        define mint (54600)
+        define maxt (56000)
+
+        define_time_intervals
+        set for_color  = mjd_$5_$1
+
+        set aa_1  = alpha_$5_$1$2    if( for_color >= $mint && for_color <= $maxt ) 
+        set aa_2  = alpha_$5_$1$3    if( for_color >= $mint && for_color <= $maxt ) 
+
+        #ctype 3 
+        #points aa_1 aa_2
+        #ctype 2 
+
+        ptype 4 3 
+        expand 0.6
+        ctype grey50
+        points aa_1 aa_2
+
+        expand 1.5
+        expand 2.0
+        set v1 = aa_1
+        set v2 = aa_2
+        SUB_points_in_color 
+       #plot_shaded_dots v1 v2 for_color 0.8
+
+
+##-------------------------------------------------------------------------------
+## plot_a_br  [BROKEN] ( radio flux vs. \alpha_{B,radio} )
+plot_a_br
+
+        reset_graph
+
+        limits (lg_f_r+3) 0 2  
+        limits $(lg(0.2))  $(lg(20)) 0 1.75
+        ticksize -1 0 0 0 
+        box
+        xlabel F_R [mJy]
+        ylabel \alpha_{BR}
+
+        ctype 3 
+        points (lg_orig_f_r + 3) a_br
+        ctype 2 
+
+#-------------------------------------------------------------------------------
+# optical_vs_gamma
+optical_vs_gamma
+
+        reset_graph
+        set time local
+        set _b1  local
+        set _b2  local
+
+        define _b11 local
+        define _b12 local
+        define _b21 local
+        define _b22 local
+        define mint  local
+	define maxt  local
+
+	echo           "----------------------------------------"
+	echo           " Band names can be: " 
+	echo           "   b v r j k lat_all dgood "
+	echo           " "
+	define band1 ? < 1st band : >
+	define band2 ? < 2nd band : >
+	define sfx   ? < suffix   : >  
+
+	define mint (54600)
+	define maxt (55550)
+
+	define 1 $band1
+	define 2 $band2
+	define 3 $sfx 
+
+	define frange (3)
+	define mrange $($frange*2.5)
+
+	set time = mjd_$1_x_$2_$3
+
+	if( substr('$band1',0,1) == 'b' || substr('$band1',0,1) == 'v' || \
+	    substr('$band1',0,1) == 'r' || substr('$band1',0,1) == 'j' || \
+	    substr('$band1',0,1) == 'h' || substr('$band1',0,1) == 'k' ) {
+	   define flag_opt_b1 (1)
+	   set  b1  = mag_$1_x_$2_$3
+	   set _b1  = mag_$1_x_$2_$3   if( time >= $mint && time <= $maxt ) 
+	   define b1range $mrange
+	   define labx "mag."
+	   define tickx "0.5 1.0"
+	} else {
+	   define flag_opt_b1 (0)
+	   set  b1  = lg_f_$1_x_$2_$3
+	   set _b1  = lg_f_$1_x_$2_$3  if( time >= $mint && time <= $maxt ) 
+	   define b1range $frange
+	   define labx "Fermi/LAT Flux"
+	   define tickx "0 0"
+	}
+
+	if( substr('$band2',0,1) == 'b' || substr('$band2',0,1) == 'v' || \
+	    substr('$band2',0,1) == 'r' || substr('$band2',0,1) == 'j' || \
+	    substr('$band2',0,1) == 'h' || substr('$band2',0,1) == 'k' ) {
+	   define flag_opt_b2 (1)
+	   set  b2  = mag_$2_x_$1_$3
+	   set _b2  = mag_$2_x_$1_$3   if( time >= $mint && time <= $maxt ) 
+	   define b2range $mrange
+	   define laby "mag."
+	   define ticky "0.5 1.0"
+	} else {
+	   define flag_opt_b2 (0)
+	   set  b2  = lg_f_$2_x_$1_$3
+	   set _b2  = lg_f_$2_x_$1_$3  if( time >= $mint && time <= $maxt ) 
+	   define b2range $frange
+	   define laby "Fermi/LAT Flux"
+	   define ticky "0 0"
+	}
+
+	if( $flag_opt_b1 && $flag_opt_b2 ) { 
+	   define b1range (5)
+	   define b2range (5)
+	}
+
+	define_limits_with_range $b1range _b1 _b11i _b12i
+	define_limits_with_range $b2range _b2 _b21i _b22i
+	
+	if( $flag_opt_b1 ) { 
+	   define _b11 $_b12i 
+	   define _b12 $_b11i 
+	} else {
+	   define _b11 $_b11i 
+	   define _b12 $_b12i 
+	}
+	if( $flag_opt_b2 ) { 
+	   define _b21 $_b22i 
+	   define _b22 $_b21i 
+	} else {
+	   define _b21 $_b21i 
+	   define _b22 $_b22i 
+	}
+
+	limits $_b11 $_b12 $_b21 $_b22
+	ticksize 0.5 1 0 0
+	ticksize 0 0 0 0 
+	ticksize $tickx $ticky
+	box
+	xlabel $labx
+	ylabel $laby
+
+	ptype 4 3 
+	expand 0.75
+	ctype grey50
+	points b1 b2
+	expand 1.5
+	ctype 3 
+	points _b1 _b2
+	ctype 2
+
+##-------------------------------------------------------------------------------
+## oj287_color_diagram
+oj287_color_diagram
+
+	define otherband   ? < Band to pair with B [j|k] : >
+	define sedshapepar ? <     Color or \alpha [1|2] : > 
+	define 1 $otherband
+
+	local define mint (54730)
+	local define maxt (55400)
+
+	foreach 8 { mmin mmax cmin cmax amin amax } {
+	   foreach 9 { j k } {
+	      define $8$9 local
+	   }
+	}
+
+	if( substr('$otherband',0,1) == 'v' ) { 
+	   define mmin (16.2)  #(13.8)
+	   define mmax (13.6)  #(11.7)
+	   define cmin ( 0.85)
+	   define cmax ( 0.15)
+	   define amin (2.00)  # for \alpha
+	   define amax (0.50)  # for \alpha
+	   define labx "B-V [--> harder]"
+	   define alabx "\alpha_{BV}"
+	   define laby "V mag"
+	}
+
+	if( substr('$otherband',0,1) == 'r' ) { 
+	   define mmin (15.7)  #(13.8)
+	   define mmax (13.1)  #(11.7)
+	   define cmin ( 1.35)
+	   define cmax ( 0.55)
+	   define amin (2.00)  # for \alpha
+	   define amax (0.50)  # for \alpha
+	   define labx "B-R [--> harder]"
+	   define alabx "\alpha_{BR}"
+	   define laby "R mag"
+	}
+
+	if( substr('$otherband',0,1) == 'j' ) { 
+	   define mmin (14.1)  #(13.8)
+	   define mmax (11.5)  #(11.7)
+	   define cmin ( 3.5)
+	   define cmax ( 2.0)
+	   define amin (2.00)  # for \alpha
+	   define amax (0.50)  # for \alpha
+	   define labx "B-J [--> harder]"
+	   define alabx "\alpha_{BJ}"
+	   define laby "J mag"
+	}
+
+	if( substr('$otherband',0,1) == 'k' ) { 
+	   define mmin (11.9)
+	   define mmax ( 9.3)
+	   define cmin ( 5.4)
+	   define cmax ( 3.8)
+	   define amin (2.00)  # for \alpha
+	   define amax (0.50)  # for \alpha
+	   define labx "B-K [--> harder]"
+	   define alabx "\alpha_{BK}"
+	   define laby "K mag"
+	}
+
+	local define labxexp 1.5
+	local define xtick "0 0"
+	if( $sedshapepar == 2 ) { 
+	   define cmin $amin
+	   define cmax $amax
+	   define labx "$!alabx"
+	   define labxexp 2.0
+	   define xtick "0.1 0.5"
+	}
+
+	reset_graph
+	location 6500 28000 $gy1 $gy2 
+
+	define_time_intervals
+	set for_color = mjd_$1_x_b 
+	notation -5 5 -4 4 
+
+        set oj_time_0 = mjd_$1_x_b    if( for_color >= $mint && for_color <= $maxt ) 
+        set oj_mag_0  = mag_$1_x_b    if( for_color >= $mint && for_color <= $maxt ) 
+	if( $sedshapepar == 1 ) { 
+           set oj_c_0 = mag_diff_x2_b$1  if( for_color >= $mint && for_color <= $maxt ) 
+	} else {
+           # set oj_c_0 = lg_f_ab$1     if( for_color >= $mint && for_color <= $maxt ) 
+           set oj_c_0 = lg_f_alpha_b_$1     if( for_color >= $mint && for_color <= $maxt ) 
+	}
+
+	#------------------------------------------------------------
+	# color or spectral index box
+	#------------------------------------------------------------
+	window 1 -5 1 1:3
+	limits $cmin $cmax $mmin $mmax
+	ticksize $xtick 0.2 1.0 
+	expand 1.25
+	box 1 2 3 0 
+	expand $labxexp 
+	xlabel $labx
+	expand 1.25
+
+	ptype 4 3 
+	expand 0.6
+	points oj_c_0 oj_mag_0 
+
+	expand 1.5
+	if( $sedshapepar == 1 ) { 
+           set v1 = mag_diff_x2_b$1
+	} else {
+           # set v1 = lg_f_ab$1
+           set v1 = lg_f_alpha_b_$1
+	}
+        set v2 = mag_$1_x_b
+	SUB_points_in_color 
+
+	# foreach 9 lkin_idx { 
+        #    ctype $(lkin_colors[$9-1]) points oj_c_$9 oj_mag_$9
+        # }
+	# set y = (lg($s0b/$s0j)-0.4*x)/($nu_j-$nu_b)
+
+	#------------------------------------------------------------
+	# B light curve
+	#------------------------------------------------------------
+	ctype 2
+	ctype grey60 
+	window 1 -5 1 4:5 
+	limits 54700 $maxt 17 14
+	limits $mint $maxt 16.8 14.2
+	ticksize 0 0 0.2 1.0 
+	expand 1.25
+	box 4 4 4 2 
+	relocate ( $($gx2+2500) $(0.5*($gy1+$gy2)) )
+	angle 270
+	putlabel 5 "B mag"
+	angle 0
+
+	angle 45
+	ptype 4 1 
+	expand 0.6 
+        points mjd_j_x_b mag_b_x_j
+	ctype 2 
+	angle 0
+
+	#------------------------------------------------------------
+	# 'other band' colored light curve
+	#------------------------------------------------------------
+	limits $mint $maxt $mmin $mmax
+	expand 1.25
+	box 0 2 1 4 
+
+	ptype 4 3 
+	expand 0.6 
+        points oj_time_0 oj_mag_0
+
+	expand 1.1
+        set v1 = mjd_$1_x_b
+        set v2 = mag_$1_x_b
+	SUB_points_in_color 
+
+	ctype 2 
+	window 1 1 1 1 
+	expand 1.5
+	relocate ( $($gx1-3500) $(0.5*($gy1+$gy2)) )
+	angle 90
+	putlabel 5 $laby
+	angle 0
+
+##-------------------------------------------------------------------------------
+## define_limits_with_range  <IN: range> <IN: array> <OUT: low limit> <OUT: high limit>
+define_limits_with_range 4
+
+	foreach 7 < _r r a b m s dum1 dum2 ll hl > { define $7 local }
+	set _v local
+
+	if( is_vector($1) ) {
+	   set _v = $1
+	   define _r $2
+	} else {
+	   set _v = $2
+	   define _r $1
+	}
+
+	vecminmax _v a b 
+	mystats   _v m s dum1 dum2
+	define d $($b-$a)
+	echo "*----------------------------------------"
+	echo "* data span = "$d" ("$a" - "$b")"
+
+	if( $d <= $_r ) {
+	   echo "* Limits with range = "$_r" : OK"
+	   define r $_r
+	} else {
+	   bell 
+	   echo "* Limits with range = "$_r" : NOT OK"
+	   define r $($d*1.1)
+	   echo "* Redefined to range= "$r
+	}
+	define ll $( 0.5*($a+$b) - 0.5*$r )
+	define hl $( 0.5*($a+$b) + 0.5*$r )
+        echo "* limits = "$ll" - "$hl" (margins : "$($a-$ll)" , "$($b-$hl)")"
+	#define lowlim  $( $m - 0.5*$r )
+	#define highlim $( $m + 0.5*$r )
+
+	define $3 $ll
+	define $4 $hl
+	echo "*----------------------------------------"
+
+#-------------------------------------------------------------------------------
+# color_diagram         [REQUIRES TO HAVE MATCHED LC WITH 'match_2lc']
+color_diagram
+
+	reset_graph
+	location 6500 28000 $gy1 $gy2 
+	notation -5 5 -4 4 
+
+	define_time_intervals
+
+	define otherband   ? < Band to pair with B [j|k] : >
+	define sedshapepar ? <     Color or \alpha [1|2] : > 
+	define lcrange     ? <    light curve dyn. range : > 
+	define 1 $otherband
+
+	define mint local 
+	define maxt local 
+	define mint (54730)
+	define maxt (55400)
+
+	define mint (54600)
+	define maxt (55600)
+
+	define mint (54600)
+	define maxt (56000)
+
+	define crange (4)
+
+	#------------------------------------------------------------
+	#set for_color = mjd_$1_x_b 
+        #set oj_mag_B  = mag_b_x_$1    if( for_color >= $mint && for_color <= $maxt ) 
+	set for_color = mjd_x2_b_vs_$1_b
+        set oj_mag_B  = mag_x2_b_vs_$1_b     if( for_color >= $mint && for_color <= $maxt ) 
+	define_limits_with_range $lcrange oj_mag_B _bmag2 _bmag1
+
+        #set oj_time_0 = mjd_$1_x_b    if( for_color >= $mint && for_color <= $maxt ) 
+        #set oj_mag_0  = mag_$1_x_b    if( for_color >= $mint && for_color <= $maxt ) 
+        set oj_time_0 = mjd_x2_b_vs_$1_$1    if( for_color >= $mint && for_color <= $maxt ) 
+        set oj_mag_0  = mag_x2_b_vs_$1_$1    if( for_color >= $mint && for_color <= $maxt ) 
+	if( $sedshapepar == 1 ) { 
+           #set oj_c_0 = mag_diff_x2_b$1  if( for_color >= $mint && for_color <= $maxt ) 
+           set oj_c_0 = mag_x2_b_vs_$1_diff_b$1  if( for_color >= $mint && for_color <= $maxt ) 
+	   define_limits_with_range $crange oj_c_0  _col2 _col1
+	} else {
+           # set oj_c_0 = lg_f_ab$1     if( for_color >= $mint && for_color <= $maxt ) 
+           # set ctmp   = lg_f_ab$1     if( for_color >= $mint && for_color <= $maxt && lg_f_ab$1 >= -0.5 && lg_f_ab$1 <= 4 ) 
+           #set oj_c_0 = lg_f_alpha_b_$1     if( for_color >= $mint && for_color <= $maxt ) 
+           #set ctmp   = lg_f_alpha_b_$1     if( for_color >= $mint && for_color <= $maxt && lg_f_alpha_b_$1 >= -0.5 && lg_f_alpha_b_$1 <= 4 ) 
+           set oj_c_0 = lg_f_x2_b_vs_$1_alpha_b$1     if( for_color >= $mint && for_color <= $maxt ) 
+           set ctmp   = lg_f_x2_b_vs_$1_alpha_b$1     if( for_color >= $mint && for_color <= $maxt && lg_f_x2_b_vs_$1_alpha_b$1 >= -0.5 && lg_f_x2_b_vs_$1_alpha_b$1 <= 4 ) 
+	   define_limits_with_range 2 ctmp _col2 _col1
+	}
+
+	define_limits_with_range $lcrange oj_mag_0 _mag2 _mag1
+
+	foreach 8 { mmin mmax cmin cmax amin amax } {
+	   foreach 9 { j k } {
+	      define $8$9 local
+	   }
+	}
+
+	if( substr('$otherband',0,1) == 'v' ) { 
+	   define mmin (16.2)  #(13.8)
+	   define mmax (13.6)  #(11.7)
+	   define cmin ( 0.85)
+	   define cmax ( 0.15)
+	   define amin (2.00)  # for \alpha
+	   define amax (0.50)  # for \alpha
+	   define labx "B-V [--> harder]"
+	   define alabx "\alpha_{BV}"
+	   define laby "V mag"
+	}
+
+	if( substr('$otherband',0,1) == 'r' ) { 
+	   define mmin (15.7)  #(13.8)
+	   define mmax (13.1)  #(11.7)
+	   define cmin ( 1.35)
+	   define cmax ( 0.55)
+	   define amin (2.00)  # for \alpha
+	   define amax (0.50)  # for \alpha
+	   define labx "B-R [--> harder]"
+	   define alabx "\alpha_{BR}"
+	   define laby "R mag"
+	}
+
+	if( substr('$otherband',0,1) == 'j' ) { 
+	   define mmin (14.1)  #(13.8)
+	   define mmax (11.5)  #(11.7)
+	   define cmin ( 3.5)
+	   define cmax ( 2.0)
+	   define amin (2.00)  # for \alpha
+	   define amax (0.50)  # for \alpha
+	   define labx "B-J [--> harder]"
+	   define alabx "\alpha_{BJ}"
+	   define laby "J mag"
+	}
+
+	if( substr('$otherband',0,1) == 'k' ) { 
+	   define mmin (11.9)
+	   define mmax ( 9.3)
+	   define cmin ( 5.4)
+	   define cmax ( 3.8)
+	   define amin (2.00)  # for \alpha
+	   define amax (0.50)  # for \alpha
+	   define labx "B-K [--> harder]"
+	   define alabx "\alpha_{BK}"
+	   define laby "K mag"
+	}
+
+	define mmin $_mag1
+	define mmax $_mag2
+	define cmin $_col1
+	define cmax $_col2
+	define amin $_col1
+	define amax $_col2
+
+	local define labxexp 1.5
+	local define xtick "0 0"
+	if( $sedshapepar == 2 ) { 
+	   define cmin $amin
+	   define cmax $amax
+	   define labx "$!alabx"
+	   define labxexp 2.0
+	   define xtick "0.1 0.5"
+	}
+
+	#------------------------------------------------------------
+	# color or spectral index box
+	#------------------------------------------------------------
+	window 1 -5 1 1:3
+	limits $cmin $cmax $mmin $mmax
+	ticksize $xtick 0.2 1.0 
+	expand 1.25
+	box 1 2 3 0 
+	expand $labxexp 
+	xlabel $labx
+	expand 1.25
+
+	ptype 4 3 
+	expand 0.6
+	points oj_c_0 oj_mag_0 
+
+	expand 1.5
+	if( $sedshapepar == 1 ) { 
+           #set v1 = mag_diff_x2_b$1
+           set v1 = mag_x2_b_vs_$1_diff_b$1
+	} else {
+           # set v1 = lg_f_ab$1
+           #set v1 = lg_f_alpha_b_$1
+           set v1 = lg_f_x2_b_vs_$1_alpha_b$1
+	}
+        #set v2 = mag_$1_x_b
+        set v2 = mag_x2_b_vs_$1_$1
+	SUB_points_in_color 
+       #plot_shaded_dots v1 v2 for_color 0.8
+
+	# set y = (lg($s0b/$s0j)-0.4*x)/($nu_j-$nu_b)
+
+	#------------------------------------------------------------
+	# B light curve
+	#------------------------------------------------------------
+	ctype 2
+	ctype grey60 
+	window 1 -5 1 4:5 
+	#limits 54700 $maxt 17 14
+	#limits $mint $maxt 16.8 14.2
+	limits $mint $maxt $_bmag1 $_bmag2
+	ticksize 0 0 0.2 1.0 
+	expand 1.25
+	box 4 4 4 2 
+	relocate ( $($gx2+2500) $(0.5*($gy1+$gy2)) )
+	angle 270
+	putlabel 5 "B mag"
+	angle 0
+
+	angle 45
+	ptype 4 1 
+	expand 0.6 
+        #points mjd_j_x_b mag_b_x_j
+        points mjd_x2_b_vs_j_b mag_x2_b_vs_j_b
+	ctype 2 
+	angle 0
+
+	#------------------------------------------------------------
+	# 'other band' colored light curve
+	#------------------------------------------------------------
+	limits $mint $maxt $mmin $mmax
+	expand 1.25
+	box 0 2 1 4 
+
+	ptype 4 3 
+	expand 0.6 
+        points oj_time_0 oj_mag_0
+
+	expand 1.1
+        #set v1 = mjd_$1_x_b
+        #set v2 = mag_$1_x_b
+        set v1 = mjd_x2_b_vs_$1_$1
+        set v2 = mag_x2_b_vs_$1_$1
+	SUB_points_in_color 
+       #plot_shaded_dots v1 v2 for_color 0.8
+
+	ctype 2 
+	window 1 1 1 1 
+	expand 1.5
+	relocate ( $($gx1-3500) $(0.5*($gy1+$gy2)) )
+	angle 90
+	putlabel 5 $laby
+	angle 0
+
+##-------------------------------------------------------------------------------
+# color_diagram_3bands  [REQUIRES TO HAVE MATCHED LC WITH 'match_3lc']
+color_diagram_3bands
+
+	reset_graph
+	#location 6500 28000 $gy1 $gy2 
+	location 5500 30000 4500 30000
+	notation -5 5 -4 4 
+
+	define_time_intervals
+
+	define band_cd3_1 ? < Band for intensity : > 
+	define band_cd3_2 ? < Band 1 for color   : > 
+	define band_cd3_3 ? < Band 2 for color   : > 
+	#define otherband   ? < Band to pair with B [j|k] : >
+	#define 1 $otherband
+
+	define 1 $band_cd3_1
+	define 2 $band_cd3_2
+	define 3 $band_cd3_3
+
+	define 5 "x3_$1_vs_$2_vs_$3"
+
+	define sedshapepar ? <     Color or \alpha [1|2] : > 
+	define lcrange     ? <    light curve dyn. range : > 
+
+	define mint local 
+	define maxt local 
+
+	define mint (54600)
+	define maxt (56000)
+
+	define crange (4)
+	if( $sedshapepar == 2 ) { define crange (2) } 
+
+	#------------------------------------------------------------
+	set for_color  = mjd_$5_$1
+
+        set src_mag_1  = mag_$5_$1    if( for_color >= $mint && for_color <= $maxt ) 
+        set src_mag_2  = mag_$5_$2    if( for_color >= $mint && for_color <= $maxt ) 
+        set src_mag_3  = mag_$5_$3    if( for_color >= $mint && for_color <= $maxt ) 
+
+        set src_time   = mjd_$5_$1    if( for_color >= $mint && for_color <= $maxt ) 
+        set src_mag    = src_mag_1    if( for_color >= $mint && for_color <= $maxt ) 
+	#------------------------------------------------------------
+
+	if( $sedshapepar == 1 ) { 
+           set src_color = src_mag_2 - src_mag_3   if( for_color >= $mint && for_color <= $maxt ) 
+	   set ctmp = src_color
+	} else {
+           set src_color = alpha_$5_$2$3           if( for_color >= $mint && for_color <= $maxt ) 
+           set ctmp      = alpha_$5_$2$3           if( for_color >= $mint && for_color <= $maxt && alpha_$5_$2$3 >= -0.5 && alpha_$5_$2$3 <= 4 ) 
+	}
+
+	define_limits_with_range $crange  ctmp     _col2 _col1
+	define_limits_with_range $lcrange src_mag  _mag2 _mag1
+
+	foreach 8 { mmin mmax cmin cmax amin amax } {
+	   foreach 9 { j k } {
+	      define $8$9 local
+	   }
+	}
+
+	#if( substr('$otherband',0,1) == 'r' ) { 
+	   define mmin (15.7)  #(13.8)
+	   define mmax (13.1)  #(11.7)
+	   define cmin ( 1.35)
+	   define cmax ( 0.55)
+	   define amin (2.00)  # for \alpha
+	   define amax (0.50)  # for \alpha
+	   define amin (1.80)  # for \alpha
+	   define amax (0.20)  # for \alpha
+
+	   define labx "$2 - $3 [--> harder]"
+	   define alabx "\alpha_{$2$3}"
+	   define laby "$1 mag"
+	#}
+
+	define mmin $_mag1
+	define mmax $_mag2
+	define cmin $_col1
+	define cmax $_col2
+	define amin $_col1
+	define amax $_col2
+	define amin (1.80)
+	define amax (0.20)
+
+	local define labxexp 1.5
+	local define xtick "0 0"
+	if( $sedshapepar == 2 ) { 
+	   define cmin $amin
+	   define cmax $amax
+	   define labx "$!alabx"
+	   define labxexp 2.0
+	   define xtick "0.1 0.5"
+	}
+
+	#------------------------------------------------------------
+	# color or spectral index box
+	#------------------------------------------------------------
+	window 1 -5 1 1:3
+	limits $cmin $cmax $mmin $mmax
+	ticksize $xtick 0.2 1.0 
+	expand 1.25
+	box 1 2 3 0 
+	expand $labxexp 
+	xlabel $labx
+	expand 1.25
+
+	ptype 4 3 
+	expand 0.6
+	ctype grey50
+	points src_color src_mag  
+
+	expand 1.5
+	
+	set v1 = src_color
+        set v2 = src_mag
+	SUB_points_in_color 
+       #plot_shaded_dots v1 v2 for_color 0.8
+
+	#------------------------------------------------------------
+	# TOP BOX : light curve
+	#------------------------------------------------------------
+	ctype 2 
+        window 1 -5 1 4:5 
+	limits $mint $maxt $mmin $mmax
+        ticksize 0 0 0.2 1.0 
+	expand 1.25
+	box 0 2 1 0 
+
+	ctype grey50
+	ptype 4 3 
+	expand 0.6 
+        points src_time src_mag 
+
+	expand 1.1
+        set v1 = src_time
+        set v2 = src_mag
+	SUB_points_in_color 
+       #plot_shaded_dots v1 v2 for_color 0.8
+
+	ctype 2 
+	window 1 1 1 1 
+	expand 1.5
+	relocate ( $($gx1-3500) $(0.5*($gy1+$gy2)) )
+	angle 90
+	putlabel 5 $laby
+	angle 0
+
+##-------------------------------------------------------------------------------
+## SUB_points_in_color
+SUB_points_in_color
+
+        foreach 9 lkin_idx { 
+           set v1_$9 = v1     if( for_color >= $lkl$9 && for_color < $lkh$9 ) 
+           set v2_$9 = v2     if( for_color >= $lkl$9 && for_color < $lkh$9 ) 
+        }
+
+	foreach 9 lkin_idx { 
+           if( lkin_plotflag[$9-1] > 0 ) { 
+              ctype $(lkin_colors[$9-1]) 
+              if( lkin_plotflag[$9-1] == 2 ) { 
+	         ltype 1 
+	         connect v1_$9 v2_$9
+	      }
+	      ltype 0 
+	      points  v1_$9 v2_$9
+	   }
+        }
+
+## define_time_intervals 
+define_time_intervals 
+
+        echo "> Entering 'define_lkin_intervals' "
+        #------------------------------------------------------------
+        set lkin_intervals = <  50000  54850  54950  55050  55150  55250  55350    55450        55550       55650    59000 >
+        set lkin_colors    = < '3'    '4'    '5'    '6'    '7'    '8'    'green2' 'darkorange' 'goldenrod' 'grey50' >
+        set lkin_plotflag  = <  1      1      1      1      1      1      1        1            1           1       >
+
+	# for OJ287
+	if( $whatsource == 7 ) { 
+           set lkin_intervals = <  50000   54850    54950  55120  55170     55190     55225     55250        55300      55400  >
+           set lkin_colors    = < 'cyan2' 'green3' 'blue' 'red2' 'tomato1' 'purple'  'orchid1' 'darkorange' 'goldenrod' >
+           set lkin_plotflag  = <  1       1        1      1      1         1         1         1            1          >
+	}
+
+	# for 0208
+	if( $whatsource == 0 ) { 
+	   set lkin_intervals = <  53000    54650    54850    55150  55230    55700   55850    60000 >
+           set lkin_colors    = < 'grey50' 'green3' 'grey50' 'red2' 'grey50' 'blue'  'grey50' > 
+           set lkin_plotflag  = <    -1        1       -1       1      -1       1       -1    >
+
+	   set lkin_intervals = <  53000    54650    54850    55150  55230    55700   55780   55850    60000 >
+           set lkin_colors    = < 'grey50' 'green3' 'grey50' 'red2' 'grey50' 'cyan'  'blue'  'grey50' > 
+           set lkin_plotflag  = <    -1        1       -1       1      -1       1       1       -1    >
+
+	   define which_flare ? < Which flare [1|2|3|123] : > 
+
+	   if( $which_flare == 1 ) { 
+	       # flare-1
+	       set lkin_intervals = <  53000    54650    54750    54850   60000 >
+               set lkin_colors    = < 'grey50' 'green2' 'green4' 'grey50' > 
+               set lkin_plotflag  = <    -1       1        1       -1     >
+	   }
+
+	   if( $which_flare == 2 ) { 
+	       # flare-2
+	       set lkin_intervals = <  53000    55150  55200  55230   60000 >
+               set lkin_colors    = < 'grey50' 'red'  'red3' 'grey50' > 
+               set lkin_plotflag  = <    -1      1      1      -1     >
+	   }
+
+	   if( $which_flare == 3 ) { 
+	       # flare-3
+	       set lkin_intervals = <  53000    55700   55780   55850   60000 >
+               set lkin_colors    = < 'grey50' 'cyan'  'blue'  'grey50' > 
+               set lkin_plotflag  = <    -1      1       1       -1     >
+	   }
+
+	   if( $which_flare == 123 ) { 
+	       # all flares, split
+	       set lkin_intervals = <  53000    54650    54750    54850    55150  55200  55230    55700   55780   55850   60000 >
+               set lkin_colors    = < 'grey50' 'green2' 'green4' 'grey50' 'red'  'red3' 'grey50' 'cyan'  'blue'  'grey50' > 
+               set lkin_plotflag  = <    -1       1        1       -1       1      1      -1       1       1       -1     >
+	   }
+
+	} 
+        #------------------------------------------------------------
+
+        set lkin_intervals = lkin_intervals + 0.0001
+        set lkin_min = pop(-1,lkin_intervals)
+        set lkin_max = pop(1,lkin_intervals)
+
+        set lkin_idx=1,dimen(lkin_intervals)-1
+        foreach 9 lkin_idx {
+           define lkl$9 $(lkin_min[$($9-1)])
+           define lkh$9 $(lkin_max[$($9-1)])
+           # define lkl$9 $(sprintf('%5.2f',$(lkin_min[$($9-1)])))
+           # define lkh$9 $(sprintf('%5.2f',$(lkin_max[$($9-1)])))
+           # echo $9 : $lkl$9 $lkh$9
+        }
+        #------------------------------------------------------------
+
+##---------------------------------------------------------------------------
+## smarts_fvar
+smarts_fvar
+
+	echo "-------------------------------------------------------------"
+	define end ? < Prefix of arrays [e.g. smarts_j]: >
+	define 1 $end
+
+	define t1 ? < Start Time : >
+	define t2 ? < End   Time : >
+
+	set time    local
+	set test_y  local
+	set sigma_y local
+	set test_w  local
+
+	set time   = $1_tjd
+	set test_y = $1_f     if(time>$t1 && time<$t2 && $1_f>0)
+	set test_w = $1_ef    if(time>$t1 && time<$t2 && $1_f>0)
+	set sigma_y = test_w
+
+	mystats test_y mean_y  width_y  absdev_y skew_y
+	median  test_y med
+
+	define N local
+	define N (dimen(test_y))
+
+	echo "-----------------------------------------------------------------"
+	echo "* DATA:" $end 
+	echo "*       N =" $(dimen(test_y))
+	echo "*"
+	echo "* Average Flux    =" $mean_y   
+	echo "* sigma           =" $width_y  
+	echo "* Skewness        =" $skew_y   
+	# echo "* Median          =" $med
+
+	#-----------------------------------------------------------
+	# "new" method, based on defining an array whose average
+	# represents sigma^2_rms (=F_var^2), and whose variance is the related
+	# to the uncertainty on F_var
+	#
+	echo "-----------------------------------------------------------------"
+	echo "*** Alternative (array based) computation: "
+
+	set sigma2_rms = ((test_y - $mean_y)**2.0 - sigma_y**2.0)/($mean_y**2.0)
+	mystats sigma2_rms s2r_mean s2r_sigma dum1 dum2
+
+	echo "  Average sigma2  =" $s2r_mean 
+	echo "  sigma(sigma2)   =" $s2r_sigma
+	echo "  err(sigma2)     =" $($s2r_sigma/sqrt($N))
+
+	define fvar_alt     $( sqrt($s2r_mean) )
+	define s2r_err      $( $s2r_sigma/sqrt($N) )
+        define err_fvar_alt $( ($s2r_err/2.0/$fvar_alt) )
+	echo "==> Alt F_var : " $fvar_alt "+/-" $err_fvar_alt
+
+	#-----------------------------------------------------------
+	# "old" method, by defining separate pieces as variables.
+	# Origin of expression for error on fvar UNKNOWN (?)
+	#
+	define sigma_f2 ( sum((test_y - $mean_y)**2.)/$N )
+	define delta_f2 ( sum(test_w*test_w)/$N )
+
+	define fvar ( sqrt($sigma_f2 - $delta_f2)/$mean_y )
+	define err_fvar ($fvar*($sigma_f2/$delta_f2)*sqrt(2/$(dimen(test_y)-1))/2/($sigma_f2/$delta_f2-1) )
+
+	define err_fvar_vaughan ( sqrt( ( sqrt(1./2./$N)*$delta_f2/$mean_y/$fvar )**2. + ( sqrt($delta_f2/$N)/$mean_y )**2. ) )
+
+	# echo "-----------------------------------------------------------------"
+	# echo "* Sigma_F =" $(sqrt($sigma_f2))      
+	# echo "* Delta_F =" $(sqrt($delta_f2))
+	echo "-----------------------------------------------------------------"
+	echo "*   F_Var =" $fvar "+/-" $err_fvar 
+	echo "                       alt: "$err_fvar_alt "[new/old : "$($err_fvar_alt/$err_fvar)"]"
+	echo "                   vaughan: "$err_fvar_vaughan
+	echo "-----------------------------------------------------------------"
+
+##-------------------------------------------------------------------------------
+## print_smarts_uvot_3c454
+print_smarts_uvot_3c454
+
+	set dummy=1,dimen(all_b_tjd)
+	print smarts_uvot_b.dat    ' %4d  %12.5f  %4d  %10.4e  %10.4e\n' < dummy all_b_tjd dummy all_b_f all_b_ef >
+
+	set dummy=1,dimen(all_v_tjd)
+	print smarts_uvot_v.dat    ' %4d  %12.5f  %4d  %10.4e  %10.4e\n' < dummy all_v_tjd dummy all_v_f all_v_ef >
+	# print smarts_uvot_b_lg.dat ' %4d  %12.5f  %4d  %10.4f  %10.4f\n' < dummy all_b_tjd dummy all_b_lgf all_b_ef >
+	# print smarts_uvot_v_lg.dat ' %4d  %12.5f  %4d  %10.4f  %10.4f\n' < dummy all_v_tjd dummy all_v_lgf all_v_ef >
+
+	set dummy=1,dimen(all_f_b_tjd)
+	print smarts_uvot_b_vFv.dat    ' %4d  %12.5f  %4d  %10.4e  %10.4e\n' < dummy all_f_b_tjd dummy all_f_b_f all_f_b_ef >
+
+	set dummy=1,dimen(all_f_v_tjd)
+	print smarts_uvot_v_vFv.dat    ' %4d  %12.5f  %4d  %10.4e  %10.4e\n' < dummy all_f_v_tjd dummy all_f_v_f all_f_v_ef >
+
+##===============================================================================
+## OLD Fermi/LAT STUFF BELOW
+##===============================================================================
+##-------------------------------------------------------------------------------
+## check_lat_sn    [!!!! TO BE UPDATED !!!!]
+check_lat_sn
+
+	read_lat_data
+
+	define wx    ? < What X-variable [counter|time] : >
+	define wband ? <             Which band [a|b|c] : >
+	define 9 $wband
+
+	if( substr('$wx',0,1) == 'c' ) {
+	   set xx = counter
+	} else {
+	   set xx = mjd
+	}
+
+	define max_sn (30)
+
+	set rejected = sn_$9   if( sn_$9 >= $max_sn )
+	define rejectedpct $(sprintf('%4.1f',$(100.*dimen(rejected)/dimen(mjd))))
+
+	echo " Data non plotted with s/n max = "$max_sn"   :  " $(dimen(rejected)) "[" $rejectedpct "% ]"
+
+	notation -4 5 -4 4 
+
+	ticksize 0 0 1 3 
+	limits xx sn_$9
+	limits xx -1.5 $max_sn
+	box
+
+	ptype 4 3 
+	ctype 2 points xx sn_$9
+	ctype 3 points xx sn_$9  if( ul$9 >= 1 )
+	ctype 4 points xx sn_$9  if( ul$9 <  1 )
+	ctype 2
+
+##-------------------------------------------------------------------------------
+## check_lat_ratios   [!!!! TO BE UPDATED !!!!]
+check_lat_ratios
+
+	read_lat_data
+
+	define wx    ? < What X-variable [counter|time|flux] : >
+	define wband ? <               Which band [ab|ac|bc] : >
+	define 9 $wband
+
+	if( substr('$wx',0,1) == 'c' ) {
+	   set xx = counter
+	   define labx "order #"
+	}
+	if( substr('$wx',0,1) == 't' ) {
+	   set xx = mjd
+	   define labx "MJD"
+	} 
+	if( substr('$wx',0,1) == 'f' ) {
+	   set xx = lg(fa)
+	   define labx "F_a"
+	}
+
+	define max_ff_ab (12)
+	define max_ff_ac (45)
+	define max_ff_bc (12)
+	define max_ff $max_ff_$9
+
+	#--------------------
+	define 7 $(substr('$wband',0,1))
+	define 8 $(substr('$wband',1,1))
+
+	compute_ratio_ab $7 $8 2.0 r_20
+	compute_ratio_ab $7 $8 2.5 r_25
+	compute_ratio_ab $7 $8 3.0 r_30
+	echo $r_20
+	echo $r_25
+	echo $r_30
+	#--------------------
+
+	vecminmax ratio_$9 m1 m2
+	echo " Array min and max : "$m1 $m2
+
+	set rejected = ratio_$9   if( ratio_$9 >= $max_ff )
+	if( dimen(rejected) > 0 ) { 
+	   define rejectedpct $(sprintf('%4.1f',$(100.*dimen(rejected)/dimen(mjd))))
+	   echo " Data non plotted with f/f max = "$max_ff"   :  " $(dimen(rejected)) "[" $rejectedpct "% ]"
+	} else {
+	   echo " No data rejected with f/f max = "$max_ff
+	}
+
+	set temp = ratio_$9   if( flag_ul_$9 == 0 )
+	echo " REAL Data points (w/out upper limits) : "$(dimen(temp)) "[" $(sprintf('%4.1f',$(100.*dimen(temp)/dimen(mjd)))) "% ]" 
+
+	notation -4 5 -4 4 
+
+	ticksize 0 0 1 3 
+	limits xx ratio_$9
+	limits xx -0.5 $max_ff
+	limits xx $max_ff -0.5
+	box
+	xlabel $labx
+	ylabel F_$7/F_$8 
+
+	ptype 4 1 expand 1.25 ctype 2 points xx ratio_$9  if( flag_ul_$9 == 3 )
+	ptype 4 3 expand 0.75 ctype 3 points xx ratio_$9  if( flag_ul_$9 == 2 )
+	ptype 4 3 expand 0.75 ctype 6 points xx ratio_$9  if( flag_ul_$9 == 1 )
+	ptype 4 3 expand 1.75 ctype 4 points xx ratio_$9  if( flag_ul_$9 <  1 )
+	ctype 2
+
+	ctype 7 
+	ltype 2
+	relocate $fx1 $r_20 draw $fx2 $r_20
+	relocate $fx1 $r_25 draw $fx2 $r_25
+	relocate $fx1 $r_30 draw $fx2 $r_30
+	ctype 2 
+	ltype 0
+
+	echo "---------------------------------------------"
+	echo " black crosses :  upper limit / upper limit  ===>  n/a "
+	echo " red   squares :         GOOD / upper limit  ===> LOWER limit "
+	echo " cyan  squares :  upper limit / GOOD         ===> UPPER limit  "
+	echo " green squares :         GOOD / GOOD         ===>  GOOD"
+	echo "---------------------------------------------"
+
+	relocate ( $(0.5*($gx1+$gx2)) $($gy2 + 750) )
+	putlabel 6 $9
+
+##-------------------------------------------------------------------------------
+## histo_lat_ratios  [!!!! TO BE UPDATED !!!!]
+histo_lat_ratios
+
+	read_lat_data
+
+	#define wx    ? < What X-variable [counter|time|flux] : >
+	define wband ? <               Which band [ab|ac|bc] : >
+	define 9 $wband
+
+	define max_ff_ab (12)
+	define max_ff_ac (45)
+	define max_ff_bc (12)
+	define max_ff $max_ff_$9
+
+	set xx=-0.5,$max_ff_$9+1,1
+
+	#--------------------
+	define 7 $(substr('$wband',0,1))
+	define 8 $(substr('$wband',1,1))
+
+	compute_ratio_ab $7 $8 2.0 r_20
+	compute_ratio_ab $7 $8 2.5 r_25
+	compute_ratio_ab $7 $8 3.0 r_30
+	echo $r_20
+	echo $r_25
+	echo $r_30
+	#--------------------
+
+	vecminmax ratio_$9 m1 m2
+	echo " Array min and max : "$m1 $m2
+
+	set rejected = ratio_$9   if( ratio_$9 >= $max_ff )
+	if( dimen(rejected) > 0 ) { 
+	   define rejectedpct $(sprintf('%4.1f',$(100.*dimen(rejected)/dimen(mjd))))
+	   echo " Data non plotted with f/f max = "$max_ff"   :  " $(dimen(rejected)) "[" $rejectedpct "% ]"
+	} else {
+	   echo " No data rejected with f/f max = "$max_ff
+	}
+
+	set temp = ratio_$9   if( flag_ul_$9 == 0 )
+	echo " REAL Data points (w/out upper limits) : "$(dimen(temp)) "[" $(sprintf('%4.1f',$(100.*dimen(temp)/dimen(mjd)))) "% ]" 
+
+	set ratio_good    = ratio_$9   if( flag_ul_$9 <  1 )
+	set ratio_ll      = ratio_$9   if( flag_ul_$9 == 2 )
+	set ratio_with_ll = ratio_$9   if( flag_ul_$9 < 1 || flag_ul_$9 == 2 )
+
+	set hratio_with_ll = histogram(ratio_with_ll:xx)
+	set hratio_good    = histogram(ratio_good:xx)
+
+	ticksize 0 0 0 0
+	limits xx hratio_with_ll
+	box
+	xlabel F_$7/F_$8 
+	ylabel N
+
+	define shift local
+	define shift (0.025)
+	ctype 3 histogram (xx-$shift) (hratio_with_ll-$shift)
+	ctype 4 histogram (xx+$shift) (hratio_good+$shift)
+
+	ctype 7 
+	ltype 2
+	relocate $r_20 $fy1 draw $r_20 $fy2 
+	relocate $r_25 $fy1 draw $r_25 $fy2 
+	relocate $r_30 $fy1 draw $r_30 $fy2 
+	ctype 2 
+	ltype 0
+
+	echo "---------------------------------------------"
+	echo " black crosses :  upper limit / upper limit  ===>  n/a "
+	echo " red   squares :         GOOD / upper limit  ===> LOWER limit "
+	echo " cyan  squares :  upper limit / GOOD         ===> UPPER limit  "
+	echo " green squares :         GOOD / GOOD         ===>  GOOD"
+	echo "---------------------------------------------"
+
+	relocate ( $(0.5*($gx1+$gx2)) $($gy2 + 750) )
+	putlabel 6 $9
+
+##----------------------------------------------------------
+## compute_ratio_ab <band_a> <band_b> <Gamma> <output var name>
+compute_ratio_ab 4
+
+	#--- preset values ---#
+	define x1a (0.1)
+	define x2a (300.0)
+	define x1b (0.3)
+	define x2b (1.0)
+	define x1c (1.0)
+	define x2c (300.0)
+
+	foreach 9 < 11 12 21 22 > {
+	   define x$9 local
+	}
+	define xa1 $x1$1
+	define xa2 $x2$1
+	define xb1 $x1$2
+	define xb2 $x2$2
+
+	define fa local
+	define fb local
+	define ratio local
+
+	define fa $( $xa1**(1.0-$3)/($3-1.0)*(1.0 - ($xa1/$xa2)**($3-1.0)) )
+	define fb $( $xb1**(1.0-$3)/($3-1.0)*(1.0 - ($xb1/$xb2)**($3-1.0)) )
+	define ratio $($fa/$fb)
+
+	echo $fa $fb "==>" $ratio
+
+	define $4 $ratio
+
+##===============================================================================
+## read_smarts_and_uvot_3c454
+read_smarts_and_uvot_3c454
+
+	foreach 9 < b v r j > {
+	   #--- "arbitrary" units ---#
+	   data smarts_$9l.dat
+	   read < smarts_$9_jd 1 smarts_$9_f 2 smarts_$9_ef 3 >
+	   set smarts_$9_tjd = smarts_$9_jd - 2400000.5
+
+	   set smarts_$9_lgf   =    lg(smarts_$9_f)
+	   set smarts_$9_eulgf =    lg(1 + smarts_$9_ef/smarts_$9_f)
+	   set smarts_$9_edlgf = -1*lg(1 - smarts_$9_ef/smarts_$9_f)
+	
+	   #--- flux units values ---#
+	   data smarts_$9_vFv.dat
+	   read < smarts_f_$9_jd 1 smarts_f_$9_f 2 smarts_f_$9_ef 3 >
+	   set smarts_f_$9_tjd = smarts_f_$9_jd - 2400000.5
+
+	   set smarts_f_$9_lgf   =    lg(smarts_f_$9_f)
+	   set smarts_f_$9_eulgf =    lg(1 + smarts_f_$9_ef/smarts_f_$9_f)
+	   set smarts_f_$9_edlgf = -1*lg(1 - smarts_f_$9_ef/smarts_f_$9_f)
+	}
+
+	foreach 9 < u b v > { 
+	   #--- "arbitrary" units ---#
+	   data uvot_$9$9.dat
+	   read < uvot_$9_jd 1 uvot_$9_f 2 uvot_$9_ef 3 >
+	   set uvot_$9_tjd = uvot_$9_jd - 2400000.5
+
+	   set uvot_$9_lgf   =    lg(uvot_$9_f)
+	   set uvot_$9_eulgf =    lg(1 + uvot_$9_ef/uvot_$9_f)
+	   set uvot_$9_edlgf = -1*lg(1 - uvot_$9_ef/uvot_$9_f)
+	
+	   #--- flux units values ---#
+	   data uvot_$9$9_vFv.dat
+	   read < uvot_f_$9_jd 1 uvot_f_$9_f 2 uvot_f_$9_ef 3 >
+	   set uvot_f_$9_tjd = uvot_f_$9_jd - 2400000.5
+
+	   set uvot_f_$9_lgf   =    lg(uvot_f_$9_f)
+	   set uvot_f_$9_eulgf =    lg(1 + uvot_f_$9_ef/uvot_f_$9_f)
+	   set uvot_f_$9_edlgf = -1*lg(1 - uvot_f_$9_ef/uvot_f_$9_f)
+	}
+
+	foreach 9 < b v > { 
+	   #--- "arbitrary" units ---#
+	   set all_$9_tjd = smarts_$9_tjd CONCAT uvot_$9_tjd
+	   set all_$9_f   = smarts_$9_f   CONCAT uvot_$9_f
+	   set all_$9_ef  = smarts_$9_ef  CONCAT uvot_$9_ef
+
+	   sort < all_$9_tjd all_$9_f all_$9_ef >
+
+	   set all_$9_lgf   = lg(all_$9_f)
+	   set all_$9_eulgf = lg(1 + all_$9_ef/all_$9_f)
+	   set all_$9_edlgf = -1*lg(1 - all_$9_ef/all_$9_f)
+	
+	   #--- flux units values ---#
+	   set all_f_$9_tjd = smarts_f_$9_tjd CONCAT uvot_f_$9_tjd
+	   set all_f_$9_f   = smarts_f_$9_f   CONCAT uvot_f_$9_f
+	   set all_f_$9_ef  = smarts_f_$9_ef  CONCAT uvot_f_$9_ef
+
+	   sort < all_f_$9_tjd all_f_$9_f all_f_$9_ef >
+
+	   set all_f_$9_lgf   = lg(all_f_$9_f)
+	   set all_f_$9_eulgf = lg(1 + all_f_$9_ef/all_f_$9_f)
+	   set all_f_$9_edlgf = -1*lg(1 - all_f_$9_ef/all_f_$9_f)
+	}
+
+	echo "------------------------------------------------------------"
+	echo " SMARTS: b v r j "
+	echo " UVOT  : u b v "
+	echo " BOTH  : b v "
+	echo "------------------------------------------------------------"
+
+##-------------------------------------------------------------------------------
+## plot_smarts_and_uvot_3c454
+plot_smarts_and_uvot_3c454
+
+	reset_graph
+
+	define whichband ? < Which band [b|v] : >
+	define 9 $whichband
+
+	notation -4 5 -4 4 
+	limits all_$9_tjd all_$9_lgf
+	limits all_$9_tjd -6.8 -5.8
+	limits 54675 54820 -6.8 -5.8
+
+	box
+	xlabel Time [TJD]
+	ylabel "mag" ($9)
+
+	ptype 4 3 
+	ctype 3 points uvot_$9_tjd   uvot_$9_lgf
+	ctype 5 points smarts_$9_tjd smarts_$9_lgf
+	ctype 2 
+
+##-------------------------------------------------------------------------------
+## plot_smarts_and_uvot_f_3c454
+plot_smarts_and_uvot_f_3c454
+
+	reset_graph
+
+	define whichband ? < Which band [b|v] : >
+	define 9 $whichband
+
+	notation -4 5 -4 4 
+	# limits all_f_$9_tjd -6.8 -5.8
+	limits all_f_$9_tjd all_f_$9_lgf
+	limits 54675 54820 -11.2 -10.4
+	limits all_f_$9_tjd -11.2 -10.4
+
+	box
+	xlabel Time [TJD]
+	ylabel \\nu F_\\nu ($9)
+
+	ptype 4 3 
+	ctype 3 points uvot_f_$9_tjd   uvot_f_$9_lgf
+	ctype 5 points smarts_f_$9_tjd smarts_f_$9_lgf
+	ctype 2 
+
+#===============================================================================

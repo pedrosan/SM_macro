@@ -1,0 +1,65 @@
+#---------------------------------------------------------------------------
+# media_1
+media_1
+
+	define l1 ? {Lower interval boundary ?}
+	define l2 ? {Higher interval boundary ?}
+
+	define n       (0)
+	define av_a34  (0)
+	define av2_a34 (0)
+
+	do 1=0,$(dimen(a12)-1) {
+	   if(a12[$1] >= $l1 && a12[$1] < $l2) {
+	      define n       ($n + 1)
+	      define av_a34  ($av_a34 + $(a34[$1]))
+	      define av2_a34 ($av2_a34 + $(a34[$1])**2.)
+ 	   }
+	}
+
+	define av_a34  ($av_a34/$n)
+	define av2_a34 ($av2_a34/$n)
+	define sigma_a34 (sqrt(abs($av_a34**2.-$av2_a34)))
+
+	echo for a12 in [$l1-$l2]: <a34> = $av_a34 +/- $sigma_a34
+
+	relocate $(($l1+$l2)/2.) $av_a34
+
+#---------------------------------------------------------------------------
+# media_n
+media_n
+
+	set lims = 0.4,1.1,0.1
+
+	set dimen(bin)     = $(dimen(lims) - 1)
+	set dimen(n)       = $(dimen(lims) - 1)
+	set dimen(av_a34)  = $(dimen(lims) - 1)
+	set dimen(av2_a34) = $(dimen(lims) - 1)
+
+	do 2=0,$(dimen(lims)-2) {
+	   define l1 $(lims[$2])
+	   define l2 $(lims[$2+1])
+	   set bin[$2] = ($l1 + $l2)/2.
+
+	   do 1=0,$(dimen(a12)-1) {
+	      if(a12[$1] >= $l1 && a12[$1] < $l2) {
+	         set n[$2]       = n[$2] + 1
+	         set av_a34[$2]  = av_a34[$2] + a34[$1]
+	         set av2_a34[$2] = av2_a34[$2] + a34[$1]**2.
+ 	      }
+	   }
+	}
+
+	set av_a34    = av_a34/n
+	set av2_a34   = av2_a34/n
+	set sigma_a34 = sqrt(abs(av_a34**2. - av2_a34))
+
+	expand 2
+	ctype 2
+	ptype 4 3 
+	points  bin av_a34 
+	error_y bin av_a34 sigma_a34
+
+
+
+#---------------------------------------------------------------------------

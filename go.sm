@@ -1,0 +1,27 @@
+# go_macro
+go_macro
+
+        myload read_other_samples
+        myload verynew.read_samples
+        myload read_super_sample
+        myload verynew.total_sample
+        myload polfit
+        myload aas
+	myload glast_seds
+        myload FFSS
+
+# go_samples
+go_samples
+
+	load_gf98_sample
+	name_back_bis
+	read_dxrbs
+	read_sallyc
+	read_sede
+	read_bade
+	read_emss2
+	read_ffss
+	echo " RENAME FFSS ARRAYS !!"
+	rename_sample
+	concat_samples
+

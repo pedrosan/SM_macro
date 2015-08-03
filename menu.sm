@@ -1,0 +1,54 @@
+#---------------------------------------------------------------------------
+# menu
+menu
+
+	macro read tools.sm
+
+	echo --------------------------------------------------
+	echo              SAMPLES Menu
+	echo --------------------------------------------------
+	echo ** Which of the following macro do you like to load ?
+	echo  *
+	echo  *  [1] verynew.read_samples.sm
+	echo  *  [2] read_other_samples.sm
+	echo  *  [3] verynew.if_avrg.sm
+	echo  *  [4] verynew.gamma.sm
+	echo  *  [5] polfit.sm
+	echo  *  [6] verynew.total_sample.sm
+	echo  *
+	echo  *  [7] seds_paths.sm
+	echo  *  [8] glast_seds.sm
+	echo  *
+	echo  *  [9] verynew.colors_slew.sm
+	echo  * [10] aas.sm
+	echo  *
+	echo  * [11] ALL
+	echo  *
+	echo --------------------------------------------------
+	echo 
+	define if_what ? { Gimme the corresponding code number }
+
+        if($if_what == 1)  { macro read verynew.read_samples.sm }
+        if($if_what == 2)  { macro read read_other_samples.sm }
+        if($if_what == 3)  { macro read verynew.if_avrg.sm }
+        if($if_what == 4)  { macro read verynew.gamma.sm }
+        if($if_what == 5)  { macro read polfit.sm }
+        if($if_what == 6)  { macro read verynew.total_sample.sm }
+        if($if_what == 7)  { macro read seds_paths.sm }
+        if($if_what == 8)  { macro read glast_seds.sm }
+        if($if_what == 9)  { macro read verynew.colors_slew.sm }
+        if($if_what == 10) { macro read aas.sm }
+        if($if_what == 11) { 
+             macro read verynew.read_samples.sm 
+             macro read read_other_samples.sm 
+             macro read verynew.if_avrg.sm 
+             macro read verynew.gamma.sm 
+             macro read polfit.sm 
+             macro read verynew.total_sample.sm 
+             macro read seds_paths.sm 
+             macro read glast_seds.sm 
+             macro read verynew.colors_slew.sm 
+             macro read aas.sm 
+	}
+
+#---------------------------------------------------------------------------

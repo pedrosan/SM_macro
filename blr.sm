@@ -1,0 +1,746 @@
+#-------------------------------------------------------------------------------
+# select_on_blr
+#    RUN THIS FIRST to initialized arrays of objects with BLR info
+select_on_blr
+
+	set nl_opt_corr   =   nl_opt + lg(1 - ca_break/0.500001)
+	set lg_f_opt_corr = lg_f_opt + lg(1 - ca_break/0.500001)
+
+        set veclist = < ra dec ra_h ra_m ra_s dec_d dec_m dec_s \
+                        gf_Xflag class classn z f_first f5 emag omag \
+                        twoflag JK twobinflag \
+                        jmag jflag lg_f_j \
+                        hmag hflag lg_f_h \
+                        kmag kflag lg_f_k \
+                        jphflag hphflag kphflag binphflag \
+                        bingood jgood hgood kgood \
+			lg_f_radio nl_radio \
+                        lg_f_ir lg_f_uv vmag lg_f_opt lg_f_opt1 lg_f_opt2 \
+                        lg_f_x lg_f_x_flat lg_f_x_steep lg_f_1_flat lg_f_1_steep \
+                        a_ro a_rj a_rk a_jo a_ko \
+                        lg_f_1_mid a_ro1 a_ro2 \
+			a_ox \
+                        a_rx_flat a_rx_steep a_rx_mid \
+                        a_jx_mid \
+                        a_rx_guess a_ox_mid a_ox_mid1 a_ox_mid2 \
+                        lg_f_1_guess f_1_ujy \
+                        xcps lg_f_first lg_f_r_5 \
+			lg_f_first_int lg_f_first_peak lg_f_nvss \
+			nl_radio nl_opt nl_x \
+			blr_nline blr_factor f_blr lg_f_blr nl_blr \
+	                hb_fwhm hb_l_cont hb_Mbh lg_hb_l_cont \
+			mgii_fwhm mgii_l_cont mgii_Mbh lg_mgii_l_cont \
+			civ_fwhm civ_l_cont civ_Mbh lg_civ_l_cont \
+			Mbh Ledd \
+			ca_break flag_ca_break \
+			lg_f_opt_corr nl_opt_corr \
+			guess_xp1 guess_xp2 guess_xp3 \
+			sdss_id sdss_classn sdss_nseq >
+
+       define cut_blr_factor ? < Minimum acceptable value of BLR_factor : >
+       foreach 1 veclist {
+           set selblr_$1 = $1 if( blr_factor > $cut_blr_factor )
+       }
+
+       foreach 1 veclist {
+           set selmbh_$1 = $1 if( Mbh > 0 )
+       }
+
+#-------------------------------------------------------------------------------
+# blr_vs_z
+blr_vs_z
+
+	limits -2 $(lg(5.)) 40 48
+	ticksize -1 0 0 0 
+	ctype 2 
+	box
+	xlabel redshift
+	ylabel L_{BLR}
+
+	expand 2.0
+	ptype 4 3 
+	ctype 3 points (lg(selblr_z)) (selblr_nl_blr)  if(selblr_classn == 2)
+	ctype 5 points (lg(selblr_z)) (selblr_nl_blr)  if(selblr_classn == 1)
+	ctype 4 points (lg(selblr_z)) (selblr_nl_blr)  if(selblr_classn == 0)
+	expand 1.5
+
+#-------------------------------------------------------------------------------
+# blr2opt_vs_z
+blr2opt_vs_z
+
+	limits -2 $(lg(5.)) -5.1 1.5 
+	ticksize -1 0 0 0 
+	ctype 2 
+	box
+	xlabel redshift
+	ylabel L_{BLR}/L_{opt}
+
+	expand 2.0
+	ptype 4 3 
+	ctype 3 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt)  if(selblr_classn == 2)
+	ctype 5 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt)  if(selblr_classn == 1)
+	ctype 4 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt)  if(selblr_classn == 0)
+
+	ctype 2
+	ptype 4 0 
+	points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt)   if( selblr_flag_ca_break > 0 )
+	expand 1.5
+
+#-------------------------------------------------------------------------------
+# blr2optcorr_vs_z
+blr2optcorr_vs_z
+
+	limits $(lg(0.03)) $(lg(5.)) -5.1 1.5 
+	ticksize -1 0 0 0 
+	ctype 2 
+	box
+	xlabel redshift
+	ylabel L_{BLR}/L_{opt,corr}
+
+        define cut_blr_factor ? < Minimum acceptable value of BLR_factor : >
+
+	expand 2.5
+	ptype 4 0 
+	# ctype 3 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt_corr)  if(selblr_classn == 2)
+	# ctype 5 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt_corr)  if(selblr_classn == 1)
+	ctype 3 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt_corr)  if(selblr_classn == 2 && selblr_blr_factor > $cut_blr_factor )
+	angle 45
+	ctype 5 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt_corr)  if(selblr_classn == 1 && selblr_blr_factor > $cut_blr_factor )
+	# ctype 4 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt_corr)  if(selblr_classn == 0)
+	angle 0
+
+	ptype 20 3
+	expand 1.25
+	lweight 2 
+	ctype 3 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt_corr)  if(selblr_classn == 2 && selblr_blr_factor > $cut_blr_factor )
+	#points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt_corr)   if( selblr_flag_ca_break > 0 )
+	# points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt_corr)   if( selblr_flag_ca_break > 0 && selblr_classn > 0)
+	ctype 2
+	expand 1.5
+
+	expand 2.0
+	lweight 3
+	ctype 2
+
+dummy
+	expand 2.0
+	ptype 4 3 
+	# ctype 3 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt_corr)  if(selblr_classn == 2)
+	# ctype 5 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt_corr)  if(selblr_classn == 1)
+	ctype 3 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt_corr)  if(selblr_classn == 2 && selblr_blr_factor > $cut_blr_factor )
+	ctype 5 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt_corr)  if(selblr_classn == 1 && selblr_blr_factor > $cut_blr_factor )
+	# ctype 4 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt_corr)  if(selblr_classn == 0)
+
+	ctype 2
+	ptype 4 0 
+	#points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt_corr)   if( selblr_flag_ca_break > 0 )
+	# points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_opt_corr)   if( selblr_flag_ca_break > 0 && selblr_classn > 0)
+	ctype 2
+	expand 1.5
+
+#-------------------------------------------------------------------------------
+# blr2radio_vs_z
+blr2radio_vs_z
+
+	# limits 0.01 5. -1 3.5 
+	# ticksize 0 0 0 0 
+	limits $(lg(0.03)) $(lg(6.)) -1 3.5 
+	ticksize -1 0 0 0 
+	ctype 2 
+	box
+	xlabel redshift
+	ylabel L_{BLR}/L_{radio}
+
+        define cut_blr_factor ? < Minimum acceptable value of BLR_factor : >
+
+	expand 2.0
+	ptype 4 3 
+	ctype 3 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_radio)  if(selblr_classn == 2 && selblr_blr_factor > $cut_blr_factor )
+	ctype 5 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_radio)  if(selblr_classn == 1 && selblr_blr_factor > $cut_blr_factor )
+	# ctype 3 points selblr_z (selblr_nl_blr-selblr_nl_radio)  if(selblr_classn == 2)
+	# ctype 5 points selblr_z (selblr_nl_blr-selblr_nl_radio)  if(selblr_classn == 1)
+	#GF# ctype 4 points (lg(selblr_z)) (selblr_nl_blr-selblr_nl_radio)  if(selblr_classn == 0)
+	expand 1.5
+
+#-------------------------------------------------------------------------------
+# histo_blr2Ledd
+histo_blr2Ledd
+
+	reset_graph
+	location 5500 30000 5500 28500
+
+	set selmbh_blr2Ledd = selmbh_nl_blr - selmbh_Ledd
+	set blr2Ledd_fsrq = selmbh_nl_blr - selmbh_Ledd  if(selmbh_classn == 2)
+	set blr2Ledd_bll  = selmbh_nl_blr - selmbh_Ledd  if(selmbh_classn == 1)
+	set blr2Ledd_gal  = selmbh_nl_blr - selmbh_Ledd  if(selmbh_classn == 0)
+
+	define hxstep (0.2)
+
+	set hx=-5-0.5*$hxstep,0+0.5*$hxstep,$hxstep
+	set hy_fsrq=histogram(blr2Ledd_fsrq:hx)
+	set hy_bll =histogram(blr2Ledd_bll:hx)
+	set hy_gal =histogram(blr2Ledd_gal:hx)
+
+	ctype 2 
+	limits -5 0 hy
+	ticksize 0 0 0 0 
+	box 1 2 0 0 
+	xlabel L_{BLR}/L_{Edd}
+	ylabel N
+
+	ctype 3 histogram hx hy_fsrq
+	ctype 5 histogram hx hy_bll
+	ctype 2
+
+#-------------------------------------------------------------------------------
+# histo_blr2radio
+histo_blr2radio
+
+	reset_graph
+	location 5500 30000 5500 28500
+
+	local define zmin ? < Z min : > 
+	local define zmax ? < Z max : > 
+
+        define cut_blr_factor ? < Minimum acceptable value of BLR_factor : >
+
+	set selblr_blr2radio_fsrq = selblr_nl_blr - selblr_nl_radio  if( selblr_classn == 2 && selblr_z >= $zmin && selblr_z <= $zmax && selblr_blr_factor > $cut_blr_factor)
+	set selblr_blr2radio_bll  = selblr_nl_blr - selblr_nl_radio  if( selblr_classn == 1 && selblr_z >= $zmin && selblr_z <= $zmax && selblr_blr_factor > $cut_blr_factor)
+	set selblr_blr2radio_gal  = selblr_nl_blr - selblr_nl_radio  if( selblr_classn == 0 && selblr_z >= $zmin && selblr_z <= $zmax && selblr_blr_factor > $cut_blr_factor)
+
+	stats selblr_blr2radio_fsrq a b c 
+	echo " FSRQ : "$a $b 
+	stats selblr_blr2radio_bll  a b c 
+	echo " BLL  : "$a $b 
+
+	define hxstep (0.333333)
+
+	set hx=-2-0.5*$hxstep,5+0.5*$hxstep,$hxstep
+	foreach 8 < 'fsrq' 'bll' 'gal' > {
+	   set hy_$8 = histogram(selblr_blr2radio_$8:hx)
+	   echo "  "$8" : "$(sum(hy_$8))
+	}
+	# set hy_fsrq=histogram(selblr_blr2radio_fsrq:hx)
+	# set hy_bll =histogram(selblr_blr2radio_bll:hx)
+	# set hy_gal =histogram(selblr_blr2radio_gal:hx)
+
+	#----------------------------------------
+	# normalize the histograms?
+	local define normhisto ? < Normalize histograms [1|0] : >
+	if( $normhisto ) {
+	    foreach 8 < 'fsrq' 'bll' 'gal' > { set hy_$8 =hy_$8/$(sum(hy_$8)) }
+	    limits -1.5 3.5 -0.02 0.41
+	    local define dy (0.0025)
+	    define lab_y "P(x)\Delta x"
+	} else {
+	    limits -1.5 3.5 -4 39
+	    local define dy (0.04)
+	    define lab_y "N"
+	}
+
+	ctype 2 
+	# limits -5.5 1.0 -4 30
+	# limits -5.5 1.0 -4 30
+	## limits -1.5 5.0 hy
+	# limits -1.5 5.0 -4 39
+
+	ticksize $hxstep 1 0 0 
+	box 1 2 4 0 
+	xlabel L_{BLR}/L_{radio}
+	ylabel $lab_y
+
+	define dx (0.02) 
+	# define dy (0.04) 
+	ctype 3 histogram (hx+0.0*$dx) (hy_fsrq+0.0*$dy)
+	ctype 5 histogram (hx+1.0*$dx) (hy_bll+1.0*$dy)
+	#GF# ctype 4 histogram (hx-1.0*$dx) (hy_gal-1.0*$dy)
+	ctype 2
+
+	define g2r (2.75)
+	define g2r (2.50)
+	ctype 2 
+	#GF# limits $($fx1-$g2r) $($fx2-$g2r) 0 1
+	#GF# ticksize 0.25 1 0 0
+	#GF# box 4 4 1 4
+	box 4 4 1 4 
+
+	#GF# relocate ( $(0.5*($gx1+$gx2))  $($gy2 + 2500) )
+	#GF# putlabel 5 L_{BLR}/L_\gamma
+
+#-------------------------------------------------------------------------------
+# histo_blr2opt
+histo_blr2opt
+
+	reset_graph
+	location 5500 30000 5500 28500
+
+	local define zmin ? < Z min : > 
+	local define zmax ? < Z max : > 
+
+	set selblr_blr2opt_fsrq = selblr_nl_blr - selblr_nl_opt  if( selblr_classn == 2 && selblr_z >= $zmin && selblr_z <= $zmax )
+	set selblr_blr2opt_bll  = selblr_nl_blr - selblr_nl_opt  if( selblr_classn == 1 && selblr_z >= $zmin && selblr_z <= $zmax )
+	set selblr_blr2opt_gal  = selblr_nl_blr - selblr_nl_opt  if( selblr_classn == 0 && selblr_z >= $zmin && selblr_z <= $zmax )
+
+	define hxstep (0.333333)
+
+	set hx=-6-0.5*$hxstep,1+0.5*$hxstep,$hxstep
+	foreach 8 < 'fsrq' 'bll' 'gal' > {
+	   set hy_$8 = histogram(selblr_blr2opt_$8:hx)
+	   echo "  "$8" : "$(sum(hy_$8))
+	}
+	# set hy_fsrq=histogram(selblr_blr2opt_fsrq:hx)
+	# set hy_bll =histogram(selblr_blr2opt_bll:hx)
+	# set hy_gal =histogram(selblr_blr2opt_gal:hx)
+
+	#----------------------------------------
+	# normalize the histograms?
+	local define normhisto ? < Normalize histograms [1|0] : >
+	if( $normhisto ) {
+	    foreach 8 < 'fsrq' 'bll' 'gal' > { set hy_$8 =hy_$8/$(sum(hy_$8)) }
+	    limits -5.5 1.0 -0.02 0.51
+	    local define dy (0.0025)
+	} else {
+	    limits -5.5 1.0 -4 30
+	    local define dy (0.04)
+	}
+
+	ctype 2 
+	# limits -5.5 1.0 hy
+	# limits -5.5 1.0 -4 30
+	ticksize $hxstep 1 0 0 
+	box 1 2 4 0 
+	xlabel L_{BLR}/L_{opt}
+	ylabel N
+
+	define dx (0.02) 
+	# define dy (0.04) 
+	ctype 3 histogram (hx+0.0*$dx) (hy_fsrq+0.0*$dy)
+	ctype 5 histogram (hx+1.0*$dx) (hy_bll+1.0*$dy)
+	##ctype 4 histogram (hx-1.0*$dx) (hy_gal-1.0*$dy)
+	ctype 2
+
+	define ll $(lg(2200.))
+	ctype 2 
+	limits $($fx1+$ll) $($fx2+$ll) 0 1
+	ticksize -1 0 0 0 
+	box 4 4 1 4
+
+	relocate ( $(0.5*($gx1+$gx2))  $($gy2 + 2500) )
+	putlabel 5 '"EW"'
+
+#-------------------------------------------------------------------------------
+# histo_blr2optcorr
+histo_blr2optcorr
+
+	reset_graph
+	location 5500 30000 5500 28500
+
+	local define zmin ? < Z min : > 
+	local define zmax ? < Z max : > 
+        define cut_blr_factor ? < Minimum acceptable value of BLR_factor : >
+
+	# set selblr_blr2optcorr_fsrq = selblr_nl_blr - selblr_nl_opt_corr  if( selblr_classn == 2 && selblr_z >= $zmin && selblr_z <= $zmax )
+	# set selblr_blr2optcorr_bll  = selblr_nl_blr - selblr_nl_opt_corr  if( selblr_classn == 1 && selblr_z >= $zmin && selblr_z <= $zmax )
+	# set selblr_blr2optcorr_gal  = selblr_nl_blr - selblr_nl_opt_corr  if( selblr_classn == 0 && selblr_z >= $zmin && selblr_z <= $zmax )
+
+	set selblr_blr2optcorr_fsrq = selblr_nl_blr - selblr_nl_opt_corr  if( selblr_classn == 2 && selblr_z >= $zmin && selblr_z <= $zmax && selblr_blr_factor > $cut_blr_factor)
+	set selblr_blr2optcorr_bll  = selblr_nl_blr - selblr_nl_opt_corr  if( selblr_classn == 1 && selblr_z >= $zmin && selblr_z <= $zmax && selblr_blr_factor > $cut_blr_factor)
+	set selblr_blr2optcorr_gal  = selblr_nl_blr - selblr_nl_opt_corr  if( selblr_classn == 0 && selblr_z >= $zmin && selblr_z <= $zmax && selblr_blr_factor > $cut_blr_factor)
+
+	stats selblr_blr2optcorr_fsrq a b c 
+	echo " FSRQ : "$a $b 
+	stats selblr_blr2optcorr_bll  a b c 
+	echo " BLL  : "$a $b 
+
+	define hxstep (0.333333)
+
+	set hx=-6-0.5*$hxstep,1+0.5*$hxstep,$hxstep
+	foreach 8 < 'fsrq' 'bll' 'gal' > {
+	   set hy_$8 = histogram(selblr_blr2optcorr_$8:hx)
+	   echo "  "$8" : "$(sum(hy_$8))
+	}
+	# set hy_fsrq=histogram(selblr_blr2optcorr_fsrq:hx)
+	# set hy_bll =histogram(selblr_blr2optcorr_bll:hx)
+	# set hy_gal =histogram(selblr_blr2optcorr_gal:hx)
+
+	#----------------------------------------
+	# normalize the histograms?
+	local define normhisto ? < Normalize histograms [1|0] : >
+	if( $normhisto ) {
+	    foreach 8 < 'fsrq' 'bll' 'gal' > { set hy_$8 =hy_$8/$(sum(hy_$8)) }
+	    limits -4.1 1.0 -0.02 0.61
+	    local define dy (0.0025)
+	    define lab_y "P(x)\Delta x"
+	} else {
+	    limits -4.1 1.0 -4 30
+	    local define dy (0.04)
+	    define lab_y "N"
+	}
+
+	ctype 2 
+	# limits -5.5 1.0 hy
+	# limits -5.5 1.0 -4 30
+	ticksize $hxstep 1 0 0 
+	box 1 2 4 0 
+	xlabel L_{BLR}/L_{opt,corr}
+	ylabel $lab_y
+
+	define dx (0.02) 
+	# define dy (0.04) 
+	ctype 3 histogram (hx+0.0*$dx) (hy_fsrq+0.0*$dy)
+	ctype 5 histogram (hx+1.0*$dx) (hy_bll+1.0*$dy)
+	##ctype 4 histogram (hx-1.0*$dx) (hy_gal-1.0*$dy)
+	ctype 2
+
+	define ll $(lg(2200.))
+	ctype 2 
+	#GF# limits $($fx1+$ll) $($fx2+$ll) 0 1 
+	#GF# ticksize -1 0 0 0 
+	box 4 4 1 4
+
+	relocate ( $(0.5*($gx1+$gx2))  $($gy2 + 2500) )
+	#GF# putlabel 5 '"EW"'
+
+#-------------------------------------------------------------------------------
+# histo_radio2Ledd
+histo_radio2Ledd
+
+	reset_graph
+	location 5500 30000 5500 28500
+
+	set selmbh_radio2Ledd = selmbh_nl_radio - selmbh_Ledd
+	set radio2Ledd_fsrq = selmbh_nl_radio - selmbh_Ledd   if( selmbh_classn == 2 )
+	set radio2Ledd_bll  = selmbh_nl_radio - selmbh_Ledd   if( selmbh_classn == 1 )
+
+	define hxstep (0.2)
+
+	set hx=-7-0.5*$hxstep,0+0.5*$hxstep,$hxstep
+	set hy_fsrq=histogram(radio2Ledd_fsrq:hx)
+	set hy_bll =histogram(radio2Ledd_bll:hx)
+
+	ctype 2 
+	limits -6 -1 hy
+	ticksize 0 0 0 0 
+	box 1 2 4 0 
+	xlabel L_{radio}/L_{Edd}
+	ylabel N
+
+	ctype 3 histogram hx hy_fsrq
+	ctype 5 histogram hx hy_bll
+	ctype 2
+
+	define g2r (2.75)
+	define g2r (2.50)
+	ctype 2 
+	limits $($fx1+$g2r) $($fx2+$g2r) hy
+	ticksize 0 0 0 0 
+	box 4 4 1 4
+
+	relocate ( $(0.5*($gx1+$gx2))  $($gy2 + 2500) )
+	putlabel 5 L_\gamma/L_{Edd}
+
+#-------------------------------------------------------------------------------
+# histo_Mbh
+histo_Mbh
+
+	reset_graph
+
+	define hxstep (0.2)
+
+	set Mbh_fsrq = selmbh_Mbh  if( selmbh_classn == 2 )
+	set Mbh_bll  = selmbh_Mbh  if( selmbh_classn == 1 )
+
+	set hx=-7-0.5*$hxstep,13+0.5*$hxstep,$hxstep
+	set hy_fsrq=histogram(Mbh_fsrq:hx)
+	set hy_bll =histogram(Mbh_bll:hx)
+
+	ctype 2 
+	limits 7.5 10.7 hy
+	ticksize 0 0 0 0 
+	box
+	xlabel log(M_{BH}) [M_\odot]
+	ylabel N
+
+	ctype 3 histogram hx hy_fsrq
+	ctype 5 histogram hx hy_bll
+	ctype 2
+
+#-------------------------------------------------------------------------------
+# Mbh_vs_z
+Mbh_vs_z
+
+	reset_graph
+
+	limits $(lg(0.03)) $(lg(5.)) 7.5 10.7
+	ticksize -1 0 0 0 
+	ctype 2 
+	box
+	xlabel redshift
+	ylabel log(M_{BH})  [M_\odot]
+
+	ptype 4 3 
+	ctype 3 points (lg(selmbh_z)) (selmbh_Mbh)  if(selmbh_classn == 2)
+	ctype 5 points (lg(selmbh_z)) (selmbh_Mbh)  if(selmbh_classn == 1)
+	ctype 4 points (lg(selmbh_z)) (selmbh_Mbh)  if(selmbh_classn == 0)
+
+	ctype 2
+
+#-------------------------------------------------------------------------------
+# opt_vs_z
+opt_vs_z
+
+	reset_graph
+
+	limits -2 $(lg(5.)) 42 48.5
+	ticksize -1 0 0 0 
+	ctype 2 
+	box
+	xlabel redshift
+	ylabel L_{opt}
+
+	expand 2.0
+	ptype 4 3 
+	ctype 3 points (lg(z)) (nl_opt)  if(classn == 2)
+	ctype 5 points (lg(z)) (nl_opt)  if(classn == 1)
+	ctype 4 points (lg(z)) (nl_opt)  if(classn == 0)
+
+	ptype 1 1 
+	ctype 2 points (lg(selblr_z)) (selblr_nl_opt)  if(selblr_classn == 2)
+	ctype 2 points (lg(selblr_z)) (selblr_nl_opt)  if(selblr_classn == 1)
+	ctype 2 points (lg(selblr_z)) (selblr_nl_opt)  if(selblr_classn == 0)
+
+	ctype 2
+	expand 1.5
+
+#-------------------------------------------------------------------------------
+# optcorr_vs_z
+optcorr_vs_z
+
+	reset_graph
+
+	limits -2 $(lg(5.)) 42 48.5
+	ticksize -1 0 0 0 
+	ctype 2 
+	box
+	xlabel redshift
+	ylabel L_{opt,corr} 
+
+	expand 2.0
+	ptype 4 3 
+	ctype 3 points (lg(z)) (nl_opt_corr)  if(classn == 2)
+	ctype 5 points (lg(z)) (nl_opt_corr)  if(classn == 1)
+	ctype 4 points (lg(z)) (nl_opt_corr)  if(classn == 0)
+
+	ctype 2
+	expand 1.5
+
+#-------------------------------------------------------------------------------
+# radio_vs_z
+radio_vs_z
+
+	reset_graph
+
+	limits -2 $(lg(5.)) 38 46.25
+	ticksize -1 0 0 0 
+	ctype 2 
+	box
+	xlabel redshift
+	ylabel L_{radio}
+
+	ptype 4 3 
+	ctype 3 points (lg(z)) (nl_radio)  if(classn == 2)
+	ctype 5 points (lg(z)) (nl_radio)  if(classn == 1)
+	ctype 4 points (lg(z)) (nl_radio)  if(classn == 0)
+
+	ctype 2
+
+#-------------------------------------------------------------------------------
+# xray_vs_z
+xray_vs_z
+
+	reset_graph
+
+	limits -2 $(lg(5.)) 40.5 47.25
+	ticksize -1 0 0 0 
+	ctype 2 
+	box
+	xlabel redshift
+	ylabel L_{X}
+
+	ptype 4 3 
+	ctype 3 points (lg(z)) (nl_x)  if(classn == 2 && check_x > 0 )
+	ctype 5 points (lg(z)) (nl_x)  if(classn == 1 && check_x > 0 )
+	ctype 4 points (lg(z)) (nl_x)  if(classn == 0 && check_x > 0 )
+
+	ctype 2
+
+#-------------------------------------------------------------------------------
+# radio_vs_blr
+radio_vs_blr 
+
+	reset_graph
+
+	local define zmin ? < Z min : > 
+	local define zmax ? < Z max : > 
+
+	limits 39.5 46.5 40.5 47.5
+	ticksize 0 0 0 0 
+	ctype 2 
+	box
+	xlabel L_{radio}
+	ylabel L_{BLR}
+
+        define cut_blr_factor ? < Minimum acceptable value of BLR_factor : >
+
+	expand 2.5 
+	ptype 4 3 ctype 3 points (selblr_nl_radio) (selblr_nl_blr)  if( selblr_classn == 2 && selblr_blr_factor > $cut_blr_factor )
+	ptype 4 0 ctype 2 points (selblr_nl_radio) (selblr_nl_blr)  if( selblr_classn == 2 && selblr_z >= $zmin && selblr_z <= $zmax && selblr_blr_factor > $cut_blr_factor )
+	# ctype 2 points (selblr_nl_radio) (selblr_nl_blr)  if( selblr_classn == 1 && selblr_z >= $zmin && selblr_z <= $zmax && selblr_blr_factor > $cut_blr_factor )
+
+	expand 2.5 
+	angle 45
+	ptype 4 3 ctype 8 points (selblr_nl_radio) (selblr_nl_blr)  if( selblr_classn == 1 && selblr_blr_factor > $cut_blr_factor )
+	ptype 4 0 ctype 2 points (selblr_nl_radio) (selblr_nl_blr)  if( selblr_classn == 1 && selblr_z >= $zmin && selblr_z <= $zmax && selblr_blr_factor > $cut_blr_factor )
+	angle 0
+
+	ptype 20 3
+	expand 1.25
+	lweight 2 
+	# ctype 3 points (selblr_nl_radio) (selblr_nl_blr)  if( selblr_classn == 2 && selblr_blr_factor > $cut_blr_factor )
+	expand 2.0
+	lweight 3
+	ctype 2 
+	# points (selblr_nl_radio) (selblr_nl_blr)  if( selblr_classn == 2 && selblr_z >= $zmin && selblr_z <= $zmax && selblr_blr_factor > $cut_blr_factor )
+
+dummy
+
+	expand 2.0
+	ptype 4 3 
+	ctype 3 points (selblr_nl_radio) (selblr_nl_blr)  if( selblr_classn == 2 && selblr_blr_factor > $cut_blr_factor )
+	ctype 5 points (selblr_nl_radio) (selblr_nl_blr)  if( selblr_classn == 1 && selblr_blr_factor > $cut_blr_factor )
+	#GF# ctype 3 points (selblr_nl_radio) (selblr_nl_blr)  if( selblr_classn == 2 && selblr_z >= $zmin && selblr_z <= $zmax && selblr_blr_factor > $cut_blr_factor )
+	#GF# ctype 5 points (selblr_nl_radio) (selblr_nl_blr)  if( selblr_classn == 1 && selblr_z >= $zmin && selblr_z <= $zmax && selblr_blr_factor > $cut_blr_factor )
+	#GF# ctype 4 points (selblr_nl_radio) (selblr_nl_blr)  if( selblr_classn == 0 && selblr_z >= $zmin && selblr_z <= $zmax )
+	ctype 2
+	ptype 4 0 
+	ctype 2 points (selblr_nl_radio) (selblr_nl_blr)  if( selblr_classn == 1 && selblr_z >= $zmin && selblr_z <= $zmax && selblr_blr_factor > $cut_blr_factor )
+	ctype 2 points (selblr_nl_radio) (selblr_nl_blr)  if( selblr_classn == 2 && selblr_z >= $zmin && selblr_z <= $zmax && selblr_blr_factor > $cut_blr_factor )
+
+#-------------------------------------------------------------------------------
+# radio_vs_xray
+radio_vs_xray
+
+	reset_graph
+
+	limits 40.5 48.25 38.5 46.25
+	ticksize 0 0 0 0 
+	ctype 2 
+	box
+	xlabel L_{X}
+	ylabel L_{radio}
+
+	ptype 4 3 
+	ctype 3 points (nl_x) (nl_radio)  if(classn == 2)
+	ctype 5 points (nl_x) (nl_radio)  if(classn == 1)
+	ctype 4 points (nl_x) (nl_radio)  if(classn == 0)
+
+	ctype 2
+
+#-------------------------------------------------------------------------------
+# radio_vs_opt
+radio_vs_opt
+
+	reset_graph
+
+	limits 42.0 48.50 38.5 46.25
+	ticksize 0 0 0 0 
+	ctype 2 
+	box
+	xlabel L_{opt}
+	ylabel L_{radio}
+
+	expand 2.0
+	ptype 4 3 
+	ctype 3 points (nl_opt) (nl_radio)  if(classn == 2)
+	ctype 5 points (nl_opt) (nl_radio)  if(classn == 1)
+	ctype 4 points (nl_opt) (nl_radio)  if(classn == 0)
+
+	ctype 2
+	expand 1.5
+
+#-------------------------------------------------------------------------------
+# radio_vs_optcorr
+radio_vs_optcorr
+
+	reset_graph
+
+	limits 42.0 48.50 38.5 46.25
+	ticksize 0 0 0 0 
+	ctype 2 
+	box
+	xlabel L_{opt}
+	ylabel L_{radio}
+
+	expand 2.0
+	ptype 4 3 
+	ctype 3 points (nl_opt_corr) (nl_radio)  if(classn == 2)
+	ctype 5 points (nl_opt_corr) (nl_radio)  if(classn == 1)
+	##ctype 4 points (nl_opt_corr) (nl_radio)  if(classn == 0)
+
+	ctype 2
+	expand 1.5
+
+#-------------------------------------------------------------------------------
+# blr_vs_aro
+blr_vs_aro
+
+	reset_graph
+
+	local define zmin ? < Z min : > 
+	local define zmax ? < Z max : > 
+
+	local set a_ro = (selblr_lg_f_radio - selblr_lg_f_opt_corr)/5.037
+
+	limits -0.31 0.89 40 48
+	ticksize 0 0 0 0 
+	ctype 2 
+	box
+	xlabel \alpha_{RO}
+	ylabel L_{BLR}
+
+	expand 2.0
+	ptype 4 3 
+	ctype 3 points (a_ro) (selblr_nl_blr)  if(selblr_classn == 2 && selblr_z >= $zmin && selblr_z <= $zmax )
+	ctype 5 points (a_ro) (selblr_nl_blr)  if(selblr_classn == 1 && selblr_z >= $zmin && selblr_z <= $zmax )
+	ctype 6 points (selblr_a_ro) (selblr_nl_blr)  if(selblr_classn == 1 && selblr_z >= $zmin && selblr_z <= $zmax )
+	#GF# ctype 3 points (selblr_a_ro) (selblr_nl_blr)  if(selblr_classn == 2 && selblr_z >= $zmin && selblr_z <= $zmax )
+	#GF# ctype 5 points (selblr_a_ro) (selblr_nl_blr)  if(selblr_classn == 1 && selblr_z >= $zmin && selblr_z <= $zmax )
+	#GF# ctype 4 points (selblr_a_ro) (selblr_nl_blr)  if(selblr_classn == 0 && selblr_z >= $zmin && selblr_z <= $zmax )
+
+	ctype 2
+	expand 1.5
+
+#-------------------------------------------------------------------------------
+# make_all_plots
+make_all_plots
+
+	foreach 1 < blr_vs_z \
+	            blr2opt_vs_z \
+		    blr2optcorr_vs_z \
+		    blr2radio_vs_z \
+		    histo_blr2Ledd \
+		    histo_blr2opt \
+		    histo_blr2optcorr \
+		    histo_radio2Ledd \
+		    histo_Mbh \
+		    opt_vs_z \
+		    optcorr_vs_z \
+		    radio_vs_z \
+		    xray_vs_z \
+		    radio_vs_xray \
+		    radio_vs_opt \
+		    radio_vs_optcorr > {
+           device postencap fig_$1.ps
+	   $1
+	   device x11
+	}

@@ -1,0 +1,262 @@
+#-------------------------------------------------------------------------------
+# load_ipod_data <YYYYMMDD>
+load_ipod_data 1
+
+	define correction (1.071)
+
+        data pace_$1.dat
+        read < duration 1 distance 2 pace 3 >
+	set distance = $correction*distance
+	set pace     = pace/$correction
+
+        set duration = duration/60000.
+        set pace = pace/60000.
+        set mypace=duration/distance
+
+        define imax $(dimen(duration)-1)
+        define meanpace $(distance[$imax]/duration[$imax])
+        echo "Mean overall pace : " $meanpace
+
+        set meandistance= duration*$meanpace
+        set delta_distance=distance-meandistance
+
+	set temp_dur=pop(-1,duration)
+	set temp_dis=pop(-1,distance)
+
+	set distance1 = < 0 > CONCAT temp_dis
+	set duration1 = < 0 > CONCAT temp_dur
+	set distance2 = distance
+	set duration2 = duration
+
+	set ddistance = distance2 - distance1
+	set dduration = duration2 - duration1
+
+	set dpace = dduration/ddistance
+
+	#---------------------------------------
+	data dist10s_$1.dat
+	read < dist10s 1 >
+	set dist10s = $correction*dist10s
+
+	define i10max $(dimen(dist10s)-1)
+	set n=0,$i10max,1
+	set time10s = 10.*n/60.
+
+	set dist10s1 = pop(-1,dist10s)
+	set dist10s2 = dist10s
+	set tmp1=reverse(dist10s2)
+	set tmp2=pop(-1,tmp1)
+	set dist10s2=reverse(tmp2)
+	set ddist10s = dist10s2 - dist10s1
+	delete tmp1
+	delete tmp2
+
+	set dpace10s = 1./ddist10s*10./60.
+
+	set time10s = pop(1,time10s)
+
+	set smooth_dist10s  = dist10s2
+	set smooth_time10s  = time10s
+	set smooth_dpace10s = dpace10s
+	set dpace10s_filt   = dpace10s
+	# help smooth_dist10s 
+	# help smooth_time10s 
+	# help smooth_dpace10s
+
+	#---------------------------------------
+	# filtering : pass 1
+	#---------------------------------------
+	stats dpace10s a b c 
+	define nsigma (1)
+	define cut_u  $( $a + $nsigma*$b ) 
+	define cut_d  $( $a - $nsigma*$b ) 
+	echo "------------------------------------------------------------"
+	echo "  Mean  of 10s pace data : "$a
+	echo "  Sigma of 10s pace data : "$b
+	echo "  Clipping data +/- "$nsigma" from the average pace : <"$cut_d ", >"$cut_u
+	echo "------------------------------------------------------------"
+	do 9=0,dimen(dpace10s)-1 { 
+	    if( dpace10s[$9] > $cut_u || dpace10s[$9] < $cut_d ) {
+	        set dpace10s_filt[$9] = $a 
+	    }
+	}
+
+	#---------------------------------------
+	# filtering : pass 2
+	#---------------------------------------
+	stats dpace10s_filt a b c 
+	define nsigma (1)
+	define cut_u  $( $a + $nsigma*$b ) 
+	define cut_d  $( $a - $nsigma*$b ) 
+	echo "  Mean  of 10s pace data : "$a
+	echo "  Sigma of 10s pace data : "$b
+	echo "  Clipping data +/- "$nsigma" from the average pace : <"$cut_d ", >"$cut_u
+	echo "------------------------------------------------------------"
+	do 9=0,dimen(dpace10s_filt)-1 { 
+	    if( dpace10s_filt[$9] > $cut_u || dpace10s_filt[$9] < $cut_d ) {
+	        set dpace10s_filt[$9] = $a 
+	    }
+	}
+	#---------------------------------------
+
+	set smooth_dpace10s = dpace10s_filt
+	# help smooth_dpace10s
+
+#-------------------------------------------------------------------------------
+# plot_pace_vs_time <YYYYMMDD>
+plot_pace_vs_time 1
+
+	load_ipod_data $1
+	run_avrg smooth_time10s smooth_dpace10s 18
+
+        reset_graph
+	location 5500 28500 $gy1 $gy2
+
+	define y1 (4.2)
+	define y2 (6.5)
+	limits 0 22 $($y1*1.609) $($y2*1.609)
+	box 3 3 3 2
+	relocate ( $($gx2 + 2250) $(0.5*($gy1+$gy2)) )
+	angle 270 
+	putlabel 8 pace [min/mile]
+	angle 0
+	limits 0 22 $y1 $y2 
+	box 1 2 0 3 
+	xlabel T [minutes]
+	ylabel pace [min/km]
+
+	expand 1.5
+	ptype 4 1 
+	angle 45
+	ctype 3 points time10s dpace10s 
+	angle 0 
+	expand 2.0
+	ptype 4 3 
+	ctype 4 points duration pace
+	ctype 5 points duration dpace
+
+	ctype 3 
+	ltype 0 
+	lweight 6
+	connect smooth_time10s smooth_dpace10s
+	lweight 3
+
+	ltype 0
+	ctype 2
+
+	echo "------------------------------------------------------------"
+	echo "  Red   : 10s data "
+	echo "  Blue  : computed from onDemand split times "
+	echo "  Green : pace saved in the onDemand split times "
+	echo "------------------------------------------------------------"
+
+#-------------------------------------------------------------------------------
+# plot_pace_vs_distance <YYYYMMDD>
+plot_pace_vs_distance 1
+
+	load_ipod_data $1
+	run_avrg smooth_dist10s smooth_dpace10s 18
+
+        reset_graph
+	location 5500 28500 $gy1 $($gy2-1500)
+
+	define x1 (0.0)
+	define x2 (4.2)
+	define y1 (4.2)
+	define y2 (6.5)
+	limits $($x1/1.609) $($x2/1.609) $($y1*1.609) $($y2*1.609)
+	ticksize 0.1 0.5 0.25 1 
+	box 3 3 1 2
+	relocate ( $(0.5*($gx1 + $gx2)) $($gy2+1750) )
+	putlabel 8 Distance [miles]
+	relocate ( $($gx2 + 2250) $(0.5*($gy1+$gy2)) )
+	angle 270 
+	putlabel 8 pace [min/mile]
+	angle 0
+
+	limits $x1 $x2 $y1 $y2 
+	ticksize 0 0 0 0 
+	box 1 2 3 3 
+	xlabel Distance [km]
+	ylabel pace [min/km]
+
+	expand 1.5
+	ptype 4 1 
+	angle 45
+	ctype 3 points dist10s2 dpace10s 
+	angle 0 
+	expand 2.0
+	ptype 4 3 
+	ctype 4 points distance pace
+	ctype 5 points distance dpace
+
+	ctype 3 
+	ltype 0 
+	lweight 6
+	connect smooth_dist10s smooth_dpace10s
+	lweight 3
+
+	ltype 0
+	ctype 2
+
+	echo "------------------------------------------------------------"
+	echo "  Red   : 10s data "
+	echo "  Blue  : computed from onDemand split times "
+	echo "  Green : pace saved in the onDemand split times "
+	echo "------------------------------------------------------------"
+
+#-------------------------------------------------------------------------------
+# plot 
+plot
+        reset_graph
+
+	#---------------------------------------
+        limits duration distance 
+	box
+
+        connect duration distance
+        
+	#---------------------------------------
+        limits duration delta_distance 
+	box
+
+        connect duration delta_distance
+
+	#---------------------------------------
+        limits pace mypace 
+	box
+
+        points pace mypace 
+
+#-------------------------------------------------------------------------------
+# run_avgr <x> <y> [<n steps>]
+run_avrg 23
+
+	set x = $1	
+	set y = $2	
+
+	if( $?3 ) {
+	   define nn $3
+	} else {
+	   define nn ? < How many steps : >
+	}
+
+	set runcounter = 1,$(dimen(x)),1
+	set runtime = x  if( runcounter > $nn ) 
+
+	set dimen(runavrg) = $(dimen(x) - $nn)
+
+	define i 0
+	do 3=0,$(dimen(x)-$nn-1) {
+	   define temp 0
+	   do 4=$3,$($3+$nn-1) {
+	       define temp $( $temp + y[$4] )
+	   }
+	   set runavrg[$i] = $temp/$nn
+	   define i $($i+1)
+	}
+
+	set $1 = runtime
+	set $2 = runavrg
+
+#------------------------------------------------------------------------------

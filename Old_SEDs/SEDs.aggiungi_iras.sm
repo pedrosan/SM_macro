@@ -1,0 +1,26 @@
+aggiungi_iras
+
+	relocate $nu60 $(nl_iras60[$pp]) dot
+	relocate $nu25 $(nl_iras25[$pp]) dot
+
+	set dimen(xx)=7
+	set dimen(yy)=7
+
+	set xx[0]=vnu[0]
+	set xx[1]=vnu[1]
+	set xx[2]=$nu60
+	set xx[3]=$nu25
+	set xx[4]=vnu[2]
+	set xx[5]=vnu[3]
+	set xx[6]=vnu[4]
+
+	set yy[0]=vnl[0]
+	set yy[1]=vnl[1]
+	set yy[2]=$(nl_iras60[$pp])
+	set yy[3]=$(nl_iras25[$pp])
+	set yy[4]=vnl[2]
+	set yy[5]=vnl[3]
+	set yy[6]=vnl[4]
+
+	echo * ora sono pronti i vettori xx e yy
+

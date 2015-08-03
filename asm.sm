@@ -1,0 +1,513 @@
+#---------------------------------------------------------------------------
+# dtlc_asm_sec
+dtlc_asm_sec
+
+	# data mkn421_170.dat
+	# data mkn421_current.dat
+	# read { asmt 1 rate 8 err_rate 9 dt_true 10 }
+	data asm_mkn421_2000.dat
+	read { asmt 1 rate 2 err_rate 3 dt_true 5 }
+	help asmt
+	help rate
+
+	set check = rate/err_rate
+
+	define d_mjd_start ? { Start Time (MJD, e.g. 50924) : }
+	define d_mjd_stop  ? { Stop  Time (MJD, e.g. 50924) : }
+
+	define whattodo ? {Rescale Time-Axis ?}
+	if(substr('$whattodo',0,1) == 'y') {
+	   define mjd0ref   ? { Time (MJD day) to which rescale ? }
+	   set asmt  = (asmt - $mjd0ref)*86400 
+	   define mjd_start ( ($d_mjd_start - $mjd0ref)*86400 )
+	   define mjd_stop  ( ($d_mjd_stop - $mjd0ref)*86400 )
+	} else {
+	   define mjd_start ( $d_mjd_start )
+	   define mjd_stop  ( $d_mjd_stop )
+	}
+
+	define d_sec_step  ? { Light Curve Step (seconds) : }
+	define sec_step $d_sec_step
+
+	define howmany (int(($mjd_stop-$mjd_start)/$sec_step))
+	echo -------------------------------------------------------
+	echo * the number of new interval will be : $howmany
+	echo -------------------------------------------------------
+
+	set newt   = $($mjd_start+0.5*$sec_step),$mjd_stop,$sec_step
+	set newt1  = newt - 0.5*$sec_step
+	set newt2  = newt + 0.5*$sec_step
+	set newbin = 0*newt + $sec_step
+
+	define maxnewindex (dimen(newt))
+	set dimen(rate_reb)    = $maxnewindex
+	set dimen(err_rate_reb)= $maxnewindex
+	set dimen(sigma_reb)   = $maxnewindex
+	set dimen(dt_true_reb) = $maxnewindex
+
+	set rate     = rate     if(asmt >= $mjd_start && asmt <= $mjd_stop)
+	set err_rate = err_rate if(asmt >= $mjd_start && asmt <= $mjd_stop)
+	set dt_true  = dt_true  if(asmt >= $mjd_start && asmt <= $mjd_stop)
+	set check    = check    if(asmt >= $mjd_start && asmt <= $mjd_stop)
+	set asmt     = asmt     if(asmt >= $mjd_start && asmt <= $mjd_stop)
+	set sigma_rate = err_rate
+
+	define peso ? { Weight Rebinning with relative Exp.Time [y/n] ? }
+	if(substr('$peso',0,1) == 'n') {
+	   set dt_true = 0*dt_true + 1
+	} else {
+	   set dt_true = dt_true/90.
+	}
+
+	define peso2 ? { Weight Rebinning with the errors [y/n] ? }
+	if(substr('$peso2',0,1) == 'n') {
+	   set weight = 0*sigma_rate + 1
+	} else {
+	   set weight = 1/sigma_rate**2.
+	}
+
+	echo   
+	define filtro ? { Filter data ? [y/n] }
+	if(substr('$filtro',0,1) == 'n') {
+	    set check = 2 + 0*check
+	    define soglia (-1)
+	} else {
+	    define soglia ? { Rate/Sigma threshold : }
+	}
+
+	define maxindex (dimen(rate)-1)
+	define cc (0)
+	define kk (0)
+
+	define first      (0)
+	define tmp_first  (0)
+	define toprate    (0)
+	define bottomrate (100)
+
+	echo "new LC vector dimension = "$maxnewindex
+	echo "Original LC vector dimension = "$($maxindex+1)
+	echo -------------------------------------------------------
+
+	do i=0,$($maxnewindex-1) {
+	  if($(int($i/10)*10) == $i) { echo * $i }
+
+	  define rate_dum      (0)
+	  define sigma_dum     (0)
+	  define dt_true_dum   (0)
+
+	  define lastidx $maxindex 
+
+	  do j=$first,$lastidx {
+	    if( $(asmt[$j]) < $(newt2[$i]) ) {
+		if( $(check[$j]) > $soglia ) { 	          
+	          define rate_dum    ($rate_dum + rate[$j]*dt_true[$j]*weight[$j])
+	          define sigma_dum   ($sigma_dum + (dt_true[$j]*sigma_rate[$j]*weight[$j])**2)
+	          define dt_true_dum ($dt_true_dum + dt_true[$j]*weight[$j])
+		  define kk ($kk+1)
+		}
+	        define cc ($cc+1)
+	        define tmp_first ($j+1)
+	    }
+          }
+	  echo --- closing [$i] ------
+	  define previous $first
+	  define first    $tmp_first
+
+	  if($dt_true_dum == 0) {
+	     echo             [$i] new bin empty 
+	  }
+
+	  if($dt_true_dum == 0) {
+	     set rate_reb[$i]  = 0.0
+	     set sigma_reb[$i] = 0.0
+	     define rate_dum 0.0
+	  } else {
+	     set rate_reb[$i]  = $rate_dum/$dt_true_dum
+	     set sigma_reb[$i] = sqrt($sigma_dum)/$dt_true_dum
+	     define rate_dum ($rate_dum/$dt_true_dum)
+	  }
+	  set dt_true_reb[$i] = $dt_true_dum
+
+	  if($rate_dum > $toprate ){
+		  define toprate $rate_dum
+          }
+	  if($rate_dum < $bottomrate && $rate_dum > 0 ){
+		  define bottomrate $rate_dum
+          }
+	}
+
+	echo ---------------------------------------------
+	echo Considered data points are : $cc
+	echo Used       data points are : $kk
+	echo ---------------------------------------------
+
+	set newt_reb     = newt
+	set newt1_reb    = newt1
+	set newt2_reb    = newt2
+	set newbin_reb   = newbin
+	set err_rate_reb = sigma_reb
+	set cvrfr_reb    = 0*sigma_reb + 1
+	set cvrfr_reb    = dt_true_reb
+
+	set clean_newt_reb     = newt_reb     if(rate_reb > 0)
+	set clean_rate_reb     = rate_reb     if(rate_reb > 0)
+	set clean_err_rate_reb = err_rate_reb if(rate_reb > 0)
+
+	stats  clean_rate_reb                    mean_reb  width_reb  kurt_reb
+	stats2 clean_rate_reb clean_err_rate_reb mean2_reb width2_reb kurt2_reb
+
+	echo -----------------------------------------------------------------
+	echo * Average cts/sec = $mean_reb    $mean2_reb
+	echo * sigma           = $width_reb   $width2_reb
+	echo * kurtosis        = $kurt_reb    $kurt2_reb
+
+	echo -----------------------------------------------------------------
+	echo * ha prodotto una serie di vettori/variabili del tipo *_reb
+	echo * Possono essere renamed con il comando "store_reb_lc"
+	echo -----------------------------------------------------------------
+
+	define whattodo ? {Rename vectors ?}
+	if(substr('$whattodo',0,1) == 'y') {
+	  define name ? {Suffix name for vectors to become *_name ?}
+	  foreach 3 {newt newt1 newt2 newbin dt_true rate err_rate cvrfr}{
+	     set $3_$name = $3_reb
+	  }
+	} 
+
+	define mean_$name   ($mean_reb)
+	define mean2_$name  ($mean2_reb)
+	define width_$name  ($width_reb)
+	define width2_$name ($width2_reb)
+
+#---------------------------------------------------------------------------
+# dtlc_asm
+dtlc_asm
+
+	data mkn421_170.dat
+	read { asmt 1 rate 8 err_rate 9 dt_true 10 }
+
+	set check = rate/err_rate
+
+	define d_mjd_start ? { Start Time (MJD) : }
+	define d_mjd_stop  ? { Stop  Time (MJD) : }
+	define d_mjd_step  ? { Light Curve Step (fraction of day) : }
+
+	define whattodo ? {Rescale Time-Axis ?}
+	if(substr('$whattodo',0,1) == 'y') {
+	   define mjd0ref   ? { Time (MJD days) to which rescale ? }
+	   set asmt  = (asmt - $mjd0ref)*86400 
+	   define mjd_start ( ($d_mjd_start - $mjd0ref)*86400 )
+	   define mjd_stop  ( ($d_mjd_stop - $mjd0ref)*86400 )
+	   define mjd_step  (  $d_mjd_step*86400 )
+	} else {
+	   define mjd_start ( $d_mjd_start )
+	   define mjd_stop  ( $d_mjd_stop )
+	   define mjd_step  ( $d_mjd_step )
+	}
+
+	define howmany (int(($mjd_stop-$mjd_start)/$mjd_step))
+	echo -------------------------------------------------------
+	echo * the number of new interval will be : $howmany
+	echo -------------------------------------------------------
+
+	set newt   = $($mjd_start+0.5*$mjd_step),$mjd_stop,$mjd_step
+	set newt1  = newt - 0.5*$mjd_step
+	set newt2  = newt + 0.5*$mjd_step
+	set newbin = 0*newt + $mjd_step
+
+	define maxnewindex (dimen(newt))
+	set dimen(rate_reb)    = $maxnewindex
+	set dimen(err_rate_reb)= $maxnewindex
+	set dimen(sigma_reb)   = $maxnewindex
+	set dimen(dt_true_reb) = $maxnewindex
+
+	set rate     = rate     if(asmt >= $mjd_start && asmt <= $mjd_stop)
+	set err_rate = err_rate if(asmt >= $mjd_start && asmt <= $mjd_stop)
+	set dt_true  = dt_true  if(asmt >= $mjd_start && asmt <= $mjd_stop)
+	set check    = check    if(asmt >= $mjd_start && asmt <= $mjd_stop)
+	set asmt     = asmt     if(asmt >= $mjd_start && asmt <= $mjd_stop)
+	set sigma_rate = err_rate
+
+	define peso ? { Weight Rebinning with relative Exp.Time [y/n] ? }
+	if(substr('$peso',0,1) == 'n') {
+	   set dt_true = 0*dt_true + 1
+	} else {
+	   set dt_true = dt_true/90.
+	}
+
+	echo   
+	define filtro ? { Filter data ? [y/n] }
+	if(substr('$filtro',0,1) == 'n') {
+	    set check = 2 + 0*check
+	} else {
+	    define soglia ? { Rate/Sigma threshold : }
+	}
+
+	define maxindex (dimen(rate)-1)
+
+	define first      (0)
+	define tmp_first  (0)
+	define toprate    (0)
+	define bottomrate (100)
+
+	echo "new LC vector dimension = "$maxnewindex
+	echo "Original LC vector dimension = "$($maxindex+1)
+	echo -------------------------------------------------------
+
+	define cc (0)
+	define kk (0)
+
+	do i=0,$($maxnewindex-1) {
+	  if($(int($i/10)*10) == $i) { echo * $i }
+
+	  define rate_dum      (0)
+	  define sigma_dum     (0)
+	  define dt_true_dum   (0)
+
+	  if($maxindex < $($first+200) ) { 
+	     define lastidx $maxindex 
+	  } else {
+	     define lastidx $($first+200)
+	  }
+
+	  do j=$first,$lastidx {
+	    if( $(asmt[$j]) < $(newt2[$i]) ) {
+		if( $(check[$j]) > $soglia ) { 	          
+	          define rate_dum    ($rate_dum + rate[$j]*dt_true[$j])
+	          define sigma_dum   ($sigma_dum + (dt_true[$j]*sigma_rate[$j])**2)
+	          define dt_true_dum ($dt_true_dum + dt_true[$j])
+		  define kk ($kk+1)
+		}
+	        define cc ($cc+1)
+	        define tmp_first   ($j+1)
+	    }
+          }
+	  define previous $first
+	  define first    $tmp_first
+
+	  if ( $dt_true_dum > 0 ) { 
+	     set rate_reb[$i]    = $rate_dum/$dt_true_dum
+	     set sigma_reb[$i]   = sqrt($sigma_dum)/$dt_true_dum
+	     set dt_true_reb[$i] = $dt_true_dum
+	     define rate_dum ($rate_dum/$dt_true_dum)
+	  } else {
+	     set rate_reb[$i]    = 0
+	     set sigma_reb[$i]   = 0
+	     set dt_true_reb[$i] = 0
+	     define rate_dum      (0)
+	  }
+
+
+	  if($rate_dum > $toprate ){
+		  define toprate $rate_dum
+          }
+	  if($rate_dum < $bottomrate && $rate_dum > 0 ){
+		  define bottomrate $rate_dum
+          }
+	}
+
+	echo ---------------------------------------------
+	echo Considered data points are : $cc
+	echo Used       data points are : $kk
+	echo ---------------------------------------------
+
+	set newt_reb     = newt
+	set newt1_reb    = newt1
+	set newt2_reb    = newt2
+	set newbin_reb   = newbin
+	set err_rate_reb = sigma_reb
+	set cvrfr_reb    = 0*sigma_reb + 1
+	set cvrfr_reb    = dt_true_reb
+
+	set clean_newt_reb     = newt_reb     if(rate_reb > 0)
+	set clean_rate_reb     = rate_reb     if(rate_reb > 0)
+	set clean_err_rate_reb = err_rate_reb if(rate_reb > 0)
+
+	stats  clean_rate_reb                    mean_reb  width_reb  kurt_reb
+	stats2 clean_rate_reb clean_err_rate_reb mean2_reb width2_reb kurt2_reb
+
+	echo -----------------------------------------------------------------
+	echo * Average cts/sec = $mean_reb    $mean2_reb
+	echo * sigma           = $width_reb   $width2_reb
+	echo * kurtosis        = $kurt_reb    $kurt2_reb
+
+	echo -----------------------------------------------------------------
+	echo * ha prodotto una serie di vettori/variabili del tipo *_reb
+	echo * Possono essere renamed con il comando "store_reb_lc"
+	echo -----------------------------------------------------------------
+
+	define whattodo ? {Rename vectors ?}
+	if(substr('$whattodo',0,1) == 'y') {
+	  define name ? {Suffix name for vectors to become *_name ?}
+	  foreach 3 {newt newt1 newt2 newbin dt_true rate err_rate cvrfr}{
+	     set $3_$name = $3_reb
+	  }
+	} 
+
+	define mean_$name   ($mean_reb)
+	define mean2_$name  ($mean2_reb)
+	define width_$name  ($width_reb)
+	define width2_$name ($width2_reb)
+
+#---------------------------------------------------------------------------
+# dtlc_asm_1day
+dtlc_asm_1day
+
+	define name ? { Source name ? }
+
+	data "$!!name"_current.1day
+	read { asmt 1 rate 2 err_rate 3 }
+
+	set check = rate/err_rate
+
+	define d_mjd_start $(int($(asmt[0])))
+	define d_mjd_stop  $(int($(asmt[$($(dimen(asmt))-1)])+1))
+
+	define d_mjd_start ? { Start Time (MJD) : }
+	define d_mjd_stop  ? { Stop  Time (MJD) : }
+	define d_mjd_step  ? { Light Curve Step (how many days to rebin) : }
+	define mjd_step $d_mjd_step
+
+	# define whattodo ? {Rescale Time-Axis ?}
+	# if(substr('$whattodo',0,1) == 'y') {
+	#    define mjd0ref   ? { Time (MJD days) to which rescale ? }
+	#    set asmt  = (asmt - $mjd0ref)
+	#    define mjd_start ( ($d_mjd_start - $mjd0ref) )
+	#    define mjd_stop  ( ($d_mjd_stop  - $mjd0ref) )
+	#    define mjd_step  (  $d_mjd_step )
+	# } else {
+	#    define mjd_start ( $d_mjd_start )
+	#    define mjd_stop  ( $d_mjd_stop )
+	#    define mjd_step  ( $d_mjd_step )
+   	# }
+
+	define resto   ( $(dimen(rate)) % $mjd_step )
+	if( $resto == 0 ) { 
+     	    define howmany $(int($(dimen(rate))/$mjd_step))
+	    set dimen(newt) = $howmany 
+	    echo -------------------------------------------------------
+	    echo * the number of new datapoints will be : $howmany
+	    echo   and the RESTO is : $resto
+	    echo -------------------------------------------------------
+	} else {
+     	    define howmany $(int(($(dimen(rate))-1)/$mjd_step))
+	    do 1=$($resto+1),$mjd_step {
+    	       set asmt     = < $(asmt[0]) >     CONCAT  asmt
+	       set rate     = < $(rate[0]) >     CONCAT  rate
+	       set err_rate = < $(err_rate[0]) > CONCAT  err_rate
+	    }
+	    set dimen(newt) = $($howmany + 1)
+	    echo -------------------------------------------------------
+	    echo * the number of new datapoints will be : $howmany
+	    echo   and the RESTO is : $resto
+	    echo -------------------------------------------------------
+	}
+
+	define maxnewindex (dimen(newt))
+	set dimen(asmt_reb)    = $maxnewindex
+	set dimen(rate_reb)    = $maxnewindex
+	set dimen(err_rate_reb)= $maxnewindex
+
+	echo   
+	define filtro ? { Filter data ? [y/n] }
+	if(substr('$filtro',0,1) == 'n') {
+	    set check = 2 + 0*check
+	} else {
+	    define soglia ? { Rate/Sigma threshold : }
+	}
+
+	define maxindex (dimen(rate)-1)
+
+	echo "new LC vector dimension = "$maxnewindex
+	echo "Original LC vector dimension = "$($maxindex+1)
+	echo -------------------------------------------------------
+
+	define cc (0)
+	define kk (0)
+
+	do i=0,$($maxnewindex-1) {
+	  if($(int($i/10)*10) == $i) { echo * $i }
+	  set asmt_reb[$i]     = 0
+	  set rate_reb[$i]     = 0
+	  set err_rate_reb[$i] = 0
+	  do j=1,$mjd_step {
+	     define jj $($i*$mjd_step + $j)
+	     set asmt_reb[$i]     = asmt_reb[$i] + asmt[$jj]
+	     set rate_reb[$i]     = rate_reb[$i] + rate[$jj]
+	     set err_rate_reb[$i] = err_rate_reb[$i] + err_rate[$jj]**2.
+	  }
+	  set asmt_reb[$i] = asmt_reb[$i]/$mjd_step
+	  set rate_reb[$i] = rate_reb[$i]/$mjd_step
+	  set err_rate_reb[$i] = sqrt(err_rate_reb[$i])/$mjd_step
+	}
+
+	echo ---------------------------------------------
+	echo Considered data points are : $cc
+	echo Used       data points are : $kk
+	echo ---------------------------------------------
+
+	location 5500 31000 5500 31000
+	notation -5 5 -4 4 
+	lweight 3
+	ctype 2
+	ltype 0
+	expand 1.5
+	limits $d_mjd_start $d_mjd_stop rate_reb
+	ticksize 0 0 0 0 
+	box
+
+	ptype 4 3 
+	points asmt_reb rate_reb
+	error_y asmt_reb rate_reb err_rate_reb
+
+	foreach tref < 50449 50814 51179 > {
+	  ltype 2 ctype 3 relocate $tref -90 draw $tref 90 ltype 0 ctype 2
+	}
+	ltype 2 ctype 5 relocate 1000 0 draw 1e5 0 ltype 0 ctype 2
+
+
+#---------------------------------------------------------------------------
+# write_reb_lc_asm
+write_reb_lc_asm
+
+	define outaux ? {Suffix of files to be written ? [lc_***] }
+	
+	define 1 $outaux
+	define outname lc_$outaux.dat
+	define formato "%9.2f %9.2f %9.2f %6.1f %11.5f %8.5f %8.5f \n"
+
+	echo $outname
+	echo $formato 
+
+	print $outname '$!formato' <newt_$1 newt1_$1 newt2_$1 newbin_$1 dt_true_$1 rate_$1 err_rate_$1 >
+
+	echo -----------------------------------------------------------------
+	echo * ha prodotto una serie di vettori/variabili del tipo *_$1
+	echo -----------------------------------------------------------------
+
+
+#---------------------------------------------------------------------------
+# read_reb_lc_asm
+read_reb_lc_asm
+
+	define 1 ? {Suffix of files to be read ? [lc_***] }
+	data lc_$1.dat
+	read <newt_$1 1 newt1_$1 2 newt2_$1 3 newbin_$1 4 dt_true_$1 5 rate_$1 6 err_rate_$1 7 >
+
+	set clean_newt_$1     = newt_$1     if(rate_$1 > 0)
+	set clean_rate_$1     = rate_$1     if(rate_$1 > 0)
+	set clean_err_rate_$1 = err_rate_$1 if(rate_$1 > 0)
+
+	stats  clean_rate_$1                   mean_$1  width_$1  kurt_$1
+	stats2 clean_rate_$1 clean_err_rate_$1 mean2_$1 width2_$1 kurt2_$1
+
+	echo -----------------------------------------------------------------
+	echo * Average cts/sec = $mean_$1    $mean2_$1
+	echo * sigma           = $width_$1   $width2_$1
+	echo * kurtosis        = $kurt_$1    $kurt2_$1
+
+	echo -----------------------------------------------------------------
+	echo * ha prodotto una serie di vettori/variabili del tipo *_$1
+	echo -----------------------------------------------------------------
+
+#---------------------------------------------------------------------------

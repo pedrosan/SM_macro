@@ -1,0 +1,272 @@
+#--------------------------------------------------------------------------
+# twogauss_rx
+twogauss_rx 05
+
+	if(!$?1) { 
+	   define 1 ? { G1 mean  : }
+	   define 2 ? { G1 sigma : }
+	   define 3 ? { G2 mean  : }
+	   define 4 ? { G2 sigma : }
+	   define 5 ? { G1 AREA  : }
+	}
+	 
+	set xp=-9.3,-2.3,0.01
+	set gg1 = $5*gauss(xp,$1,$2)
+	set gg2 = (1-$5)*gauss(xp,$3,$4)
+	set gg  =$5*gauss(xp,$1,$2) + (1-$5)*gauss(xp,$3,$4)
+
+	erase 
+	ctype 2 
+	limits -9.5 -2.0 -0.05 .5 
+	expand 1.5
+	box 
+	connect xp gg
+	ltype 2
+	ctype 3
+	connect xp gg1
+	ctype 5
+	connect xp gg2
+	ctype 2
+	ltype 0
+	
+#--------------------------------------------------------------------------
+# twogauss
+twogauss 05
+
+	if(!$?1) { 
+	   define 1 ? { G1 mean  : }
+	   define 2 ? { G1 sigma : }
+	   define 3 ? { G2 mean  : }
+	   define 4 ? { G1 sigma : }
+	   define 5 ? { G1 AREA  : }
+	}
+	 
+	set xp=11.5,21,0.01
+	set gg1 = $5*gauss(xp,$1,$2)
+	set gg2 = (1-$5)*gauss(xp,$3,$4)
+	set gg  =$5*gauss(xp,$1,$2) + (1-$5)*gauss(xp,$3,$4)
+
+	erase 
+	ctype 2 
+	limits 11.0 20. -0.05 .5 
+	expand 1.5
+	box 
+	connect xp gg
+	ltype 2
+	ctype 3
+	connect xp gg1
+	ctype 5
+	connect xp gg2
+	ctype 2
+	ltype 0
+
+	
+#---------------------------------------------------------------------------
+# read_cata
+read_cata
+
+	define case1 ? { Model [r/x/p] : }
+	if( '$case1' == 'r' )  { define case "Rlbl" }
+	if( '$case1' == 'x' )  { define case "Xhbl" }
+	if( '$case1' == 'p' )  { define case "Rpeak" }
+
+	define cata ? { Catalogue [e.g. Oct13_peak2] : }
+	data "/home/gfossati/Science/Fermi/scratch/survey."$!case"."$!cata".cata"
+	define nlines read 1 1 
+	define nmolt  read 1 2 
+	define area   read 1 3 
+	lines 5 $($nlines+4)
+	read { z 1 lr 2 lo 3 lx 4 epeak 10 }
+
+#---------------------------------------------------------------------------
+# read_glast_cata [<case>] [<cata>] [<aftgl>] [<dum>] [<suffix>] 
+read_glast_cata 05
+
+	if($?1) {
+	   define case1  $1
+	   define cata   $2
+	   define aftgl  $3
+	} else {
+	   define case1 ? { Model [r/x/p] : }
+
+	   define cata  ? { Catalogue [e.g. Oct13_peak2] : }
+	   define aftgl ? { Which AFTER Fermi catalogue  : }
+	}
+	if( '$case1' == 'r' )  { define case "Rlbl" }
+	if( '$case1' == 'p' )  { define case "Rpeak" }
+	if( '$case1' == 'x' )  { define case "Xhbl" }
+	echo " CASE: "$case1
+	echo " CATA: "$cata $aftgl
+
+	if($?4) { 
+	    define dum    $4 
+	} else {
+	    define dum  ? { Rename vectors [y/n] ? }
+	}
+
+	if($?5) { 
+	   define suff   $5 
+	} else {
+	  if( substr('$dum',0,1) == 'y') {
+	     define suff ? { Suffix : }
+	  }
+	}
+
+	data "/home/gfossati/Science/Fermi/scratch/survey."$!case"."$!cata".after_glast_"$!aftgl
+	define nlines read 2 1 
+	define nmolt  read 2 2 
+	define area   read 2 3 
+	lines 11 $($nlines+10)
+	read { z 1 lr 2 lo 3 lx 4 fr 5 mv 6 fx 7 epeak 8 dflag1 10 dflag2 11 }
+
+	set vecnames = < z lr lo lx fr mv fx epeak dflag1 dflag2 >
+
+	if( substr('$dum',0,1) == 'y') {
+	  foreach 1 vecnames {
+	     echo $1 "-->" $1_$suff
+	     set $1_$suff = $1
+	     define nmolt_$suff $nmolt
+	     delete $1
+	  }
+	}
+
+#---------------------------------------------------------------------------
+# merge_cata
+merge_cata
+
+        define model  ? {              Model [rlbl/peak/xhbl] : }
+	define ICtype ? { Type of Fermi selection [e.g. PURO] : }
+
+        if( substr('$model',0,1) == 'r' ) {
+           define aux1 "r" 
+           define aux2 "Rlbl" 
+           set vdata = < Oct08 Oct09 Oct12_peak2 >
+           define label "Radio / LBL"
+        }
+        if( substr('$model',0,1) == 'p' ) {
+           define aux1 "p" 
+           define aux2 "Rpeak" 
+           set vdata = < Oct08 Oct09 Oct13_peak2 >
+           define label "Radio / Bolometric"
+        }
+        if( substr('$model',0,1) == 'x' ) {
+           define aux1 "x" 
+           define aux2 "Xhbl" 
+           set vdata = < Oct12_ev Oct12_peak2 Oct13_peak2 >
+           define label "X-ray / HBL"
+        }
+	if( '$ICtype' == 'PURO_01' ) {
+	   define 1 $aux1
+	   define aux1 $1_01
+	}
+
+	define i (0)
+	set vecnames = < z lr lo lx fr mv fx epeak dflag1 dflag2 >
+	foreach 1 vdata { 
+	    define i $($i+1)
+	    read_glast_cata $aux1 $1 $ICtype  y  $i
+	}
+
+	define nmolt $nmolt_1
+	foreach 1 vecnames {
+	    set $1_$aux1 = $1_1
+	    delete $1_1
+	}
+	do 2=2,$i {
+	   foreach 1 vecnames {
+	       set $1_$aux1 = $1_$aux1 CONCAT $1_$2
+	       delete $1_$2
+	   }
+	   define nmolt $($nmolt + $nmolt_$2)
+	}
+	
+
+#---------------------------------------------------------------------------
+# checks
+checks
+
+	echo "----------------------------------- "
+	echo " [1] z "
+	echo " [2] E_peak "
+	define what  ? { What : }
+	if( $what == 1 ) {
+	  define x1  (-0.1)
+	  define x2  ( 3.1)
+	  define hmax (1.0)
+	  set vec = z 
+	}
+	if( $what == 2 ) {
+	  define x1  (11.0)
+	  define x2  (19.5)
+	  define hmax (0.5)
+	  set vec = epeak
+	}
+	define step ? { Histo Step : }
+
+	set xz=$x1-0.5*$step,$x2+0.5*$step,$step
+
+	define check ? { Constraint : }
+	echo "+++ "$check
+
+	if('$check' == '0') {
+	    echo "+ NO + "$check
+	    set tobin = vec
+	} else {
+	    echo "+ YES + "$check
+	    set tobin = vec if($!check)
+	}
+	set hz = histogram(tobin:xz)
+	set hz = hz/$(dimen(tobin))/$step
+	delete tobin
+
+	limits $x1 $x2 -0.03 $hmax
+	ctype 2 
+	expand 1.5
+	box 
+
+	ltype 0
+	histogram xz hz
+
+#---------------------------------------------------------------------------
+# check_z
+check_z
+
+	define zstep ? { Histo Step : }
+	set xz=0.0-0.5*$zstep,3.0+0.5*$zstep,$zstep
+
+	set hz = histogram(z:xz)
+	limits xz hz 
+	ctype 2 
+	expand 1.5
+	box 
+
+	ltype 0
+	histogram xz hz
+
+#---------------------------------------------------------------------------
+# check_lum
+check_lum
+
+	define whatl ? { What Luminosity ? [r/o/x] }
+	# if( '$whatl' == 'r' ) {
+	#   define lmin 
+	# }
+	vecminmax l$whatl lmin lmax
+
+	define zstep ? { Histo Step : }
+	set xz=$lmin-0.5*$zstep,$lmax+0.5*$zstep,$zstep
+
+	set hz1 = histogram(l$whatl:xz)
+	set hz  = lg(hz1) if ( hz1 > 0 )
+	set xz  = xz      if ( hz1 > 0 )
+	delete hz1
+	ticksize 0.25 1.0 0 0
+	limits xz hz 
+	ctype 2 
+	expand 1.5
+	box 
+
+	ltype 0
+	histogram xz hz
+
+#---------------------------------------------------------------------------

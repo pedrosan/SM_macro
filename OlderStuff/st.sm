@@ -1,0 +1,112 @@
+#---------------------------------------------------------------------------
+# tre_d
+tre_d
+
+	data alt_total_sample.polfit.dat
+	read peak_total 9
+
+	set l_radio = tot_l_radio
+	set l_opt   = tot_l_opt  
+	set l_x     = tot_l_x
+
+	set a_rx = (l_radio-l_x)/7.685
+	set a_ro = (l_radio-l_opt)/5.037
+	set a_ox = (l_opt-l_x)/2.648
+
+	set sep={13.08 14.17 15.38 16.38}
+
+	define v1 ? {Vector 1 [rx,ox,ro] ?}
+	define v2 ? {Vector 2 [rx,ox,ro] ?}
+	if('$v1' == 'rx') { define xmin 0.3 
+			    define xmax 1.1 }
+	if('$v1' == 'ro') { define xmin 0.05
+			    define xmax 0.9 }
+	if('$v1' == 'ox') { define xmin 0.5 
+			    define xmax 1.8 }
+	if('$v2' == 'rx') { define ymin 0.3 
+			    define ymax 1.1 }
+	if('$v2' == 'ro') { define ymin 0.05
+			    define ymax 0.9 }
+	if('$v2' == 'ox') { define ymin 0.5 
+			    define ymax 1.8 }
+	if('$v1' == 'rx') { define lab_x <\alpha_{RX}> }
+	if('$v1' == 'ro') { define lab_x <\alpha_{RO}> }
+	if('$v1' == 'ox') { define lab_x <\alpha_{OX}> }
+	if('$v2' == 'rx') { define lab_y <\alpha_{RX}> }
+	if('$v2' == 'ro') { define lab_y <\alpha_{RO}> }
+	if('$v2' == 'ox') { define lab_y <\alpha_{OX}> }
+
+	location 6000 31000 6000 31000 
+	
+	lweight 2
+	ltype 0
+	ctype 2 
+	expand 1.5 
+	limits 0.3 1.1 0.5 1.8
+	limits $xmin $xmax $ymin $ymax
+	ticksize 0 0 0.05 0.2
+	box
+	expand 2.0
+	xlabel $lab_x
+	ylabel $lab_y
+
+	set picco = peak_total
+
+	expand 3.0
+	# ptype 4 3 ctype 15 
+	# points a_$v1 a_$v2 if(picco>$(sep[3]) && picco>10)
+	ptype 4 0 ctype 5 
+	points a_$v1 a_$v2 if(picco>$(sep[3]) && picco>10)
+
+	# ptype 4 3 ctype 16 
+	# points a_$v1 a_$v2 if(picco>$(sep[2]) && picco<=$(sep[3])  && picco>10)
+	ptype 4 0 ctype 5 
+	points a_$v1 a_$v2 if(picco>$(sep[2]) && picco<=$(sep[3])  && picco>10)
+
+	# ptype 4 3 ctype 14 
+	# points a_$v1 a_$v2 if(picco>$(sep[1]) && picco<=$(sep[2])  && picco>10)
+	ptype 4 0 ctype 15 
+	points a_$v1 a_$v2 if(picco>$(sep[1]) && picco<=$(sep[2])  && picco>10)
+
+	# ptype 4 3 ctype 8 
+	# points a_$v1 a_$v2 if(picco>$(sep[0]) && picco<=$(sep[1])  && picco>10)
+	ptype 4 0 ctype 3 
+	points a_$v1 a_$v2 if(picco>$(sep[0]) && picco<=$(sep[1])  && picco>10)
+
+	# ptype 4 3 ctype 3 
+	# points a_$v1 a_$v2 if(picco<=$(sep[0]) && picco>10)
+	ptype 4 0 ctype 2 
+	points a_$v1 a_$v2 if(picco<=$(sep[0]) && picco>10)
+
+	relocate ( $($gx1+1500) $($gy2-1500) ) 
+	expand 3 ptype 4 3 ctype 15 dot
+	expand 3 ptype 4 0 ctype  5 dot
+	expand 1.2 ctype 2 putlabel 6   >0.1 keV
+
+	relocate ( $($gx1+1500) $($gy2-3000) ) 
+	expand 3 ptype 4 3 ctype 16 dot
+	expand 3 ptype 4 0 ctype  5 dot
+	expand 1.2 ctype 2 putlabel 6   0.01 - 0.1 keV
+
+	relocate ( $($gx1+1500) $($gy2-4500) ) 
+	expand 3 ptype 4 3 ctype 14 dot
+	expand 3 ptype 4 0 ctype 15 dot
+	expand 1.2 ctype 2 putlabel 6   2.2 \mu m - 0.01 keV 
+
+	relocate ( $($gx1+1500) $($gy2-6000) ) 
+	expand 3 ptype 4 3 ctype 8 dot
+	expand 3 ptype 4 0 ctype 3 dot
+	expand 1.2 ctype 2 putlabel 6   25 \mu m - 2.2 \mu m
+
+	relocate ( $($gx1+1500) $($gy2-7500) ) 
+	expand 3 ptype 4 3 ctype 3 dot
+	expand 3 ptype 4 0 ctype 2 dot
+	expand 1.2 ctype 2 putlabel 6   < 25 \mu m 
+
+	relocate (  $($gx1+1000) $($gy2-8000) )
+	draw     ( $($gx1+12000) $($gy2-8000) )
+	draw     ( $($gx1+12000) $($gy2-1000) )
+	draw     (  $($gx1+1000) $($gy2-1000) )
+	draw     (  $($gx1+1000) $($gy2-8000) )
+
+

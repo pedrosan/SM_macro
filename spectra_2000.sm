@@ -1,0 +1,2194 @@
+#---------------------------------------------------------------------------
+# 
+#   check if it reads also the time arrays
+#      time_   time_mid_  time_start_  time_stop_
+#
+#---------------------------------------------------------------------------
+
+#	define SM_HOME :
+#	macro read "$!SM_HOME"/x11_tools.sm
+
+#---------------------------------------------------------------------------
+# plot_pointings_97_98_00  : this is the REAL ONE
+plot_pointings_97_98_00
+
+	location 6000 31000 6000 31000
+	ctype 2
+	ltype 0
+	lweight 3
+
+	echo "------------------------------"
+	echo " [1] alpha @ 0.1 keV "
+	echo " [2] alpha @ 0.5 keV "
+	echo " [3] alpha @   5 keV "
+	echo " [4] alpha @  10 keV "
+	echo " [5] E_peak          "
+	define whichpar ? { *   Which Parameter [1-5] : }
+
+	if ($whichpar == 1) { 
+	      define 1 "a01" 
+	      define ymin 1.25
+	      define ymax 0.51
+	      define lab_y "\alpha_{(@0.1keV)}"
+	}
+	if ($whichpar == 2) { 
+	      define 1 "a05" 
+	      define ymin 1.25
+	      define ymax 0.51
+	      define lab_y "\alpha_{(@0.5keV)}"
+	}
+	if ($whichpar == 3) { 
+	      define 1 "a5" 
+	      define ymin 2.1
+	      define ymax 0.9
+	      define lab_y "\alpha_{(@5keV)}"
+	}
+	if ($whichpar == 4) { 
+	      define 1 "a10" 
+	      define ymin 2.2
+	      define ymax 0.9
+	      define lab_y "\alpha_{(@10keV)}"
+	}
+	if ($whichpar == 5) { 
+	      define 1 "ep"
+	      define ymin 0.22
+	      define ymax 8.81
+	      define lab_y "E_{peak} [keV]"
+	}
+
+	set yvec97       = $1_cur97
+	set err_yvec97_d = err_$1_cur97_d
+	set err_yvec97_u = err_$1_cur97_u
+	set nseq_97      = 1,$(dimen(yvec97)),1
+
+	set yvec98       = $1_cur98
+	set err_yvec98_d = err_$1_cur98_d
+	set err_yvec98_u = err_$1_cur98_u
+	set nseq_98      = 1,$(dimen(yvec98)),1
+
+	set yvec00       = $1_cur00
+	set err_yvec00_d = err_$1_cur00_d
+	set err_yvec00_u = err_$1_cur00_u
+	set nseq_00      = 1,$(dimen(yvec00)),1
+
+	#
+	# end of handling data and creating arrays
+	#-------------------------------------------------------
+
+	if( $whichpar == 5 ) {
+	    define howyaxis ? { * Y-axis LIN or LOG [1/2] : }
+	} else {
+	    define howyaxis 1
+	}
+
+	if ($howyaxis == 1) { 
+	   define ytick1  0
+	   define ytick2  0
+	} else {
+	   foreach 2 < '97' '98' '00' > {
+	      set err_yvec$2_d = lg(yvec$2) - lg(yvec$2 - err_yvec$2_d)
+	      set err_yvec$2_u = lg(yvec$2 + err_yvec$2_u) - lg(yvec$2)
+	      set yvec$2 = lg(yvec$2)
+	   }
+	   define ytick1 -1 
+	   define ytick2  0
+	   define ymin $(lg($ymin))
+	   define ymax $(lg($ymax))
+	   ## define ymin $(lg(0.08))
+	   ## define ymax $(lg(11.0))
+	}
+
+	#
+	# X-Axis
+	#
+	echo "------------------------------ "
+	echo " [1] order  "
+	echo " [2] Soft  : 0.2- 1.0 keV [true] "
+	echo " [3] Mid.  : 1.0- 2.0 keV [true] "
+	echo " [4] Hard  : 2.0-10.0 keV [true] "
+	echo " [5] All   : 0.1-10.0 keV [true] "
+	echo " [6] Peak  : Flux @E_peak       "
+	define whatx ? { * What X-axis variable : }
+
+	if ($whatx == 1) {
+	    set xvec97 = nseq_97
+	    set xvec98 = nseq_98 + $(dimen(xvec97))
+	    set xvec00 = nseq_00 + $(dimen(xvec97)) + $(dimen(xvec98))
+
+	    define xmin 0
+	    define xmax  $(xvec00[$(dimen(xvec00)-1)]+2)
+	    define lab_x "\# sequence number"
+	}
+	if ($whatx == 2) {
+	    set xvec97 = f_soft_cur97
+	    set xvec98 = f_soft_cur98 
+	    set xvec00 = f_soft_cur00
+	    define xmin  1.6
+	    define xmax  8.0
+	    define lab_x "F^{obs}_{0.2-1keV} [10^{-10} erg/cm^2/s^{-1}]"
+	}
+	if ($whatx == 3) {
+	    set xvec97 = f_med_cur97
+	    set xvec98 = f_med_cur98 
+	    set xvec00 = f_med_cur00
+	    define xmin  0.5
+	    define xmax  5.0
+	    define lab_x "F^{obs}_{1-2keV} [10^{-10} erg/cm^2/s^{-1}]"
+	}
+	if ($whatx == 4) {
+	    set xvec97 = f_hard_cur97
+	    set xvec98 = f_hard_cur98 
+	    set xvec00 = f_hard_cur00
+	    define xmin  0.5
+	    define xmax 13.0
+	    define lab_x "F^{obs}_{2-10keV} [10^{-10} erg/cm^2/s^{-1}]"
+	}
+	if ($whatx == 5) {
+	    set xvec97 = f_all_cur97
+	    set xvec98 = f_all_cur98 
+	    set xvec00 = f_all_cur00
+	    define xmin  3.5
+	    define xmax 24.0
+	    define lab_x "F_{0.1-10 keV} [10^{-10} erg/cm^2/s]"
+	}
+	if ($whatx == 6) {
+	    set xvec97 = f_peak_cur97
+	    set xvec98 = f_peak_cur98 
+	    set xvec00 = f_peak_cur00
+	    define xmin  0.8
+	    define xmax  6.2
+	    define lab_x "F_{Peak} [10^{-10} erg/cm^2/s]"
+	}
+
+	if ($whatx > 1) { 
+	    define howxaxis ? {* X-axis LIN or LOG [1/2] : }
+	} else {
+	    define howxaxis 1
+	}
+
+	if ($howxaxis == 1) { 
+	    define xtick1  5
+	    define xtick2 10 
+	} else {
+	    define xtick1 -0.5
+	    define xtick2  1
+	    define xtick1  -1
+	    define xtick2  2
+	    define xmin $(lg($xmin))
+	    define xmax $(lg($xmax))
+	    set xvec97 = lg(xvec97)
+	    set xvec98 = lg(xvec98)
+	    set xvec00 = lg(xvec00)
+	}
+
+	#---------------------------------------------
+	# Preparing Box
+	#
+	ctype 2 
+	lweight 3
+	expand 1.25
+	ticksize $xtick1 $xtick2 $ytick1 $ytick2
+	limits $xmin $xmax $ymin $ymax
+	box 
+	ticksize -0.5 1 -0.5 1 
+	box 
+	expand 1.5
+	xlabel $lab_x 
+	expand 1.5
+	ylabel $lab_y 
+
+	#-------------------------------------------------
+	# plot 1997
+	#-------------------------------------------------
+	echo "------------------------------------"
+	echo " Plotting 1997 data...  "
+	set xav = xvec97
+	set e_vec_u = 0*xav
+	set e_vec_d = 0*xav
+	set yme = yvec97 
+	set eyme_u = err_yvec97_u
+	set eyme_d = err_yvec97_d
+	
+	mypoints_upper 3 2 6 xav yme eyme_u eyme_d -1.1 0.8
+
+	#-------------------------------------------------
+	# plot 1998
+	#-------------------------------------------------
+	echo "------------------------------------"
+	echo " Plotting 1998 data...  "
+	set xav = xvec98
+	set e_vec_u = 0*xav
+	set e_vec_d = 0*xav
+	set yme = yvec98 
+	set eyme_u = err_yvec98_u
+	set eyme_d = err_yvec98_d
+	
+	mypoints_upper 4 2 3 xav yme eyme_u eyme_d -1.1 0.8
+
+	#-------------------------------------------------
+	# plot 2000
+	#-------------------------------------------------
+	echo "------------------------------------"
+	echo " Plotting 2000 data...  "
+	define plot00 ? <* Plot data (or tracks) [y/n] : >
+	set xav = xvec00
+	set e_vec_u = 0*xav
+	set e_vec_d = 0*xav
+	set yme = yvec00 
+	set eyme_u = err_yvec00_u
+	set eyme_d = err_yvec00_d
+
+	if( substr('$plot00',0,1) == 'y' ) {
+	   mypoints_upper 12 2 8 xav yme eyme_u eyme_d -1.1 0.7
+	} else {
+	   lweight 7
+	   ctype 4 ltype 0 connect xvec00 yvec00 if( nseq_00 >=   0 && nseq_00 <=  12 ) 
+	    ctype 7 ltype 2 connect xvec00 yvec00 if( nseq_00 >=  13 && nseq_00 <=  26 ) 
+	    ctype 8 ltype 2 connect xvec00 yvec00 if( nseq_00 >=  27 && nseq_00 <=  40 ) 
+	   ctype 5 ltype 0 connect xvec00 yvec00 if( nseq_00 >=  41 && nseq_00 <=  48 ) 
+	   ctype 6 ltype 0 connect xvec00 yvec00 if( nseq_00 >=  60 && nseq_00 <=  65 ) 
+	   ctype 2 ltype 0 connect xvec00 yvec00 if( nseq_00 >=  76 && nseq_00 <=  80 ) 
+	   ctype 2 ltype 2 connect xvec00 yvec00 if( nseq_00 >=  80 && nseq_00 <=  86 ) 
+	   ctype 2 ltype 1 connect xvec00 yvec00 if( nseq_00 >=  86 && nseq_00 <=  92 ) 
+	   ctype 3 ltype 0 connect xvec00 yvec00 if( nseq_00 >=  92 && nseq_00 <= 105 ) 
+	   ctype 3 ltype 2 connect xvec00 yvec00 if( nseq_00 >= 105 && nseq_00 <= 111 ) 
+
+	   # ctype 4 ltype 2 connect xvec00 yvec00 if( nseq_00 > 111 || nseq_00 > 12 && nseq_00 < 41 || nseq_00 > 48 && nseq_00 <  60 || nseq_00 > 65 && nseq_00 < 76 || nseq_00 > 12 && nseq_00 < 41 ) 
+
+	   lweight 3
+	}
+
+#---------------------------------------------------------------------------
+# plot_pointings_00  : 
+plot_pointings_00
+
+	location 6000 31000 6000 31000
+	ctype 2
+	ltype 0
+	lweight 3
+
+	echo "------------------------------ "
+	echo " [1] alpha @ 0.1 keV "
+	echo " [2] alpha @ 0.5 keV "
+	echo " [3] alpha @   5 keV "
+	echo " [4] alpha @  10 keV "
+	echo " [5] E_peak          "
+	echo " [6] F_peak          "
+	define whichpar ? < *   Which Parameter [1-5] : >
+
+	if ($whichpar == 1) { 
+	      define 1 "a01" 
+	      define ymin 1.25
+	      define ymax 0.51
+	      define lab_y "\alpha_{(@0.1keV)}"
+	}
+	if ($whichpar == 2) { 
+	      define 1 "a05" 
+	      define ymin 1.25
+	      define ymax 0.51
+	      define lab_y "\alpha_{(@0.5keV)}"
+	}
+	if ($whichpar == 3) { 
+	      define 1 "a5" 
+	      define ymin 1.7
+	      define ymax 0.9
+	      define lab_y "\alpha_{(@5keV)}"
+	}
+	if ($whichpar == 4) { 
+	      define 1 "a10" 
+	      define ymin 1.8
+	      define ymax 0.9
+	      define lab_y "\alpha_{(@10keV)}"
+	}
+	if ($whichpar == 5) { 
+	      define 1 "ep"
+	      # define ymin  0.7
+	      # define ymax  9.0
+	      define ymin  0.6
+	      define ymax  8.81
+	      define lab_y "E_{peak} [keV]"
+	}
+	if ($whichpar == 6) {
+	    # set xvec00 = f_peak_cur00
+	    define 1 "f_peak"
+	    define ymin  0.9
+	    define ymax  7.2
+	    define lab_y "F_{Peak} [10^{-10} erg/cm^2/s]"
+	}
+
+	set yvec00       = $1_cur00
+	set err_yvec00_d = err_$1_cur00_d
+	set err_yvec00_u = err_$1_cur00_u
+	set nseq_00      = 1,$(dimen(yvec00)),1
+
+	#
+	# end of handling data and creating arrays
+	#-------------------------------------------------------
+
+	if( $whichpar >= 5 ) {
+	    define howyaxis ? < * Y-axis LIN or LOG [1/2] : >
+	} else {
+	    define howyaxis 1
+	}
+
+	if ($howyaxis == 1) { 
+	   define ytick1  0
+	   define ytick2  0
+	} else {
+	   foreach 2 < '00' > {
+	      set err_yvec$2_d = lg(yvec$2) - lg(yvec$2 - err_yvec$2_d)
+	      set err_yvec$2_u = lg(yvec$2 + err_yvec$2_u) - lg(yvec$2)
+	      set yvec$2 = lg(yvec$2)
+	   }
+	   define ytick1 -1 
+	   define ytick2  0
+	   define ymin $(lg($ymin))
+	   define ymax $(lg($ymax))
+	   ## define ymin $(lg(0.08))
+	   ## define ymax $(lg(11.0))
+	}
+
+	#
+	# X-Axis
+	#
+	echo "------------------------------"
+	echo " [1] order "
+	echo " [2] Soft  : 0.2- 1.0 keV [true]"
+	echo " [3] Mid.  : 1.0- 2.0 keV [true]"
+	echo " [4] Hard  : 2.0-10.0 keV [true]"
+	echo " [5] All   : 0.1-10.0 keV [true]"
+	echo " [6] Peak  : Flux @E_peak       "
+	define whatx ? < *    What X-axis variable : >
+
+	if ($whatx == 1) {
+	    set xvec00 = nseq_00 
+	    define xmin 0
+	    define xmax  $(xvec00[$(dimen(xvec00)-1)]+2)
+	    define lab_x "\# sequence number"
+	}
+	if ($whatx == 2) {
+	    set xvec00 = f_soft_cur00
+	    define xmin  1.6
+	    define xmax  8.0
+	    define lab_x "F^{obs}_{0.2-1keV} [10^{-10} erg/cm^2/s^{-1}]"
+	}
+	if ($whatx == 3) {
+	    set xvec00 = f_med_cur00
+	    define xmin  0.5
+	    define xmax  5.0
+	    define lab_x "F^{obs}_{1-2keV} [10^{-10} erg/cm^2/s^{-1}]"
+	}
+	if ($whatx == 4) {
+	    set xvec00 = f_hard_cur00
+	    define xmin  1.8
+	    define xmax 13.0
+	    define lab_x "F^{obs}_{2-10keV} [10^{-10} erg/cm^2/s^{-1}]"
+	}
+	if ($whatx == 5) {
+	    set xvec00 = f_all_cur00
+	    define xmin  7.0
+	    define xmax 24.0
+	    define lab_x "F_{0.1-10 keV} [10^{-10} erg/cm^2/s]"
+	}
+	if ($whatx == 6) {
+	    set xvec00 = f_peak_cur00
+	    # define xmin  1.2
+	    # define xmax  6.2
+	    define xmin  0.9
+	    define xmax  7.2
+	    define lab_x "F_{Peak} [10^{-10} erg/cm^2/s]"
+	}
+
+	if ($whatx > 1) { 
+	    define howxaxis ? < * X-axis LIN or LOG [1/2] : >
+	} else {
+	    define howxaxis 1
+	}
+
+	if ($howxaxis == 1) { 
+	    define xtick1  5
+	    define xtick2 10 
+	} else {
+	    define xtick1  -1
+	    define xtick2  2
+	    define xmin $(lg($xmin))
+	    define xmax $(lg($xmax))
+	    set xvec00 = lg(xvec00)
+	}
+
+	#---------------------------------------------
+	# Preparing Box
+	#
+	ctype 2 
+	lweight 3
+	expand 1.25
+	ticksize $xtick1 $xtick2 $ytick1 $ytick2
+	limits $xmin $xmax $ymin $ymax
+	box 
+	ticksize -0.5 1 -0.5 1 
+	box 
+	expand 1.5
+	xlabel $lab_x 
+	expand 1.5
+	ylabel $lab_y 
+
+	#-------------------------------------------------
+	# plot 2000
+	#-------------------------------------------------
+	echo "------------------------------------"
+	echo " Plotting 2000 data... "
+	define plot00 ? <* Plot data (or tracks) [y/n] : >
+	set xav = xvec00
+	set e_vec_u = 0*xav
+	set e_vec_d = 0*xav
+	set yme = yvec00 
+	set eyme_u = err_yvec00_u
+	set eyme_d = err_yvec00_d
+
+	if( substr('$plot00',0,1) == 'y' ) {
+	   mypoints_upper 12 2 8 xav yme eyme_u eyme_d -1.1 0.7
+	} else {
+	   lweight 7
+	   # ctype 4 ltype 0 connect xvec00 yvec00 if( nseq_00 >=   0 && nseq_00 <=  12 ) 
+	   #  ctype 7 ltype 2 connect xvec00 yvec00 if( nseq_00 >=  13 && nseq_00 <=  26 ) 
+	   #  ctype 8 ltype 2 connect xvec00 yvec00 if( nseq_00 >=  27 && nseq_00 <=  40 ) 
+	   # ctype 5 ltype 0 connect xvec00 yvec00 if( nseq_00 >=  41 && nseq_00 <=  48 ) 
+	   # ctype 6 ltype 0 connect xvec00 yvec00 if( nseq_00 >=  60 && nseq_00 <=  65 ) 
+	   # ctype 2 ltype 0 connect xvec00 yvec00 if( nseq_00 >=  76 && nseq_00 <=  80 ) 
+	   # ctype 2 ltype 2 connect xvec00 yvec00 if( nseq_00 >=  80 && nseq_00 <=  86 ) 
+	   # ctype 2 ltype 1 connect xvec00 yvec00 if( nseq_00 >=  86 && nseq_00 <=  92 ) 
+	   # ctype 3 ltype 0 connect xvec00 yvec00 if( nseq_00 >=  92 && nseq_00 <= 105 ) 
+	   # ctype 3 ltype 2 connect xvec00 yvec00 if( nseq_00 >= 105 && nseq_00 <= 111 ) 
+
+	   sub_plot_00_track   color=4  line=0   t1=0    t2=12
+	   sub_plot_00_track   color=7  line=2   t1=13   t2=26 
+	   sub_plot_00_track   color=8  line=2   t1=27   t2=40 
+	   sub_plot_00_track   color=5  line=0   t1=41   t2=48 
+	   sub_plot_00_track   color=6  line=0   t1=60   t2=65 
+	   sub_plot_00_track   color=2  line=0   t1=76   t2=80 
+	   sub_plot_00_track   color=2  line=2   t1=80   t2=86 
+	   sub_plot_00_track   color=2  line=1   t1=86   t2=92 
+	   sub_plot_00_track   color=3  line=0   t1=92   t2=105 
+	   sub_plot_00_track   color=3  line=2   t1=105  t2=111 
+
+	   # ctype 4 ltype 2 connect xvec00 yvec00 if( nseq_00 > 111 || nseq_00 > 12 && nseq_00 < 41 || nseq_00 > 48 && nseq_00 <  60 || nseq_00 > 65 && nseq_00 < 76 || nseq_00 > 12 && nseq_00 < 41 ) 
+
+	   lweight 3
+	}
+
+sub_plot_00_track 101
+	# color
+	# line
+	# t1
+	# t2
+
+	#            0   1   2   3   4   5   6   7   8   9  10  11 
+	#            1   2   3   4   5   6   7   8   9  10  11  12
+	set _n1 = <  0  13  27  41  49  57  67  76  81  87  93 106 > # 112 > 
+	set _n2 = < 12  26  40  48  56  66  75  80  86  92 105 111 > # 113 > 
+
+        define silentparsing 1
+        mparsep $1
+        define silentparsing 0
+
+	# if( substr('$plot00',0,1) == 'y' ) {
+	#    mypoints_upper 12 2 8 xav yme eyme_u eyme_d -1.1 0.7
+	# } else {
+	   lweight 7
+	   ctype $color ltype $line connect xvec00 yvec00 if( nseq_00 >=   $t1 && nseq_00 <=  $t2 ) 
+	   lweight 3
+	# }
+
+#---------------------------------------------------------------------------
+# curved_model: relazione usata da Fabrizio nel paper
+#               CON aggiunto un esponente di 'fold'
+#               CON cambiata la forma dell'INPUT
+#               E` come quella implementata in XSPEC
+#               Calcolata sul range -2 < log(nu) < 2
+#               [1]= DataSet
+#               [2]= Fold Parameter
+#               [3]= f_nu/nu_f_nu
+#               [4]= color
+#               [5]= Y_min
+#               [6]= Y_max
+curved_model 06
+
+        if($?1 == 0) {
+
+    	   echo "-----------------------------------------------" 
+	   echo " relazione usata nel 'curved model' "
+	   echo " Legge i parametri direttamente dai Log Files" 
+	   echo " Calcolata sul range -2 < log(nu) < 2" 
+    	   echo "-----------------------------------------------" 
+
+	   do i=1,$(dimen(all_pointings_vec)) {
+	      echo  [$i] $(all_pointings_vec[$i-1])
+	   }
+	   define oldwhichdata ? { Which DataSet [NUMBER] ? }
+
+	   echo "--- FOLD PARAMETER ----------- "
+	   echo " [1] 0.5 "
+	   echo " [2] 1.0 "
+	   echo " [3] 2.0 "
+	   echo " [4] 3.0 "
+	   echo " [5] FREE (and errors for 3 interesting parameters) "
+	   echo " [6] FREE (and errors for 4 interesting parameters) "
+	   define oldwhichfold ? { Which value of Fold parameter ? [1-6] }
+	   echo  * Active value is: $oldwhichfold
+
+	   echo "--- Which representation -------- "
+   	   echo "  [1] Fnu "
+	   echo "  [2] nu_Fnu "
+	   define oldrepre ? { Your choice ? }
+
+           define oldcolor ? { Color ? }
+
+           define 1 $oldwhichdata 
+           define 2 $oldwhichfold
+           define 3 $oldrepre
+           define 4 $oldcolor
+        } 
+
+	define whichdata $1
+	define whichfold $2
+	define repre     $3
+	define color     $4
+
+	define e1       (1.0)
+	define e2      (10.0)
+
+	if ($whichfold == 1) { define lab_t "Fold Parameter = 0.5" }
+	if ($whichfold == 2) { define lab_t "Fold Parameter = 1.0" }
+	if ($whichfold == 3) { define lab_t "Fold Parameter = 2.0" }
+	if ($whichfold == 4) { define lab_t "Fold Parameter = 3.0" }
+	if ($whichfold == 5) { define lab_t "Fold Parameter Free (a)" }
+	if ($whichfold == 6) { define lab_t "Fold Parameter Free (b)" }
+
+	define g1       $($(a1[($whichdata-1)*6+$whichfold-1])-1)
+	define g2       $($(a10[($whichdata-1)*6+$whichfold-1])-1)
+	define e_break  $(eb[($whichdata-1)*6+$whichfold-1])
+	define fold     $(fold[($whichdata-1)*6+$whichfold-1])
+	define realnorm $(norm1kev[($whichdata-1)*6+$whichfold-1])
+	define temp (lg($realnorm))
+
+	echo  Log of RealNorm = $temp
+
+        if($?5 == 0) {
+	   define oldymin ? { Y_min : }
+	   define oldymax ? { Y_max : }
+           define 5 $oldymin
+           define 6 $oldymax
+	}
+	define ymin      $5
+	define ymax      $6
+
+	echo "------------------------------"
+	echo " Alpha @ E_ref_1 = " $g1
+	echo " Alpha @ E_ref_2 = " $g2
+	echo " E_break         = " $e_break
+	echo " Fold Parameter  = " $fold
+	echo "------------------------------"
+
+	define xb (lg($e_break))
+	define x1 (lg($e1))
+	define x2 (lg($e2))
+
+	define dum1 ( exp(2.302*($x1 - $xb)*$fold) )
+	define dum2 ( exp(2.302*($x2 - $xb)*$fold) )
+
+	define a1 ( ($g1*$dum2*(1+$dum1)-$g2*$dum1*(1+$dum2))/($dum2-$dum1) ) 
+	define a2 ( ($g2*(1+$dum2)-$g1*(1+$dum1))/($dum2-$dum1) ) 
+
+	define normdum  ( -2.302585093*$xb*$fold )
+	define normdumf ( ($a1 - $a2)*lg(1. + exp($normdum))/$fold )
+
+	echo "--- Spectral Indices 'at infty' --- "
+	echo "* alpha_1 =" $a1
+	echo "* alpha_2 =" $a2
+	echo "----------------------------------- "
+
+	set lg_e=-2,2.1,0.02
+	set dum = 2.302585*(lg_e - $xb)*$fold
+
+	set lg_f = -$a1*lg_e + ($a1 - $a2)*lg(1 + exp(dum))/$fold
+	set lg_f = lg_f - $normdumf + lg($realnorm)
+
+	set dimen(xx)=$(dimen(lg_e)-1)
+	set dimen(aa)=$(dimen(lg_e)-1)
+
+	do 1=0,$(dimen(lg_e)-2) {
+	  set xx[$1] = (lg_e[$1]+lg_e[$1+1])/2
+	  set aa[$1] = (lg_f[$1]-lg_f[$1+1])/(lg_e[$1+1]-lg_e[$1])
+	}
+
+	#-----------------------------------
+	# location 6000 29000 7000 30000
+
+	echo " Define MULTIWINDOW flag : "
+	echo "  [0] single window "
+	echo "  [1] 2x2 "
+	echo "  [2] 4 horizontal "
+	define multiwindow ? { Define flag : }
+
+	# if $multiwindow is NOT defined (!$?) then...
+	#
+	if($multiwindow == 0 || !$?multiwindow ) {
+	    window 1 1 1 1
+	    location 6000 30000 6000 30000
+	}
+	if($multiwindow == 1) {
+	    window 1 1 1 1
+	    location 6000 30000 6000 30000
+	}
+	if($multiwindow == 2) {
+	    window 1 1 1 1
+	    location 4000 32000 10000 18000 
+	}
+
+	ctype 2
+	lweight 2
+	expand 1.5
+	if ($repre == 1) {limits -1.1 1.3 -4 3 }
+	if ($repre == 2) {limits -1.1 1.3 $ymin $ymax }
+
+	expand 1.5
+	ticksize -1 0 0 0 
+	lweight 1.5
+
+	# if $multiwindow is NOT defined (!$?) then...
+	#
+	if(!$?multiwindow) {
+	    box 1 2 0 3
+	} 
+	if($multiwindow == 1) {
+	    echo "--------------------------------------------"
+	    echo "     ul   |   ur "
+	    echo "    ------+------"
+	    echo "     ll   |   lr "
+	    define dove ? { Which window position ? }
+	    expand 1.1
+	    if('$dove' == 'll') { 
+		window -2 -2 1 1 
+		box 1 2 0 0 
+	    }
+	    if('$dove' == 'ul') { 
+		window -2 -2 1 2 
+		box 0 2 0 0 
+	    }
+	    if('$dove' == 'ur') { 
+		window -2 -2 2 2 
+	        box 0 0 0 2 
+	    }
+	    if('$dove' == 'lr') { 
+		window -2 -2 2 1 
+	        box 1 0 0 2 
+	    }
+	    expand 1.5
+	}
+	if($multiwindow == 2) {
+	    echo "--------------------------------------------"
+	    echo "     1 | 2 | 3 | 4 "
+	    echo "--------------------------------------------"
+	    define dove ? { Which window position ? }
+	    expand 1.1
+	    if('$dove' == '1') { 
+		window -4 1 1 1 
+		box 2 2 0 0 
+	    }
+	    if('$dove' == '2') { 
+		window -4 1 2 1 
+		box 2 0 0 0 
+	    }
+	    if('$dove' == '3') { 
+		window -4 1 3 1 
+	        box 2 0 0 0 
+	    }
+	    if('$dove' == '4') { 
+		window -4 1 4 1 
+	        box 2 0 0 2 
+	    }
+	    expand 1.5
+	}
+
+	lweight 2 
+
+	ctype $color
+	if ($repre == 1) { connect lg_e lg_f }
+	if ($repre == 2) {  
+	   set nufnu = lg_f + lg(662.6176) - 29. + lg_e + 17.383
+           connect lg_e nufnu   # (lg_e+lg_f) 
+	}
+
+
+#------------------------------------------------------------------------------
+# load_spectra_sax_xte
+load_spectra_sax_xte
+
+	echo " * Entering 'load_spectra_sax_xte' "
+
+	define year ? { * What year [1997/1998/2000/2001] : }
+
+	define yearstr $year
+
+	if( $year < 2001 ) {
+	   #data ocodes_sax.dat
+	   data "/home/gfossati/Science/Mkn421/2000/Spectral/ocodes_sax.dat"
+	   if( $year == 1997 ) { lines 1 16 }
+	   if( $year == 1998 ) { lines 1 12 }
+	}
+	if( $year == 2001 ) {
+	   #data ocodes_xte.dat
+	   #data "/home/gfossati/Science/Mkn421/2001/Spectral/ocodes_xte.dat"
+	   define tevmatch ? < General analysis of TeV-matching split [1|2] : >
+	   if( $tevmatch == 1 ) { data "/home/gfossati/Science/Mkn421/2001/Spectral/ocodes_sequence.dat" }
+	   if( $tevmatch == 2 ) { 
+	       data "/home/gfossati/Science/Mkn421/2001/Spectral/RunTeV/ocodes_sequence_krennrich.dat" 
+	       define yearstr $year"tev"
+	   }
+	}
+	read < ocodes 1.s >
+	
+	#-----------------------------------------------------------
+	# Setting correct parameters for reading fit data
+	#-----------------------------------------------------------
+	if( $year == 1997 ) {
+	   echo "--- Summary of analysis runs --- "
+	   echo " [1] bkn pl , 1997 data - test 1 "
+	   echo " [3] curved , 1997 data - fold=1&2 (test-1) "
+	   echo " " 
+	   define run ? < *** Which analysis run : >
+	   define 1 $run
+
+	   define Ntot 16
+	   set _idx=0,$($Ntot-1)
+	   set ocodes=ocodes[_idx] 
+	   if( $run == 1 || $run == 2 ) {
+	       define 2 d97
+	       define 1 bkn_nh
+	   } 
+	   if( $run == 3 || $run == 4 ) {
+	       define fold ? < Which Fold parameter [1|2] : >
+	       define 2 d97
+	       define 1 "f"$fold"a"
+	   }
+	}
+
+	if( $year == 1998 ) {
+	   echo "--- Summary of analysis runs ---"
+	   echo " [1] bkn pl , 1998a data - test 1"
+	   echo " [3] curved , 1998a data - fold=1&2 (test-2)"
+	   echo " " 
+	   define run ? < *** Which analysis run : >
+	   define 1 $run
+
+	   define Ntot 12
+	   set _idx=0,$($Ntot-1)
+	   set ocodes=ocodes[_idx] 
+	   if( $run == 1 ) {
+	       define 2 d98a
+	       define 1 bkn_nh
+	   } 
+	   if( $run == 2 || $run == 3 ) {
+	       define fold ? < Which Fold parameter [1|2] : >
+	       define 2 d98a
+	       define 1 "f"$fold"a"
+	   }
+	}
+
+	if( $year == 2000 ) {
+	   echo "--- Summary of analysis runs ---"
+	   echo " [1] bkn pl , 2000a data - test 1"
+	   echo " [3] curved , 2000a data - fold=1&2&3 (test-1)"
+	   echo " " 
+	   define run ? < *** Which analysis run : >
+	   define 1 $run
+
+	   define Ntot 113
+	   set _idx=0,$($Ntot-1)
+	   set ocodes=ocodes[_idx] 
+	   if( $run == 1 || $run == 2 ) {
+	       define 2 d00a
+	       define 1 bkn_nh
+	   } 
+	   if( $run == 3 || $run == 5 ) {
+	       define fold ? < Which Fold parameter [1|2|3] : >
+	       define 2 d00a
+	       define 1 "f"$fold"a"
+	   }
+	}
+
+	if( $year == 2001 ) {
+	   echo "--- Summary of analysis runs --- "
+	   echo " [1] bkn pl , 2001 data  "
+	   # echo  [3] curved , 2000a data - fold=1&2&3 (test-1)
+	   echo " " 
+	   define run ? < *** Which analysis run : >
+	   define 1 $run
+
+	   if( $tevmatch == 1 ) {
+	      define Ntot 117
+	      set _idx=0,$($Ntot-1)
+	      set ocodes=ocodes[_idx] 
+	      if( $run == 1 || $run == 2 ) {
+	          define 2 p01
+	          define 1 pca_bkn
+	          define run "PL"
+	      } 
+	   } else {
+	      define Ntot 12
+	      set _idx=0,$($Ntot-1)
+	      set ocodes=ocodes[_idx] 
+	      define 2 ptev01
+	      define 1 pca_sbkn
+	      define run "TeV"
+	   }
+	}
+
+	#-----------------------------------------------------------
+	# Loading fits themselves
+	#-----------------------------------------------------------
+	foreach 3 ocodes {
+	    if( $year == 1997 ) { data "/data/analysis/SAX/Mkn421/1997/Spectral/Run"$run"/QDP/ratio"_$2_$3_$1.qdp }
+	    if( $year == 1998 ) { data "/data/analysis/SAX/Mkn421/1998/Spectral/Run"$run"/QDP/ratio"_$2_$3_$1.qdp }
+	    if( $year == 2000 ) { data "/home/gfossati/Science/Mkn421/2000/Spectral/Run"$run"/QDP/ratio"_$2_$3_$1.qdp }
+	    if( $year == 2001 ) { data "/home/gfossati/Science/Mkn421/2001/Spectral/Run"$run"/QDP/ratio"_$2_$3_$1.qdp }
+	    verbose 0
+	    if( $year <= 2000 ) {
+	       lines 4 32
+	       read <  lecs_rho 3 err_lecs_rho 4 >
+	       lines 34 73
+	       read <  mecs_rho 3 err_mecs_rho 4 >
+	    }
+	    if( $year == 2001 ) {
+	       # lines 4 37
+	       lines 4 38
+   	       read < rho 3 err_rho 4 >
+	    }
+
+	    if( $year == 1997 ) { data "/data/analysis/SAX/Mkn421/1997/Spectral/Run"$run"/QDP/eufs"_$2_$3_$1.qdp }
+	    if( $year == 1998 ) { data "/data/analysis/SAX/Mkn421/1998/Spectral/Run"$run"/QDP/eufs"_$2_$3_$1.qdp }
+	    if( $year == 2000 ) { data "/home/gfossati/Science/Mkn421/2000/Spectral/Run"$run"/QDP/eufs"_$2_$3_$1.qdp }
+	    if( $year == 2001 ) { data "/home/gfossati/Science/Mkn421/2001/Spectral/Run"$run"/QDP/eufs"_$2_$3_$1.qdp }
+
+	    if( $year <= 2000 ) {
+	       lines 4 32
+   	       read < lecs_kev 1 lecs_dkev 2 lecs_eufs 5 >
+   	       lines 34 73
+	       read < mecs_kev 1 mecs_dkev 2 mecs_eufs 5 >
+	    }
+	    if( $year == 2001 ) {
+	       # lines 4 37
+	       lines 4 38
+   	       read < kev 1 dkev 2 eufs 5 >
+	    }
+
+	    verbose 1
+	    define 3 $3_$yearstr
+	    if( $year <= 2000 ) {
+	       echo "* concatenating LECS and MECS data...."
+	       set kev_$3       = lecs_kev     CONCAT mecs_kev
+	       set dkev_$3      = lecs_dkev    CONCAT mecs_dkev
+	       set eufs_$3      = lecs_eufs    CONCAT mecs_eufs
+	       set ratio_$3     = lecs_rho     CONCAT mecs_rho
+	       set err_ratio_$3 = err_lecs_rho CONCAT err_mecs_rho
+	    }
+	    if( $year == 2001 ) {
+	       echo "* Renaming XTE/PCA arrays"
+	       set kev_$3       = kev     
+	       set dkev_$3      = dkev    
+	       set eufs_$3      = eufs    
+	       set ratio_$3     = rho     
+	       set err_ratio_$3 = err_rho 
+	    }
+	}
+
+
+#------------------------------------------------------------------------------
+# unload_spectra_sax_xte
+unload_spectra_sax_xte
+
+	define year ? { * What year [1997/1998/2000/2001] : }
+
+	if( $year < 2001 ) {
+	   data "/home/gfossati/Science/Mkn421/2000/Spectral/ocodes_sax.dat"
+	   if( $year == 1997 ) { lines 1 16 }
+	   if( $year == 1998 ) { lines 1 12 }
+	}
+	if( $year == 2001 ) {
+	   data "/home/gfossati/Science/Mkn421/2001/Spectral/ocodes_xte.dat"
+	}
+	read < ocodes 1.s >
+	
+	verbose 1
+	foreach 3 ocodes {
+	    foreach 2 < kev dkev eufs ratio err_ratio > { 
+	        define 2 $2_$3_$year
+		delete $2
+	    }
+	}
+
+##------------------------------------------------------------------------------
+## load_spectra_sax_mkn501
+##load_spectra_sax_mkn501
+#-------------------------------------------------------------------------------
+# load_spectra_mkn501_97
+## GF 2005.07.28: more flexible 'run/case' handling.
+load_spectra_mkn501_97
+	
+        # define 2 d00a
+        # define 1 "f"$fold"a"
+	   
+	# just to avoid one query
+	define year 1997
+
+	#-----------------------------------
+	# input parameters
+	#-----------------------------------
+	if( $year == 1997 ) {
+	   echo "--- Summary of analysis runs --- "
+	   echo " [0a] L+M+P , pl     , Galactic nH "
+	   echo " [0b] L+M+P , bkn pl , Galactic nH "
+	   echo " [1a] L+M   , pl     , Galactic nH "
+	   echo " [1b] L+M   , bkn pl , Galactic nH "
+	   echo " " 
+	   define case ? < *** Which analysis case : >
+	   define 1 $case
+
+	   # define Ntot 16
+	   if( substr('$case',0,1) == '0' ) { define 2 lmp97  } 
+	   if( substr('$case',0,1) == '1' ) { define 2 lm     } 
+	   if( substr('$case',1,1) == 'a' ) { define 1 pl_nh  } 
+	   if( substr('$case',1,1) == 'b' ) { define 1 bkn_nh } 
+
+	   define run (substr('$case',0,1))
+	}
+
+	#-----------------------------------
+	# reading the data
+	#-----------------------------------
+	data "/home/gfossati/Science/Mkn501/1997/Spectral/Run"$run"/ocodes_sax.dat"
+	read < ocodes 1.s >
+	
+	foreach 3 ocodes {
+	    
+	    data "/home/gfossati/Science/Mkn501/1997/Spectral/Run"$run"/QDP/ratio"_$2_$3_$1.qdp 
+	    verbose 0
+	    lines  4 37
+	    read <  lecs_rho 3 err_lecs_rho 4 >
+	    lines 39 78
+	    read <  mecs_rho 3 err_mecs_rho 4 >
+	    if( $run == 0 ) {
+	       lines 80 95
+	       read <  pds_rho  3 err_pds_rho  4 >
+	    }
+	    
+	    data "/home/gfossati/Science/Mkn501/1997/Spectral/Run"$run"/QDP/eufs"_$2_$3_$1.qdp 
+	    lines  4 37
+   	    read < lecs_kev 1 lecs_dkev 2 lecs_eufs 5 >
+   	    lines 39 78
+	    read < mecs_kev 1 mecs_dkev 2 mecs_eufs 5 >
+	    if( $run == 0 ) {
+	       lines 80 95
+	       read < pds_kev  1 pds_dkev  2 pds_eufs  5 >
+	    }
+	    
+	    verbose 1
+	    define 4 $year
+	    define 3 mkn501_$4_$3
+	    echo "* concatenating LECS, MECS data...."
+	    set kev_$3       = lecs_kev     CONCAT mecs_kev    
+	    set dkev_$3      = lecs_dkev    CONCAT mecs_dkev   
+	    set eufs_$3      = lecs_eufs    CONCAT mecs_eufs   
+	    set ratio_$3     = lecs_rho     CONCAT mecs_rho    
+	    set err_ratio_$3 = err_lecs_rho CONCAT err_mecs_rho
+
+	    if( $run == 0 ) { 
+	       echo "* ...and PDS data."
+	       set kev_$3       = kev_$3       CONCAT pds_kev     
+	       set dkev_$3      = dkev_$3      CONCAT pds_dkev
+	       set eufs_$3      = eufs_$3      CONCAT pds_eufs
+	       set ratio_$3     = ratio_$3     CONCAT pds_rho
+	       set err_ratio_$3 = err_ratio_$3 CONCAT err_pds_rho
+	    }
+	}
+
+	echo "------------------------------------------------------------"
+	echo "  XSeds are stored in arrays with suffix _mkn501_1997_## "
+	echo "------------------------------------------------------------"
+
+#---------------------------------------------------------------------------
+# new_dot_xsed : the REAL Xsed Plotting Program (for Mkn-421 1997-thru-2001)
+#                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+## GF 2005.07.28: improved help. Added withpds option to control x range.
+##              + changed a few things in the label section.
+new_dot_xsed 101
+
+	echo " * Entering 'new_dot_xsed' "
+
+	define withpds "no"
+	define source "mkn421"
+	
+        if($?1) {
+            if(substr('$1',0,2) == '-h' ){
+               echo " new_dot_xsed: "
+               echo " "
+               echo " USAGE: "
+               echo "    > new_dot_xsed [source=NAME] [withpds=yes|no] .... "
+               echo "  or"
+               echo "    > new_dot_xsed  (in this case it prompts for all parameters)"
+               echo " "
+               echo " source name is mostly meant to recognize and handle properly"
+               echo " the case of Mkn501/1997. "
+               echo " Use mkn501 for this latter case. "
+               echo " "
+               return
+            } else {
+               mparsep $1
+            }
+        } else {
+	    define source "mkn421"
+            # define d   ? <                  delta : >
+        }
+
+	if( substr('$source',0,4) == 'mkn5' ) {
+	   define n ? < what observation : >
+	   define 1 mkn501_1997_$n
+
+	} else {
+
+           #data ocodes_xte.dat
+           # data "/home/gfossati/Science/Mkn421/2001/Spectral/ocodes_xte.dat"
+           data "/home/gfossati/Science/Mkn421/2001/Spectral/ocodes_sequence.dat"
+           read < ocodes 1.s >
+           
+           echo "--------------------------------------------------"
+           define year ? <* What year [1997/1998/2000/2001] : >
+           
+           define o ?    <*          What Spectrum [001,..] : >
+           define 1 "$(ocodes[$($o-1)])"
+           define 1 $1_$year
+	}
+
+	#-----------------------------------------------------------
+	# Preparing the arrays from ratio&eufs
+	#
+	set lkev = lg(kev_$1)
+	set lkev = lg(kev_$1)
+
+	# set dx_d = 0*eufs_$1
+	# set dx_u = 0*eufs_$1
+	set dx_u =  lg(1 + dkev_$1/kev_$1)
+	set dx_d = -lg(1 - dkev_$1/kev_$1)
+	set err_aaa_u = dx_u
+	set err_aaa_d = dx_d
+
+	set spec  = ratio_$1*eufs_$1
+	set err_spec = err_ratio_$1*eufs_$1
+	set fnu   = lg(spec) + lg(662.6176) - 29. 
+	set nufnu = lg(spec) + lg(662.6176) - 29. + lkev + 17.383
+	
+	set err_spec_u =  lg(1 + err_ratio_$1/ratio_$1)
+	set err_spec_d = -lg(1 - err_ratio_$1/ratio_$1)
+
+	#---------------------------
+	#
+	#
+	echo "--------------------------------------------------"
+	echo "* Define MULTIWINDOW flag : "
+	echo "       [0] single window "
+	echo "       [1] 2x2 "
+	echo "       [2] 4 horizontal "
+	define multiwindow ? <*                        Define flag : >
+
+	# if $multiwindow is NOT defined (!$?) then...
+	#
+	if($multiwindow == 0) {   
+	    window 1 1 1 1
+	    location 6000 30000 6000 30000
+	}
+	if($multiwindow == 1) {
+	    window 1 1 1 1
+	    location 6000 29000 6000 30000
+	}
+	if($multiwindow == 2) {
+	    window 1 1 1 1
+	    location 6000 30000 10000 16000 
+	    location 4000 32000 10000 18000 
+	}
+	expand 1.5
+	ctype 2 
+
+	define whatx ? <* Energy [1] of Frequency [2] X-Axis : >
+	if($whatx == 2) {
+	    define xmin 16.1 
+	    define xmax 19.7
+	    define tick  0
+	    define lab_x "log(\\nu)"
+
+	    set xl  = lkev + 17.383
+	    set aaa = xl 
+	} else {
+	    ## define xmin -1.1
+	    ## define xmax  2.3
+	    define xmin  $(lg(0.09))
+	    define xmax  $(lg(22.0))
+	    # if( substr('$source',0,4) == 'mkn5' )
+	    if( substr('$withpds',0,1) == 'y' ) {
+	       define xmin  $(lg(0.09))
+	       define xmax  $(lg(200.0))
+	    }
+	    ## if( $year <= 2000 ) {
+	    ##    define xmin  $(lg(0.09))
+	    ##    define xmax  $(lg(12.0))
+	    ## }
+	    ## if( $year == 2001 ) {
+	    ##    define xmin  $(lg(0.09))
+	    ##    define xmax  $(lg(22.0))
+	    ## }
+	    define tick  -1
+	    define lab_x "Energy [keV]"
+
+	    set xl  = lkev
+	    set aaa = xl 
+	}
+
+	define whaty ? <*     F_nu [1] of nu_F_nu [2] Y-Axis : >
+	if($whaty == 1) {
+	    define ymin -3.9
+	    define ymax  0.1 
+	    define lab_y "log(F_\\nu) [erg/cm^2/s/Hz]"
+
+	    set yl  = lg(spec)
+	    set bbb = yl
+	} else {
+	     define ymin -10.51
+	     define ymax  -9.2
+	     define ymax  -8.7
+	     if( substr('$source',0,4) == 'mkn5' ) {
+	        define ymin  -10.8
+	        define ymax   -8.9
+	     }
+	    ## if( $year <= 2000 ) {
+	    ##    define ymin  -10.9
+	    ##    define ymax   -9.2
+	    ## }
+	    ## if( $year == 2001 ) {
+	    ##    define ymin -10.9
+	    ##    define ymax  -8.7
+	    ## }
+	    define lab_y "log(\\nu F_\\nu) [erg/cm^2/s]"
+
+	    set yl  = nufnu
+	    set bbb = yl
+	}
+
+	set err_bbb_u = err_spec_u 
+	set err_bbb_d = err_spec_d 
+	delete err_spec_u
+	delete err_spec_d
+
+	limits $xmin $xmax $ymin $ymax 
+	ticksize $tick 0 0 0 
+	expand 1.5
+	if($multiwindow == 0) {  
+	    box 1 2 0 3
+	    expand 1.5
+	    ylabel $lab_y
+	    expand 1.75
+	    xlabel $lab_x
+	}
+	if($multiwindow == 1) {
+	    echo "--------------------------------------------"
+	    echo "     ul   |   ur "
+	    echo "    ------+------"
+	    echo "     ll   |   lr "
+	    echo "--------------------------------------------"
+	    define dove ? { Which window position ? }
+	    expand 1.3
+	    if('$dove' == 'll') { 
+		window -2 -2 1 1 
+		box 1 2 0 0 
+	    }
+	    if('$dove' == 'ul') { 
+		window -2 -2 1 2 
+		box 0 2 0 0 
+	    }
+	    if('$dove' == 'ur') { 
+		window -2 -2 2 2 
+	        box 0 0 0 2 
+	    }
+	    if('$dove' == 'lr') { 
+		window -2 -2 2 1 
+	        box 1 0 0 2 
+	    }
+	    expand 1.5
+	}
+	if($multiwindow == 2) {
+	    echo "--------------------------------------------"
+	    echo "     1 | 2 | 3 | 4 "
+	    echo "--------------------------------------------"
+	    define dove ? { Which window position ? }
+	    expand 1.1
+	    if('$dove' == '1') { 
+		window -4 1 1 1 
+		box 2 2 0 0 
+	    }
+	    if('$dove' == '2') { 
+		window -4 1 2 1 
+		box 2 0 0 0 
+	    }
+	    if('$dove' == '3') { 
+		window -4 1 3 1 
+	        box 2 0 0 0 
+	    }
+	    if('$dove' == '4') { 
+		window -4 1 4 1 
+	        box 2 0 0 0 
+	    }
+	    expand 1.5
+	}
+
+	echo "--------------------------------------------------"
+	echo "* PLOT Options :   "
+	echo "   [1] B/W         "
+	echo "   [2] Ptype/Ctype "
+	echo "   [3] Ctype/Ctype "
+	define whichdots ? <*   Your choice : >
+
+	#-------------------------------------------------
+	if($whichdots == 1){
+	   ctype 2
+	   expand 1.5
+	   # usage: mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d>
+	   # usage: mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d> <expand>
+	   mypoints 20 2 1 aaa bbb err_bbb_u err_bbb_d 1.2
+	   define cty1 2
+	   define cty2 1
+	}
+	#-------------------------------------------------
+	
+	#-------------------------------------------------
+	if($whichdots == 2) {
+	   define pty0 ? { Give the code for PTYPE [#1 #2] : }
+	   define cty  ? { Give the code for CTYPE [#1]    : }
+
+	   set _pt_ local
+	   set _pt_ = < $pty0 > 
+	   define pty $(_pt_[0]) 
+	   if( $(_pt_[1]) == 0 ) {
+	      define cty_in "-1" 
+	      define cty2   1
+	   } else {
+	      define cty_in $cty
+	      define cty2   $cty
+	   }
+	   define cty1 $cty
+	   
+	   # mypoints $pty $cty $cty_in aaa bbb err_bbb_u err_bbb_d 0.75
+	   mypoints2 $pty $cty $cty_in aaa bbb 0.75
+
+	}
+	#-------------------------------------------------
+
+	#-------------------------------------------------
+	if($whichdots == 3) {
+	   echo "-----------------------------------------"
+	   define pty  ? < Give the code for PTYPE          : >
+	   define cty1 ? < Give the code for CTYPE [border] : >
+	   define cty2 ? < Give the code for CTYPE [inside] : >
+	   echo "-----------------------------------------"
+
+	   mypoints2 $pty $cty1 $cty2 aaa bbb 1.01
+
+	   # if( $whichdots == 5 ) {
+	   # ctype $cty1
+	   # expand 0.8
+	   # errorbar aaa bbb err_bbb_u 2 
+	   # errorbar aaa bbb err_bbb_d 4 
+	   # errorbar aaa bbb dx_d     3
+	   # errorbar aaa bbb dx_u     1
+
+	   # expand 2.0
+	   # ctype $cty1
+	   # ptype 20 3 
+	   # points   aaa bbb
+
+	   # expand 1.2
+	   # ctype $cty2
+	   # ptype 20 3 
+	   # points   aaa bbb
+
+	   # expand 1.6
+	   # lweight 1.5
+	   # ctype $cty1
+	   # # ctype 2
+	   # ptype $pty 0 
+	   # points   aaa bbb
+	   # }
+	}
+	#-------------------------------------------------
+
+	define plotlab ? { Label ? [y/n] }
+	if(substr('$plotlab',0,1) == 'y') { 
+	   echo -----------------------------------------
+	   define order ? < Label Position "code" [e.g. ul1, lr2] : >
+	   define norder $(substr('$order',2,1))
+
+	   if( substr('$order',1,1) == 'l' ) {
+	       define lx0 $($gx1 + 1000)
+	   }
+	   if( substr('$order',1,1) == 'r' ) {
+	       define lx0 $($gx2 - 9000)
+	   }
+	   if( substr('$order',0,1) == 'l' ) {
+	       define ly0 $($gy1 + 1500)
+	       define sign 1
+	   }
+	   if( substr('$order',0,1) == 'u' ) {
+	       define ly0 $($gy2 - 1500)
+	       define sign -1
+	   }
+
+	   relocate ( $lx0  $($ly0 + $sign*1200*($norder-1)) ) 
+	   expand 2.0
+	   ctype $cty1
+	   ptype 4 3 
+	   dot
+
+	   expand 1.2
+	   ctype $cty2
+	   ptype 4 3 
+	   dot
+
+	   expand 2.0
+	   lweight 1.5
+	   ctype $cty1
+	   ptype 4 0 
+	   dot
+
+	   if( $whichdots == 1 ) { define cty2 2 }
+	   define labtxt ? { TEXT of Label : }
+
+	   ctype $cty2
+	   relocate ( $($lx0 + 750) $($ly0 - 50 + $sign*1200*($norder-1)) ) 
+	   expand 1.1
+	   putlabel 6 $labtxt
+	   expand 1.5
+
+	   if( $whichdots == 3 ) { 
+	      ctype $cty1
+	      relocate ( $($lx0 + 700) $($ly0 + $sign*1200*($norder-1)) ) 
+	      expand 1.1
+	      putlabel 6 $labtxt
+	      expand 1.5
+	   }
+	}
+
+	lweight 3
+	foreach var { kev lkev dkev eufs ratio err_ratio spec nufnu xl yl } {
+	    echo " > Removing (not really): "$var
+	    # delete $var
+	}
+	foreach var { aaa err_aaa_u err_aaa_d bbb err_bbb_u err_bbb_d dx_d dx_u } {
+	    echo " > Removing: "$var
+	    delete $var
+	}
+
+#---------------------------------------------------------------------------
+# anim_dot_xsed :  <year> <ocode> <ctype>
+#                  test... the idea is to make snapshots for animations
+anim_dot_xsed 03
+
+	data ocodes_xte.dat
+	read < ocodes 1.s >
+
+	if($?1 == 0) {
+	   echo "--------------------------------------------------"
+	   define year ? <* What year [1997/1998/2000/2001] : >
+	   define o ?    <*          What Spectrum [001,..] : >
+	   define 2 "$(ocodes[$($o-1)])"
+	   define 1 $year
+	}
+	define year $1
+	define 6 "$(ocodes[$($2-1)])"
+	define flag $6_$1
+
+	echo -- $flag ---
+
+
+	# get going...
+	#
+	set lkev = lg(kev_$flag)
+	set lkev = lg(kev_$flag)
+	set dx_d = 0*eufs_$flag
+	set dx_u = 0*eufs_$flag
+
+	set spec  = ratio_$flag*eufs_$flag
+	set nufnu = lg(spec) + lg(662.6176) - 29. + lkev + 17.383
+	
+	set err_spec_u =  lg(1 + err_ratio_$flag/ratio_$flag)
+	set err_spec_d = -lg(1 - err_ratio_$flag/ratio_$flag)
+
+	#---------------------------
+	#
+	#
+	## echo --------------------------------------------------
+	## echo "* Define MULTIWINDOW flag : "
+	## echo "       [0] single window "
+	## echo "       [1] 2x2 "
+	## echo "       [2] 4 horizontal "
+	## define multiwindow ? <*                        Define flag : >
+	define multiwindow 0
+
+	# if $multiwindow is NOT defined (!$?) then...
+	#
+	if($multiwindow == 0) {   
+	    window 1 1 1 1
+	    location 6000 30000 6000 30000
+	}
+	if($multiwindow == 1) {
+	    window 1 1 1 1
+	    location 6000 29000 6000 30000
+	}
+	if($multiwindow == 2) {
+	    window 1 1 1 1
+	    location 6000 30000 10000 16000 
+	    location 4000 32000 10000 18000 
+	}
+	expand 1.5
+	ctype 2 
+
+	## define whatx ? <* Energy [1] of Frequency [2] X-Axis : >
+	define whatx 1
+	if($whatx == 2) {
+	    define xmin 16.1 
+	    define xmax 19.7
+	    define tick  0
+	    define lab_x "log(\\nu)"
+
+	    set xl  = lkev + 17.383
+	    set aaa = xl 
+	} else {
+	    ## define xmin -1.1
+	    ## define xmax  2.3
+	    if( $year <= 2000 ) {
+	       define xmin  $(lg(0.09))
+	       define xmax  $(lg(12.0))
+	    }
+	    if( $year == 2001 ) {
+	       define xmin  $(lg(2.1))
+	       define xmax  $(lg(22.0))
+	    }
+	    define tick  -1
+	    define lab_x "Energy [keV]"
+
+	    set xl  = lkev
+	    set aaa = xl 
+	}
+
+	## define whaty ? <*     F_nu [1] of nu_F_nu [2] Y-Axis : >
+	define whaty 2 
+	if($whaty == 1) {
+	    define ymin -3.9
+	    define ymax  0.1 
+	    define lab_y "log(F_\\nu) [erg/cm^2/s/Hz]"
+
+	    set yl  = lg(spec)
+	    set bbb = yl
+	} else {
+	    # define ymin -10.51
+	    # define ymax  -9.2
+	    # define ymax  -8.99
+	    if( $year <= 2000 ) {
+	       define ymin  -10.25
+	       define ymax   -9.05
+	    }
+	    if( $year == 2001 ) {
+	       define ymin -10.7
+	       define ymax  -8.7
+	    }
+	    define lab_y "log(\\nu F_\\nu) [erg/cm^2/s]"
+
+	    set yl  = nufnu
+	    set bbb = yl
+	}
+
+	set errbbb_u = err_spec_u 
+	set errbbb_d = err_spec_d 
+	delete err_spec_u
+	delete err_spec_d
+
+	limits $xmin $xmax $ymin $ymax 
+	ticksize $tick 0 0 0 
+	expand 1.5
+	if($multiwindow == 0) {  
+	    box 1 2 0 3
+	    expand 1.5
+	    ylabel $lab_y
+	    expand 1.75
+	    xlabel $lab_x
+	}
+	if($multiwindow == 1) {
+	    echo "--------------------------------------------"
+	    echo "     ul   |   ur "
+	    echo "    ------+------"
+	    echo "     ll   |   lr "
+	    echo "--------------------------------------------"
+	    define dove ? { Which window position ? }
+	    expand 1.3
+	    if('$dove' == 'll') { 
+		window -2 -2 1 1 
+		box 1 2 0 0 
+	    }
+	    if('$dove' == 'ul') { 
+		window -2 -2 1 2 
+		box 0 2 0 0 
+	    }
+	    if('$dove' == 'ur') { 
+		window -2 -2 2 2 
+	        box 0 0 0 2 
+	    }
+	    if('$dove' == 'lr') { 
+		window -2 -2 2 1 
+	        box 1 0 0 2 
+	    }
+	    expand 1.5
+	}
+	if($multiwindow == 2) {
+	    echo "--------------------------------------------"
+	    echo "     1 | 2 | 3 | 4 "
+	    echo "--------------------------------------------"
+	    define dove ? { Which window position ? }
+	    expand 1.1
+	    if('$dove' == '1') { 
+		window -4 1 1 1 
+		box 2 2 0 0 
+	    }
+	    if('$dove' == '2') { 
+		window -4 1 2 1 
+		box 2 0 0 0 
+	    }
+	    if('$dove' == '3') { 
+		window -4 1 3 1 
+	        box 2 0 0 0 
+	    }
+	    if('$dove' == '4') { 
+		window -4 1 4 1 
+	        box 2 0 0 0 
+	    }
+	    expand 1.5
+	}
+
+	## echo --------------------------------------------------
+	## echo * PLOT Options :
+	## echo    [1] B/W
+	## echo    [2] Ptype/Ctype
+	## echo    [3] Ctype/Ctype
+	## define come ? <*   Your choice : >
+
+	define come 2 
+
+	if($come == 1){
+	   ctype 2
+	   expand 1.5
+	   # usage: mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d>
+	   # usage: mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d> <expand>
+	   mypoints 20 2 1 aaa bbb errbbb_u errbbb_d 1.2
+	   define cty1 2
+	   define cty2 1
+	}
+	
+	if($come == 2) {
+	   ## define pty ? { Give the code for PTYPE [#1 #2] : }
+	   ## define cty ? { Give the code for CTYPE [#1] : }
+
+	   define pty " 4 3 "
+	   define cty $3
+
+	   define cty1 $cty
+	   define cty2 $cty
+	   ptype $pty
+	   ctype $cty
+	   expand 1.5
+	   errorbar aaa bbb errbbb_u 2 
+	   errorbar aaa bbb errbbb_d 4 
+	   errorbar aaa bbb dx_d     3
+	   errorbar aaa bbb dx_u     1
+	   expand 1.6
+	   points   aaa bbb
+	}
+
+	if($come == 3) {
+	   echo "-----------------------------------------"
+	   define cty1 ? { Give the code for CTYPE [border] : }
+	   define cty2 ? { Give the code for CTYPE [inside] : }
+	   echo "-----------------------------------------"
+
+	   ctype $cty1
+	   expand 1.5
+	   errorbar aaa bbb errbbb_u 2 
+	   errorbar aaa bbb errbbb_d 4 
+	   errorbar aaa bbb dx_d     3
+	   errorbar aaa bbb dx_u     1
+
+	   expand 2.0
+	   ctype $cty1
+	   ptype 20 3 
+	   points   aaa bbb
+
+	   expand 1.5
+	   ctype $cty2
+	   ptype 20 3 
+	   points   aaa bbb
+
+	   expand 1.7
+	   lweight 1.5
+	   ctype $cty1
+	   ptype 20 0 
+	   points   aaa bbb
+	}
+
+	lweight 3
+	verbose 0
+	foreach var { kev lkev dkev eufs ratio err_ratio spec nufnu xl yl } {
+	    echo Removing: $var
+	    delete $var
+	}
+	foreach var { aaa bbb errbbb_u errbbb_d dx_d dx_u } {
+	    echo Removing: $var
+	    delete $var
+	}
+	relocate (  $($gx1 + 1000)  $($gy1+ 1000) )
+	putlabel 6 $2
+
+	verbose 1
+
+#--------------------------------------------------------------------------------------------------
+# read_pointings_98_00 : read all the 1998, or 2000, datasets (fluxes, model parameters, etc..)
+#                        This is the REAL data reading macro.
+read_pointings_98_00
+
+	define cheanno ? { Which year [1998/2000] : }
+
+	#-------------------------------------------------------
+	# case: 1998
+	#
+	if( $cheanno == 1998 ) {
+	# define datadir "/neutronstar/gf/SAX/mkn421/1998/Test/Def_XClean"
+	define datadir "/data/analysis/SAX/Mkn421/1998/Test/Def_XClean"
+	echo $datadir
+
+	# define quali ? { Which set of Fit parameters ? [top/sub05/sub075] }
+	define quali "top"
+	define 2 $quali
+
+	define check_del ? { Delete OLD vectors ? [y/n] }
+	if(substr('$check_del',0,1) == 'y') {
+	   clean_pointings_98 
+	   # foreach 2 { a1_1 a2 eb fold a1_01 epeak norm1kev } {
+	   #    echo ** Deleting $2
+	   #    delete $2
+	   # }
+	}
+
+	set all_pointings_vec = { low_1_2 \
+				  low_3 \
+				  top1_4 \
+				  top2_5 \
+				  after_6 \
+				  after_7 \
+				  after_8_9 \
+				  after_10_12 \
+				  after_13_16 \
+				  april23_1 \
+				  april23_2 \
+				  april23_3 }
+	set sub_pointings_vec = { low_3 \
+				  top1_4 \
+				  top2_5 \
+				  after_6 \
+				  after_7 \
+				  after_8_9 \
+				  after_10_12 \
+				  after_13_16 \
+				  april23_1 \
+				  april23_2 \
+				  april23_3 }
+	}
+
+	#-------------------------------------------------------
+	# case: 2000
+	#
+	if( $cheanno == 2000 ) {
+	# define datadir "/home/gf/Science/Mkn421/2000/Spectral/Plots"
+	define datadir "/home/gfossati/Science/Mkn421/2000/Spectral/Plots"
+	echo $datadir
+
+	define check_del ? { Delete OLD vectors ? [y/n] }
+	if(substr('$check_del',0,1) == 'y') {
+	   clean_pointings_00
+	}
+
+	set all_pointings_vec = { a  \
+				  b  \
+				  c  \
+				  d  \
+				  e  \
+				  f  \
+				  g  \
+				  top  }
+	set sub_pointings_vec = { b  \
+				  c  \
+				  d  \
+				  e  \
+				  f  \
+				  g  \
+				  top  }
+	}
+
+	# Proceeding...
+	#
+	foreach 1 all_pointings_vec {
+
+           if( $cheanno == 1998 ) { data "$!datadir/"$2_$1.out }
+           if( $cheanno == 2000 ) { data "$!datadir/"$1.out }
+           
+           lines 4 4 
+           read time_$1  1
+           read time_mid_$1   1
+           read time_start_$1 2 
+           read time_stop_$1  3 
+           
+           lines 5 5 
+           read fl_low_ab_$1   1 
+           read fl_high_ab_$1  2 
+           if( '$2' == 'top') { 
+              read fl_all_ab_$1   3 
+           } else {
+              set fl_all_ab_$1 = fl_high_ab_$1+fl_low_ab_$1
+              echo >>> the 0.1-10 keV flux is not defined <<<
+              echo   > approximating with (0.2-1)+(2-10)  <
+           }
+           
+           lines 6 6
+           read fl_low_unab_$1  1 
+           read fl_high_unab_$1 2 
+           if( '$2' == 'top') { 
+              read fl_all_unab_$1   3 
+           } else {
+              set fl_all_unab_$1 = fl_high_unab_$1+fl_low_unab_$1
+              echo >>> the 0.1-10 keV flux is not defined <<<
+              echo   > approximating with (0.2-1)+(2-10)  <
+           }
+           
+           lines 7 12
+           read a1_$1          1 
+           read err_a1_d_$1    2 
+           read err_a1_u_$1    3 
+           read a10_$1         4 
+           read err_a10_d_$1   5 
+           read err_a10_u_$1   6
+           read eb_$1          7 
+           read err_eb_d_$1    8 
+           read err_eb_u_$1    9
+           read fold_$1        10 
+           read err_fold_d_$1  11 
+           read err_fold_u_$1  12 
+           read a01_$1         13 
+           read err_a01_d_$1   14 
+           read err_a01_u_$1   15
+           read epeak_$1       16 
+           read err_epeak_d_$1 17
+           read err_epeak_u_$1 18
+           read norm1kev_$1    19
+           read a05_$1         20
+           read err_a05_d_$1   21
+           read err_a05_u_$1   22
+           read a5_$1          23
+           read err_a5_d_$1    24
+           read err_a5_u_$1    25
+
+	}
+
+	#----------------------------------------------
+	define 1 $(all_pointings_vec[0])
+	echo * Doing concatenation with $1 data
+
+	foreach 2 { fl_low_ab fl_high_ab fl_low_unab fl_high_unab fl_all_ab fl_all_unab \
+		    norm1kev time time_start time_stop time_mid } {
+	  set $2       = $2_$1 
+	  delete $2_$1
+	}
+
+	foreach 2 { a01 a05 a1 a5 a10 eb fold epeak } {
+	  set $2       = $2_$1 
+	  set err_$2_d = err_$2_d_$1 
+	  set err_$2_u = err_$2_u_$1 
+
+	  delete $2_$1
+	  delete err_$2_d_$1
+	  delete err_$2_u_$1
+	}
+	
+	#----------------------------------------------
+	foreach 1 sub_pointings_vec {
+           echo * Doing concatenation with $1 data
+           
+           foreach 2 { fl_low_ab     \
+            	       fl_high_ab    \
+           	       fl_all_ab     \
+           	       fl_low_unab   \
+           	       fl_high_unab  \
+           	       fl_all_unab   \
+           	       norm1kev \
+           	       time_start \
+           	       time_stop \
+           	       time_mid \
+           	       time } {
+              set $2       = $2       CONCAT $2_$1 
+              delete $2_$1
+           }
+           
+           foreach 2 { a01 a05 a1 a5 a10 eb fold epeak } {
+              set $2       = $2       CONCAT $2_$1 
+              set err_$2_d = err_$2_d CONCAT err_$2_d_$1 
+              set err_$2_u = err_$2_u CONCAT err_$2_u_$1 
+           
+              delete $2_$1
+              delete err_$2_d_$1
+              delete err_$2_u_$1
+           }
+	}
+
+	foreach 1 { a01 a05 a1 a5 a10 eb fold epeak } {
+	    set err_$1_u = err_$1_u - $1
+	    set err_$1_d = $1 - err_$1_d 
+	}
+	set dalpha = a5 - a05
+	set err_dalpha_u = sqrt(err_a5_u**2 + err_a05_u**2)
+	set err_dalpha_d = sqrt(err_a5_d**2 + err_a05_d**2)
+
+	set fl_low_ab    = fl_low_ab  
+	set fl_high_ab   = fl_high_ab
+	set fl_all_ab    = fl_all_ab
+	set fl_low_unab  = fl_low_unab
+	set fl_high_unab = fl_high_unab
+	set fl_all_unab  = fl_all_unab
+
+	foreach 2 { a01 a05 a1 a5 a10 } {
+	  set $2       = $2 - 1
+	}
+
+	#
+	# renaming vectors
+	#
+	echo  ...Renaming vectors to 'y98/y00' ...
+
+	if( $cheanno == 1998 ) { define 4 "y98" }
+	if( $cheanno == 2000 ) { define 4 "y00" }
+
+	foreach var { a01 a05 a1 a10 a5 epeak fold eb dalpha } {
+                 set $4_$var = $var
+	         set err_$4_"$!var"_u = err_"$!var"_u
+	         set err_$4_"$!var"_d = err_"$!var"_d
+	}
+	foreach var { fl_low_ab fl_high_ab fl_all_ab fl_low_unab fl_high_unab fl_all_unab } {
+                 set $4_$var = $var
+	}
+	foreach var { time time_start time_stop time_mid } {
+                 set $4_$var = $var
+	}
+
+#--------------------------------------------------------------------------------
+# xsed_for_sed [<year>] [<spectrum #>] [plain]
+#              + Plots XSED in box prepared "externally" by SED plotting routine
+#              + When 'plain' is given, does NOT prompt for point type and color.
+xsed_for_sed 03
+
+	echo " * Entering 'xsed_for_sed' "
+
+	data "/home/gfossati/Science/Mkn421/2001/Spectral/ocodes_xte.dat"
+	read < ocodes 1.s >
+
+	define cty local
+	define pty local
+	fullgsave -quiet
+
+	if(!$?1) { 
+	   echo "--------------------------------------------------"
+	   define year ? <* What year [1997/1998/2000/2001] : >
+	   define o ?    <*          What Spectrum [001,..] : >
+	   define 1 "$(ocodes[$($o-1)])"
+	   define 1 $1_$year
+	} else {
+	   define 4 "$(ocodes[$($2-1)])"
+	   echo "  ocode : "$4
+	   define 1 $2_$1
+	}
+
+	#-----------------------------
+	# get going...
+	#
+	set lkev = lg(kev_$1)
+	set lkev = lg(kev_$1)
+	set dx_d = 0*eufs_$1
+	set dx_u = 0*eufs_$1
+
+	set spec  = ratio_$1*eufs_$1
+	set nufnu = lg(spec) + lg(662.6176) - 29. + lkev + 17.383
+	
+	set err_spec_u =  lg(1 + err_ratio_$1/ratio_$1)
+	set err_spec_d = -lg(1 - err_ratio_$1/ratio_$1)
+
+	#---------------------------
+	expand 1.5
+	ctype 2 
+
+	# define whatx ? <* Energy [1] of Frequency [2] X-Axis : >
+	define whatx 2
+	if($whatx == 2) {
+	    set xl  = lkev + 17.383
+	    set aaa = xl 
+	} 
+
+	# define whaty ? <*     F_nu [1] of nu_F_nu [2] Y-Axis : >
+	define whaty 2
+	if($whaty == 1) {
+	    set yl  = lg(spec)
+	    set bbb = yl
+	} else {
+	    set yl  = nufnu
+	    set bbb = yl
+	}
+
+	set errbbb_u = err_spec_u 
+	set errbbb_d = err_spec_d 
+	delete err_spec_u
+	delete err_spec_d
+
+	if( !$?3 ) {
+	   echo "--------------------------------------------------"
+	   echo "* PLOT Options : "
+	   echo "   [1] B/W "
+	   echo "   [2] Ptype/Ctype "
+	   echo "   [3] Ctype/Ctype "
+	   define come ? <*   Your choice : >
+	} else {
+	   define come (2)
+	}
+
+	if($come == 1){
+	   ctype 2
+	   expand 1.5
+	   # usage: mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d>
+	   # usage: mypoints <ptype> <color_out> <color_in> <x> <y> <err_y_u> <err_y_d> <expand>
+	   mypoints 20 2 1 aaa bbb errbbb_u errbbb_d 1.2
+	   define cty1 2
+	   define cty2 1
+	}
+	
+	if($come == 2) {
+	   if( !$?3 ) {
+	      define pty ? { Give the code for PTYPE [#1 #2] : }
+	      define cty ? { Give the code for CTYPE [#1] : }
+	   } else {
+	      define pty "4 3"
+	      define cty 5
+	   }
+
+	   define cty1 $cty
+	   define cty2 $cty
+	   ptype $pty
+	   ctype $cty
+	   if( $flag_bw == 1 ) { ctype 2 }
+	   expand 1.5
+	   errorbar aaa bbb errbbb_u 2 
+	   errorbar aaa bbb errbbb_d 4 
+	   errorbar aaa bbb dx_d     3
+	   errorbar aaa bbb dx_u     1
+	   expand 1.6
+	   points   aaa bbb
+	}
+
+	if($come == 3) {
+	   echo "-----------------------------------------"
+	   define cty1 ? { Give the code for CTYPE [border] : }
+	   define cty2 ? { Give the code for CTYPE [inside] : }
+	   echo "-----------------------------------------"
+
+	   ctype $cty1
+	   expand 1.5
+	   errorbar aaa bbb errbbb_u 2 
+	   errorbar aaa bbb errbbb_d 4 
+	   errorbar aaa bbb dx_d     3
+	   errorbar aaa bbb dx_u     1
+
+	   expand 2.0
+	   ctype $cty1
+	   ptype 20 3 
+	   points   aaa bbb
+
+	   expand 1.5
+	   ctype $cty2
+	   ptype 20 3 
+	   points   aaa bbb
+
+	   expand 1.7
+	   lweight 1.5
+	   ctype $cty1
+	   ptype 20 0 
+	   points   aaa bbb
+	}
+
+	if( !$?3 ) {
+	define plotlab ? { Label ? [y/n] }
+	if(substr('$plotlab',0,1) == 'y') { 
+	  echo -----------------------------------------
+	  define order ? { Which position from the Bottom ? }
+
+	  relocate ( $($gx1 + 1000) $($gy1 + 1500 + 1200*($order-1)) ) 
+	  expand 2.0
+	  ctype $cty1
+	  ptype 20 3 
+	  dot
+
+	  expand 1.2
+	  ctype $cty2
+	  ptype 20 3 
+	  dot
+
+	  expand 2.0
+	  lweight 1.5
+	  ctype $cty1
+	  ptype 20 0 
+	  dot
+
+	  if($come == 1){ define cty2 2 }
+	  define labtxt ? { TEXT of Label : }
+
+	  ctype $cty2
+	  relocate ( $($gx1 + 1750) $($gy1 + 1450 + 1200*($order-1)) ) 
+	  expand 1.1
+	  putlabel 6 $labtxt
+	  expand 1.5
+
+	  ctype $cty1
+	  relocate ( $($gx1 + 1700) $($gy1 + 1500 + 1200*($order-1)) ) 
+	  expand 1.1
+	  putlabel 6 $labtxt
+	  expand 1.5
+	}
+	} ###--- end of 'plain' mode ---###
+
+	lweight 3
+	foreach var { kev lkev dkev eufs ratio err_ratio spec nufnu xl yl } {
+	    #echo Removing: $var
+	    # delete $var
+	}
+	foreach var { aaa bbb errbbb_u errbbb_d dx_d dx_u } {
+	    # echo Removing: $var
+	    # delete $var
+	}
+	ltype 0 ctype 2 
+	fullgrestore
+
+#---------------------------------------------------------------------------
+# compute_save_xseds : based on new_dot_xsed, computes and print the data
+#                      by loading the ratio+eufs files.
+## GF 2005.07.28: NEW
+## GF 2005.07.29: added printing +/- errors for lg quantities.
+compute_save_xseds 101
+
+	define outfile "spectrum"
+	define source "mkn421"
+	
+        if($?1) {
+            if(substr('$1',0,2) == '-h' ){
+               echo " new_dot_xsed: "
+               echo " "
+               echo " USAGE: "
+               echo "    > compute_save_xseds [source=NAME] [outfile=NAME] "
+               echo "  or"
+               echo "    > compute_save_xseds  (in this case it prompts for all parameters)"
+               echo " "
+               echo " Source name is mostly meant to recognize and handle properly"
+               echo " the case of Mkn501/1997. Use mkn501 for this latter case. "
+               echo " "
+               echo " outfile is used as a root for the output file name."
+               echo " "
+               return
+            } else {
+               mparsep $1
+            }
+        } else {
+	    define source "mkn421"
+        }
+
+	if( substr('$source',0,4) == 'mkn5' ) {
+
+	   define n ? < what observation : >
+	   define 1 mkn501_1997_$n
+
+	} else {
+
+           data "/home/gfossati/Science/Mkn421/2001/Spectral/ocodes_xte.dat"
+           read < ocodes 1.s >
+           
+           echo "--------------------------------------------------"
+           define year ? <* What year [1997/1998/2000/2001] : >
+           
+           define o ?    <*          What Spectrum [001,..] : >
+           define 1 "$(ocodes[$($o-1)])"
+           define 1 $1_$year
+	}
+	define outfile $outfile"_"$1".dat"
+
+	#-----------------------------------------------------------
+	# Preparing the arrays from ratio&eufs
+	#
+	set lkev = lg(kev_$1)
+
+	set lkev_mid = lg(sqrt(kev_$1**2. - dkev_$1**2.))
+
+	set dx_u =  lg(1 + dkev_$1/kev_$1)
+	set dx_d = -lg(1 - dkev_$1/kev_$1)
+
+	set spec     = ratio_$1*eufs_$1
+	set err_spec = err_ratio_$1*eufs_$1
+
+	set lg_fnu     =  lg(spec) + lg(662.6176) - 29. 
+	set lg_nufnu   =  lg(spec) + lg(662.6176) - 29. + lkev + 17.383
+
+	set fnu        =  10.0**lg_fnu
+	set err_fnu    =  err_spec*662.6176/1e29
+
+	set err_lg_fnu_u =  lg(1 + err_ratio_$1/ratio_$1)
+	set err_lg_fnu_d = -lg(1 - err_ratio_$1/ratio_$1)
+
+
+	#-----------------------------------------------------------
+	# Preparing format and header strings 
+	#
+	define fmt_e   " %8.4f  %7.4f  %8.4f "
+	define fmt_f   "   %10.4e  %10.4e  "
+	define fmt_lgf "   %8.4f  %8.4f      %8.4f  %8.4f"
+
+	define names_e   "  kev_$1 dkev_$1 lkev "
+	define names_f   "  fnu err_fnu "
+	define names_lgf "  lg_fnu lg_nufnu err_lg_fnu_u err_lg_fnu_d "
+
+	define str_e   "  E(keV)  dE(keV)   lg(E) "
+	define str_f   "       F(E)    sigma(F(E)) "
+	define str_lgf "    lg[F(E)] lg[E*F(E)]  sigma[lg(F)]+ sigma[lg(F)]-"
+
+	#-----------------------------------------------------------
+	# Printing
+	#
+	define print_noheader 1
+	write   $outfile "# Data: $!1 "
+	write + $outfile "# $!str_e $!str_f $!str_lgf"
+	write   $outfile "# "
+	print + $outfile '$!fmt_e $!fmt_f $!fmt_lgf \n' <  $!names_e $!names_f $!names_lgf > 
+	define print_noheader 0
+
+#---------------------------------------------------------------------------

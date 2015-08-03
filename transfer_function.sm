@@ -1,0 +1,256 @@
+######################################################################
+#
+# The following SM routines implement all of the fitting formulae in 
+# Eisenstein \&amp; Hu (1997) 
+# 
+# We've included two drivers, TFfit_mpc and TFfit_hmpc, which differ
+# only in how they are called and whether you give the list of wavenumbers
+# in units of Mpc^-1 or h Mpc^-1.  The details are given with the macros
+# themselves.
+# 
+# These drivers call two other macros, TFset_parameters and
+# TFtransfer_function.  The former sets all of the scalar quantities
+# associated with the given cosmology.  The latter then calculates
+# various transfer functions for the given vector of wavenumbers (in
+# Mpc^-1).  We separate these two macros so as to allow one to use
+# TFset_parameters to look at the scalar quantities as a function of
+# cosmological parameters.
+# 
+# These routines leave a lot of global variables around to hold their output.
+# For TFset_parameters, these are:
+# 
+#    alpha_b	-- Baryon suppression 
+#    alpha_c	-- CDM suppression 
+#    alpha_gamma	-- Gamma suppression in approximate TF 
+#    beta_b	-- Baryon envelope shift 
+#    beta_c	-- CDM log shift 
+#    f_baryon   -- The baryon fraction; ratio of baryon to matter densities
+#    k_equality	-- Scale of equality, in Mpc^-1 
+#    k_peak	-- Fit to wavenumber of first peak, in Mpc^-1 
+#    k_silk	-- Silk damping scale, in Mpc^-1 
+#    obhh	-- Omega_baryon*h^2 
+#    omhh	-- Omega_matter*h^2 
+#    R_drag	-- Photon-baryon ratio at drag epoch 
+#    R_equality	-- Photon-baryon ratio at equality epoch 
+#    sound_horizon	-- Sound horizon at drag epoch, in Mpc 
+#    sound_horizon_fit	-- Fit to sound horizon, in Mpc 
+#    theta_cmb	-- Tcmb in units of 2.7 K 
+#    z_drag	-- Redshift of drag epoch 
+#    z_equality	-- Redshift of matter-radiation equality, really 1+z 
+#
+# We've included a macro TFinfo to print these variables to your screen.
+#
+# For TFtransfer_function, the global variables are:
+#
+#    q		-- k/(Omega_0 h^2), or k/(13.4*k_equality)
+#    xx		-- k*sound_horizon
+#    xx_tilde   -- k*s_tilde, the effective sound horizon.
+#
+#    tf_full 	-- The full fitting formula, eq. (16), for the matter
+#		transfer function. 
+#    tf_baryon 	-- The baryonic piece of the full fitting formula, eq. 21.
+#    tf_cdm 	-- The CDM piece of the full fitting formula, eq. 17.
+#    tf_nowiggles -- An approximate form, eqs. (30)-(31), that fits
+#		only the non-oscillatory part of the transfer 
+#		function.  Appropriate only for low baryon fractions.
+#    tf_zerobaryon -- The transfer function of the zero-baryon case,
+#		eq. (29); i.e. what would have occured were the
+#		baryons CDM instead. 			
+#
+########################################################################
+
+macro TFfit_mpc 34 {
+# Input: $1 -- vector of wavenumbers k, in units of Mpc^-1 
+#	 $2 -- Omega_0*h^2: The value of the baryon+CDM density, in units
+#		of the critical density, times the square of the 
+#		Hubble constant, in units of 100 km/s/Mpc
+#	 $3 -- Baryon fraction, the ratio of baryon to CDM densities
+# 	 $4 -- Optional: Temperature of CMB in Kelvin.  Set to COBE if omitted.
+# Output: Sets all scalar quantities for the given cosmology and generates
+#	several different transfer functions.
+#
+    if ($?4) {
+	TFset_parameters $2 $3 $4
+    } else {
+	TFset_parameters $2 $3
+    }
+    TFtransfer_function $1
+}
+
+macro TFfit_hmpc 45 {
+# Input: $1 -- vector of wavenumbers k, in units of h Mpc^-1 
+#	 $2 -- Omega_0, the total of baryon and CDM densities, in units of crit.
+#	 $3 -- Baryon fraction, the ratio of baryon to CDM densities
+#	 $4 -- Hubble constant in units of 100 km/s/Mpc
+# 	 $5 -- Optional: Temperature of CMB in Kelvin.  Set to COBE if omitted.
+# Output: Sets all scalar quantities for the given cosmology and generates
+#	several different transfer functions.
+#
+    define _omhh ($2*$4*$4)
+    if ($?5) {
+	TFset_parameters $_omhh $3 $5
+    } else {
+	TFset_parameters $_omhh $3
+    }
+    define delete _omhh
+    set _tempk = $1*$4
+    TFtransfer_function _tempk
+    delete _tempk0
+}
+
+########################################################################
+
+macro TFset_parameters 23 {
+# This sets all scalar quantities for Eisenstein &amp; Hu (1997) fitting formulae.
+# Input: $1 -- Omega0*h*h -- The density of CDM and baryons, in units of
+#		the critical density, multiplied by the square of the Hubble 
+#		constant, in units of 100 km/s/Mpc
+#	$2 -- baryon fraction -- The fraction of baryon density to CDM density
+#	$3 -- Tcmb -- The temperature of the CMB in Kelvin.  If omitted,
+#		this is set to be 2.728, the central value from COBE FIRAS.
+# Output: Lots of global variables
+# Note: If you give this scalar inputs, you'll get scalar variables, which
+#	are required for TFfit.  However, if you give this vector inputs,
+#	you'll get vector output, which allows you to look at how the
+#	various (scalar) quantities depend on cosmological parameters.
+#
+    set omhh = $1
+    set obhh = omhh*$2
+    set f_baryon = $2
+    if ($?3) {
+	set theta_cmb = $3/2.7
+    } else {
+	set theta_cmb = 2.728/2.7
+    }
+
+    set z_equality = 25000*omhh/theta_cmb**4  # Really 1+z 
+    set k_equality = 0.0746*omhh/theta_cmb**2
+
+    set z_drag_b1 = 0.313*omhh**-0.419*(1+0.607*omhh**0.674)
+    set z_drag_b2 = 0.238*omhh**0.223
+    set z_drag = 1291*omhh**0.251/(1+0.659*omhh**0.828)*(1+z_drag_b1*obhh**z_drag_b2)
+    
+    set R_drag = 31.5*obhh/theta_cmb**4*(1000/(1+z_drag))
+    set R_equality = 31.5*obhh/theta_cmb**4*(1000/z_equality)
+
+    set sound_horizon = 2./3./k_equality*sqrt(6./R_equality)*ln((sqrt(1+R_drag)+sqrt(R_drag+R_equality))/(1+sqrt(R_equality)))
+
+    set k_silk = 1.6*obhh**0.52*omhh**0.73*(1+(10.4*omhh)**-0.95)
+
+    set alpha_c_a1 = (46.9*omhh)**0.670*(1+(32.1*omhh)**-0.532)
+    set alpha_c_a2 = (12.0*omhh)**0.424*(1+(45.0*omhh)**-0.582)
+    set alpha_c = alpha_c_a1**-f_baryon*alpha_c_a2**(-f_baryon**3)
+    
+    set beta_c_b1 = 0.944/(1+(458*omhh)**-0.708)
+    set beta_c_b2 = (0.395*omhh)**-0.0266
+    set beta_c = 1.0/(1+beta_c_b1*((1-f_baryon)**beta_c_b2-1))
+
+    set yy = z_equality/(1+z_drag)
+    set alpha_b_G = yy*(-6.*sqrt(1+yy)+(2.+3.*yy)*ln((sqrt(1+yy)+1)/(sqrt(1+yy)-1)))
+    set alpha_b = 2.07*k_equality*sound_horizon*(1+R_drag)**-0.75*alpha_b_G
+
+    set beta_node = 8.41*omhh**0.435
+    set beta_b = 0.5+f_baryon+(3.-2.*f_baryon)*sqrt((17.2*omhh)**2+1)
+
+    set k_peak = 2.5*3.14159*(1+0.217*omhh)/sound_horizon
+    set sound_horizon_fit = 44.5*ln(9.83/omhh)/sqrt(1+10.0*obhh**0.75)
+
+    set alpha_gamma=1-0.328*ln(431.0*omhh)*f_baryon + 0.38*ln(22.3*omhh)*f_baryon**2
+    
+    # Remove some intermediate variables; undelete them if you want to see them.
+    delete z_drag_b1 delete z_drag_b2 delete alpha_c_a1 delete alpha_c_a2
+    delete beta_c_b1 delete beta_c_b2 delete alpha_b_G delete yy 
+}
+
+########################################################################
+
+macro TFtransfer_function 1 {
+# Finding the value of various transfer functions at the given vector
+# of wavenumbers k ($1).  It is assumed that TFset_parameters has been
+# called with the appropriate cosmological information.
+# Input: $1 -- The given wavevectors, in units of Mpc^-1.
+# Output: Five different transfer functions are output in global variables.
+#	tf_full[] -- The full fitting formula, eq. (16), for the matter
+#			transfer function. 
+#	tf_baryon[] -- The baryonic piece of the full fitting formula, eq. 21.
+#	tf_cdm[] -- The CDM piece of the full fitting formula, eq. 17.
+#	tf_nowiggles[] -- An approximate form, eqs. (30)-(31), that fits
+#			only the non-oscillatory part of the transfer 
+#			function.  Appropriate only for low baryon fractions.
+#	tf_zerobaryon[] -- The transfer function of the zero-baryon case,
+#			eq. (29); i.e. what would have occured were the
+#			baryons CDM instead. 			
+#
+    set q = $1/13.41/k_equality
+    set xx = $1*sound_horizon
+
+    set T_c_ln_beta = ln(2.718282+1.8*beta_c*q)
+    set T_c_ln_nobeta = ln(2.718282+1.8*q)
+    set T_c_C_alpha = 14.2/alpha_c + 386.0/(1+69.9*q**1.08)
+    set T_c_C_noalpha = 14.2 + 386.0/(1+69.9*q**1.08)
+
+    set T_c_f = 1.0/(1.0+(xx/5.4)**4)
+    set tf_cdm = T_c_f*T_c_ln_beta/(T_c_ln_beta+T_c_C_noalpha*q*q) + (1-T_c_f)*T_c_ln_beta/(T_c_ln_beta+T_c_C_alpha*q*q)
+    
+    set s_tilde = sound_horizon*(1+(beta_node/xx)**3)**(-1./3.)
+    set xx_tilde = $1*s_tilde
+
+    set T_b_T0 = T_c_ln_nobeta/(T_c_ln_nobeta+T_c_C_noalpha*q*q)
+    set tf_baryon = (xx&gt;0.0)?sin(xx_tilde)/(xx_tilde)*(T_b_T0/(1+(xx/5.2)**2)+alpha_b/(1+(beta_b/xx)**3)*exp(-($1/k_silk)**1.4)):1
+    
+    set f_baryon = obhh/omhh
+    set tf_full = f_baryon*tf_baryon + (1-f_baryon)*tf_cdm
+
+    set T_0_L0 = ln(2.0*2.718282+1.8*q)
+    set T_0_C0 = 14.2 + 731.0/(1+62.5*q)
+    set tf_zerobaryon = T_0_L0/(T_0_L0+T_0_C0*q*q)
+
+    set gamma_eff = omhh*(alpha_gamma+(1-alpha_gamma)/(1+(0.43*xx)**4))
+    set q_eff = q*omhh/gamma_eff
+
+    set T_nowiggles_L0 = ln(2.0*2.718282+1.8*q_eff)
+    set T_nowiggles_C0 = 14.2 + 731.0/(1+62.5*q_eff)
+    set tf_nowiggles = T_nowiggles_L0/(T_nowiggles_L0+T_nowiggles_C0*q_eff**2)
+
+    # Remove some intermediate variables; undelete them if you want to see them.
+    delete T_c_ln_beta delete T_c_ln_nobeta 
+    delete T_c_C_alpha delete T_c_C_noalpha 
+    delete T_c_f delete s_tilde delete T_b_T0 delete f_baryon
+    delete T_0_L0 delete T_0_C0
+    delete gamma_eff delete q_eff
+    delete T_nowiggles_L0 delete T_nowiggles_C0
+}
+
+######################### Macro to output the scalar parameters ########
+
+macro TFinfo {
+# This prints the interesting scalar quantities out to the screen.
+# If you ran TFset_parameters() with vector inputs, then this will only
+# print the first element.
+define _str1 (sprintf('%6.4f',omhh[0]))
+define _str2 (sprintf('%5.3f',obhh[0]/omhh[0]))
+define _str3 (sprintf('%6.4f',theta_cmb[0]))
+echo Cosmology: Omega0*h^2 = $_str1, f_baryon = $_str2,  theta_cmb = $_str3
+define _str1 (sprintf('%6.1f',z_equality[0]))
+define _str2 (sprintf('%6.4f',R_equality[0]))
+define _str3 (sprintf('%7.5f',k_equality[0]))
+echo Equality: z_equality = $_str1, R_equality = $_str2, k_equality = $_str3 Mpc^-1
+define _str1 (sprintf('%6.1f',z_drag[0]))
+define _str2 (sprintf('%6.4f',R_drag[0]))
+define _str3 (sprintf('%6.2f',sound_horizon[0]))
+echo Drag:     z_drag = $_str1,  R_drag = $_str2,  sound_horizon = $_str3 Mpc
+define _str1 (sprintf('%6.4f',alpha_c[0]))
+define _str2 (sprintf('%6.4f',beta_c[0]))
+define _str3 (sprintf('%6.4f',alpha_gamma[0]))
+echo CDM:      alpha_c = $_str1,   beta_c = $_str2,  alpha_gamma = $_str3 
+define _str1 (sprintf('%6.4f',alpha_b[0]))
+define _str2 (sprintf('%6.4f',beta_b[0]))
+define _str3 (sprintf('%6.4f',beta_node[0]))
+echo Baryons:  alpha_b = $_str1,  beta_b = $_str2,  beta_node = $_str3
+define _str1 (sprintf('%6.4f',k_silk[0]))
+echo Silk:     k_silk = $_str1 Mpc^-1
+define _str1 (sprintf('%6.4f',k_peak[0]))
+define _str2 (sprintf('%6.2f',sound_horizon_fit[0]))
+echo Approx:   k_peak = $_str1 Mpc^-1,  sound_horizon_fit = $_str2 Mpc
+}
+

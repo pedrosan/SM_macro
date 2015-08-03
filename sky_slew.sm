@@ -1,0 +1,392 @@
+#------------------------------------------------------------------------------
+# sky 1		:
+sky 1		#
+
+		location 5500 31000 12000 31000
+		ctype 2
+
+		# limits -3.1 3.1 -0.1 1.1
+		limits -14.1 -7.9 -0.1 1.1
+		ticksize 0.1 1 0.05 0.2
+		expand 1.5
+		box
+
+		ltype 0
+		# set x = -5.,5.,0.02
+		set f = -20.,0.,0.01
+		set x = f + 11.
+		set y = 0.5*(1. + $1*x/sqrt(($1*x)**2. + 1.))
+		connect f y
+
+		ltype 1
+		relocate -25 0 
+		draw 25 0
+		relocate -25 1 
+		draw 25 1
+
+
+#------------------------------------------------------------------------------
+# sky_real 3	: curvatura | normalizzazione | ascissa del "nodo"
+sky_real 3	#
+
+		location 5500 31000 12000 31000
+		ctype 2
+		
+		set ydum = (-0.05*$2) , (1.05*$2) , 23
+
+		ltype 0
+		set a = 0.0,1.0,0.01
+		set f = 3.*a - 1.5 + $3
+		set x = f - $3
+		set y = $2*0.5*(1. + $1*x/sqrt(($1*x)**2. + 1.))
+		limits f -0.05 1.05 
+		ticksize 0.1 1 0 0
+		box
+		connect f y
+
+		ltype 1
+		relocate -25 0 
+		draw 100 0
+		relocate -25 $2
+		draw 100 $2
+		ltype 0
+
+#------------------------------------------------------------------------------
+# sky_real_2 4	: curvatura | normalizzazione | ascissa del "nodo" | exponente
+sky_real_2 4	#
+
+		location 5500 31000 12000 31000
+		ctype 2
+		
+		set ydum = (-0.05*$2) , (1.05*$2) , 23
+
+		ltype 0
+		set a = 0.0,1.0,0.01
+		set f = 3.*a - 1.5 + $3
+		set x = f - $3
+		set y = $2*0.5*(1. + ($1*x)**$4/sqrt(($1*x)**(2*$4) + 1.))
+		limits f -0.05 1.05 
+		ticksize 0.1 1 0 0
+		box
+		connect f y
+
+		ltype 1
+		relocate -25 0 
+		draw 100 0
+		relocate -25 $2
+		draw 100 $2
+		ltype 0
+
+#------------------------------------------------------------------------------
+# polislewtime 1: fit polinomiale del diagramma tempo/cielo per slew survey
+#		: arg[1] = colore 
+polislewtime  1	# fit polinomiale del diagramma tempo/cielo per slew survey
+		
+		location 5500 31000 5500 31000
+		ctype 2
+
+	        lweight 2
+                expand 1.5
+                limits -0.8 50.8 -1.5 101.5
+		ticksize 2 10 5 10
+		box
+		xlabel 
+		ylabel 
+
+		data sle.fit
+		read time  1
+		read sky 2
+		lweight 3
+		ctype $1
+		connect time sky
+		ctype 2
+		lweight 2
+	
+		data sle.dat
+		read time 1
+		read sky  2
+		expand 2.
+		ptype 4 3
+		points time sky
+
+		
+#------------------------------------------------------------------------------
+# polislewcts 1	: fit polinomiale del diagramma counts/cielo per slew survey
+#		: arg[1]=conteggi/sec di soglia
+polislewcts   1	# fit polinomiale del diagramma counts/cielo per slew survey
+		
+		location 5500 31000 5500 31000
+		ctype 2
+
+		set dum = 1,51,1
+		set dumcps = $1/dum
+	        lweight 2
+                expand 1.5
+
+                limits dumcps -1.5 101.5
+		ticksize 0.1 0.5  5 10
+		box
+		xlabel counts/sec 
+		ylabel integrated percentage of sky
+
+		data sle.fit
+		read time 1
+		read sky 2
+		set cps = $1/time 
+		lweight 3
+		ctype 3
+		connect cps sky
+		ctype 2
+		lweight 2
+	
+		data sle.dat
+		read time 1
+		read sky  2
+		expand 2.
+		set cps = $1/time
+		ptype 4 3
+		points cps sky
+
+		
+
+#------------------------------------------------------------------------------
+# polislewflux 1: diagramma counts/cielo per slew survey 
+#		: arg[1]=cts detection
+polislewflux  1	# diagramma counts/cielo per slew survey
+		
+		location 5500 31000 5500 31000
+		ctype 2
+
+		set conv = 3.e-11
+		set dum = 1,91,1
+		set dumcps = lg($1*conv/dum)
+
+	        lweight 2
+                expand 1.5
+
+                limits dumcps -1.5 101.5
+		ticksize 0.1 0.5  5 10
+		box
+		xlabel log(flux) 
+		ylabel integrated percentage of sky
+
+		data sle.fit
+		read time 1
+		read sky 2
+		set cps = $1*conv/time 
+		lweight 3
+		ctype 3
+		connect (lg(cps)) sky
+		ctype 2
+		lweight 2
+	
+		data sle.dat
+		read time 1
+		read sky  2
+		expand 2.
+		set cps = $1*conv/time
+		ptype 4 3
+		points (lg(cps)) sky
+
+
+#------------------------------------------------------------------------------
+# slewfluxan 4  : diagramma counts/cielo per slew survey 
+#		: arg[1]=cts detection
+#		: arg[2]=curvature of the "sky profile"
+#		: arg[3]=node of the "sky profile"
+#		: arg[4]=counts=flux conversion factor
+slewfluxan  4	# diagramma counts/cielo per slew survey
+		
+		location 5500 31000 5500 31000
+		ctype 2
+
+		  # set conv = 3.26e-11
+		set conv = $4
+		set dum = 1,91,1
+		set dumcps = lg($1*conv/dum)
+
+	        lweight 2
+                expand 1.5
+
+                 # limits dumcps -1.5 101.5
+                limits -12.1 -9.2 -1.5 101.5
+		ticksize 0.1 0.5  5 10
+		box
+		xlabel log(flux) 
+		ylabel integrated percentage of sky
+
+		data sle.fit
+		read { time 1 sky 2 }
+		set cps = $1*conv/time 
+		lweight 3
+		ctype 5
+		connect (lg(cps)) sky
+		ctype 2
+		lweight 2
+	
+		data sle.dat
+		read { time 1 sky 2 }
+		expand 2.
+		set cps = $1*conv/time
+		ptype 4 3
+		points (lg(cps)) sky
+
+		# curvatura | ascissa del "nodo"
+
+		ltype 2
+		set a = 0.0,1.0,0.01
+		set f = 3.0*a - 1.5 + $3
+		set x = f - $3
+		set y = 100*0.5*(1. + $2*x/sqrt(($2*x)**2. + 1.))
+
+		ctype 3
+		connect f y
+		ctype 2
+
+#------------------------------------------------------------------------------
+# pippo      4  : diagramma counts/cielo per slew survey 
+#		: arg[1]=cts detection
+#		: arg[2]=curvature of the "sky profile"
+#		: arg[3]=node of the "sky profile"
+#		: arg[4]=counts-flux conversion factor
+pippo       4	# diagramma counts/cielo per slew survey
+		
+		location 5500 31000 5500 31000
+		ctype 2
+
+		 # set conv = 3.26e-11
+		set conv = $4
+		set dum = 1,91,1
+		set dumcps = lg($1*conv/dum)
+
+	        lweight 2
+                expand 1.5
+
+                 # limits dumcps -1.5 101.5
+                limits -13 -8.5 -1.5 101.5
+		ticksize 0.1 0.5  5 10
+		box
+		xlabel log(flux) 
+		ylabel integrated percentage of sky
+
+		data sle.dat
+		read time 1
+		read sky  2
+		expand 2.
+		set cps = $1*conv/time
+		ptype 4 3
+		points (lg(cps)) sky
+
+		# curvatura | ascissa del "nodo"
+
+		ltype 2
+		set a = 0.0,2.0,0.01
+		set node = -10.95 - lg(3.26e-11/$4)
+		set f = 3.*a - 1.5 + node
+		set x = f - node
+		set y = 100*0.5*(1. + $2*x/sqrt(($2*x)**2. + 1.))
+		 # set f = 3.*a - 1.5 + $3
+		 # set x = f - $3
+		 # set y = 100*0.5*(1. + $2*x/sqrt(($2*x)**2. + 1.))
+
+		ctype 3
+		connect f y
+		ctype 2
+
+		set a0 = 34.9034194946
+		set a1 = -4.3308362961
+		set a2 =  0.2163163275
+ 		set b0 = 21.1672725677
+		set b1 = -0.9494581819
+		set b2 =  0.0119027887
+		set q  =  $1*conv/10.0**f - 10.
+		set w1 = a0 + a1*q + a2*q*q
+		set w2 = b0 + b1*q + b2*q*q
+
+		lweight 3
+		ctype 6
+		# connect f w1
+		ctype 4
+		# connect f w2
+		ctype 2
+		lweight 2
+
+#------------------------------------------------------------------------------
+# sky_slew  04  : diagramma counts/cielo per slew survey 
+#		: arg[1]=cts detection
+#		: arg[2]=counts=flux conversion factor
+#		: arg[3]=curvature of the "sky profile"
+#		: arg[4]=node of the "sky profile"
+sky_slew   04	# diagramma counts/cielo per slew survey
+		
+		define cts4det ? { Counts for detection         : }
+		define conv ?    { cts-->flux conversion factor : }
+
+		location 5500 31000 5500 31000
+		ctype 2
+
+		  # define conv  (3.26e-11)
+
+		set dum = 1,91,1
+		set dumcps = lg($cts4det*$conv/dum)
+
+	        lweight 2
+                expand 1.5
+
+                limits -12.1 -9.2 -1.5 101.5
+		ticksize 0.1 0.5  5 10
+		box
+		xlabel log(flux) 
+		ylabel integrated percentage of sky
+
+		data sle.fit
+		read { time_fit 1 sky_fit 2 }
+		set cps_fit = ($cts4det/time_fit)*$conv
+		lweight 3
+		ctype 5
+		connect (lg(cps_fit)) sky_fit
+		ctype 2
+		lweight 2
+	
+		data sle.dat
+		read { time_old 1 sky_old 2 }
+		expand 2.
+		set cps_old = ($cts4det/time_old)*$conv
+		ctype 4 
+		ptype 4 3
+		points (lg(cps_old)) sky_old
+		ctype 2 
+
+		data slew_t_exp_short.dat
+		read { time 1 sky 2 }
+		expand 2.
+		set cps = ($cts4det/time)*$conv
+		ptype 4 3
+		points (lg(cps)) sky
+
+		set lg_f = lg(cps)
+		set area = sky*41253/100
+		set area_norm = area/35060
+		sort < lg_f area area_norm >
+
+		set area_diff = 0*area
+		set area_diff[0]=area[0]
+		do i=1,$(dimen(lg_f)-1) {
+		   set area_diff[$i] = area[$i]-area[$($i-1)]
+		}
+
+		# curvatura | ascissa del "nodo"
+		define curv ? { Curvature of sky profile : }
+		define node ? { Node of of sky profile   : }
+
+		ltype 2
+		set a = 0.0,1.0,0.01
+		set f = 3.0*a - 1.5 + $node
+		set x = f - $node
+		set y = 100*0.5*(1. + $curv*x/sqrt(($curv*x)**2. + 1.))
+
+		ctype 3
+		connect f y
+		ctype 2
+
+#------------------------------------------------------------------------------

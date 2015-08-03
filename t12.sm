@@ -1,0 +1,585 @@
+#------------------------------------------------------------------------------
+# histo_ff12   [<datafilelabel> <hstep> <flagplot>]
+#             Filenames are: t12_**.out
+#             flagplot is [0] for no-plot [1] for plot
+histo_ff12  03
+
+	if(!$?1) {
+	   define ext ? < Data file label [t12_**.out] : >
+	   define 1 $ext
+	   define hstep ? <***  F/F histogram step : >
+	   define 2 $hstep
+	   define flagplot ? < Plot [y/n] : >
+	   define 3 $flagplot
+	}
+	define ext $1
+	define hstep $2
+
+	data t12_$1.out
+	read < dt 3 df 4 tau 5 ff 6 >
+
+	foreach 1 < dt df ff > { 
+	   set $1_u=$1 if(df>=0)
+	   set $1_d=$1 if(df<0)
+	}
+	set ff_u=   ff_u - 1
+	set ff_d=1./ff_d - 1
+	foreach 1 < dt df ff > { 
+	   set $1 = $1_d concat $1_u
+	}
+
+	set xff=0.0+0.5*$hstep,1.0+0.5*$hstep,$hstep
+	set histo_ff_u=histogram(ff_u:xff)
+	set histo_ff_d=histogram(ff_d:xff)
+	set histo_ff_u=histo_ff_u/sum(histo_ff_u)
+	set histo_ff_d=histo_ff_d/sum(histo_ff_d)
+	set dum=histo_ff_u concat histo_ff_d
+
+	if( substr('$flagplot',0,1) == 'y' || substr('$flagplot',0,1) == '1') {
+	  limits xff dum
+	  ticksize 0 0 0 0 
+	  ctype 2 
+	  ltype 0 
+	  box
+	  xlabel F_i/F_j
+	  ylabel P(F_i/F_j)d(F/F)
+	  ctype 3 histogram (xff-0.1*$hstep) histo_ff_u 
+	  ctype 5 histogram (xff+0.1*$hstep) histo_ff_d 
+	  ctype 2 
+	  echo >> RED  is up 
+	  echo >> BLUE is down 
+	}
+
+#------------------------------------------------------------------------------
+# histo_t12   [<datafilelabel> <hstep> <flagplot>]
+#             Filenames are: t12_**.out
+#             flagplot is [0] for no-plot [1] for plot
+histo_t12  03
+
+	if(!$?1) {
+	   define ext ? < Data file label [t12_**.out] : >
+	   define 1 $ext
+	   define hstep ? <***  tau histogram step : >
+	   define 2 $hstep
+	   define flagplot ? < Plot [y/n] : >
+	   define 3 $flagplot
+	}
+	define ext $1
+	define hstep $2
+
+	data t12_$1.out
+	read < df 4 tau 5 >
+
+	set tau_u=tau if(df>=0)
+	set tau_d=tau if(df<0)
+	set lg_tau_u=lg(tau_u)
+	set lg_tau_d=lg(tau_d)
+
+	set xt=0.0+0.5*$hstep,8.0+0.5*$hstep,$hstep
+	set histo_tu=histogram(lg_tau_u:xt)
+	set histo_td=histogram(lg_tau_d:xt)
+	set histo_tu=histo_tu/sum(histo_tu)
+	set histo_td=histo_td/sum(histo_td)
+	set dum=histo_tu concat histo_td
+
+	if( substr('$flagplot',0,1) == 'y' || substr('$flagplot',0,1) == '1') {
+	  limits 3 6 dum
+	  ticksize -1 0 0 0 
+	  ctype 2 
+	  ltype 0 
+	  box
+	  ctype 3 histogram xt histo_tu 
+	  ctype 5 histogram xt histo_td 
+	  ctype 2 
+	  echo >> RED  is up 
+	  echo >> BLUE is down 
+	}
+
+#------------------------------------------------------------------------------
+# intersect [<datafilelabel> <hstep> [<t1> <f1> <t2> <f2>]]
+#             Filenames are: t12_**.out
+#          needs histo_t12 to be run before
+intersect 06
+	
+	if($?1) { 
+	   histo_t12 $1 $2 0
+	} else {
+	   histo_t12 
+	}
+
+	if($?3 && $?4 && $?5 && $?6) { 
+	   define t1 $3
+	   define f1 $4
+	   define t2 $5
+	   define f2 $6
+	} else {
+	   define t1 ? < t_1 : >
+   	   define f1 ? < F_1 : >
+
+	   define t2 ? < t_2 : >
+	   define f2 ? < F_2 : >
+	}
+
+	if( $t1 < 900 ) { define t1 $($t1*1e3) }
+	if( $t2 < 900 ) { define t2 $($t2*1e3) }
+	define y1 $(lg($f1))
+	define y2 $(lg($f2))
+	define dy $($y1 - $y2)
+	define lg2 (lg(2.))
+
+	if( $y1 > $y2 ) {
+	    define tau_u_max 1e7
+	    define tau_d_max $(abs($lg2*($t2-$t1)/($y2 - $y1)))
+	} else {
+	    define tau_u_max $(abs($lg2*($t2-$t1)/($y1 - $y2)))
+	    define tau_d_max 1e7
+	}
+
+	set x_td = 10.0**xt  if(histo_td > 0  && 10.0**xt <= $tau_d_max )
+	set x_tu = 10.0**xt  if(histo_tu > 0  && 10.0**xt <= $tau_u_max )
+	set p_td = histo_td  if(histo_td > 0  && 10.0**xt <= $tau_d_max )
+	set p_tu = histo_tu  if(histo_tu > 0  && 10.0**xt <= $tau_u_max )
+	define ntd (dimen(x_td))
+	define ntu (dimen(x_tu))
+
+	echo Integrated P(down) : $(sum(p_td))
+	echo Integrated P(up)   : $(sum(p_tu))
+
+	echo Renormalizing the probability distributions after cut on tau_max
+	set p_td = p_td/$(sum(p_td))
+	set p_tu = p_tu/$(sum(p_tu))
+
+	set dimen(vec_td) = $($ntd*$ntu)
+	set dimen(vec_tu) = $($ntd*$ntu)
+	set dimen(vec_pd) = $($ntd*$ntu)
+	set dimen(vec_pu) = $($ntd*$ntu)
+
+	define i 0
+
+	do 1=0,$ntd-1 { 
+	   do 2=0,$ntu-1 { 
+	      set vec_td[$i] = x_td[$1]
+	      set vec_pd[$i] = p_td[$1]
+	      set vec_tu[$i] = x_tu[$2]
+	      set vec_pu[$i] = p_tu[$2]
+	      define i $($i+1)
+	   }
+	}
+
+	set vec_tdtu = vec_td + vec_tu
+	
+	set t_cross   = (vec_td*$t1 + vec_tu*$t2)/vec_tdtu - (vec_td*vec_tu*$dy)/$lg2/vec_tdtu
+	set p_t_cross = vec_pd*vec_pu
+	set y_cross_1 = 10.**($y1 + $lg2*(t_cross-$t1)/vec_tu)
+	set y_cross_2 = 10.**($y2 - $lg2*(t_cross-$t2)/vec_td)
+
+#------------------------------------------------------------------------------
+# histo_t_cross [<tau_histo_step> <T_cut> [<toplabel>]]
+#                needs "histo_t12" and "intersect" to be run before
+histo_t_cross 103
+
+	if(!$?t1)  { 
+	     echo Please run \"intersect\" before \"histo_t_cross\"
+	}
+
+	if($?1) { 
+	  define htcrstep $1
+	  define time_cut $2
+	} else {
+	  define htcrstep ? <***  tau histogram step [ks] : >
+	  define time_cut ? <***  Time cut for Probability: >
+	}
+	if( $time_cut < 999 ) { 
+	   define time_cut $($time_cut*1e3)
+	}
+
+	set tbins=int($t1/1e3)-10.5*$htcrstep,int($t2/1e3)+10.5*$hstep,$htcrstep
+	set tbins=26.0-5.5*$htcrstep,33.0+5.5*$hstep,$htcrstep
+
+	set histo_tu=histo_tu/sum(histo_tu)
+	set histo_td=histo_td/sum(histo_td)
+
+	set histo_t_cross=histogram(t_cross/1e3:tbins)
+	set histo_t_cross=histo_t_cross/sum(histo_t_cross)
+
+	set histo_prob=histo_t_cross*0
+	set ttemp local
+	set ttemp = t_cross/1e3
+	set ptemp = p_t_cross
+	# sort < ttemp ptemp >
+	#define ix 0
+	#do 2=0,dimen(tbins)-1 {
+	#   while { $ix < $(dimen(ttemp)-1) &&  \
+	#           ttemp[$ix] >= $(tbins[$2]-0.5*$htcrstep) && \
+	#           ttemp[$ix]  < $(tbins[$2]+0.5*$htcrstep)      } {
+	#       set histo_prob[$2] = histo_prob[$2] + p_t_cross[$ix]
+	#       define ix ($ix+1)
+	#   }
+	#}
+	do 2=0,dimen(tbins)-1 {
+	   do 1=0,dimen(t_cross)-1 {
+	      if( ttemp[$1] >= $(tbins[$2]-0.5*$htcrstep) && \
+	          ttemp[$1]  < $(tbins[$2]+0.5*$htcrstep) ) {
+	          set histo_prob[$2] = histo_prob[$2] + p_t_cross[$1]
+	      }
+	   }
+	}
+	set  dum=histo_t_cross concat histo_prob
+
+	limits tbins dum
+	limits 26.9 31.1 dum
+	ticksize 0 0 0 0 
+	box 
+	xlabel Time [ks from T_{ref}]
+	ylabel P(T)dT
+
+	# ltype 1
+	# histogram tbins histo_t_cross
+	ltype 0 
+	histogram tbins histo_prob
+	ltype 2 
+	relocate $($time_cut/1e3) -1 draw $($time_cut/1e3) 5 
+	relocate 31.68 -1            draw 31.68 5 
+	ctype 2 
+	ltype 0
+
+	set a=p_t_cross if(t_cross > $time_cut) 
+	define pa $(sum(a)*100)
+	echo Probability for T_peak > $time_cut = $(sprintf('%5.2f',$pa))%
+
+	relocate ( $gx1 $($gy2 + 750) )
+	putlabel 6 P(T_{peak}>$(sprintf('%d',$time_cut))s)=$(sprintf('%5.2f',$pa))%
+ 
+	if($?3) { 
+	    define datalab $3
+	} else {
+	    define datalab ? < Descriptive label : >
+	}
+	relocate ( $gx2 $($gy2 + 750) )
+	putlabel 4 $datalab
+ 
+#------------------------------------------------------------------------------
+# multiple_probs
+multiple_probs
+
+	local define whatband ? < What x-ray band [s/h] : >
+	if( substr('$whatband',0,1) == 's' ) { 
+	   define a " 27.74 21.34 30.82 20.08 "
+	   define b " 27.23 21.12 31.34 19.17 "
+	   define c " 26.72 19.90 31.84 18.40 "
+	   define 5 "sx"
+	} else { if( substr('$whatband',0,1) == 'h' ) {
+	   define a " 27.74 11.91 30.82 14.91 "
+	   define b " 27.23 11.91 31.34 14.66 "
+	   define c " 26.72 11.16 31.84 14.03 "
+	   define 5 "hx"
+	} else {
+	     echo "Error...."
+	     return
+	}}
+	foreach 3 < a b c > { 
+	   foreach 2 < 3 4 5 > {
+	   foreach 1 < 0 1 2 > {
+	       define 1 $5"_"$1"_"$2"ks"
+	       echo ==== $1/$3 ====
+	       intersect $1 0.05 $$3
+	       histo_t_cross 0.05 30.25 "dum"
+	       #set  histo_probx_$1_$3 = histo_prob
+	       set  histo_prob$5_$1_$3 = histo_prob
+	   }
+	   }
+	}
+
+# concat_histo_probs
+concat_histo_probs
+
+	define whatband ? < What x-ray band [s/h] : >
+	define 5 $whatband"x"
+	define wa ? < Weight for "a" distribution : >
+	define wb ? < Weight for "a" distribution : >
+	define wc ? < Weight for "a" distribution : >
+	set dimen(histo_probx_all)=$(dimen(histo_prob))
+	
+	foreach 3 < a b c > { 
+	   foreach 2 < 3 4 5 > {
+	     foreach 1 < 0 1 2 > {
+	        define 1 $5"_"$1"_"$2"ks"
+	        set histo_prob$5_all = histo_prob$5_all + $w$3*histo_prob$5_$1_$3 
+	     }
+	   }
+	}
+	set histo_prob$5_all = histo_prob$5_all/$(sum(histo_prob$5_all))
+	echo "Remember to use \"smooth\" to make it nicer"
+
+
+# concat_smooth_find
+concat_smooth_find
+	
+	concat_histo_probs
+	define 5 $whatband"x"
+	smooth histo_prob$5_all histo_smoothed 5
+	set a=histo_smoothed if(tbins>=30.25) 
+	echo P(t>30.25)=$(sum(a)*100.)%
+	find_ranges tbins histo_prob$5_all 
+
+#------------------------------------------------------------------------------
+# find_ranges  <x-array> <y-probability_histogram>
+#              finds the 50% point, and the 1 and 2 sigma intervals 
+#              from an histogram of probabilities.
+find_ranges 02
+
+	if(!$?1) {
+	    echo " Usage: "
+	    echo "   find_ranges  <x-array> <y-probability_histogram>"
+	    return
+	}
+
+	set _prob local
+	set _int local
+	define _t1 local
+	define _t2 local
+	echo "Smoothing probability histogram with a 4-box"
+	smooth $2 _prob 4
+	set _int=cumulate(_prob)
+	define 3 _int
+
+	do j=0,dimen($1)-2 {
+	    define i ($j+1)
+	    define dx ($1[$i]-$1[$j])
+	    define dy ($3[$i]-$3[$j])
+
+	    # echo ----- j,i = $j , $i  $dx $dy ------
+	    if( $dy    > 0 ) {
+	    if( $3[$i] < 0.16 ) {
+	        define x_1s_a $( $1[$j] + (0.16-$3[$j])/$dy*$dx )
+	    }
+	    if( $3[$i] < 0.84 ) {
+	        define x_1s_b $( $1[$j] + (0.84-$3[$j])/$dy*$dx )
+	    }
+	    if( $3[$i] < 0.50 ) {
+	        define x_050 $( $1[$j] + (0.50-$3[$j])/$dy*$dx )
+	    }
+	    if( $3[$i] < 0.0227 ) {
+	        define x_2s_a $( $1[$j] + (0.0227-$3[$j])/$dy*$dx )
+	    }
+	    if( $3[$i] < 0.9772 ) {
+	        define x_2s_b $( $1[$j] + (0.9772-$3[$j])/$dy*$dx )
+	    }
+	    }
+	}
+
+	echo "-------------------------------------------------------"
+	echo * 50% point : $(sprintf('%6.3f',$x_050))
+	echo * 1-sigma: $(sprintf('%6.3f',$x_1s_a)) - $(sprintf('%6.3f',$x_1s_b))
+	echo * 2-sigma: $(sprintf('%6.3f',$x_2s_a)) - $(sprintf('%6.3f',$x_2s_b))
+	define x05 $(sprintf('%6.3f',$x_050))
+	define s1u $(sprintf('%6.3f',$($x_1s_b-$x_050)))
+	define s1d $(sprintf('%6.3f',$($x_050-$x_1s_a)))
+	define s2u $(sprintf('%6.3f',$($x_2s_b-$x_050)))
+	define s2d $(sprintf('%6.3f',$($x_050-$x_2s_a)))
+	echo "-------------------------------------------------------"
+	echo >>> $x05 +$s1u -$s1d
+	echo >>> $x05 +$s2u -$s2d
+	echo "-------------------------------------------------------"
+
+#------------------------------------------------------------------------------
+# prepare_prob_histo
+#        it uses a pre-existing "tbins" array to make a probability function.
+#        The times array, tbins, has to have a regular step.
+prepare_prob_histo
+	
+	local define step $(tbins[1]-tbins[0])
+	echo *** Example of units of Times array : $(tbins[0])
+	echo ***         The Times array step is : $step
+	local define t1 ? < Start time of non-zero probability : >
+	local define t2 ? < End   time of non-zero probability : >
+
+	local define probtype ? < Type of distribution [flat/tent] : >
+
+	set dum=tbins   if( (tbins-0.5*$step) >= $t1 && (tbins+0.5*$step) <= $t2 )
+	local define np (dimen(dum))
+	echo *** The selected time intervals spans $np time bins
+
+	local set dum1=tbins   if( (tbins-0.5*$step) < $t1 )
+	local set dum2=tbins   if( (tbins+0.5*$step) > $t2 )
+	help tbins
+	help dum1 
+	help dum  
+	help dum2
+
+	if( substr('$probtype',0,1) == 'f' ) {
+	   echo "Preparing a FLAT probability distribution between $!t1 and $!t2 "
+	   set dum=0*dum + 1./dimen(dum)
+	   set prob_out = (0*dum1) concat (dum) concat (0*dum2)
+	}
+	if( substr('$probtype',0,1) == 't' ) {
+	   echo "Preparing a TENT probability distribution between $!t1 and $!t2 "
+	   local set aux=1,dimen(dum),1
+	   local set udum=0*dum + aux
+	   local set ddum=dimen(udum)-udum+1
+	   do i=0,dimen(dum)-1{
+	     if( udum[$i] > ddum[$i] ) { set aux[$i] = 1 } else { set aux[$i] = 0 }
+	   }
+	   local set dum= aux ? ddum : udum
+	   set prob_out= (0*dum1) concat (dum/(sum(dum))) concat (0*dum2)
+	}
+	
+#------------------------------------------------------------------------------
+# lag_prob  <array_x> <array_g> <nshifts>
+#           Needs P_1 and P_2 probability histograms to be prepared
+#           on the same x-array, which is assumed to be "tbins"
+lag_prob 3
+
+	local define tstep $(tbins[1]-tbins[0])
+	define nshifts $3
+	set dimen(extension)=$nshifts
+
+	set px= extension concat $1 concat extension
+	set pg= extension concat $2 concat extension
+	set save_pg0=pg
+
+	set dimen(tsh)= $(2*$nshifts+1)
+	set dimen(ccf)= $(2*$nshifts+1)
+
+	shift pg $nshifts
+	set save_pg1=pg
+
+	do j=0,2*$nshifts {
+	   shift pg -1
+	   if( $j == ($nshifts-1) ) { set save_pgmid=pg }
+	   set tsh[$j] = $j-$nshifts+1
+	   set ccf[$j] = $(sum(px*pg))
+	}
+	set int_ccf=cumulate(ccf)
+	set tsh=tsh*$tstep
+
+	find_ranges tsh ccf
+
+#------------------------------------------------------------------------------
+# t_12
+t_12
+
+	echo -------------------------------------------------------------
+	echo  *** DATA Section ***
+	define end ? { Suffix of vectors ? }
+	define 1 $end
+
+	define t1 ?     { Start Time : }
+	define t2 ?     { End Time : }
+
+	define er_soglia ? { Fractional error threshold for data rejection [0-1] ? }
+
+	set dumcount=1,$(dimen(rate_$1))
+	set dumcount=dumcount-1
+
+	set test_t = newt_$1        if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+	set test_y = rate_$1        if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+	set test_w = err_rate_$1    if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+	set counter= dumcount       if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+
+	mystats test_y        mean_y  width_y  absdev_y skew_y
+	median  test_y med
+
+	echo -----------------------------------------------------------------
+	echo * Average cts/sec = $mean_y   #  $mean2_y
+	echo * sigma           = $width_y  #  $width2_y
+	echo * Skewness        = $skew_y   #  $kurt2_y
+	echo * Abs. Deviation  = $absdev_y 
+	echo * Median          = $med
+
+	define n1    $(dimen(test_y))
+	define n2    0
+	define ngood 0
+	define t12min 1e8
+	set dimen(workvec)   = $($n1*($n1-1)/2)
+	set dimen(e_workvec) = $($n1*($n1-1)/2)
+	set dimen(index_rec1)= $($n1*($n1-1)/2)
+	set dimen(index_rec2)= $($n1*($n1-1)/2)
+
+	echo * Total number of single points        : $n1
+	echo   Total number of pairs to be computed : $($n1*($n1-1)/2)
+
+	do i=0,$(dimen(test_y)-2) {
+	   do j=$($i+1),$(dimen(test_y)-1) {
+	      define f_ij  ((test_y[$i]+test_y[$j])/2)
+	      define dt_ij (abs(test_t[$i]-test_t[$j]))
+	      define df_ij (abs(test_y[$i]-test_y[$j]))
+	      if($df_ij > 0) {
+	         define er_ij ( sqrt(((test_y[$j]*test_w[$i])**2 + (test_y[$i]*test_w[$j])**2))/$f_ij/$df_ij )
+	      } else {
+	         define er_ij ( 1 )
+	      }
+
+	      set index_rec1[$n2] = counter[$i]
+	      set index_rec2[$n2] = counter[$j]
+	      if($df_ij > 0 && $er_ij < $er_soglia) {
+		 define ngood ($ngood+1)
+	         set workvec[$n2]   = $f_ij*$dt_ij/$df_ij
+	         set e_workvec[$n2] = $er_ij*workvec[$n2]
+	      } else {
+		 # echo * too high frac. error: $er_ij
+	         set workvec[$n2]   = 1e9
+	         set e_workvec[$n2] = 1e8
+	      }
+
+	      if(workvec[$n2] <= $t12min) { 
+		 echo * New T_12_min found: $(workvec[$n2]) +/- $(e_workvec[$n2]) (for [i,j]=[$i,$j])
+		 define t12min   $(workvec[$n2])
+		 define e_t12min $(e_workvec[$n2])
+		 define imin $i
+		 define jmin $j
+	      }
+	      define n2    ($n2+1)
+	   }
+	}
+
+	echo +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	echo * Good data pairs: $ngood (out of $($n1*($n1-1)/2) )
+	echo * Minimum Doubling Timescale is: $t12min +/- $e_t12min
+	echo     for [i,j]=[$imin,$jmin]
+	echo     T_i = $(test_t[$imin])  F_i = $(test_y[$imin])
+	echo     T_j = $(test_t[$jmin])  F_j = $(test_y[$jmin])
+	echo +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+	echo * Sorting....
+	sort < workvec e_workvec index_rec1 index_rec2 >
+
+# plot_t_12
+plot_t_12
+
+	set lgw=lg(workvec) 
+	set lgxt=-1,8,0.05 
+	set hlgt12=histogram(lgw:lgxt)
+	limits 3.5 5 -5 50 
+	erase 
+	ctype 2 
+	box 
+	histogram lgxt hlgt12
+
+# sort_t_12
+sort_t_12
+
+	set fake=1,$(dimen(workvec)),1
+	define quanti ? { How many data to estimate the average T_1/2 ? }
+	set subworkvec    = workvec   if(fake <= $quanti)
+	set e_subworkvec  = e_workvec if(fake <= $quanti)
+	set subindex_rec1= index_rec1 if(fake <= $quanti)
+	set subindex_rec2= index_rec2 if(fake <= $quanti)
+
+	stats  subworkvec              mean_t12  width_t12  dum
+	# stats2 subworkvec e_subworkvec mean2_t12 width2_t12 dum
+	stats2 subworkvec (1/e_subworkvec**2) mean2_t12 width2_t12 dum
+
+	echo -----------------------------------------------------------------
+	echo * Average = $mean_t12     $mean2_t12
+	echo * sigma   = $width_t12    $width2_t12
+	echo -----------------------------------------------------------------
+
+	do i=0,$($quanti-1) {
+	   define i1 $(subindex_rec1[$i])
+	   define i2 $(subindex_rec2[$i])
+	   relocate $(newt_$end[$i1]) $(rate_$end[$i1]) 
+	   draw     $(newt_$end[$i2]) $(rate_$end[$i2]) 
+	}
+
+#---------------------------------------------------------------------------

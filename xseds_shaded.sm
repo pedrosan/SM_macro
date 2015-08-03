@@ -1,0 +1,1354 @@
+#---------------------------------------------------------------------------
+# xsed_read_database
+xsed_read_database
+
+	define anno ? { Which year 1997, or 1998 ? }
+
+	if ( $anno == 1997 ) { 
+	  define pref veryold
+
+	  set all_pointings_vec = { a b c d e f g h i l m n o p q r }
+	  set sub_pointings_vec = {   b c d e f g h i l m n o p q r }
+	  define datasetdir "/neutronstar/gf/SAX/mkn421/1997/ALL/Test/Plots"
+	  echo $datasetdir
+	}
+
+	if ( $anno == 1998 ) { 
+	  
+	  define quali ? { Which set of fits ? [top/sub05/sub075] }
+	  define pref new
+
+          set all_pointings_vec = { low_1_2 \
+				    low_3 \
+				    top1_4 \
+				    top2_5 \
+				    after_6 \
+				    after_7 \
+				    after_8_9 \
+				    after_10_12 \
+				    after_13_16 \
+				    april23_1 \
+				    april23_2 \
+				    april23_3 }
+
+          set sub_pointings_vec = { low_3 \
+				    top1_4 \
+				    top2_5 \
+				    after_6 \
+				    after_7 \
+				    after_8_9 \
+				    after_10_12 \
+				    after_13_16 \
+				    april23_1 \
+				    april23_2 \
+				    april23_3 }
+
+	  define datasetdir "/neutronstar/gf/SAX/mkn421/1998/Test/Plots"
+	  echo $datasetdir
+
+	}
+
+	define data2 ? { which curved model case ? [05/1/2/3/fa/fb] :} 
+
+	if( $data2 == 1  ) { define foldcase 2 }
+	if( $data2 == 2  ) { define foldcase 3 }
+	if( $data2 == 3  ) { define foldcase 4 }
+	if( $data2 == fa ) { define foldcase 5 }
+	if( $data2 == fb ) { define foldcase 6 }
+
+	define jj 0
+
+	foreach code all_pointings_vec {
+
+	   define jj ($jj+1)
+
+	   if ( $anno == 1997 ) {
+	      define data1 <top$code>
+	   }
+	   if ( $anno == 1998 && '$quali' == 'top' )    { define data1 <top_$code> }
+	   if ( $anno == 1998 && '$quali' == 'sub05' )  { define data1 <sub05_$code> }
+	   if ( $anno == 1998 && '$quali' == 'sub075' ) { define data1 <sub075_$code> }
+
+	   define nameaux1  eufs_"$!data1"
+	   define nameaux2  "$!nameaux1"_$!data2
+	   define namename  "$!nameaux2.qdp.clean"
+
+	   data "$!datasetdir/$!namename"
+	   lines 1 29 
+	   read {kev_a 1 dkev_a 2 eufs_a 5}
+	   lines 38 60
+	   read {kev_b 1 dkev_b 2 eufs_b 5}
+	   set kev  = kev_a  CONCAT kev_b
+	   set dkev = dkev_a CONCAT dkev_b
+	   set eufs = eufs_a CONCAT eufs_b
+
+	   foreach vec { kev_a kev_b dkev_a dkev_b eufs_a eufs_b } {
+	      delete $vec
+   	   }
+
+	   define nameaux1  ratio_"$!data1"
+	   define nameaux2  "$!nameaux1"_$!data2
+	   define namename  "$!nameaux2.qdp.clean"
+
+	   data "$!datasetdir/$!namename"
+	   lines 1 29 
+	   read {ratio_a 3 err_ratio_a 4}
+	   lines 38 60
+	   read {ratio_b 3 err_ratio_b 4}
+	   set ratio     = ratio_a     CONCAT ratio_b
+	   set err_ratio = err_ratio_a CONCAT err_ratio_b
+
+	   foreach vec { ratio_a ratio_b err_ratio_a err_ratio_b } {
+	      delete $vec
+	   }
+
+	   set lkev = lg(kev)
+	   set dx_d = 0*eufs
+	   set dx_u = 0*eufs
+
+	   set spec   = ratio*eufs
+	   set nufnu  = lg(spec) + lg(662.6176) - 29. + lkev + 17.383
+
+	   set enufnu = lg(eufs) + lg(662.6176) - 29. + lkev + 17.383
+
+	   set err_spec_u =  lg(1 + err_ratio/ratio)
+	   set err_spec_d = -lg(1 - err_ratio/ratio)
+
+	   foreach 4 { kev dkev eufs ratio err_ratio lkev dx_d dx_u spec nufnu enufnu }{
+	       set $4_$jj = $4
+	   }
+
+	}
+
+#---------------------------------------------------------------------------
+# clean_xseds_database
+clean_xseds_database
+
+	define anno ? { Which year 1997, or 1998 : }
+
+	if ( $anno == 1997 ) { 
+	  set all_pointings_vec = { a b c d e f g h i l m n o p q r }
+	}
+
+	if ( $anno == 1998 ) { 
+          set all_pointings_vec = { low_1_2 \
+				    low_3 \
+				    top1_4 \
+				    top2_5 \
+				    after_6 \
+				    after_7 \
+				    after_8_9 \
+				    after_10_12 \
+				    after_13_16 \
+				    april23_1 \
+				    april23_2 \
+				    april23_3 }
+	}
+
+	define jj (0)
+	foreach code all_pointings_vec {
+	   define jj ($jj+1)
+	   foreach 4 { kev dkev eufs ratio err_ratio lkev dx_d dx_u spec nufnu enufnu }{
+	       echo Removing $4_$jj
+	       delete $4_$jj 
+	   }
+	}
+
+#---------------------------------------------------------------------------
+# xsed_shade
+xsed_shade
+
+	xsed_read_database
+
+	location 5000 29000 6000 30000
+	expand 1.5
+	ctype 2 
+	lweight 3
+	ltype 0
+
+	define xmin -1.01
+	define xmax  1.1
+	define tick  -1
+	define lab_x "Energy [keV]"
+
+	set xl  = lkev
+	set aaa = xl 
+
+	define ymin $(dimen(all_pointings_vec)-0.01)
+	define ymax 0.01
+	define lab_y "sequence \#"
+
+	limits $xmin $xmax $ymin $ymax 
+	ticksize $tick 5 1 1 
+	expand 1.5
+	box 1 0 0 0 
+	ylabel $lab_y
+	expand 2
+	xlabel $lab_x
+
+	#
+	#
+	#
+	define enufnumin  15
+	define enufnumax -15
+
+	do i=1,$(dimen(aux_pointings_vec)) {
+
+	     vecminmax enufnu_$i a b 
+	     if ( $a < $enufnumin ) { define enufnumin $a } 
+	     if ( $b > $enufnumax ) { define enufnumax $b } 
+
+	}
+
+	#---------------------------------------------
+	# defining color palette
+	#
+	if(!$?ncolpalette) {
+	   define ncolpalette ? { Number of colors in the palette : }
+	}
+	color_map $ncolpalette
+
+	define nfnmin $( int($enufnumin*100-1)/100. )
+	define nfnmax $( int($enufnumax*100+1)/100. )
+	define nfnmin ? { minimum nuFnu ? }
+	define nfnmax ? { maximum nuFnu ? }
+
+	define expo 1
+	define expo ? { Exponent used in color-mapping ? }
+
+	#
+	# drawing itself 
+	#
+	ptype 4 3 
+	expand 2.3
+
+	define jj 0
+	foreach code all_pointings_vec {
+	   define jj ($jj+1)
+	   # set colv = int( $(dimen(coldum))*((enufnu_$jj - $nfnmin)/($nfnmax-$nfnmin))**$expo ) + 1 
+	   set colv = int( (dimen(coldum)-1)*((enufnu_$jj - $nfnmin)/($nfnmax-$nfnmin))**$expo )
+
+	   do 1=0,$(dimen(kev_$jj)-1) {
+	       ctype $(colv[$1])
+	       foreach step { 0.8 0.6 0.4 0.2 } { 
+	          relocate $(lg(kev_$jj[$1]-0.5*dkev_$jj[$1])) $($jj-$step)
+	          dot 
+	          relocate $(lkev_$jj[$1]) $($jj-$step)
+	          dot 
+	          relocate $(lg(kev_$jj[$1]+0.5*dkev_$jj[$1])) $($jj-$step)
+	          dot 
+	       }
+	   }
+	}
+
+	#---------------------------------------------
+	# Restoring ColorMap
+	#
+	delete coldum
+        echo Restoring ColorMap
+	restore_colors_default
+        ## ctype = colours  
+        ## ctype = cnames
+
+	#---------------------------------------------
+	# Plotting Grid
+	#
+	# horizontal
+	ctype 2
+	ltype 0 
+	grid 0 2 
+
+	# vertical
+	ctype 1
+	ltype 2 
+	grid 0 1 
+	ltype 0
+	ctype 2 
+
+	expand 1.5
+	box 0 0 0 0 
+
+	define jj 0
+	define interv $( ($gy2-$gy1)/$(dimen(all_pointings_vec)) )
+	foreach code all_pointings_vec {
+	   define jj ($jj+1)
+	   relocate ( $($gx1-1000) $( $gy2 - (($jj-1)*$interv + 0.5*$interv )) )
+	   putlabel 5 $jj
+	}
+
+	define plotlab ? { Label ? [y/n] }
+	if(substr('$plotlab',0,1) == 'y') { 
+	  echo -----------------------------------------
+	  define order ? { Which position from the Bottom ? }
+
+	  relocate ( $($gx1 + 1500) $($gy1 + 1500 + 1500*$order) ) 
+	  expand 2.0
+	  ctype $cty1
+	  ptype 20 3 
+	  dot
+
+	  expand 1.2
+	  ctype $cty2
+	  ptype 20 3 
+	  dot
+
+	  expand 2.0
+	  lweight 1.5
+	  ctype $cty1
+	  ptype 20 0 
+	  dot
+
+	  define labtxt ? { TEXT of Label : }
+
+	  ctype $cty2
+	  relocate ( $($gx1 + 2250) $($gy1 + 1450 + 1500*$order) ) 
+	  expand 1.3
+	  putlabel 6 $labtxt
+	  expand 1.5
+
+	  ctype $cty1
+	  relocate ( $($gx1 + 2200) $($gy1 + 1500 + 1500*$order) ) 
+	  expand 1.3
+	  putlabel 6 $labtxt
+	  expand 1.5
+	}
+	echo uscito dalla label
+
+	#---------------------------------------------
+	# Plotting color scale
+	#
+
+	#---------------------------------------------
+	# defining color palette
+	#
+	color_map $ncolpalette $mappa
+
+	location 29500 31000 6000 30000
+	limits  0 1 $nfnmin $nfnmax 
+	ticksize 0 0 0 0 
+	expand 1.1
+	box 0 0 0 1
+
+	ptype 4 3 
+	expand 2.5
+
+	set ydum  = $nfnmin,$nfnmax,$(($nfnmax-$nfnmin)/50)
+	set colv2 = int( (dimen(coldum)-1)*((ydum - $nfnmin)/($nfnmax-$nfnmin))**$expo ) 
+
+	help ydum
+	help colv2
+
+	do k=0,$(dimen(ydum)-1) {
+	    ctype $(colv2[$k])
+	    foreach step ( 0.25 0.5 0.75 ) {
+	       # echo $step $(ydum[$k]) $(colv2[$k])
+	       relocate $step $(ydum[$k])
+	       dot
+	    }
+	}
+
+	#---------------------------------------------
+	# Restoring ColorMap
+	#
+	## delete coldum
+        echo Restoring ColorMap
+	restore_colors_default
+        ## ctype = colours  
+        ## ctype = cnames
+
+	delete colours
+	delete cnames
+
+	lweight 3
+	do jj=1,$(dimen(all_pointings_vec)) {
+	   foreach 4 { kev dkev eufs ratio err_ratio lkev dx_d dx_u spec nufnu enufnu } {
+	       delete $4_$jj
+	   }
+	}
+
+#---------------------------------------------------------------------------
+# plot_peak_dots
+plot_peak_dots
+
+	#---------------------------------------------
+	# plot (or not) best fit Peak Energies
+	#
+
+	define data2 ? { which curved model case ? [05/1/2/3/fa/fb] :} 
+
+	if( $data2   ==   1  ) { define foldcase 2 }
+	if( $data2   ==   2  ) { define foldcase 3 }
+	if( $data2   ==   3  ) { define foldcase 4 }
+	if( '$data2' == 'fa' ) { define foldcase 5 }
+
+	define ff $($foldcase - 1)
+	echo FF = $ff
+	echo PREF = $pref
+
+	set pmid       = < $("$!pref"_epeak[$ff]) > 
+	set err_pmid_d = < $(err_"$!pref"_epeak_d[$ff]) > 
+	set err_pmid_u = < $(err_"$!pref"_epeak_u[$ff]) > 
+
+	do kk=1,$(dimen(all_pointings_vec)-1) {
+	   echo KK = $kk
+	   set pmid       = pmid       CONCAT < $("$!pref"_epeak[$ff+$kk*6]) >
+	   set err_pmid_d = err_pmid_d CONCAT < $(err_"$!pref"_epeak_d[$ff+$kk*6]) >
+	   set err_pmid_u = err_pmid_u CONCAT < $(err_"$!pref"_epeak_u[$ff+$kk*6]) >
+	}
+
+	set p1   = lg(pmid - err_pmid_d)
+	set p2   = lg(pmid + err_pmid_u)
+	set pmid = lg(pmid)
+	set py   = 1,$(dimen(all_pointings_vec)),1
+	set py   = py - 0.5
+	help py
+	help pmid
+
+	location 5000 29000 6000 30000
+	expand 1.5
+	ctype 2 
+	lweight 3
+	ltype 0
+
+	define xmin -1.01
+	define xmax  1.1
+	define tick  -1
+
+	define ymin $(dimen(all_pointings_vec)-0.01)
+	define ymax 0.01
+
+	limits $xmin $xmax $ymin $ymax 
+	ticksize $tick 5 1 1 
+	expand 1.5
+	box 3 3 3 3 
+
+	expand 2.5
+	points pmid py
+	pairs  p1 py p2 py 
+	ptype 2 1 
+	angle 90
+	points p1 py
+	points p2 py
+	angle 0
+	expand 1.5
+
+	lweight 2
+
+	delete p1
+	delete p2
+	delete py
+	# delete pmid
+	delete err_pmid_u
+	delete err_pmid_d
+
+#---------------------------------------------------------------------------
+# xsed_subtract
+xsed_subtract
+
+	xsed_read_database
+
+	#---------------------------------------------
+	# Subtracting
+	#
+	do i=1,$(dimen(all_pointings_vec)) {
+	   echo [$i] $(all_pointings_vec[$($i-1)])
+	}
+
+	define whichref ? { Which is the REFERENCE XSED ?   [give NUMBER] }
+	define what     ? { Subtract [1] or Divide [2] ? }
+
+	if ( $what == 1 ) {
+	   define factor   ? { Factor by which the REFERENCE XSED should be scaled ? }
+	   define auxmin 10000
+	}
+
+	define nn          0
+	set dimen(aux_pointings_vec) = $(dimen(all_pointings_vec)-1)
+
+	do i=1,$(dimen(all_pointings_vec)) {
+	   
+	   if( $i != $whichref ) {
+	      set aux_pointings_vec[$nn] = $i
+
+	      #
+	      # increment 'nn' of 1 so that final vectors will be numbered starting from '1'
+	      # Also for the computation it multiplies fluxes for a factor 10^11
+	      #
+	      define nn $($nn+1)
+	      if ( $what == 1 ) {
+	          set dnufnu_$nn = 10.**(enufnu_$i+11) - $factor*10.**(enufnu_$whichref+11)
+	          vecminmax dnufnu_$nn a b 
+	          if ( $a < $auxmin ) { define auxmin $a echo ++++ $nn ++++ NEWMIN $auxmin } 
+	      } 
+	      if ( $what == 2 ) {
+	          set dnufnu_$nn = enufnu_$i - enufnu_$whichref
+	      }
+
+	      foreach 4 { kev dkev lkev }{
+	          set $4_$nn = $4
+	      }
+
+	   } else {
+	      echo ---> [$i] This is the spectrum used for reference...
+	   }
+
+	}
+
+	if ( $what == 1 ) {
+	   echo 
+	   echo +++ The minimum, to which renormalize fluxes is : $auxmin
+	   echo
+	}
+
+	define dnufnumin  15
+	define dnufnumax -15
+
+	do i=1,$(dimen(aux_pointings_vec)) {
+	     if ( $what == 1 ) {
+	         set dnufnu_$i = lg(dnufnu_$i + 1 - $auxmin) 
+	     }
+	     # if ( $what == 2 ) {
+	     #     set dnufnu_$i = dnufnu_$i 
+	     # }
+
+	     vecminmax dnufnu_$i a b 
+	     if ( $a < $dnufnumin ) { define dnufnumin $a } 
+	     if ( $b > $dnufnumax ) { define dnufnumax $b } 
+	}
+
+	#---------------------------------------------
+	# Plotting options
+	#
+	define lineorshade ? { Plot XSEDs as ..... SHADES or LINES [1/2] ? }
+
+	location 5000 29000 5000 29000
+	expand 1.5
+	ctype 2 
+	lweight 3
+	ltype 0
+
+	define xmin -1.01
+	define xmax  1.1
+	define tick  -1
+	define lab_x "Energy [keV]"
+
+	if ( $lineorshade == 1 ) {
+	   define boxy     0
+	   define ymin $(dimen(aux_pointings_vec)-0.01)
+	   define ymax 0.01
+	   define lab_y "sequence \#"
+	   ticksize $tick 5 1 1 
+	} 
+
+	if ( $lineorshade == 2 ) {
+	   define boxy     2
+	   define ymin -10.5
+	   define ymax  -9.2
+	   define lab_y "log(\\nu F_\\nu) [erg/cm^2/s]"
+	   ticksize $tick 5 0.1 0.5
+
+	   define ymin $( int($dnufnumin*10-1)/10. )
+   	   define ymax $( int($dnufnumax*10+1)/10. )
+	} 
+
+
+	limits $xmin $xmax $ymin $ymax 
+	expand 1.5
+	box 1 $boxy 0 0 
+	ylabel $lab_y
+	expand 2
+	xlabel $lab_x
+
+	#---------------------------------------------
+	# defining color palette
+	#
+	color_map $ncolpalette
+
+	define nfnmin $( int($dnufnumin*100-1)/100. )
+	define nfnmax $( int($dnufnumax*100+1)/100. )
+	define nfnmin ? { minimum nuFnu ? }
+	define nfnmax ? { maximum nuFnu ? }
+
+	define expo 1
+	define expo ? { Exponent used in color-mapping ? }
+
+	#
+	# drawing itself 
+	#
+	ptype 4 3 
+	expand 2.3
+
+	if ( $lineorshade == 1 ) {
+	   define jj 0
+	   foreach code aux_pointings_vec {
+	      define jj ($jj+1)
+	      set colv = int( (dimen(coldum)-1)*((dnufnu_$jj - $nfnmin)/($nfnmax-$nfnmin))**$expo )
+
+	      do 1=0,$(dimen(dnufnu_$jj)-1) {
+	          ctype $(colv[$1])
+	          foreach step { 0.8 0.6 0.4 0.2 } { 
+	             relocate $(lg(kev_$jj[$1]-0.5*dkev_$jj[$1])) $($jj-$step)
+	             dot 
+	             relocate $(lkev_$jj[$1]) $($jj-$step)
+	             dot 
+	             relocate $(lg(kev_$jj[$1]+0.5*dkev_$jj[$1])) $($jj-$step)
+	             dot 
+	          }
+	      }
+	   }
+	}
+
+	if ( $lineorshade == 2 ) {
+	   define jj 0
+	   foreach code aux_pointings_vec {
+
+	      define gonext "y"
+	      define gonext ? < Next XSED is [$(all_pointings_vec[$(aux_pointings_vec[$jj]-1)])], go ? [y/n] >
+	      define jj ($jj+1)
+
+	      if( substr('$gonext',0,1) == 'y' ) { 
+	          set colv = int( (dimen(coldum)-1)*((dnufnu_$jj - $nfnmin)/($nfnmax-$nfnmin))**$expo )
+
+	          do 1=0,$(dimen(dnufnu_$jj)-1) {
+	              ctype $(colv[$1])
+	              relocate $(lg(kev_$jj[$1]-0.5*dkev_$jj[$1])) $(dnufnu_$jj[$1])
+	              dot 
+	              relocate $(lkev_$jj[$1])                     $(dnufnu_$jj[$1])
+	              dot 
+	              relocate $(lg(kev_$jj[$1]+0.5*dkev_$jj[$1])) $(dnufnu_$jj[$1])
+	              dot 
+	          }
+	      connect lkev_$jj dnufnu_$jj
+	      }
+	   }
+	}
+
+
+	#---------------------------------------------
+	# Restoring ColorMap
+	#
+	delete coldum
+        echo Restoring ColorMap
+	restore_colors_default
+        ## ctype = colours  
+        ## ctype = cnames
+
+	#---------------------------------------------
+	# Plotting Grid
+	#
+
+	# horizontal
+	#
+	if ( $lineorshade == 1 ) {
+	    ctype 2
+	    ltype 0 
+	    grid 0 2 
+	}
+
+	# vertical
+	if ( $lineorshade == 1 ) { ctype 1 }
+	if ( $lineorshade == 2 ) { ctype 2 }
+	ltype 2 
+	grid 0 1 
+	ltype 0
+	ctype 2 
+
+	expand 1.5
+	box 0 0 0 0 
+
+
+	#---------------------------------------------
+	# Putting Labels, only if SHADE
+	#
+	if ( $lineorshade == 1 ) {
+	    define jj 0
+	    define interv $( ($gy2-$gy1)/$(dimen(aux_pointings_vec)) )
+	    foreach code aux_pointings_vec {
+	       define jj ($jj+1)
+	       relocate ( $($gx1-1000) $( $gy2 - (($jj-1)*$interv + 0.5*$interv )) )
+	       putlabel 5 $code
+	    }
+	}
+
+	if ( $what == 1 ) {
+	    expand 1.1
+	    relocate ( $(($gx1+$gx2)/2) $($gy2+2000) )
+	    putlabel 5 Difference with respect to XSED \# $whichref
+	    relocate ( $(($gx1+$gx2)/2) $($gy2+1000) )
+	    putlabel 5 scaled by a factor : $factor
+	}
+	if ( $what == 2 ) {
+	    expand 1.1
+	    relocate ( $(($gx1+$gx2)/2) $($gy2+1000) )
+	    putlabel 5 Ratio of each XSED with respect to XSED \# $whichref
+	}
+
+	#---------------------------------------------
+	# Plotting color scale
+	#
+
+	#---------------------------------------------
+	# defining color palette
+	#
+	color_map $ncolpalette $mappa
+
+	location 29500 31000 5000 29000
+	limits  0 1 $nfnmin $nfnmax 
+	ticksize 0 0 0 0 
+	expand 1.1
+	box 0 0 0 1
+
+	ptype 4 3 
+	expand 2.5
+
+	set ydum  = $nfnmin,$nfnmax,$(($nfnmax-$nfnmin)/50)
+	set colv2 = int( (dimen(coldum)-1)*((ydum - $nfnmin)/($nfnmax-$nfnmin))**$expo ) 
+
+	help ydum
+	help colv2
+
+	do k=0,$(dimen(ydum)-1) {
+	    ctype $(colv2[$k])
+	    foreach step ( 0.25 0.5 0.75 ) {
+	       # echo $step $(ydum[$k]) $(colv2[$k])
+	       relocate $step $(ydum[$k])
+	       dot
+	    }
+	}
+
+	#---------------------------------------------
+	# Restoring ColorMap
+	#
+        echo Restoring ColorMap
+	restore_colors_default
+
+	delete colours
+	delete cnames
+
+	lweight 3
+	do jj=1,$(dimen(all_pointings_vec)) {
+	   foreach 4 { kev dkev eufs ratio err_ratio lkev dx_d dx_u spec nufnu enufnu } {
+	       delete $4_$jj
+	   }
+	}
+	do jj=1,$(dimen(aux_pointings_vec)) {
+	   foreach 4 { dnufnu } {
+	       delete $4_$jj
+	   }
+	}
+	
+#---------------------------------------------------------------------------
+# xsed_subtract_better : is as 'xsed_subtract', but considers also the 
+#                        the "REF-spectrum' for plot etc.
+xsed_subtract_better
+
+	define readagain ? { Re-read the Xsed database ? [y/n] }
+	if ( substr('$readagain',0,1) == 'y' ) { xsed_read_database }
+
+	lweight 3
+
+	#---------------------------------------------
+	# Subtracting
+	#
+	do i=1,$(dimen(all_pointings_vec)) {
+	   echo [$i] $(all_pointings_vec[$($i-1)])
+	}
+
+	define whichref ? { Which is the REFERENCE XSED ?   [give NUMBER] }
+	define what     ? { Subtract [1] or Divide [2] ? }
+
+	if ( $what == 1 ) {
+	   define factor   ? { Factor by which the REFERENCE XSED should be scaled ? }
+	   define auxmin 10000
+	}
+
+	define nn          0
+	# set dimen(aux_pointings_vec) = $(dimen(all_pointings_vec)-1)
+	set dimen(aux_pointings_vec) = $(dimen(all_pointings_vec))
+
+	do i=1,$(dimen(all_pointings_vec)) {
+	   define nn $($nn+1)
+	   
+	   # if( $i != $whichref ) {
+	      set aux_pointings_vec[$($i-1)] = $i
+
+	      #
+	      # increment 'nn' of 1 so that final vectors will be numbered starting from '1'
+	      # Also for the computation it multiplies fluxes for a factor 10^11
+	      #
+	      if ( $what == 1 ) {
+	          set dnufnu_$nn = 10.**(enufnu_$i+11) - $factor*10.**(enufnu_$whichref+11)
+	          vecminmax dnufnu_$nn a b 
+	          if ( $a < $auxmin ) { define auxmin $a echo ++++ $nn ++++ NEWMIN $auxmin } 
+	      } 
+	      if ( $what == 2 ) {
+	          set dnufnu_$nn = enufnu_$i - enufnu_$whichref
+	      }
+
+	      foreach 4 { kev dkev lkev }{
+	          set $4_$nn = $4
+	      }
+
+	   # } else {
+	   #    echo ---> [$i] This is the spectrum used for reference...
+	   #   }
+
+	}
+
+	if ( $what == 1 ) {
+	   echo 
+	   echo +++ The minimum, to which renormalize fluxes is : $auxmin
+	   echo
+	}
+
+	define dnufnumin  15
+	define dnufnumax -15
+
+	do i=1,$(dimen(aux_pointings_vec)) {
+	     if ( $what == 1 ) {
+	         set dnufnu_$i = lg(dnufnu_$i + 1 - $auxmin) 
+	     }
+	     # if ( $what == 2 ) {
+	     #     set dnufnu_$i = dnufnu_$i 
+	     # }
+
+	     vecminmax dnufnu_$i a b 
+	     if ( $a < $dnufnumin ) { define dnufnumin $a } 
+	     if ( $b > $dnufnumax ) { define dnufnumax $b } 
+	}
+
+	#---------------------------------------------
+	# Plotting options
+	#
+	echo "  Plot XSEDs as ....."
+	echo "  [1] SHADES"
+	echo "  [2] LINES SHADED"
+	echo "  [3] LINES (choice of color)"
+	define lineorshade ? { Plot XSEDs as ..... }
+
+	# location 5000 29000 5000 29000
+	# expand 1.5
+	# ctype 2 
+	# lweight 3
+	# ltype 0
+
+	define xmin -1.01
+	define xmax  1.1
+	define tick  -1
+	define lab_x "Energy [keV]"
+
+	#---------------------------------------------
+	# defining color palette
+	#
+
+	define nfnmin $( int($dnufnumin*100-1)/100. )
+	define nfnmax $( int($dnufnumax*100+1)/100. )
+	define nfnmin ? { minimum nuFnu ? }
+	define nfnmax ? { maximum nuFnu ? }
+
+	define expo 1
+	define expo ? { Exponent used in color-mapping ? }
+
+	# ****
+	#---------------------------------------------
+	# Plotting color scale
+	#
+
+	define plotscale ? { Plot lateral color scale ? [y/n] }
+
+	if ( substr('$plotscale',0,1) == 'y' ) { 
+	    location 29500 31000 5000 29000
+	    limits  0 1 $nfnmin $nfnmax 
+	    ticksize 0 0 0 0 
+	    expand 1.1
+	    ctype 2 
+	    box 0 0 0 1
+
+	    ptype 4 3 
+	    expand 2.5
+	}
+
+	color_map $ncolpalette
+
+	if ( substr('$plotscale',0,1) == 'y' ) {
+	    set ydum  = $nfnmin,$nfnmax,$(($nfnmax-$nfnmin)/50)
+	    set colv2 = int( (dimen(coldum)-1)*((ydum - $nfnmin)/($nfnmax-$nfnmin))**$expo ) 
+
+	    help ydum
+	    help colv2
+
+	    do k=0,$(dimen(ydum)-1) {
+	    ctype $(colv2[$k])
+	        foreach step ( 0.25 0.5 0.75 ) {
+	           # echo $step $(ydum[$k]) $(colv2[$k])
+	           relocate $step $(ydum[$k])
+	           dot
+	        }
+    	    }
+
+	}
+
+	#---------------------------------------------
+	# Restoring ColorMap
+	#
+        echo Restoring ColorMap
+	restore_colors_default
+
+	delete colours
+	delete cnames
+	# ****
+
+	if ( $lineorshade == 1 ) {
+	   define boxy     0
+	   define ymin $(dimen(aux_pointings_vec)-0.01)
+	   define ymax 0.01
+	   define lab_y "sequence \#"
+	   ticksize $tick 5 1 1 
+	} 
+
+	if ( $lineorshade == 2 || $lineorshade ==3 ) {
+	   define boxy     2
+	   define ymin -10.5
+	   define ymax  -9.2
+	   define lab_y "log(\\nu F_\\nu) [erg/cm^2/s]"
+	   define lab_y "log(\\nu F_\\nu) [arbitrary units]"
+	   ticksize $tick 5 0.1 0.5
+
+	   define ymin $( int($dnufnumin*10-1)/10. )
+   	   define ymax $( int($dnufnumax*10+1)/10. )
+	} 
+
+	location 5000 29000 5000 29000
+	expand 1.5
+	ctype 2 
+	lweight 3
+	ltype 0
+
+	limits $xmin $xmax $ymin $ymax 
+	limits $xmin $xmax $nfnmin $nfnmax
+	expand 1.5
+	box 1 $boxy 0 0 
+
+	ylabel $lab_y
+	expand 2
+	xlabel $lab_x
+
+	#---------------------------------------------
+	# drawing itself 
+	#
+	color_map $ncolpalette $mappa
+
+	ptype 4 3 
+	expand 2.3
+
+	if ( $lineorshade == 1 ) {
+	   define jj 0
+	   foreach code aux_pointings_vec {
+	      define jj ($jj+1)
+	      if ( $jj != $whichref ) { 
+	      set colv = int( (dimen(coldum)-1)*((dnufnu_$jj - $nfnmin)/($nfnmax-$nfnmin))**$expo )
+
+	      do 1=0,$(dimen(dnufnu_$jj)-1) {
+	          ctype $(colv[$1])
+	          foreach step { 0.8 0.6 0.4 0.2 } { 
+	             relocate $(lg(kev_$jj[$1]-0.5*dkev_$jj[$1])) $($jj-$step)
+	             dot 
+	             relocate $(lkev_$jj[$1]) $($jj-$step)
+	             dot 
+	             relocate $(lg(kev_$jj[$1]+0.5*dkev_$jj[$1])) $($jj-$step)
+	             dot 
+	          }
+	      }
+	   }
+	   }
+	}
+
+	if ( $lineorshade == 2 ) {
+	   define jj 0
+	   foreach code aux_pointings_vec {
+
+	      define gonext "y"
+	      define gonext ? < Next XSED is [$(all_pointings_vec[$(aux_pointings_vec[$jj]-1)])], go ? [y/n] >
+	      define jj ($jj+1)
+
+	      if( substr('$gonext',0,1) == 'y' ) { 
+	          set colv = int( (dimen(coldum)-1)*((dnufnu_$jj - $nfnmin)/($nfnmax-$nfnmin))**$expo )
+
+	          do 1=0,$(dimen(dnufnu_$jj)-1) {
+	              ctype $(colv[$1])
+	              relocate $(lg(kev_$jj[$1]-0.5*dkev_$jj[$1])) $(dnufnu_$jj[$1])
+	              dot 
+	              relocate $(lkev_$jj[$1])                     $(dnufnu_$jj[$1])
+	              dot 
+	              relocate $(lg(kev_$jj[$1]+0.5*dkev_$jj[$1])) $(dnufnu_$jj[$1])
+	              dot 
+	          }
+	      connect lkev_$jj dnufnu_$jj
+	      }
+	   }
+	}
+
+	if ( $lineorshade == 3 ) {
+	   define jj 0
+	   set auxcol=1,$(dimen(aux_pointings_vec))
+	   echo * The used palette comprises $(dimen(coldum)) colors
+
+	   foreach code aux_pointings_vec {
+
+	      define gonext "y"
+	      define gonext ? < Next XSED is [$(all_pointings_vec[$(aux_pointings_vec[$jj]-1)])], go ? [y/n] >
+	      define jj ($jj+1)
+
+	      if( substr('$gonext',0,1) == 'y' ) { 
+	          # set colv = int( (dimen(coldum)-1)*((dnufnu_$jj - $nfnmin)/($nfnmax-$nfnmin))**$expo )
+		  # ctype $(colv[$(dimen(dnufnu_$jj)-1)])
+
+		  set colv = int( (dimen(coldum)-1)*((auxcol/$(dimen(aux_pointings_vec)))**$expo ) )
+		  ctype $(colv[$($jj-1)])
+
+		  lweight 5
+	          connect lkev_$jj dnufnu_$jj
+
+	      }
+	   }
+	   lweight 3
+	}
+
+
+	#---------------------------------------------
+	# Restoring ColorMap
+	#
+	delete coldum
+        echo Restoring ColorMap
+	restore_colors_default
+
+	#---------------------------------------------
+	# Plotting Grid
+	#
+
+	# horizontal
+	#
+	if ( $lineorshade == 1 ) {
+	    ctype 2
+	    ltype 0 
+	    grid 0 2 
+	}
+
+	# vertical
+	if ( $lineorshade == 1 ) { ctype 1 }
+	if ( $lineorshade == 2 ) { ctype 2 }
+	ltype 2 
+	grid 0 1 
+	ltype 0
+	ctype 2 
+
+	expand 1.5
+	box 0 0 0 0 
+
+
+	#---------------------------------------------
+	# Putting Labels, only if SHADE
+	#
+	if ( $lineorshade == 1 ) {
+	    define jj 0
+	    define interv $( ($gy2-$gy1)/$(dimen(aux_pointings_vec)) )
+	    foreach code aux_pointings_vec {
+	       define jj ($jj+1)
+	       relocate ( $($gx1-1000) $( $gy2 - (($jj-1)*$interv + 0.5*$interv )) )
+	       putlabel 5 $code
+	    }
+	}
+
+	if ( $what == 1 ) {
+	    expand 1.1
+	    relocate ( $(($gx1+$gx2)/2) $($gy2+2000) )
+	    putlabel 5 Difference with respect to XSED \# $whichref
+	    relocate ( $(($gx1+$gx2)/2) $($gy2+1000) )
+	    putlabel 5 scaled by a factor : $factor
+	}
+	if ( $what == 2 ) {
+	    expand 1.1
+	    relocate ( $(($gx1+$gx2)/2) $($gy2+1000) )
+	    putlabel 5 Ratio of each XSED with respect to XSED \# $whichref
+	}
+
+	define check_del ? { Delete OLD vectors ? [y/n] }
+
+	if( substr('$check_del',0,1) == 'y' ) { 
+	lweight 3
+	do jj=1,$(dimen(all_pointings_vec)) {
+	   foreach 4 { kev dkev eufs ratio err_ratio lkev dx_d dx_u spec nufnu enufnu } {
+	       delete $4_$jj
+	   }
+	}
+	do jj=1,$(dimen(aux_pointings_vec)) {
+	   foreach 4 { dnufnu } {
+	       delete $4_$jj
+	   }
+	}
+	}
+	
+	return
+
+	#---------------------------------------------
+	# Plotting color scale
+	#
+
+	#---------------------------------------------
+	# defining color palette
+	#
+	color_map $ncolpalette $mappa
+
+	location 29500 31000 5000 29000
+	limits  0 1 $nfnmin $nfnmax 
+	ticksize 0 0 0 0 
+	expand 1.1
+	box 0 0 0 1
+
+	ptype 4 3 
+	expand 2.5
+
+	set ydum  = $nfnmin,$nfnmax,$(($nfnmax-$nfnmin)/50)
+	set colv2 = int( (dimen(coldum)-1)*((ydum - $nfnmin)/($nfnmax-$nfnmin))**$expo ) 
+
+	help ydum
+	help colv2
+
+	do k=0,$(dimen(ydum)-1) {
+	    ctype $(colv2[$k])
+	    foreach step ( 0.25 0.5 0.75 ) {
+	       # echo $step $(ydum[$k]) $(colv2[$k])
+	       relocate $step $(ydum[$k])
+	       dot
+	    }
+	}
+
+	#---------------------------------------------
+	# Restoring ColorMap
+	#
+        echo Restoring ColorMap
+	restore_colors_default
+
+	delete colours
+	delete cnames
+
+#---------------------------------------------------------------------------
+# relative_change
+relative_change
+
+	xsed_read_database
+
+	define what ? { Subtract [1] or Divide [2] ? }
+
+	if ( $what == 1 ) { define auxmin 10000 }
+
+	define nn          0
+
+	set dimen(aux_pointings_vec) = $(dimen(all_pointings_vec)-1)
+
+	do i=2,$(dimen(all_pointings_vec)) {
+	   
+	      # define ii $($i-1)
+	      # define pip ( sprintf('%s','$i-$ii')) 
+	      set aux_pointings_vec[$nn] = $i
+
+	      #
+	      # increment 'nn' of 1 so that final vectors will be numbered starting from '1'
+	      # Also for the computation it multiplies fluxes for a factor 10^11
+	      #
+	      define nn $($nn+1)
+	      if ( $what == 1 ) {
+	          set dnufnu_$nn = 10.**(enufnu_$i+11) - 10.**(enufnu_$($i-1)+11)
+	          vecminmax dnufnu_$nn a b 
+	          if ( $a < $auxmin ) { define auxmin $a echo ++++ $nn ++++ NEWMIN $auxmin } 
+	      } 
+	      if ( $what == 2 ) {
+	          set dnufnu_$nn = enufnu_$i - enufnu_$($i-1) 
+	      }
+
+	      foreach 4 { kev dkev lkev }{
+	          set $4_$nn = $4
+	      }
+	}
+
+	if ( $what == 1 ) {
+	   echo 
+	   echo +++ The minimum, to which renormalize fluxes is : $auxmin
+	   echo
+	}
+
+	define dnufnumin  15
+	define dnufnumax -15
+
+	do i=1,$(dimen(aux_pointings_vec)) {
+	     if ( $what == 1 ) {
+	         set dnufnu_$i = lg(dnufnu_$i + 1 - $auxmin) 
+	     }
+
+	     vecminmax dnufnu_$i a b 
+	     if ( $a < $dnufnumin ) { define dnufnumin $a } 
+	     if ( $b > $dnufnumax ) { define dnufnumax $b } 
+	}
+
+	location 5000 29000 5000 29000
+	expand 1.5
+	ctype 2 
+	lweight 3
+	ltype 0
+
+	define xmin -1.01
+	define xmax  1.1
+	define tick  -1
+	define lab_x "Energy [keV]"
+
+	define ymin $(dimen(aux_pointings_vec)-0.01)
+	define ymax 0.01
+	define lab_y "sequence \#"
+
+	limits $xmin $xmax $ymin $ymax 
+	ticksize $tick 5 1 1 
+	expand 1.5
+	box 1 0 0 0 
+	ylabel $lab_y
+	expand 2
+	xlabel $lab_x
+
+	#---------------------------------------------
+	# defining color palette
+	#
+	color_map $ncolpalette
+
+	define nfnmin $( int($dnufnumin*100-1)/100. )
+	define nfnmax $( int($dnufnumax*100+1)/100. )
+	define nfnmin ? { minimum nuFnu ? }
+	define nfnmax ? { maximum nuFnu ? }
+
+	define expo 1
+	define expo ? { Exponent used in color-mapping ? }
+
+	#
+	# drawing itself 
+	#
+	ptype 4 3 
+	expand 2.3
+
+	define jj 0
+	foreach code aux_pointings_vec {
+	   define jj ($jj+1)
+	   # set colv = int( $(dimen(coldum))*((dnufnu_$jj - $nfnmin)/($nfnmax-$nfnmin))**$expo ) + 1 
+	   set colv = int( (dimen(coldum)-1)*((dnufnu_$jj - $nfnmin)/($nfnmax-$nfnmin))**$expo )
+
+	   do 1=0,$(dimen(dnufnu_$jj)-1) {
+	       ctype $(colv[$1])
+	       foreach step { 0.8 0.6 0.4 0.2 } { 
+	          relocate $(lg(kev_$jj[$1]-0.5*dkev_$jj[$1])) $($jj-$step)
+	          dot 
+	          relocate $(lkev_$jj[$1]) $($jj-$step)
+	          dot 
+	          relocate $(lg(kev_$jj[$1]+0.5*dkev_$jj[$1])) $($jj-$step)
+	          dot 
+	       }
+	   }
+	}
+
+	#---------------------------------------------
+	# Restoring ColorMap
+	#
+	delete coldum
+        echo Restoring ColorMap
+	restore_colors_default
+        ## ctype = colours  
+        ## ctype = cnames
+
+	#---------------------------------------------
+	# Plotting Grid
+	#
+	# horizontal
+	ctype 2
+	ltype 0 
+	grid 0 2 
+
+	# vertical
+	ctype 1
+	ltype 2 
+	grid 0 1 
+	ltype 0
+	ctype 2 
+
+	expand 1.5
+	box 0 0 0 0 
+
+	define jj 0
+	define interv $( ($gy2-$gy1)/$(dimen(aux_pointings_vec)) )
+	foreach code aux_pointings_vec {
+	   define jj ($jj+1)
+	   relocate ( $($gx1-1000) $( $gy2 - (($jj-1)*$interv + 0.5*$interv )) )
+	   putlabel 5 $code
+	}
+
+	if ( $what == 1 ) {
+	    expand 1.1
+	    relocate ( $(($gx1+$gx2)/2) $($gy2+1000) )
+	    putlabel 5 Difference with respect to previous XSED 
+	}
+	if ( $what == 2 ) {
+	    expand 1.1
+	    relocate ( $(($gx1+$gx2)/2) $($gy2+1000) )
+	    putlabel 5 Ratio of each XSED with respect to the previous one
+	}
+
+	#---------------------------------------------
+	# Plotting color scale
+	#
+
+	#---------------------------------------------
+	# defining color palette
+	#
+	color_map $ncolpalette $mappa
+
+	location 29500 31000 5000 29000
+	limits  0 1 $nfnmin $nfnmax 
+	ticksize 0 0 0 0 
+	expand 1.1
+	box 0 0 0 1
+
+	ptype 4 3 
+	expand 2.5
+
+	set ydum  = $nfnmin,$nfnmax,$(($nfnmax-$nfnmin)/50)
+	set colv2 = int( (dimen(coldum)-1)*((ydum - $nfnmin)/($nfnmax-$nfnmin))**$expo ) 
+
+	help ydum
+	help colv2
+
+	do k=0,$(dimen(ydum)-1) {
+	    ctype $(colv2[$k])
+	    foreach step ( 0.25 0.5 0.75 ) {
+	       # echo $step $(ydum[$k]) $(colv2[$k])
+	       relocate $step $(ydum[$k])
+	       dot
+	    }
+	}
+
+	#---------------------------------------------
+	# Restoring ColorMap
+	#
+        echo Restoring ColorMap
+	restore_colors_default
+
+	delete colours
+	delete cnames
+
+	lweight 3
+	do jj=1,$(dimen(all_pointings_vec)) {
+	   foreach 4 { kev dkev eufs ratio err_ratio lkev dx_d dx_u spec nufnu enufnu } {
+	       delete $4_$jj
+	   }
+	}
+	do jj=1,$(dimen(aux_pointings_vec)) {
+	   foreach 4 { dnufnu } {
+	       delete $4_$jj
+	   }
+	}
+	
+#---------------------------------------------------------------------------

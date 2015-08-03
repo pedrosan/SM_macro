@@ -1,0 +1,469 @@
+#------------------------------------------------------------------------------
+# define_physical_constants
+define_physical_constants
+
+	define nu_eV   ( 2.417989e14 )
+	define keV     ( 1.e3  )
+	define MeV     ( 1.e6  )
+	define GeV     ( 1.e9  )
+	define TeV     ( 1.e12 )
+	foreach 9 < k M G T > { 
+	    define 9 $9eV 
+	    define nu_$9 ( $nu_eV*$$9 ) 
+	}
+
+	#--- physical constants ---#
+	define pi      3.14159265358979
+	define EE      2.718281828459045  # exp(1)
+
+	define mp      1.6726231e-24        # mass of proton
+	define me      9.1093897e-28        # mass of electron
+  	define mpc2    0.001503278655148
+  	define mec2    8.1871111059e-7
+  	define emc2    8.1871111059e-7
+
+	define sigmaT  6.6524e-25
+	define c       2.9979245620e10 
+	define hplanck 6.62607556e-27
+	define nu_e    ($mec2/$hplanck)
+	define kboltz  1.380658e-16     # (erg/K) Boltzman constant
+	define sigma   5.67051e-5       # Stefan-Boltzmann constant
+	define G       6.67259e-08      # gravitational constant
+
+        define Msun    1.9891e33
+        define Lsun    3.826e33
+        define Rsun    6.9599e10
+
+
+	define nu_crit      ( 2.8e6 )
+	define nu_sync_crit ( 2.8e6 )
+	
+	define lg_nu_e ( lg($nu_e) )
+
+	define define_physical_constants_flag 1
+
+##--------------------------------------------------------------------------
+# lumdist [<H_0>] [<q_0>] [<z>]
+lumdist 03
+
+        define h0   70
+	define q0    0
+	define check 0
+
+	if($?1) { define check ($check+1) }
+	if($?2) { define check ($check+2) }
+	if($?3) { define check ($check+4) }
+
+	if($check == 0) { 
+	   define h0 ? { H_0 : }
+	   define q0 ? { q_0 : }
+	   define z  ? {   z : }
+	} else {
+	   if($check == 7) { 
+	      if( $1 > $2 ) {
+	        define h0  $1
+	        define q0  $2
+	      } else {
+	        define h0  $2
+	        define q0  $1
+	      }
+	      define z   $3
+	   } else {
+	     if($check == 1) { 
+	        echo Using defaults for H0=$h0 and q0=$q0
+	        define z $1
+	     } else {
+	        echo Macro lumdist requires 1 or input parameters:
+	        echo   lumdist <z>
+	        echo   lumdist <H_0> <q_0> <z>
+	        echo Quitting
+	        return
+	     }
+	   }
+	}
+	define h_small   ($h0/100.)
+	define log_c_H_0 (27.96616033 - lg($h_small))
+	if( $q0 == 0 ) { 
+	   define term ($z*(1. + 0.5*$z))
+	} else {
+	   define term ((1 - $q0 + $q0*$z + ($q0-1)*sqrt(1 + 2*$q0*$z))/$q0**2.)
+	}
+	define $0 ($log_c_H_0 + lg($term))
+
+##--------------------------------------------------------------------------
+# lumdist_vec [<H_0>] [<q_0>] 
+lumdist_vec 02
+
+        define h0   70
+	define q0    0
+	define check 0
+
+	if($?1) { define check ($check+1) }
+	if($?2) { define check ($check+2) }
+
+	if($check == 3) { 
+	   if( $1 > $2 ) {
+	     define h0  $1
+	     define q0  $2
+	   } else {
+	     define h0  $2
+	     define q0  $1
+	   }
+	} else {
+	   if($check > 0 && $check < 3 ) {
+	      echo " Macro lumdist_vec needs 0 or two parameters..."
+	      echo " Exiting "
+	      return
+	   } else {
+	      define h0 ? < H_0 : >
+	      define q0 ? < q_0 : >
+	   }
+	}
+	
+	define h_small   ($h0/100.)
+	define log_c_H_0 (27.96616033 - lg($h_small))
+	set zvec=0.01,3.0,0.01
+
+	if( $q0 == 0 ) { 
+	   set term = zvec*(1. + 0.5*zvec)
+	} else {
+	   set term = (1 - $q0 + $q0*zvec + ($q0-1)*sqrt(1 + 2*$q0*zvec))/$q0**2.
+	}
+	set d_l_vec = $log_c_H_0 + lg(term)
+
+##--------------------------------------------------------------------------
+# lumdist_zvec [<H_0>] [<q_0>] <array of z values>
+#     
+lumdist_zvec 13
+
+        define h0   70
+	define q0    0
+	define check 0
+
+	if($?1) { define check ($check+1) }
+	if($?2) { define check ($check+2) }
+	if($?3) { define check ($check+4) }
+
+	# if only one input, it must be the redshift array
+	if($check == 1) { 
+	   set zvec=$1
+	}
+
+	# if two inputs, the second must be the redshift array
+	#  the first can be either q0 or H0, decided based in the value.
+	if($check == 3) { 
+	   if( $1 > 40 ) {
+	     define h0  $1
+	   } else {
+	     define q0  $1
+	   }
+	   set zvec=$2
+	} 
+
+	if($check == 7) { 
+	   if( $1 > $2 ) {
+	     define h0  $1
+	     define q0  $2
+	   } else {
+	     define h0  $2
+	     define q0  $1
+	   }
+	   set zvec=$3
+	} 
+	
+	define h_small   ($h0/100.)
+	define log_c_H_0 (27.96616033 - lg($h_small))
+
+	if( $q0 == 0 ) { 
+	   set term = zvec*(1. + 0.5*zvec)
+	} else {
+	   set term = (1 - $q0 + $q0*zvec + ($q0-1)*sqrt(1 + 2*$q0*zvec))/$q0**2.
+	}
+	set d_l_vec = $log_c_H_0 + lg(term)
+
+##--------------------------------------------------------------------------
+butterfly 6 # arg[1,2,3]=alpha,+err,-err arg[4,5,6]=nu_0,nu_min,nu_max
+
+	set dimen(btfly)=5
+	set dimen(nufly)=5
+
+	set btfly[0]= -($1+$2)*($5-$4)
+        set btfly[1]= -($1+$2)*($6-$4)
+	set btfly[2]= -($1-$3)*($6-$4)
+	set btfly[3]= -($1-$3)*($5-$4)
+	set btfly[4]= -($1+$2)*($5-$4)
+	set nufly[0]= $5
+	set nufly[1]= $6
+	set nufly[2]= $6
+	set nufly[3]= $5
+	set nufly[4]= $5	
+
+##--------------------------------------------------------------------------
+# mag
+mag  
+
+	define mband ? < What photometric band [ubvrijhkl] : >
+
+	if('$mband'=='u' || '$mband'=='U') {define s0 (1880) define nu (14.920)}
+	if('$mband'=='b' || '$mband'=='B') {define s0 (4440) define nu (14.833)}
+	if('$mband'=='v' || '$mband'=='V') {define s0 (3480) define nu (14.732)}
+	if('$mband'=='r' || '$mband'=='R') {define s0 (3010) define nu (14.632)}
+	if('$mband'=='i' || '$mband'=='I') {define s0 (2550) define nu (14.522)}
+	if('$mband'=='j' || '$mband'=='J') {define s0 (1510) define nu (14.382)}
+	if('$mband'=='h' || '$mband'=='H') {define s0 ( 981) define nu (14.236)}
+	if('$mband'=='k' || '$mband'=='K') {define s0 ( 614) define nu (14.136)}
+	if('$mband'=='l' || '$mband'=='L') {define s0 ( 280) define nu (13.900)}
+
+	echo " The constant for Mag-Flux conversion is" $s0 "[Jy]"
+	echo " The frequency is : "$nu
+
+	define m  ? < magnitude is : > 
+	define z  ? <  redshift is : > 
+	define aa ? < spectral index (for K-correction) : >
+
+	define s  ($s0*10**(-$m/2.5))
+
+	define lg_s      (lg($s) - 23.)
+	define lg_nf_s   (lg($s) - 23. + $nu)
+
+	define h0 50
+	define q0 0
+	define h_100     ($h0/100.)
+	define log_c_H_0 (27.96616033 - lg($h_100))
+
+	define d_l      ($log_c_H_0+lg($z*(1. + 0.5*$z)))
+	define lg_kf_s  ($lg_s + ($aa-1.)*lg(1.+$z))
+	define l        (1.09920986 + 2.*$d_l + $lg_kf_s)
+	define n_l      ($l + $nu)
+
+	echo flux       = $s
+	echo luminosity = $l
+	echo nuLnu      = $n_l
+	relocate $nu $n_l
+	ptype 4 3
+	angle 45
+	expand 2
+	dot
+	angle 0
+	expand 1.5
+
+#--------------------------------------------------------------------------
+# ugriz_to_UBV
+ugriz_to_UBV
+
+	set sdss_B = sdss_g + 0.17*(sdss_u - sdss_g) + 0.11  # rms: 0.03
+	set sdss_V = sdss_g - 0.52*(sdss_g - sdss_r) - 0.03  # rms: 0.05
+	set sdss_UB = 0.75*(sdss_u - sdss_g) - 0.81          # rms: 0.03
+	set sdss_BV = 0.62*(sdss_g - sdss_r) + 0.15          # rms: 0.07
+	set sdss_VR = 0.38*(sdss_r - sdss_i) + 0.27          # rms: 0.09
+	set sdss_RI = 0.72*(sdss_r - sdss_i) + 0.27          # rms: 0.06
+
+	set sdss_U  = sdss_B + sdss_UB
+	set sdss_R  = sdss_V - sdss_VR
+
+##--------------------------------------------------------------------------
+## iras
+iras
+
+	define iras_band ? < What IRAS band [12/25/60/100] : >
+
+	define light (2.99792e8)
+	if('$iras_band'== '12') {define nu (lg($light/12e-6))}
+	if('$iras_band'== '25') {define nu (lg($light/25e-6))}
+	if('$iras_band'== '60') {define nu (lg($light/60e-6))}
+	if('$iras_band'=='100') {define nu (lg($light/100e-6))}
+
+	echo the frequency is : $nu
+
+	define s  ? < IRAS flux is [mJy] : > 
+	define z  ? <        redshift is : >
+	define aa ? < spectral index (for K-correction) : >
+
+	define lg_s      (lg($s) - 26.)
+	define lg_nf_s   (lg($s) - 26. + $nu)
+
+	define h0 50
+	define q0 0
+	define h_100     ($h0/100.)
+	define log_c_H_0 (27.96616033 - lg($h_100))
+
+	define d_l      ($log_c_H_0+lg($z*(1. + 0.5*$z)))
+	define lg_kf_s  ($lg_s + ($aa-1.)*lg(1.+$z))
+	define l        (1.09920986 + 2.*$d_l + $lg_kf_s)
+	define n_l      ($l + $nu)
+
+	echo flux       = $s   mJy
+	echo luminosity = $l
+	echo nuLnu      = $n_l
+	relocate $nu $n_l
+	ptype 4 3
+	angle 45
+	expand 2
+	dot
+	angle 0
+	expand 1.5
+
+##--------------------------------------------------------------------------
+# nfn_frame 01  [<empty>]
+nfn_frame   01
+
+	ctype 2
+	ltype 0
+	location 5500 31000 8500 30000
+
+	limits 8.5 18.2 -14.2 -9.2
+	ticksize 0.5 2 0.25 1
+	expand 1.5
+	box
+	xlabel log(\\nu)
+	ylabel log(\\nu F_{\\nu})
+
+	if ('$1' != 'empty') {
+	   expand 1.2
+	   ptype 4 3
+	   points vnu5   lg_nf_radio
+	   points vnumm  lg_nf_mm
+	   points vnuir  lg_nf_ir
+	   points vnuopt lg_nf_opt
+	   points vnux   lg_nf_x
+	}
+
+##--------------------------------------------------------------------------
+# nln_frame 01  [<empty>]
+nln_frame   01
+
+	ctype 2
+	ltype 0
+	location 5500 31000 8500 30000
+
+	# limits 8.5 24.9 41.1 47.9
+	limits 8.5 24.9 41.1 48.6
+	limits 8.5 24.9 41.1 50.5
+	limits 8.5 24.9 41.1 49.2
+	ticksize 0.5 2.0 0.25 1.
+	expand 1.5
+	box
+	xlabel log(\\nu)
+	ylabel log(\\nu L_{\\nu})
+
+	# if ($1 == 1) {
+	if ('$1' != 'empty') {
+	   expand 1.2
+	   ptype 4 3
+   	   points vnu5   nl_radio
+	   points vnumm  nl_mm
+	   points vnuir  nl_ir
+	   points vnuopt nl_opt
+	   points vnux   nl_x
+	}
+
+##--------------------------------------------------------------------------
+# deg_to_dec
+deg_to_dec 6
+
+	define ra_d  $( 15*($1+$2/60.+$3/3600.) )
+	define dec_d $( ($4+$5/60.+$6/3600.) )
+
+	echo Decimal coords: $(sprintf('%8.4f',$ra_d)) $(sprintf('%8.4f',$dec_d))
+
+#-------------------------------------------------------------------------------
+# hxtime
+hxtime 6
+
+       define y  $1
+       define m  $2
+       define id $3
+       define hh $4
+       define mm $5
+       define ss $6
+
+       echo "-------------------------------------------------"
+
+       define d    $( $id + $hh/24. + $mm/(24.*60.) + $ss/(24.*3600.) )
+       define imf  $( int(($m-14)/12) )
+       # echo "imf = "$imf " (for m="$m")"
+
+       define ijd1 $( int(1461*($y + 4800 + $imf)/4) )
+       define ijd2 $( int( 367*($m - 2 - $imf*12)/12 ) )
+       define ijd3 $( int(   3*int(($y + 4900 + $imf)/100)/4 ) )
+
+       echo " ijd1/2/3        : " $ijd1 $ijd2 $ijd3
+
+       # jd = ( 1461 * ( y + 4800 + ( m - 14 ) / 12 ) ) / 4 +
+       #    ( 367 * ( m - 2 - 12 * ( ( m - 14 ) / 12 ) ) ) / 12 -
+       #    ( 3 * ( ( y + 4900 + ( m - 14 ) / 12 ) / 100 ) ) / 4 +
+       #    d - 32075
+
+       # define ijd  $( $id - 32075 + 1461*int(($y + 4800 + $imf)/4) + 367*int(($m - 2 - $imf*12)/12) - 3*int((($y + 4900 + $imf)/100)/4) )
+       define ijd      $( $id - 32075 + $ijd1 + $ijd2 - $ijd3 )
+       define ijd_alt  $( $id - 32075 + int($ijd1) + int($ijd2) - int($ijd3) )
+
+       define jd   $( ($ijd - 0.5) + ($d - $id) )
+
+       # echo " d , id          : "$d $id
+       # echo " IJD and IJD_alt : "$ijd  $ijd_alt
+       echo " JD              : "$(sprintf('%.6f',$jd))
+
+       echo "-------------------------------------------------"
+       systemcall jd.x $1 $2 $3 $4 $5 $6
+       # systemcall hxtime -d $1 $2 $3 $4 $5 $6
+       echo "-------------------------------------------------"
+
+#-------------------------------------------------------------------------------
+# date_to_jd
+date_to_jd 36
+
+       define y  $1
+       define m  $2
+       define id $3
+       if( $?4 ) {
+          define hh $4
+       } else {
+          define hh 0
+       }
+       if( $?5 ) {
+          define mm $5
+       } else {
+          define mm 0
+       }
+       if( $?6 ) {
+          define ss $6
+       } else {
+          define ss 0
+       }
+
+       echo "-------------------------------------------------"
+
+       define d    $( $id + $hh/24. + $mm/(24.*60.) + $ss/24./3600. )
+       define imf  $( int(($m-14)/12) )
+       # echo "imf = "$imf " (for m="$m")"
+
+       define ijd1 $( int(1461*($y + 4800 + $imf)/4) )
+       define ijd2 $( int( 367*($m - 2 - $imf*12)/12 ) )
+       define ijd3 $( int(   3*int(($y + 4900 + $imf)/100)/4 ) )
+
+       echo " ijd1/2/3        : " $ijd1 $ijd2 $ijd3
+
+       # jd = ( 1461 * ( y + 4800 + ( m - 14 ) / 12 ) ) / 4 +
+       #    ( 367 * ( m - 2 - 12 * ( ( m - 14 ) / 12 ) ) ) / 12 -
+       #    ( 3 * ( ( y + 4900 + ( m - 14 ) / 12 ) / 100 ) ) / 4 +
+       #    d - 32075
+
+       # define ijd  $( $id - 32075 + 1461*int(($y + 4800 + $imf)/4) + 367*int(($m - 2 - $imf*12)/12) - 3*int((($y + 4900 + $imf)/100)/4) )
+       define ijd      $( $id - 32075 + $ijd1 + $ijd2 - $ijd3 )
+       define ijd_alt  $( $id - 32075 + int($ijd1) + int($ijd2) - int($ijd3) )
+
+       define jd   $( ($ijd - 0.5) + ($d - $id) )
+
+       # echo " d , id          : "$d $id
+       # echo " IJD and IJD_alt : "$ijd  $ijd_alt
+       echo " JD              : "$(sprintf('%.6f',$jd))
+       set testv = < $jd >
+       print test ' JD              : %.6f' < testv >
+
+       echo "-------------------------------------------------"
+       systemcall jd.x $y $m $id $hh $mm $ss
+       # systemcall hxtime -d $1 $2 $3 $4 $5 $6
+       echo "-------------------------------------------------"
+
+#-------------------------------------------------------------------------------

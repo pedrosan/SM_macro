@@ -1,0 +1,1353 @@
+#------------------------------------------------------------------------------
+# load_fits_def : load FINAL fits for 1997/1998/2000a/2001
+#               : NEEDS to read first the GTI files  (113 intervals).
+#               : USE read_gti_new on 'orbit_mecs2' and 'sec_pca'
+load_fits_def
+
+
+        #---------------------------------------------------------------------
+        # Preliminary checking
+        #---------------------------------------------------------------------
+        if(!$(is_macro(read_gti_new))) {
+            echo "WARNING: this macro REQUIRES 'read_gti_new' included in light_curve.sm"
+            return
+        }
+
+        #---------------------------------------------------------------------
+	# read_the data
+	#
+	define year ? { * What year [1997/1998/2000/2001] : }
+
+	#
+	# foreach case array will be called with suffix:
+	#    bkn97 , cur97
+	#    bkn98 , cur98
+	#    bkn00 , cur00
+	#
+	define REPO "/home/gfossati/Science/Mkn421/2000/Temporal"
+
+	echo "----- What Model\'s Fits ----"
+	if( $year == 1997 ) {
+	   echo " [0] MECS pl  "
+	   echo " [1] bkn pl - test 1 "
+	   echo " [2] curved - fold=1&2&3 (run3) "
+	   define run ? < * Select : >
+
+	   if( $run == 0 ) {
+	       define datafile "$!REPO/final_97_mecs_pl.dat"
+	       define 3 pl97
+	   } 
+	   if( $run == 1 ) {
+	       define datafile "$!REPO/final_97_bkn.dat"
+	       define 3 bkn97
+	   } 
+	   if( $run == 2 ) {
+	       define datafile "$!REPO/final_97_curved.dat"
+	       define 3 cur97
+	       define fold 3
+	   }
+	}
+
+	if( $year == 1998 ) {
+	   echo " [0] MECS pl "
+	   echo " [1] bkn pl - test 1"
+	   echo " [2] curved - fold=1&2&3 (run3)"
+	   define run ? < * Select : >
+
+	   if( $run == 0 ) {
+	       define datafile "$!REPO/final_98_mecs_pl.dat"
+	       define 3 pl98
+	   } 
+	   if( $run == 1 ) {
+	       define datafile "$!REPO/final_98_bkn.dat"
+	       define 3 bkn98
+	   } 
+	   if( $run == 2 ) {
+	       define datafile "$!REPO/final_98_curved.dat"
+	       define 3 cur98
+	       define fold 3
+	   }
+	}
+
+	if( $year == 2000 ) {
+	   echo " [0] MECS pl"
+	   echo " [1] bkn pl - test 1     (run1)"
+	   echo " [2] curved - fold=1&2&3 (run3)"
+	   define run ? < * Select : >
+
+	   if( $run == 0 ) {
+	       define datafile "$!REPO/final_00_mecs_pl.dat"
+	       define 3 pl00
+	   } 
+	   if( $run == 1 ) {
+	       define datafile "$!REPO/final_00_bkn.dat"
+	       define 3 bkn00
+	   } 
+	   if( $run == 2 ) {
+	       define datafile "$!REPO/final_00_curved.dat"
+	       define 3 cur00
+	       define fold 3
+	   }
+	}
+
+	if( $year == 2001 ) {
+	   echo " [0]  PCA pl  with systematics "
+	   echo " [1a] PCA bkn with systematics "
+	   echo " [1b] PCA bkn  NO  systematics "
+	   define run ? < * Select : >
+
+	   echo run = $run
+
+	   if( substr('$run',0,1) == '0' ) {
+	       echo " Loading XTE 2001 spl data "
+	       define datafile "$!REPO/final_01_spl.dat"
+	       define 3 spl01
+	   } 
+	   if( substr('$run',0,1) == '1' ) {
+	      if( substr('$run',1,1) == 'a' ) {
+	          echo " Loading XTE 2001 sbkn data "
+	          define datafile "$!REPO/final_01_sbkn.dat"
+	          define 3 sbkn01
+	      } 
+	      if( substr('$run',1,1) == 'b' ) {
+	          echo " Loading XTE 2001 bkn data "
+	          define datafile "$!REPO/final_01_bkn.dat"
+	          define 3 bkn01
+	      }
+	   }
+
+	   echo " for 2001 datacode is : " $3 
+	}
+
+
+	set _time  local
+	set _dtime local
+	set _time1 local
+	set _time2 local
+
+	data "$!datafile"
+
+	#-------------------------------------------------------
+	# simple power law, MECS only
+	if( substr('$run',0,1) == '0' ) {
+	   read < chi2_$3 1 >
+	   read < f_med_$3 2 f_hard_$3 3 f_all_$3 4 >
+	   read < g_$3  5 err_a_$3_u  6 err_a_$3_d  7 >
+	   set a_$3 = g_$3 - 1 
+	   delete g_$3
+	   define npars 5
+	} 
+	#-------------------------------------------------------
+	# broken power law
+	if( substr('$run',0,1) == '1' ) {
+	   read < chi2_$3 1 factor_$3 2 >
+	   read < f_soft_$3 3 f_med_$3 4 f_hard_$3 5 f_all_$3 6 >
+	   read < g1_$3  7 err_a1_$3_u  8 err_a1_$3_d  9 >
+	   read < g2_$3 10 err_a2_$3_u 11 err_a2_$3_d 12 >
+	   read < eb_$3 13 err_eb_$3_u 14 err_eb_$3_d 15 >
+	   foreach 8 < '1' '2' > {
+	       set a$8_$3 = g$8_$3 - 1 
+	       delete g$8_$3
+	   }
+	   define npars 9
+	} 
+	#-------------------------------------------------------
+	# curved model
+	if( substr('$run',0,1) == '2' ) {
+	   read < chi2_$3 1 factor_$3 2 >
+	   read < f_soft_$3 3 f_med_$3 4 f_hard_$3 5 f_all_$3 6 >
+	   read < ep_$3  7 err_ep_$3_u  8 err_ep_$3_d  9 >
+	   read < eb_$3 10 err_eb_$3_u 11 err_eb_$3_d 12 >
+	   read < g01_$3 13 err_a01_$3_u 14 err_a01_$3_d 15 >
+	   read < g05_$3 16 err_a05_$3_u 17 err_a05_$3_d 18 >
+	   read < g5_$3  19 err_a5_$3_u  20 err_a5_$3_d  21 >
+	   read < g10_$3 22 err_a10_$3_u 23 err_a10_$3_d 24 >
+	   read < f0_$3  25 >
+	   foreach 8 < '01' '05' '5' '10' > {
+	       set a$8_$3 = g$8_$3 - 1 
+	       delete g$8_$3
+	   }
+	   define npars 12
+	   #
+	   # calculates theoretical value of E_peak
+   	   #
+	   define e1 (0.5)
+	   define e2 (5.0)
+	   set _x = ($e1/eb_$3)**$fold
+	   set _y = ($e2/eb_$3)**$fold
+	   set _ax = a05_$3
+	   set _ay = a5_$3
+	   set _a1 = ( _ax*(1 + _x)*_y - _ay*_x*(1 + _y))/(_y - _x)
+	   set _a2 = ( _ay*(1 + _y) - _ax*(1 + _x))/(_y - _x)
+
+	   set ept_$3 = eb_$3*((1 - _a1)/(_a2 - 1))**(1./$fold)
+
+	   foreach vec < _x _y _ax _ay _a1 _a2 > { 
+	      delete $vec
+	   }
+
+	   set dimen(f_peak_$3) = $(dimen(f_soft_$3))
+	   do 1=0,$(dimen(f_soft_$3)-1) {
+	      flux_curved_model 3 $(a05_$3[$1]) $(a5_$3[$1]) $(eb_$3[$1]) $(ep_$3[$1]) $(f0_$3[$1])
+	      set f_peak_$3[$1] = $intflux*1e10
+	   }
+	   set fp_$3 = f_peak_$3
+	}
+
+	if( $year <= 2000 ) { 
+	   if( substr('$run',0,1) == '0' ) {
+	        define dof (30) 
+	   }
+	   if( substr('$run',0,1) == '1' || substr('$run',0,1) == '2' ) {
+	        define dof (64) 
+	   }
+	}
+	if( $year == 2001 ) { 
+	   if( substr('$run',0,1) == '0' ) {
+	        define dof (26) 
+	   }
+	   if( substr('$run',0,1) == '1' || substr('$run',0,1) == '2' ) {
+	        define dof (31) 
+	   }
+	}
+
+	set chi2_$3 = chi2_$3/$dof
+	define nmax $(dimen(f_hard_$3))
+
+	if( $year == 1997 ) { define testvec "gti_tm_orbit_mecs2" }
+	if( $year == 1998 ) { define testvec "gti_tm_orbit_mecs2" }
+	if( $year == 2000 ) { define testvec "gti_tm_orbit_mecs2" }
+
+	if( $year == 2001 ) { define testvec "gti_tm_sec_pca" }
+	
+	if(!$(is_vector($testvec))) {
+	   bell 
+	   echo " "
+	   echo "  WARNING WARNING WARNING WARNING WARNING WARNING"
+	   echo " "
+	   echo "         Requires to load the GTI first "
+	   echo "         Use read_gti_new "
+	   echo " "
+	   echo "  WARNING WARNING WARNING WARNING WARNING WARNING"
+	   return
+	}
+
+	if( $year <= 2000 ) {
+	    set j=1,$(dimen(gti_tm_orbit_mecs2)) 
+	    set _time1 = gti_t1_orbit_mecs2     if( j <= $nmax )
+	    set _time2 = gti_t2_orbit_mecs2     if( j <= $nmax )
+	    set _time  = gti_tm_orbit_mecs2     if( j <= $nmax )
+	    set _dtime = gti_dt_s_orbit_mecs2   if( j <= $nmax )
+	}
+	if( $year == 2001 ) {
+	    set j=1,$(dimen(gti_tm_sec_pca)) 
+	    set _time1 = gti_t1_sec_pca     if( j <= $nmax )
+	    set _time2 = gti_t2_sec_pca     if( j <= $nmax )
+	    set _time  = gti_tm_sec_pca     if( j <= $nmax )
+	    set _dtime = gti_dt_s_sec_pca   if( j <= $nmax )
+	}
+
+	foreach 1 < soft_$3 med_$3 hard_$3 all_$3 > {
+	    set f_$1 = f_$1*1e10
+	}
+
+	set dimen(pr0) = $npars.s
+	set dimen(pr1) = $npars
+	set dimen(pr2) = $npars
+	set dimen(pr3) = $npars
+	set dimen(pr4) = $npars
+
+	set tmp_names1_0 = < f_med f_hard f_all chi2 >
+	set tmp_names1_1 = < f_soft f_med f_hard f_all chi2 factor > # removed factor 
+	set tmp_names1_2 = < f_soft f_med f_hard f_all fp f_peak chi2 factor > # removed factor
+	set tmp_names1_1a = tmp_names1_1
+	set tmp_names1_1b = tmp_names1_1
+	define j 0
+	echo "-------------------------------------------------------------------------"
+	echo "       PARAMETER          MIN.     MAX.      AVRG +/- SIGMA "
+	echo "-------------------------------------------------------------------------"
+	foreach 1 tmp_names1_$run {
+	    define 1 $1_$3
+	    set newt_$1     = _time
+	    set newt1_$1    = _time1
+	    set newt2_$1    = _time2
+	    set newbin_$1   = _dtime
+	    set rate_$1     = $1
+	    set err_rate_$1 = 0.05*$1
+	    set cvrfr_$1    = 0*$1 + 1
+	    vecminmax rate_$1 a b 
+	    stats rate_$1 m s k
+	    set pr0[$j] = ' $!1 : '
+	    set pr1[$j] = $a
+	    set pr2[$j] = $b 
+	    set pr3[$j] = $m
+	    set pr4[$j] = $s
+	    define j $($j+1)
+	}
+
+	set tmp_names2_0 = < a > 
+	set tmp_names2_1 = < a1 a2 eb > 
+	set tmp_names2_2 = < a01 a05 a5 a10 eb ep > 
+	set tmp_names2_1a = tmp_names2_1
+	set tmp_names2_1b = tmp_names2_1
+
+	foreach 1 tmp_names2_$run {
+	    define 1 $1_$3
+	    set newt_$1     = _time
+	    set newt1_$1    = _time1
+	    set newt2_$1    = _time2
+	    set newbin_$1   = _dtime
+	    set rate_$1     = $1
+	    set err_rate_$1_u = err_$1_u
+	    set err_rate_$1_d = err_$1_d
+	    set cvrfr_$1    = 0*$1 + 1
+	    vecminmax rate_$1 a b 
+	    stats rate_$1 m s k
+	    set pr0[$j] = ' $!1 : '
+	    set pr1[$j] = $a
+	    set pr2[$j] = $b 
+	    set pr3[$j] = $m
+	    set pr4[$j] = $s
+	    define j $($j+1)
+	}
+
+	foreach var { a b m s k } { 
+	    define $var delete
+	}
+	define print_noheader 1
+	print  '  %18s   %7.3f  %7.3f  [%7.3f +/- %7.3f]\n' < pr0 pr1 pr2 pr3 pr4 >
+	define print_noheader 0
+	echo "-------------------------------------------------------------------------"
+	stats chi2_$3 mchi2 schi2 kchi2
+	echo   <Chi^2> = $mchi2 [$schi2]
+	echo "-------------------------------------------------------------------------"
+
+#---------------------------------------------------------------------------
+# flux_curved_model: 
+#               [1]= fold
+#               [2]= alpha_e1(0.5keV)
+#               [3]= alpha_e2(5.0keV)
+#               [4]= E_break
+#               [5]= E_peak
+#               [6]= norm
+flux_curved_model 06
+
+	define e1      (0.5)
+	define e2      (5.0)
+
+	define fold     $1
+	define g1       $2
+	define g2       $3
+	define e_break  $4
+	define e_peak   $5
+	define realnorm $6
+
+	define temp (lg($realnorm))
+
+	define xb (lg($e_break))
+	define x1 (lg($e1))
+	define x2 (lg($e2))
+
+	define dum1 ( exp(2.302*($x1 - $xb)*$fold) )
+	define dum2 ( exp(2.302*($x2 - $xb)*$fold) )
+
+	define a1 ( ($g1*$dum2*(1+$dum1)-$g2*$dum1*(1+$dum2))/($dum2-$dum1) ) 
+	define a2 ( ($g2*(1+$dum2)-$g1*(1+$dum1))/($dum2-$dum1) ) 
+
+	define normdum  ( -2.302585093*$xb*$fold )
+	define normdumf ( ($a1 - $a2)*lg(1. + exp($normdum))/$fold )
+
+	# define evector around E_peak
+	#
+	define lg_elow  $(lg($e_peak)-0.15)
+	define lg_ehigh $(lg($e_peak)+0.15)
+	define elow  $(exp(2.302585093*$lg_elow))
+	define ehigh $(exp(2.302585093*$lg_ehigh))
+	define estep $(($ehigh-$elow)/50.)
+
+	#set evec=$elow,$ehigh,$estep
+	set evec=$elow,$ehigh,0.01
+	# set evec=2,10,0.01
+	set lg_e = lg(evec)
+
+	set dum  = 2.302585*(lg_e - $xb)*$fold
+	set lg_f = -$a1*lg_e + ($a1 - $a2)*lg(1 + exp(dum))/$fold
+	set lg_f = lg_f - $normdumf + lg($realnorm)
+
+	#   fnu [erg/cm^2/s/Hz]
+	#  efnu [erg/cm^2/s/keV]
+	# nufnu [erg/cm^2/s]
+	#
+	## set fnu   = lg_f + lg(662.6176) - 29. 
+	set efnu  = exp(2.302585093*(lg_f + lg(662.6176) - 29. + 17.383))
+	## set nufnu = lg_f + lg(662.6176) - 29. + lg_e + 17.383
+
+	set dimen(dx)=$(dimen(evec)-1)
+	set dimen(ff)=$(dimen(evec)-1)
+
+	do 1=0,$(dimen(lg_e)-2) {
+	  set dx[$1] = (evec[$1+1] - evec[$1])
+	  set ff[$1] = (efnu[$1+1] + efnu[$1])/2.
+	}
+
+	define intflux $(sum(dx*ff))
+
+#------------------------------------------------------------------------------
+# ep_th
+ep_th 04
+
+	define e1 ? < + E_ref1  : > 
+	define e2 ? < + E_ref2  : > 
+	define eb ? < + E_break : > 
+	define g1 ? < + Gamma_1 : >
+	define g2 ? < + Gamma_2 : >
+
+	define fold 3
+	echo "* using fold = "$fold
+
+	define x  ( ($e1/$eb)**$fold )
+	define y  ( ($e2/$eb)**$fold )
+	define ax ( $g1 - 1 )
+	define ay ( $g2 - 1 )
+	define a1 ( ( $ax*(1 + $x)*$y - $ay*$x*(1 + $y))/($y - $x) )
+	define a2 ( ( $ay*(1 + $y) - $ax*(1 + $x))/($y - $x) )
+	define ep ( $eb*((1 - $a1)/($a2 - 1))**(1./$fold) )
+
+	echo "-----------------------"
+	echo "*** E_peak = "$ep
+	echo "-----------------------"
+
+#------------------------------------------------------------------------------
+# compare_params
+compare_params
+
+	reset_graph
+
+	# calls the macro that sets the necessary flags
+	
+	define data1 ? < Case 1 code : >
+	define data2 ? < Case 2 code : >
+	define 1 $data1
+	define 2 $data2
+
+	set nseq_$1=1,$(dimen(chi2_$1))
+	set nseq_$2 = nseq_$1
+
+	echo "---- Available Fit Parameters ----"
+	echo " + F 0.2- 1  = f_soft "
+	echo " + F 1.0- 2  = f_med "
+	echo " + F 2.0-10  = f_hard "
+	echo " + F 0.1-10  = f_all "
+	echo " + Chi^2     = chi2 "
+	echo " + LECS/MECS = factor "
+	echo " --------------------"
+	echo " + Gamma 0.1 = a01"
+	echo " + Gamma 0.5 = a05"
+	echo " + Gamma 5   = a5"
+	echo " + Gamma 10  = a10"
+	echo " --------------------"
+	echo " + Gamma_1   = a1 "
+	echo " + Gamma_2   = a2 "
+	echo " --------------------"
+	echo " + E_Break   = eb "
+	echo " + E_peak    = ep"
+	echo " "
+	echo " + N_seq.    = nseq"
+	echo "----------------------------------"
+
+	define _x ? < First  Parameter : >
+	define _y ? < Second Parameter : >
+	define 3 $_x
+	define 4 $_y
+
+	if( substr('$3',0,3) == 'nse' ) {
+	   set _x  = $3_$1
+	   set _y1 = $4_$1
+	   set _y2 = $4_$2
+	   set _res = (_y1 - _y2)/_y2
+	} else { 
+	   set _x  = $3_$1
+	   set _y1 = $4_$2
+	   set _res = (_y1 - _x)/_x
+	} 
+
+	# compute the "residuals" array.
+
+	set _abs_res = abs(_res)
+	vecminmax _abs_res mindev maxdev
+
+	define cumdeviation $(sum(_res)/dimen(_x))
+	define deviation    $(sum(abs(_res))/dimen(_x))
+	echo " * Average     Deviation  = "$cumdeviation
+	echo " * Average abs(Deviation) = "$deviation
+	echo " * Max.        Deviation  = "$maxdev
+
+	delete _abs_res
+	define mindev delete
+	define maxdev delete
+
+	#--- Fluxes ---
+	if( substr('$3',0,2) == 'f_' ) {
+	   define xtick -1 
+	   define xlims "$(lg(0.1)) $(lg(12.0)) "
+	   set _x = lg(_x)
+	   set _y1 = lg(_y1)
+	}
+	if( substr('$4',0,2) == 'f_' ) {
+	   define ytick -1 
+	   define ylims "$(lg(0.1)) $(lg(12.0)) "
+	   set _y2 = lg(_y2)
+	}
+
+	#--- E_peak / E_break ---
+	if( substr('$3',0,1) == 'e' ) {
+	   define xtick -1 
+	   define xlims "$(lg(0.1)) $(lg(12.0)) "
+	   set _x = lg(_x)
+	   set _y1 = lg(_y1)
+	}
+	if( substr('$4',0,1) == 'e' ) {
+	   define ytick -1 
+	   define ylims "$(lg(0.1)) $(lg(12.0)) "
+	   set _y2 = lg(_y2)
+	}
+
+	#--- Factor ---
+	if( substr('$3',0,3) == 'fac' ) {
+	   define xtick 0
+	   define xlims "0.65 0.85 "
+	}
+	if( substr('$4',0,3) == 'fac' ) {
+	   define ytick 0
+	   define ylims "0.65 0.85 "
+	}
+
+	#--- Chi^2 ---
+	if( substr('$3',0,3) == 'chi' ) {
+	   define xtick 0
+	   define xlims "0.5 2.1"
+	}
+	if( substr('$4',0,3) == 'chi' ) {
+	   define ytick 0
+	   define ylims "0.5 2.1"
+	}
+
+	#--- Gamma01/05---
+	if( substr('$3',0,2) == 'a0' ) {
+	   define xtick 0
+	   define xlims "1.25 0.51"
+	}
+	if( substr('$4',0,2) == 'a0' ) {
+	   define ytick 0
+	   define ylims "1.25 0.51"
+	}
+
+	#--- Gamma5---
+	if( substr('$3',0,2) == 'a5' ) {
+	   define xtick 0
+	   define xlims "2.1 0.9"
+	}
+	if( substr('$4',0,2) == 'a5' ) {
+	   define ytick 0
+	   define ylims "2.1 0.9"
+	}
+
+	#--- Gamma10 ---
+	if( substr('$3',0,3) == 'a10' ) {
+	   define xtick 0
+	   define xlims "2.2 0.9"
+	}
+	if( substr('$4',0,3) == 'a10' ) {
+	   define ytick 0
+	   define ylims "2.2 0.9"
+	}
+
+	#--- Gamma1 ---
+	if( substr('$3',0,2) == 'a1' ) {
+	   define xtick 0
+	   define xlims "1.3 0.51"
+	}
+	if( substr('$4',0,2) == 'a1' ) {
+	   define ytick 0
+	   define ylims "1.3 0.51"
+	}
+
+	#--- Gamma2 ---
+	if( substr('$3',0,2) == 'a2' ) {
+	   define xtick 0
+	   define xlims "2.1 0.81"
+	}
+	if( substr('$4',0,2) == 'a2' ) {
+	   define ytick 0
+	   define ylims "2.1 0.81"
+	}
+
+	#--- N_sequence ---
+	if( substr('$3',0,3) == 'nse' ) {
+	   define xtick 0
+	   define xlims "-5 $(dimen(nseq_$1)+5)"
+
+	   if( substr('$4',0,2) == 'f_' || substr('$4',0,2) == 'eb' || substr('$4',0,2) == 'ep' ) {
+	      set _y1 = lg(_y1)
+	      # set _y2 = lg(_y2)
+	   }
+	}
+
+	ctype 2 
+	lweight 3 
+	ltype 0 
+	expand 1.5
+
+	window 1 1 1 1 
+	location 5500 31000 6000 31000 
+
+	ticksize $xtick 0 $ytick 0
+	limits $xlims $ylims
+
+	if( substr('$3',0,3) == 'nse' ) {
+	    window 1 -4 1 1:3
+	} 
+
+	box
+
+	xlabel $3
+	ylabel $4
+
+	expand 1.05
+	ptype 4 3 
+	ctype 5 
+	points _x _y1
+
+	if( substr('$3',0,3) == 'nse' ) {
+	   ctype 4 
+	   ltype 2 
+	   pairs _x _y1 _x _y2
+	   ctype 3 
+	   points _x _y2
+	}
+
+	if( substr('$3',0,3) == 'nse' && substr('$4',0,3) == 'chi') {
+	    ltype 2 
+	    ctype 4 
+	    relocate -10 1 draw 1000 1 
+	}
+
+	if( '$3' == '$4' ) {
+	    ltype 2 
+	    ctype 4 
+	    relocate -10 -10 draw 10 10
+	}
+
+	ltype 0
+	ctype 2 
+
+	# when plotting vs. N_sequence, adds a top box with the residuals
+	#
+	if( substr('$3',0,3) == 'nse' ) {
+	    window 1 -4 1 4
+	    ticksize 0 0 0 0
+	    limits $xlims -0.2 0.2
+	    box 0 2 0 0 
+	    ylabel (v1-v2)/v2
+	    ctype 3 
+	    ltype 2 
+	    relocate -10 0 draw 1000 0
+	    ctype 5 
+	    ltype 0
+	    points _x _res
+	} 
+
+	ltype 0
+	ctype 2
+	window 1 1 1 1 
+	relocate ( $gx1 $($gy2+500) )
+	ctype 5
+	putlabel 6 v1= $1
+	relocate ( $gx2 $($gy2+500) )
+	ctype 3 
+	putlabel 4 v2= $2
+
+	delete _x
+	delete _y1
+	delete _y2
+	delete _res
+
+	#-------------------
+	# reset graphics to lower panel
+	ctype 2 
+	lweight 3 
+	ltype 0 
+	expand 1.5
+	if( substr('$3',0,3) == 'nse' ) {
+	    ticksize $xtick 0 $ytick 0
+	    limits $xlims $ylims
+	    window 1 -4 1 1:3
+	    box
+	} 
+
+#------------------------------------------------------------------------------
+# input_basic_info
+input_basic_info
+
+	define year ? < * What year [1997/1998/2000] : >
+
+	if( $year == 1997 ) {
+	   echo "--- Summary of analysis runs ---"
+	   echo " [1] bkn pl , 1997 data - test 1"
+	   echo " [2] bkn pl , 1997 data - test 2"
+	   echo " [3] curved , 1997 data - fold=1&2&3 (test-1)"
+	   echo " [4] curved , 1997 data - fold=1&2&3 (test-2)"
+	   define run ? < *           Which analysis run : >
+	   define 3 $run
+
+	   if( $run == 1 || $run == 2 ) {
+	       define 3 bkn$3
+	   } 
+	   if( $run == 3 || $run == 4 ) {
+	       define fold ? < * Which Fold parameter [1|2|3] : >
+	       define 3 curved$3_f$fold
+	   }
+	   define 4 d97_$3
+	}
+
+	if( $year == 1998 ) {
+	   echo "--- Summary of analysis runs ---"
+	   echo " [1] bkn pl , 1998a data - test 1"
+	   echo " [2] curved , 1998a data - fold=1&2&3 (test-1)"
+	   echo " [3] curved , 1998a data - fold=1&2&3 (test-2)"
+	   echo " [4] curved , 1998a data - fold=1&2&3 (test-3)"
+	   define run ? < *** Which analysis run : >
+	   define 3 $run
+
+	   if( $run == 1 ) {
+	       define 3 bkn$3
+	   } 
+	   if( $run == 2 || $run == 3 ) {
+	       define fold ? < Which Fold parameter [1|2|3] : >
+	       define 3 curved$3_f$fold
+	   }
+	   define 4 d98a_$3
+	}
+
+	if( $year == 2000 ) {
+	   echo "--- Summary of analysis runs ---"
+	   echo " [1] bkn pl , 2000a data - test 1"
+	   echo " [2] bkn pl , 2000a data - test 2"
+	   echo " [3] curved , 2000a data - fold=1&2 (test-1)"
+	   echo " [4] curved , 2000a data - fold=1&2 (test-2)"
+	   echo " [5] curved , 2000a data - fold=1&2 (test-3)"
+	   echo " " 
+	   echo " [6] bkn pl , 2000b data - test 3 "
+	   echo " [7] curved , 2000b data - fold=1&2 "
+	   define run ? < *** Which analysis run : >
+	   define 3 $run
+
+	   if( $run == 1 || $run == 2 ) {
+	       define 3 bkn$3
+	       define 4 d00a_$3
+	   } 
+	   if( $run == 3 || $run == 4 || $run == 5 ) {
+	       define fold ? < Which Fold parameter [1|2] : >
+	       define 3 curved$3_f$fold
+	       define 4 d00a_$3
+	   }
+	   if( $run == 6 ) {
+	       define 3 bkn$3
+	       define 4 d00b_$3
+	   }
+	   if( $run == 7 ) {
+	       define fold ? < Which Fold parameter [1|2] : >
+	       define 3 curved$3_f$fold
+	       define 4 d00b_$3
+	   }
+
+	}
+
+	define shortnamestring $3
+	define longnamestring  $4
+
+##------------------------------------------------------------------------------
+## load_fits  : OLD OLD OLD loads fits of 2000 SAX data.
+##            : OLD OLD OLD NEEDS to read first the GTI files  (113 intervals).
+load_fits
+
+	bell
+	bell
+	bell
+	echo " "
+	echo "  WARNING WARNING WARNING WARNING WARNING WARNING"
+	echo " "
+	echo "         OBSOLETE PROGRAM "
+	echo " "
+	echo "  WARNING WARNING WARNING WARNING WARNING WARNING"
+	echo " "
+	echo " "
+	return
+	
+	# calls the macro that sets the necessary flags
+	#
+	input_basic_info
+	#
+	# returns 'shortnamestring' = $3 = string WITHOUT year [e.g. curved2_f2 ]
+	# returns 'longnamestring'  = $4 = string WITH year, used for filename [e.g. d00a_curved2_f2 ]
+	#
+	define 3 $longnamestring
+	define 4 $longnamestring
+
+	define nlstr $(strlen('$3'))
+	if( substr('$3',0,$nlstr) == 'd00a_curved3_f3' ) {
+	   echo "** Real E_peak exist for this case...loading them..."
+	   data fits_d00a_curved3_p3.dat
+	   read < chi2p1_$3 1 ep1_$3 2 e_ep1_$3_u 3 e_ep1_$3_d  4 eb1_$3  6 >
+	   read < chi2p2_$3 7 ep2_$3 8 e_ep2_$3_u 9 e_ep2_$3_d 10 eb2_$3 12 >
+	   set e_lg_ep1_$3_u = lg(ep1_$3 + e_ep1_$3_u) - lg(ep1_$3)
+	   set e_lg_ep1_$3_d = lg(ep1_$3) - lg(ep1_$3 - e_ep1_$3_u)
+	   set e_lg_ep2_$3_u = lg(ep2_$3 + e_ep2_$3_u) - lg(ep2_$3)
+	   set e_lg_ep2_$3_d = lg(ep2_$3) - lg(ep2_$3 - e_ep2_$3_u)
+	}
+
+	set _time  local
+	set _dtime local
+	set _time1 local
+	set _time2 local
+
+	data fits_$4.dat
+
+	read < chi2_$3 1 factor_$3 2 >
+	read < f_soft_$3 3 f_med_$3 4 f_hard_$3 5 f_all_$3 6 >
+	read < g1_$3  7 e_g1_$3_u  8 e_g1_$3_d  9 >
+	read < g2_$3 10 e_g2_$3_u 11 e_g2_$3_d 12 >
+	read < eb_$3 13 e_eb_$3_u 14 e_eb_$3_d 15 >
+
+	define e1 (0.5)
+	define e2 (5.0)
+	set _x = ($e1/eb_$3)**$fold
+	set _y = ($e2/eb_$3)**$fold
+	set _ax = g1_$3 - 1
+	set _ay = g2_$3 - 1
+	set _a1 = ( _ax*(1 + _x)*_y - _ay*_x*(1 + _y))/(_y - _x)
+	set _a2 = ( _ay*(1 + _y) - _ax*(1 + _x))/(_y - _x)
+	set ep_$3 = eb_$3*((1 - _a1)/(_a2 - 1))**(1./$fold)
+
+	foreach vec < _x _y _ax _ay _a1 _a2 > { 
+	   delete $vec
+	}
+
+	define dof (65)
+	set chi2_$3 = chi2_$3/$dof
+	if( substr('$3',0,$nlstr) == 'd00a_curved3_f3' ) {
+	   set chi2p1_$3 = chi2p1_$3/$dof
+	   set chi2p2_$3 = chi2p2_$3/$dof
+	}
+	define nmax $(dimen(f_soft_$3))
+
+	set j=1,$(dimen(gti_tm_orbit_mecs2)) 
+	set _time1 = gti_t1_orbit_mecs2     if( j <= $nmax )
+	set _time2 = gti_t2_orbit_mecs2     if( j <= $nmax )
+	set _time  = gti_tm_orbit_mecs2     if( j <= $nmax )
+	set _dtime = gti_dt_s_orbit_mecs2   if( j <= $nmax )
+
+	foreach 1 < soft_$3 med_$3 hard_$3 all_$3 > {
+	    set f_$1 = f_$1*1e10
+	}
+
+	set dimen(pr0) = 10.s
+	set dimen(pr1) = 10
+	set dimen(pr2) = 10
+	set dimen(pr3) = 10
+	set dimen(pr4) = 10
+
+	define j 0
+	echo "-------------------------------------------------------------------------"
+	echo "       PARAMETER                    MIN.     MAX.      AVRG.+/-SIGMA "
+	echo "-------------------------------------------------------------------------"
+	foreach 1 < f_soft f_med f_hard f_all chi2 factor > {
+	    define 1 $1_$3
+	    set newt_$1     = _time
+	    set newt1_$1    = _time1
+	    set newt2_$1    = _time2
+	    set newbin_$1   = _dtime
+	    set rate_$1     = $1
+	    set err_rate_$1 = 0.05*$1
+	    set cvrfr_$1    = 0*$1 + 1
+	    vecminmax rate_$1 a b 
+	    stats rate_$1 m s k
+	    set pr0[$j] = ' $!1 : '
+	    set pr1[$j] = $a
+	    set pr2[$j] = $b 
+	    set pr3[$j] = $m
+	    set pr4[$j] = $s
+	    define j $($j+1)
+	}
+
+	foreach 1 < g1 g2 eb ep > {
+	    define 1 $1_$3
+	    set newt_$1     = _time
+	    set newt1_$1    = _time1
+	    set newt2_$1    = _time2
+	    set newbin_$1   = _dtime
+	    set rate_$1     = $1
+	    set err_rate_$1_u = e_$1_u
+	    set err_rate_$1_d = e_$1_d
+	    set cvrfr_$1    = 0*$1 + 1
+	    vecminmax rate_$1 a b 
+	    stats rate_$1 m s k
+	    set pr0[$j] = ' $!1 : '
+	    set pr1[$j] = $a
+	    set pr2[$j] = $b 
+	    set pr3[$j] = $m
+	    set pr4[$j] = $s
+	    define j $($j+1)
+	}
+
+	foreach var { a b m s k } { 
+	    define $var delete
+	}
+	define print_noheader 1
+	print  '  %28s   %7.3f  %7.3f  [%7.3f +/- %7.3f]\n' < pr0 pr1 pr2 pr3 pr4 >
+	define print_noheader 0
+	echo "-------------------------------------------------------------------------"
+	stats chi2_$3 mchi2 schi2 kchi2
+	echo   <Chi^2> = $mchi2 [$schi2]
+	echo "-------------------------------------------------------------------------"
+
+##------------------------------------------------------------------------------
+## load_fits_with_ep  : OLD OLD loads fits of 2000 SAX data.
+##                    : OLD OLD NEEDS to read first the GTI files  (113 intervals).
+load_fits_with_ep
+
+	bell
+	bell
+	bell
+	echo " "
+	echo "  WARNING WARNING WARNING WARNING WARNING WARNING"
+	echo " "
+	echo "         OBSOLETE PROGRAM "
+	echo " "
+	echo "  WARNING WARNING WARNING WARNING WARNING WARNING"
+	echo " "
+	echo " "
+	return
+
+	# calls the macro that sets the necessary flags
+	#
+	input_basic_info
+	#
+	# returns 'shortnamestring' = $3 = string WITHOUT year [e.g. curved2_f2 ]
+	# returns 'longnamestring'  = $4 = string WITH year, used for filename [e.g. d00a_curved2_f2 ]
+	#
+	define 3 $longnamestring
+	define 4 $longnamestring
+
+	set _time  local
+	set _dtime local
+	set _time1 local
+	set _time2 local
+
+	data fits_$4.dat
+
+	read < chi2_$3 1 factor_$3 2 >
+	read < f_soft_$3 3 f_med_$3 4 f_hard_$3 5 f_all_$3 6 >
+	read < g1_$3  7 e_g1_$3_u  8 e_g1_$3_d  9 >
+	read < g2_$3 10 e_g2_$3_u 11 e_g2_$3_d 12 >
+	read < eb_$3 13 e_eb_$3_u 14 e_eb_$3_d 15 >
+
+	define e1 (0.5)
+	define e2 (5.0)
+	set _x = ($e1/eb_$3)**$fold
+	set _y = ($e2/eb_$3)**$fold
+	set _ax = g1_$3 - 1
+	set _ay = g2_$3 - 1
+	set _a1 = ( _ax*(1 + _x)*_y - _ay*_x*(1 + _y))/(_y - _x)
+	set _a2 = ( _ay*(1 + _y) - _ax*(1 + _x))/(_y - _x)
+	set ep_$3 = eb_$3*((1 - _a1)/(_a2 - 1))**(1./$fold)
+
+	foreach vec < _x _y _ax _ay _a1 _a2 > { 
+	   delete $vec
+	}
+
+	define dof (65)
+	set chi2_$3 = chi2_$3/$dof
+	define nmax $(dimen(f_soft_$3))
+
+	set j=1,$(dimen(gti_tm_orbit_mecs2)) 
+	set _time1 = gti_t1_orbit_mecs2     if( j <= $nmax )
+	set _time2 = gti_t2_orbit_mecs2     if( j <= $nmax )
+	set _time  = gti_tm_orbit_mecs2     if( j <= $nmax )
+	set _dtime = gti_dt_s_orbit_mecs2   if( j <= $nmax )
+
+	foreach 1 < soft_$3 med_$3 hard_$3 all_$3 > {
+	    set f_$1 = f_$1*1e10
+	}
+
+	set dimen(pr0) = 10.s
+	set dimen(pr1) = 10
+	set dimen(pr2) = 10
+	set dimen(pr3) = 10
+	set dimen(pr4) = 10
+
+	define j 0
+	echo "-------------------------------------------------------------------------"
+	echo "       PARAMETER                    MIN.     MAX.      AVRG.+/-SIGMA "
+	echo "-------------------------------------------------------------------------"
+	foreach 1 < f_soft f_med f_hard f_all chi2 factor > {
+	    define 1 $1_$3
+	    set newt_$1     = _time
+	    set newt1_$1    = _time1
+	    set newt2_$1    = _time2
+	    set newbin_$1   = _dtime
+	    set rate_$1     = $1
+	    set err_rate_$1 = 0.05*$1
+	    set cvrfr_$1    = 0*$1 + 1
+	    vecminmax rate_$1 a b 
+	    stats rate_$1 m s k
+	    set pr0[$j] = ' $!1 : '
+	    set pr1[$j] = $a
+	    set pr2[$j] = $b 
+	    set pr3[$j] = $m
+	    set pr4[$j] = $s
+	    define j $($j+1)
+	}
+
+	foreach 1 < g1 g2 eb ep > {
+	    define 1 $1_$3
+	    set newt_$1     = _time
+	    set newt1_$1    = _time1
+	    set newt2_$1    = _time2
+	    set newbin_$1   = _dtime
+	    set rate_$1     = $1
+	    set err_rate_$1_u = e_$1_u
+	    set err_rate_$1_d = e_$1_d
+	    set cvrfr_$1    = 0*$1 + 1
+	    vecminmax rate_$1 a b 
+	    stats rate_$1 m s k
+	    set pr0[$j] = ' $!1 : '
+	    set pr1[$j] = $a
+	    set pr2[$j] = $b 
+	    set pr3[$j] = $m
+	    set pr4[$j] = $s
+	    define j $($j+1)
+	}
+
+	foreach var { a b m s k } { 
+	    define $var delete
+	}
+	define print_noheader 1
+	print  '  %28s   %7.3f  %7.3f  [%7.3f +/- %7.3f]\n' < pr0 pr1 pr2 pr3 pr4 >
+	define print_noheader 0
+	echo "-------------------------------------------------------------------------"
+	stats chi2_$3 mchi2 schi2 kchi2
+	echo   <Chi^2> = $mchi2 [$schi2]
+	echo "-------------------------------------------------------------------------"
+
+#------------------------------------------------------------------------------
+# print_check_ep
+print_check_ep
+
+	define q  "d00a_curved3_f3"
+	define qu "d00a_curved3_f3_u"
+	define qd "d00a_curved3_f3_d"
+
+	set epdiff  = ep1_$q - ep2_$q
+	set ep1diff = ep1_$q - ep_$q
+	set ep2diff = ep2_$q - ep_$q
+
+	define fmt2  "  %3d  %7.4f   %7.4f %7.4f %7.4f   %7.4f %7.4f %7.4f  %5.2f  %5.2f  %5.2f \n"
+	print '$!fmt2' < nseq_$q ep_$q ep1_$q e_ep1_$qu e_ep1_$qd ep2_$q e_ep2_$qu e_ep2_$qd epdiff ep1diff ep2diff >
+	print dum '$!fmt2' < nseq_$q ep_$q ep1_$q e_ep1_$qu e_ep1_$qd ep2_$q e_ep2_$qu e_ep2_$qd epdiff ep1diff ep2diff >
+
+
+#------------------------------------------------------------------------------
+# net_flux_pca
+net_flux_pca
+
+        if($?1 == 0) {
+	   define olddet   ? <* lecs / mecs / xte : >
+	   define 1 $olddet
+        }
+        define olddata  ? <* Binning [64/128/256/512] : >
+        define 2 $olddata
+        define olddet   $1
+        define olddata  $2
+
+	if( substr('$olddet',0,3) == 'lec' || substr('$olddet',0,3) == 'mec') {
+	    define oldpiece ? <* first / second / all : >
+	    define 3 $oldpiece
+	    define oldpiece $3
+	}
+	if( substr('$olddet',0,3) == 'lec' ) {
+	    define datafile $1_01_10_$3_$2s.lc
+	} 
+	if( substr('$olddet',0,3) == 'mec' ) {
+	    define datafile $1_2_10_$3_$2s.lc
+	} 
+	if( substr('$olddet',0,3) == 'xte' ) {
+	    define eband ? < What band [5_8/0_22] : >
+	    define 4 $eband
+	    define datafile pca_$4_week1_$2s.lc
+	    define oldpiece week1
+	    define 3 $oldpiece
+	} 
+
+        data $datafile
+        lines  5  5   read ndum  3   define nn      $(ndum)
+        lines 38 38   read tddum 2   define t0d_int $(tddum)
+        lines 39 39   read tsdum 2   define t0d_dec $(tsdum)
+        lines 63 $(62+$nn)
+        read { t_in 2 _dt_in 3 rate_in 4 err_rate_in 5 cvrfr_in 6 }
+
+        echo ----------------------
+        echo  T_0 = $t0d_int [TJD] + $t0d_dec [s]
+        echo  Good Bins = $nn
+        echo ----------------------
+
+	if( $t0d_dec>0.8 ) {
+            define t0ref $($t0d_int+1)
+	} else {
+            define t0ref $t0d_int
+	}
+
+        define whattodo ? {*             Rescale Time-Axis [y/n] : }
+        if(substr('$whattodo',0,1) == 'y') {
+          define t0ref  ? {* Time (in TJD days) to which rescale : }
+          define t0ref2   ((($t0d_int - $t0ref) + $t0d_dec)*86400.0)
+          set t_in  = t_in + $t0ref2
+        } 
+
+	set newt_$1_$2     = t_in
+	set newt1_$1_$2    = t_in - _dt_in
+	set newt2_$1_$2    = t_in + _dt_in
+	set newbin_$1_$2   = 2*_dt_in
+	set rate_$1_$2     = rate_in
+	set err_rate_$1_$2 = err_rate_in
+	set cvrfr_$1_$2    = cvrfr_in
+
+	define time1 ? <*                 First accepted time : >
+	define time2 ? <*                 Last  accepted time : >
+
+	set rate     = rate_in        if( t_in >= $time1 && t_in <= $time2 )
+	set err_rate = err_rate_in    if( t_in >= $time1 && t_in <= $time2 )
+	set cvrfr    = cvrfr_in       if( t_in >= $time1 && t_in <= $time2 )
+	set _dt      = _dt_in         if( t_in >= $time1 && t_in <= $time2 )
+	set t        = t_in           if( t_in >= $time1 && t_in <= $time2 )
+
+	echo "----------------------------------------------------------------------"
+	echo "  Rate at starting T : "$(rate[0])
+	echo "  Rate at ending   T : "$(rate[$(dimen(rate)-1)])
+	echo "----------------------------------------------------------------------"
+
+	set dimen(sign)  = $(dimen(t)-1)
+	set dimen(ntime) = $(dimen(t)-1)
+	set dimen(ndt)   = $(dimen(t)-1)
+	set dimen(nrate) = $(dimen(t)-1)
+	set dimen(drate) = $(dimen(t)-1)
+	set dimen(dff)   = $(dimen(t)-1)
+
+	define n_up 0
+	define n_down 0
+
+	do 2=1,$(dimen(t)-1) {
+	   define 1 $($2-1)
+	   define dt  $(t[$2]-t[$1])
+	   define df  $(rate[$2]-rate[$1])
+	   define dff $($df/rate[$1])
+	   define mf  $(0.5*(rate[$2]+rate[$1]))
+
+	   set ntime[$1] = 0.5*(t[$1]+t[$2])
+	   set ndt[$1]   = $dt
+	   set nrate[$1] = $mf
+	   set drate[$1] = $df
+	   set dff[$1]   = $dff
+
+	   if( $dt == $(2*_dt[$2]) ) {
+	     if( $df > 0 ) {
+	        set sign[$1] = 1
+		define n_up $($n_up+1)
+	     } else {
+	        set sign[$1] = -1
+		define n_down $($n_down+1)
+	     }
+	   } else {
+	     set sign[$1] = 0
+	   }
+	}
+
+	set srate = nrate*sign
+
+	set timed  = ntime  if( sign < 0 )
+	set timeu  = ntime  if( sign > 0 )
+	set rated  = nrate  if( sign < 0 )
+	set rateu  = nrate  if( sign > 0 )
+	set drated = drate  if( sign < 0 )
+	set drateu = drate  if( sign > 0 )
+	set dffd   = dff    if( sign < 0 )
+	set dffu   = dff    if( sign > 0 )
+
+	set cum_rate   = cumulate(srate)
+	set cum_drate  = cumulate(drate)
+	set cum_rateu  = cumulate(rateu)
+	set cum_rated  = cumulate(rated)
+	set cum_drateu = cumulate(drateu)
+	set cum_drated = cumulate(drated)
+	set cum_sign   = cumulate(sign)
+
+	set newt_net     = ntime
+	set newt1_net    = newt_net - ndt
+	set newt2_net    = newt_net + ndt
+	set rate_net     = cum_rate
+	set err_rate_net = 0*cum_rate
+	set cvrfr_net    = 0*cum_rate + 1
+
+	print crate.dat  '  %8.1f  %6.1f  %8.4f %2d %8.4f  %12.4f\n' < ntime ndt nrate sign srate cum_rate >
+
+	echo "----------------------------------------------------------------------"
+	echo " Bins Up   : "$n_up  "[E_up:   "$(cum_rateu[$($n_up-1)]) "]   [<rate_u>="$( $(cum_rateu[$($n_up-1)])/$n_up ) "]"
+	echo " Bins Down : "$n_down  "[E_down: "$(cum_rated[$($n_down-1)]) "]   [<rate_d>="$( $(cum_rated[$($n_down-1)])/$n_down ) "]"
+	echo "----------------------------------------------------------------------"
+	echo " Net (E_up - E_down) : [ "$(cum_rate[$(dimen(cum_rate)-1)]) "]"
+	echo "----------------------------------------------------------------------"
+	echo " Total Up   excursion : "$(cum_drateu[$($n_up-1)])
+	echo " Total Down excursion : "$(cum_drated[$($n_down-1)])
+	echo "   "$(sprintf('%4d',$n_up)) $(sprintf('%4d',$n_down)) $(sprintf('%7.2f',$(cum_drateu[$($n_up-1)]))) $(sprintf('%7.2f',$(cum_drated[$($n_down-1)])))
+	echo "----------------------------------------------------------------------"
+	echo " Average dF/F Up   : "$(sprintf('%9.6f',$(sum(dffu)/$n_up)))
+	echo " Average dF/F Down : "$(sprintf('%9.6f',$(sum(dffd)/$n_down)))
+	echo "----------------------------------------------------------------------"
+	echo "  "$(sprintf('%4d',$n_up)) $(sprintf('%4d',$n_down)) $(sprintf('%7.2f',$(cum_drateu[$($n_up-1)])))  $(sprintf('%8.2f',$(cum_drated[$($n_down-1)]))) $(sprintf('%9.6f',$(sum(dffu)/$n_up))) $(sprintf('%9.6f',$(sum(dffd)/$n_down)))
+	echo "----------------------------------------------------------------------"
+
+	delete _dt
+	delete _dt_in
+
+#------------------------------------------------------------------------------
+# taus
+taus
+
+	#REDUNDANT# define_new_ptypes
+	net_flux_pca
+
+	set tauu = 0.693*$olddata/ln(1+dffu)        if( dffu      > 0 )
+	set taud = 0.693*$olddata/ln(1+abs(dffd))   if( abs(dffd) > 0 )
+	set lg_tauu = lg(tauu)
+	set lg_taud = lg(taud)
+
+	echo " "
+	echo ---------------------------------------------------------------------
+	echo   Ranges:
+	vecminmax lg_tauu a b 
+	echo   log(tau_up)   : $a -- $b
+	vecminmax lg_taud a b 
+	echo   log(tau_down) : $a -- $b
+
+	define hstep ? <***  tau histogram step : >
+
+	set taux=$($a-1-0.5*$hstep),$($b+1+0.5*$hstep),$hstep
+	set htauu=histogram(lg_tauu:taux)/$n_up
+	set htaud=histogram(lg_taud:taux)/$n_down
+
+	set _lgu = lg_tauu   if( lg_tauu < 5 )
+	define _n_up $(dimen(_lgu))
+	set _lgd = lg_taud   if( lg_taud < 5 )
+	define _n_down $(dimen(_lgd))
+	echo $_n_up $_n_down
+	
+	set g=htauu if (taux < 5 ) set t=taux if (taux < 5 ) echo $(10.**sum(g*t))
+	echo "---------------------------------------------------------------------"
+	echo " tau(<df/f>) Up   : "$(sprintf('%9.2f',$(0.693*$olddata/ln(1+sum(dffu)/$n_up))))
+	echo " tau(<df/f>) Down : "$(sprintf('%9.2f',$(0.693*$olddata/ln(1+sum(abs(dffd))/$n_down))))
+
+	echo " <lg(tau)> Up     : "$(sprintf('%9.2f',$(10.**(sum(lg_tauu)/$n_up))))
+	echo " <lg(tau)> Down   : "$(sprintf('%9.2f',$(10.**(sum(lg_taud)/$n_down))))
+
+	echo " <lg(tau)> Up     : "$(sprintf('%9.2f',$(10.**(sum(_lgu)/$_n_up))))
+	echo " <lg(tau)> Down   : "$(sprintf('%9.2f',$(10.**(sum(_lgd)/$_n_down))))
+
+	echo " <tau> Up         : "$(sprintf('%9.2f',$(sum(tauu)/$n_up)))
+	echo " <tau> Down       : "$(sprintf('%9.2f',$(sum(taud)/$n_down)))
+	echo "---------------------------------------------------------------------"
+
+
+	reset_graph
+
+	limits $(lg(500)) 6 -0.01 0.16
+	ticksize -1 0 0 0 
+	box
+	# xlabel \tau_2 and \tau_{1/2}
+	expand 2.
+	relocate (  $( (4*$gx1+3*$gx2)/7 )  $($gy1 - 3000) ) ctype 3 putlabel 5 \tau_2
+	relocate (  $( (3*$gx1+4*$gx2)/7 )  $($gy1 - 3000) ) ctype 5 putlabel 5 \tau_{1/2}
+	expand 1.5
+	define _xu $(lg(0.693*$olddata/ln(1+sum(dffu)/$n_up)))
+	define _xd $(lg(0.693*$olddata/ln(1+sum(abs(dffd))/$n_down)))
+	define _xu $(sum(_lgu)/$_n_up)
+	define _xd $(sum(_lgd)/$_n_down)
+	ctype 3 histogram (taux+0.1*$hstep) htauu
+	ptype $upper relocate $_xu 0.15 dot
+	ctype 5 histogram (taux-0.1*$hstep) htaud 
+	ptype $upper relocate $_xd 0.15 dot
+	ctype 2 
+	relocate (  $( ($gx1+$gx2)/2 )  $($gy2 + 1000) )
+	expand 1.2
+	putlabel 5 Data: $olddet : $oldpiece : $olddata 
+
+	expand 1.01
+	relocate (  $( $gx2-750 )  $($gy2 - 1500) )
+	putlabel 4  \tau_2(<df/f>)= $(sprintf('%7.1f s',$(0.693*$olddata/ln(1+sum(dffu)/$n_up))))
+	relocate (  $( $gx2-750 )  $($gy2 - 3000) )
+	putlabel 4  \tau_{1/2}(<df/f>)= $(sprintf('%7.1f s',$(0.693*$olddata/ln(1+sum(abs(dffd))/$n_down))))
+
+	relocate (  $( $gx2-750 )  $($gy2 - 5000) )
+	ctype 3 
+	putlabel 4  <log\tau_{2}>= $(sprintf('%7.1f s',$(10.**(sum(_lgu)/$_n_up))))
+	# putlabel 4  <log\tau_{2}>= $(sprintf('%7.1f s',$(10.**(sum(lg_tauu)/$n_up))))
+	relocate (  $( $gx2-750 )  $($gy2 - 6500) )
+	ctype 5 
+	putlabel 4  <log\tau_{1/2}>= $(sprintf('%7.1f s',$(10.**(sum(_lgd)/$_n_down))))
+	# putlabel 4  <log\tau_{1/2}>= $(sprintf('%7.1f s',$(10.**(sum(lg_taud)/$n_down))))
+
+	# echo  <lg(tau_2)> Up     : $(sprintf('%9.2f',$(10.**(sum(lg_tauu)/$n_up))))
+	# echo  <lg(tau_{1/2})> Down   : $(sprintf('%9.2f',$(10.**(sum(lg_taud)/$n_down))))
+
+	# echo  <tau> Up         : $(sprintf('%9.2f',$(sum(tauu)/$n_up)))
+	# echo  <tau> Down       : $(sprintf('%9.2f',$(sum(taud)/$n_down)))
+
+	set allrate = rateu concat rated
+	set alltau  = tauu  concat taud
+	ptype 4 3 
+
+#------------------------------------------------------------------------------
+# compute_fluence
+compute_fluence
+
+	read_pca_lc 5_8   256
+	read_pca_lc 14_18 256
+
+	foreach 1 < 5_8 14_18 > {
+	   set rate_cpca_$1_256 = cumulate(rate_pca_$1_256)
+	   foreach 2 < newt newt1 newt2 cvrfr err_rate newbin > {
+	      set $2_cpca_$1_256 = $2_pca_$1_256
+	   }
+	}
+	vecminmax rate_cpca_5_8_256 a b 
+	echo $a $b
+	set fluence_soft = (rate_cpca_5_8_256 - $a)/($b-$a)
+	stats rate_pca_5_8_256 a b c 
+	echo $a $b $c
+	set renorm_soft  = (rate_pca_5_8_256 - $a)/$b
+
+	vecminmax rate_cpca_14_18_256 a b 
+	echo $a $b
+	set fluence_hard = (rate_cpca_14_18_256 - $a)/($b-$a)
+	stats rate_pca_14_18_256 a b c 
+	echo $a $b $c
+	set renorm_hard  = (rate_pca_14_18_256 - $a)/$b
+
+	set fluence_diff = fluence_soft - fluence_hard
+
+	location 5000 31000 5000 31000
+	limits -40e3 250e3 -1.5 3.5 ticksize 0 0 0 0 ctype 2 box
+	ctype 3 connect newt_pca_5_8_256 renorm_soft
+	ctype 5 connect newt_pca_5_8_256 renorm_hard
+	expand 0.3 ptype 4 3 ctype 4 points newt_pca_5_8_256 (fluence_diff*100) expand 1.1
+
+#------------------------------------------------------------------------------

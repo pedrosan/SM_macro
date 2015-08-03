@@ -1,0 +1,579 @@
+#-------------------------------------------------------------------------------
+# load_grades <2005|2006|2007|2010|2011|2012|2013>
+load_grades 1
+
+	define max_hw_pts   (45)
+	define max_test_pts (45)
+
+	if( $1 == 2013 ) {
+	   define hw_pts   (49.5)
+	   define N_hw     (9)
+	   define test_pts (49.5)
+	}
+
+	if( $1 == 2012 ) {
+	   define hw_pts   (49.5)
+	   define N_hw     (9)
+	   define test_pts (49.5)
+	}
+
+	if( $1 == 2011 ) {
+	   define hw_pts (49.5)
+	   define test_pts (49.5)
+	   define N_hw (9)
+	}
+
+	if( $1 == 2010 ) {
+	   define hw_pts (49.5)
+	   define test_pts (49.5)
+	   define N_hw (10)
+	}
+
+	if( $1 == 2007 ) {
+	   define hw_pts (44)
+	   define test_pts (55)
+	   define N_hw (10)
+	}
+
+	if( $1 == 2006 ) {
+	   define hw_pts (46)
+	   define test_pts (57.5)
+	   define N_hw (10)
+	}
+
+	if( $1 == 2005 ) {
+	   define hw_pts (36.3)
+	   define test_pts (69.0)
+	   define N_hw (10)
+	}
+	
+	#----------------------------------------
+	if( $N_hw == 10 ) { 
+	   set assignment_labels = < "no" "1" "2" "3" "T1" "4" "5" "6" "T2" "7" "8" "9" "10" "T3" > 
+	   define n_assignments (13)
+	   set sequence = < 1 2 3 11 4 5 6 12 7 8 9 10 13 >
+	}
+	if( $N_hw ==  9 ) { 
+	   set assignment_labels = < "no" "1" "2" "3" "T1" "4" "5" "6" "T2" "7" "8" "9" "T3" > 
+	   define n_assignments (12)
+ 	   set sequence = < 1 2 3 11 4 5 6 12 7 8 9 13 >
+	}
+	#----------------------------------------
+
+	#data "/home/gfossati/Teaching/ASTR202/2010/Students/summary.dat"
+	#data "/home/gfossati/Teaching/ASTR201/2010/Students/summary.dat"
+	#data "/home/gfossati/Teaching/ASTR201/2011/Students/summary.dat"
+	#data "/home/gfossati/Teaching/ASTR201/2012/Students/summary.dat"
+	#data "/home/gfossati/Teaching/ASTR201/2012/Students/direct_summary.dat"
+	data "/home/gfossati/Teaching/ASTR201/2013/Students/direct_summary.dat"
+	read < n 1 >
+	#lines 4 $(3+dimen(n)-1)
+	lines 5 $(4+dimen(n)-1)
+	read < n 1 >
+	read < name 2.s myid 3.s >
+	read < hw1 4 hw2 5 hw3 6 hw4 7 hw5 8 hw6 9 hw7 10 hw8 11 hw9 12 hw10 13 > 
+	read < test1 14 test2 15 test3 16 >
+	read < project 17 >
+	read < projgr 18 >
+	read < fudge 19 >
+	 
+	set projgr = projgr+fudge
+
+	set hw11 = test1
+	set hw12 = test2
+	set hw13 = test3
+
+	define _flags read 3 
+	set flags = < $_flags > 
+	delete _flags
+
+	## define single_hw_pts   $($hw_pts/10.)
+	define single_hw_pts   $($hw_pts/$N_hw)
+	define single_test_pts $($test_pts/3.)
+
+	# NOT USED 
+	# set sequence_pts = < $single_hw_pts $single_hw_pts $single_hw_pts $single_test_pts \
+	#                      $single_hw_pts $single_hw_pts $single_hw_pts $single_test_pts \
+	# 		     $single_hw_pts $single_hw_pts $single_hw_pts $single_hw_pts $single_hw_pts $single_test_pts  >
+
+	# Only makes new 'assign' arrays for the assignments actually relevant.
+	do 9=1,$n_assignments {
+	   set assign$9 = hw$(sequence[$9-1])
+	}
+
+	# NOT USED 
+	# set assign_pts = sequence_pts
+
+	#-------------------------------------------------
+	# Tests for done/not done
+	#-------------------------------------------------
+	# CHANGED to use new direct 'flag' array
+	set dimen(sequence_flag) = 13
+	set dimen(alt_sequence_flag) = $n_assignments
+	do 9=1,$n_assignments {
+	   set alt_sequence_flag[$9-1] = flags[$(sequence[$9-1])-1]
+	}
+
+	# NOT USED
+	do 9=1,$n_assignments {
+	   define _tmp $(sum(assign$9))
+	   if( $_tmp > 0 ) { 
+	      set sequence_flag[$($9-1)] = 1
+	   } else {
+	      set sequence_flag[$($9-1)] = 0
+	   }
+	}
+	delete _tmp
+	set old_sequence_flag = sequence_flag
+	set sequence_flag = alt_sequence_flag
+
+	#-------------------------------------------------
+	# Computes averages and stdev
+	#-------------------------------------------------
+	set dimen(avrg_assign)  = $n_assignments
+	set dimen(sigma_assign) = $n_assignments
+	echo "--------------------------------"
+	do 9=1,$n_assignments {
+	   # echo " Sequence flag for assignment "$9" : "$(sequence_flag[$($9-1)])
+
+	   # DONE assignment
+	   if( sequence_flag[$($9-1)] > 0 ) {
+	      # weeds out the NULL grades
+	      set clean_assign$9 = assign$9  if( assign$9 > 0 )
+	      stats clean_assign$9 avrg_assign$9 sigma_assign$9 c 
+
+	   # NOT DONE assignment
+	   } else {
+	      define avrg_assign$9  (0.000001)
+	      define sigma_assign$9 (0.000001)
+	   }
+	   echo " Assignment "$(sprintf('%2d',$9))" : " $(sprintf('%5.2f',$(1.00001*$avrg_assign$9)))"  "$(sprintf('%5.2f',$(1.00001*$sigma_assign$9)))
+	   set avrg_assign[$($9-1)]  = $avrg_assign$9
+	   set sigma_assign[$($9-1)] = $sigma_assign$9
+	}
+	echo "--------------------------------"
+
+	define ngraded_hw   (0)
+	define ngraded_test (0)
+
+	set earned_hw   = 0*hw1
+	set earned_test = 0*hw1
+
+	#-----------------------------
+	# Homeworks
+	#-----------------------------
+	do 9=1,10 {
+	   define _tmp $(flags[$9-1])
+	   if( $_tmp > 0 ) { 
+	      define ngraded_hw $($ngraded_hw + 1)
+	      #!! This average is incorrect because it includes the NULL grades !!
+	      stats hw$9 a b c 
+	      echo "   HW: "$9 ":" $(sprintf('%6.2f',$a)) $(sprintf('%6.2f',$b))  "(note, this stats include NULL grades)"
+	      set earned_hw = earned_hw + hw$9
+	   } else {
+	      echo "   HW: "$9" : not yet graded"
+	   }
+	}
+	delete _tmp
+
+	# It assumes that each HW is worth the same number of points
+	set avrg_grade_hw = (earned_hw/$ngraded_hw)
+	set percentage_hw = (earned_hw/$ngraded_hw)
+	set proj_grade_hw = $hw_pts*(earned_hw/$ngraded_hw)/100. 
+
+	set uncapped_grade = 0*proj_grade_hw
+	set uncapped_grade = uncapped_grade + proj_grade_hw
+
+	do 9=0,dimen(earned_hw)-1 {
+	   if( proj_grade_hw[$9] > $max_hw_pts ) { set proj_grade_hw[$9] = $max_hw_pts }
+	}
+
+	#-----------------------------
+	# Tests
+	#-----------------------------
+	do 9=1,3 {
+	   define _tmp $(flags[$9-1+10])
+	   if( $_tmp > 0 ) { 
+	      define ngraded_test $($ngraded_test + 1)
+	      stats test$9 a b c 
+	      echo " TEST: "$9 ":" $(sprintf('%6.2f',$a)) $(sprintf('%6.2f',$b))  "(note, this stats include NULL grades)"
+	      set earned_test = earned_test + test$9
+	   } else {
+	      echo " TEST: "$9" : not yet graded"
+	   }
+	}
+	delete _tmp
+
+	set avrg_grade_test = (earned_test/$ngraded_test)
+	set percentage_test = (earned_test/$ngraded_test)
+	set proj_grade_test = $test_pts*(earned_test/$ngraded_test)/100. 
+
+	set uncapped_grade = uncapped_grade + proj_grade_test
+
+	do 9=0,dimen(earned_test)-1 {
+	   if( proj_grade_test[$9] > $max_test_pts ) { set proj_grade_test[$9] = $max_test_pts }
+	}
+
+	#-----------------------------
+	# Projected Grade
+	#-----------------------------
+	set proj_grade = proj_grade_hw + proj_grade_test + project + fudge
+
+	do 9=0,dimen(earned_test)-1 {
+	   if( proj_grade[$9] > 100 ) { set proj_grade[$9] = 100 }
+	}
+
+	set uncapped_grade = uncapped_grade + project
+
+        # IF($U$2>0;
+	#   MIN(100; MIN(cutoff_HW;(R5/$R$2)*$S$2) + MIN(cutoff_TEST;(U5/$U$2)*$V$2) + Q5*test_flag);
+	#   MIN(100; MIN(cutoff_HW;(R5/$R$2)*$S$2) + cutoff_TEST                     + Q5*test_flag)
+	# )
+	# $R$2 = hw done, e.g 13.5
+	# $S$2 = hw total available, e.g. 45
+	# $U$2 = tests done, e.g 18.3
+	# $V$2 = tests total available, e.g. 55
+
+	set hw14 = proj_grade 
+
+	echo " Finished ... "
+
+#-------------------------------------------------------------------------------
+# plot_grades_scatter  <label angle>
+plot_grades_scatter 1
+
+	reset_graph
+
+	define whatlabel ? < What label [name|id] : >
+	if( substr('$whatlabel',0,1) == 'n' ) { set ptlab=name  define labelshift (-0.75)}
+	if( substr('$whatlabel',0,1) == 'i' ) { set ptlab=myid  define labelshift (0)    }
+
+	limits 40 105 30 95
+	limits 40 105 30 105
+	ticksize 5 10 5 10
+	box
+	xlabel avrg HWs [%]
+	ylabel avrg TESTs [%]
+
+	set grx local
+	set grx=40,100,1
+	ltype 1
+	ctype 5
+	foreach grref < 50 60 70 80 90 > {
+	   set gry=($grref - 0.46*grx)/0.575
+	   set gry=($grref - $hw_pts/100.*grx)/($test_pts/100.)
+	   connect grx gry
+	}
+	ltype 0
+	expand 1.1
+	# relocate 101 $((90 - 0.46*100)/0.575) putlabel 6 90
+	# relocate 101 $((80 - 0.46*100)/0.575) putlabel 6 80
+	# relocate 101 $((70 - 0.46*100)/0.575) putlabel 6 70
+	# relocate  41 $((60 - 0.46*40 )/0.575) putlabel 6 60
+	# relocate  41 $((50 - 0.46*40 )/0.575) putlabel 6 50
+	relocate 101 $((90 - $hw_pts/100.*100)/($test_pts/100.)) putlabel 6 90
+	relocate 101 $((80 - $hw_pts/100.*100)/($test_pts/100.)) putlabel 6 80
+	relocate 101 $((70 - $hw_pts/100.*100)/($test_pts/100.)) putlabel 6 70
+	relocate  41 $((60 - $hw_pts/100.*40 )/($test_pts/100.)) putlabel 6 60
+	relocate  41 $((50 - $hw_pts/100.*40 )/($test_pts/100.)) putlabel 6 50
+
+	ctype 4 ltype 2 lweight 4 relocate  0  0 draw 200 200
+	ctype 6 ltype 1 lweight 3 relocate  0 10 draw 200 210
+	ctype 7 ltype 1 lweight 2 relocate  0 20 draw 200 220
+	ctype 3 ltype 1 lweight 2 relocate  0 30 draw 200 230
+	ctype 6 ltype 1 lweight 3 relocate 10  0 draw 210 200
+	ctype 7 ltype 1 lweight 2 relocate 20  0 draw 220 200
+	ctype 3 ltype 1 lweight 2 relocate 30  0 draw 230 200
+	ltype 0
+
+	ptype 4 3 
+	ctype 3
+
+	expand 2.0
+	points avrg_grade_hw avrg_grade_test
+	expand 0.7
+
+	ptype ptlab
+	angle $1
+	ctype 2
+	lweight 2
+	# points (avrg_grade_hw+2) (avrg_grade_test-1)
+
+	do 9=0,dimen(name)-1 {
+	    relocate $(avrg_grade_hw[$9]+0.00) $(avrg_grade_test[$9]+$labelshift)
+	    # putlabel 3 $(name[$9]) 
+	    putlabel 3 $(ptlab[$9]) 
+	}
+	expand 1.5
+	angle 0
+	lweight 3 
+
+	ctype 2
+
+
+#-------------------------------------------------------------------------------
+# plot_grades_histo <n assignment>
+plot_grades_histo 1
+
+	reset_graph
+
+	define hx_step (3.3333)
+	define hx_max  (105)
+	# if( $1 == 14 ) { define hx_max (110) }
+	set hx=40,$hx_max,$hx_step
+	set hx=hx - 0.5*$hx_step + 0.01
+
+	set tmp = hw$1  if( hw$1 > 0 )
+
+	set hy=histogram(tmp:hx)/dimen(hw$1)
+
+	limits hx -0.02 0.31
+	ticksize 3.3333 10 0 0 
+
+	add_ctype gradeAA   0 170   0
+	add_ctype gradeA   64 255  64
+	# add_ctype gradeB   96  96 255
+	add_ctype gradeB  150 160 255
+	add_ctype gradeC  238 238  34
+	add_ctype gradeD  238  68 238
+	add_ctype gradeF  255   0   0
+
+	lweight 20
+	foreach vpos < -0.012 -0.008 > {
+	   ctype gradeF  relocate -10   $vpos draw  60   $vpos
+	   ctype gradeD  relocate  60   $vpos draw  70   $vpos
+	   ctype gradeC  relocate  70   $vpos draw  80   $vpos
+	   ctype gradeB  relocate  80   $vpos draw  90   $vpos
+	   ctype gradeA  relocate  90   $vpos draw  96.6 $vpos
+	   ctype gradeAA relocate  96.6 $vpos draw 100.0 $vpos
+	}
+	lweight 3
+	ctype 2
+	box
+	xlabel grade [%]
+	ylabel fraction
+
+	# ctype 3
+	# angle  45 shade histogram 600 hx hy
+	# angle 135 shade histogram 600 hx hy
+	# angle 0 
+	# ctype 2
+	# histogram hx hy
+
+	my_barhist 80 hx hy 3
+	relocate -10 0 draw 110 0 
+
+	relocate ( $($gx1 + 800) $($gy2 - 800) )
+	stats tmp a b c 
+	echo " HW: "$1 ":" $(sprintf('%6.2f',$a)) $(sprintf('%6.2f',$b))
+	putlabel 3 <grade> = $(sprintf('%4.1f',$a)) \pm $(sprintf('%4.1f',$b))
+
+	# define xx_step (0.2)
+	# set xx=40,105,$xx_step
+	set yy=gauss(hx,$a,$b)*$hx_step
+
+	lweight 4 
+	ctype 5 
+	connect hx yy
+	ctype 2 
+	lweight 3
+
+#-------------------------------------------------------------------------------
+# plot_student_histo <sequential N of student>
+plot_student_histo 1
+
+	reset_graph
+
+	define hx_step (1.0)
+	#set hx=-0.5,13.5,$hx_step
+	set hx = -0.5,$($n_assignments+0.5),$hx_step
+	set hx = hx - 0.5*$hx_step 
+
+	#set nassign = 1,13,1
+	#set dimen(student) = 13
+	set nassign = 1,$n_assignments,1
+	set dimen(student) = $n_assignments 
+	do 9=1,$n_assignments {
+	    set student[$9-1] = assign$9[$1-1]
+	}
+
+	set student = < 0 0 > CONCAT student
+	set hy = student
+
+	add_ctype gradeAA   0 170   0
+	add_ctype gradeA   64 255  64
+	# add_ctype gradeB   96  96 255
+	add_ctype gradeB  150 160 255
+	add_ctype gradeC  238 238  34
+	add_ctype gradeD  238  68 238
+	add_ctype gradeF  255   0   0
+
+	ctype 2
+	expand 1.5
+	#limits 0.1 13.9 -5 105
+	limits 0.1 $($n_assignments+0.9) -5 105
+	ticksize 1 1 3.3333 10
+	box 3 2 3 0
+	xlabel Assignment
+	ylabel Grade [%]
+
+	# X-AXIS LABELS
+	define gxscale $( ($gx2 - $gx1)/($fx2 - $fx1) )
+	# echo  "gx scale : "$gxscale
+	expand 1.25
+	do 9=1,$n_assignments {
+	    define thisgx $( ($9 - $fx1)*$gxscale + $gx1 )
+	    relocate ( $($thisgx + 250) $( $gy1 - 750 ) )
+	    putlabel 5 $(assignment_labels[$9]) 
+	    # putlabel 5 $9
+	}
+	expand 1.5
+
+	relocate -10 0 draw 110 0 
+
+	set tmp_nassign      = nassign        if( sequence_flag == 1 ) 
+	set tmp_avrg_assign  = avrg_assign    if( sequence_flag == 1 ) 
+	set tmp_sigma_assign = sigma_assign   if( sequence_flag == 1 ) 
+
+	define j (0) 
+	do 9=1,$n_assignments {
+	    set tmp_x = < $($9-1) $9 $($9+1) >
+	    set tmp_y = hy  if( hx == $9 )
+	    set tmp_y = < 0 > CONCAT tmp_y CONCAT < 0 >
+	    if( tmp_y[1] >= 98.0 )                    { define cc "gradeAA"}
+	    if( tmp_y[1] >= 90.0 && tmp_y[1] < 98.0 ) { define cc "gradeA" }
+	    if( tmp_y[1] >= 80.0 && tmp_y[1] < 90.0 ) { define cc "gradeB" }
+	    if( tmp_y[1] >= 70.0 && tmp_y[1] < 80.0 ) { define cc "gradeC" }
+	    if( tmp_y[1] >= 60.0 && tmp_y[1] < 70.0 ) { define cc "gradeD" }
+	    if(                     tmp_y[1] < 60.0 ) { define cc "gradeF" }
+	    # echo $cc
+	    # my_barhist 80 hx hy $cc
+	    if( sequence_flag[$9-1] == 1 ) { 
+	       my_barhist 80 tmp_x tmp_y $cc
+	    }
+	    ctype 2
+
+	    lweight 4
+	    expand 1.5
+	    #error_y nassign avrg_assign sigma_assign
+	    error_y tmp_nassign tmp_avrg_assign tmp_sigma_assign
+
+	    lweight 3
+	    ctype 1 
+	    expand 2.5
+	    ptype 4 3 
+	    #points nassign avrg_assign
+	    points tmp_nassign tmp_avrg_assign
+	    ctype 2 
+	    expand 2.6
+	    ptype 4 0
+	    #points nassign avrg_assign
+	    points tmp_nassign tmp_avrg_assign
+
+	    ctype 2 
+	    expand 1.5
+	    lweight 3 
+	}
+
+
+	expand 3
+	ctype 4 ptype 3 3 relocate  4 -2.5 dot
+	ctype 2 ptype 3 0 relocate  4 -2.5 dot
+	ctype 4 ptype 3 3 relocate  8 -2.5 dot
+	ctype 2 ptype 3 0 relocate  8 -2.5 dot
+	ctype 4 ptype 3 3 relocate $n_assignments -2.5 dot
+	ctype 2 ptype 3 0 relocate $n_assignments -2.5 dot
+	#ctype 4 ptype 3 3 relocate 13 -2.5 dot
+	#ctype 2 ptype 3 0 relocate 13 -2.5 dot
+	#
+	angle 180
+	ctype 4 ptype 3 3 relocate  4 102.5 dot
+	ctype 2 ptype 3 0 relocate  4 102.5 dot
+	ctype 4 ptype 3 3 relocate  8 102.5 dot
+	ctype 2 ptype 3 0 relocate  8 102.5 dot
+	ctype 4 ptype 3 3 relocate $n_assignments 102.5 dot
+	ctype 2 ptype 3 0 relocate $n_assignments 102.5 dot
+	#ctype 4 ptype 3 3 relocate 13 102.5 dot
+	#ctype 2 ptype 3 0 relocate 13 102.5 dot
+	angle 0
+	ctype 2
+	expand 1.5
+
+	relocate ( $($gx1 + 0) $($gy2 + 800) )
+	putlabel 6  $(sprintf('%s',myid[$1-1]))
+	# putlabel 6  $(sprintf('%s',myid[$1-1]))  $(sprintf('%s',name[$1-1])) 
+
+##-------------------------------------------------------------------------------
+## my_barhist <%> <x> <y> <color>
+##    draw a bar histogram
+##    syntax: my_barhist <x> <y> <%> <color>
+##    where % is the percentage width of the bars (optional)
+my_barhist 34
+
+       IF($?4 == 0) {            # color isn't provided
+         define hcolor 3
+       }  else {
+         define hcolor $4
+       }
+
+       # IF($?3 == 0) {            # % isn't provided
+       #    DEFINE 3 $2 
+       #    DEFINE 2 $1
+       #    DEFINE 1 50
+       # }
+
+       DEFINE _w ($1*($2[1] - $2[0])/200)   # half width of bars
+       SET _x = ($2 - $_w) CONCAT ($2 - $_w) CONCAT \
+                ($2 + $_w) CONCAT ($2 + $_w)
+       SET _y = 0*$3 CONCAT $3 CONCAT $3 CONCAT 0*$3
+       SET _i = 1,DIMEN($2)
+       SET _i = _i CONCAT (_i + .1) CONCAT (_i + .2) CONCAT (_i + .3)
+       SORT { _i _x _y }
+       ctype $hcolor
+       CONNECT _x _y
+       ctype $hcolor
+       angle  45 shade 160 _x _y
+       angle 135 shade 160 _x _y
+       angle 0
+       ctype 0
+       # ctype $hcolor
+       CONNECT _x _y
+       FOREACH _v ( _i _x _y ) { DELETE $_v }
+       ctype 0
+
+#-------------------------------------------------------------------------------
+# make_all_figs : makes one fig per each assignment
+#                 uses plot_grades_histo
+make_all_figs
+
+	foreach 9 < 1 2 3 4 5 6 7 8 9 > {
+	   define test $(sum(hw$9))
+	   if( $test > 0 ) { 
+	      device postencap hw0$9.ps
+	      plot_grades_histo $9
+	      device x11
+	   }
+	}
+
+	foreach 9 < 10 11 12 13 14 > {
+	   define test $(sum(hw$9))
+	   if( $test > 0 ) { 
+	      device postencap hw$9.ps
+	      plot_grades_histo $9
+	      device x11
+	   }
+	}
+
+#-------------------------------------------------------------------------------
+# make_all_students : makes one histogram per student
+#                     uses plot_student_histo
+make_all_students
+
+	do 9=1,dimen(name) {
+	   define 1 $(sprintf('%4s',myid[$9-1]))
+	   device postencap student_$1.ps
+	   plot_student_histo $9
+	   device x11
+	}
+
+#-------------------------------------------------------------------------------

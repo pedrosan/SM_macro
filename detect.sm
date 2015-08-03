@@ -1,0 +1,341 @@
+#---------------------------------------------------------------------------
+# readdata
+readdata
+
+	data x_hbl.dat
+	read xfh 3
+
+	data r_hbl.dat
+	read rfh 3
+
+	data b_hbl.dat
+	read bfh 3
+
+	data radio_limit
+	read rlim 5
+
+	data opt_limit
+	read optlim 5
+
+	define test (25.0)
+	define nopt (0)
+	do 1=0,15 {
+	   if(optlim[$1] < $test) { 
+	     define test $(optlim[$1]) 
+	     define nopt ($nopt+1)
+	     echo $test $nopt
+	   }
+	}
+	define nr $(dimen(rlim)/$nopt)
+	set dimen(rval)   = $nr
+	set dimen(optval) = $nopt
+
+	do 1=0,$($nr-1) {
+	   set rval[$1] = rlim[$($1*$nopt)]
+	}
+
+	do 1=0,$($nopt-1) {
+	   set optval[$1] = optlim[$1]
+	}
+
+
+	echo - radio limits are   $nr
+	echo - optical limits are $nopt
+
+#---------------------------------------------------------------------------
+# select01
+select01
+
+	location 6000 31000 6000 31000
+	define nmax $(dimen(rlim)-1)
+
+	set dimen(xfh1) = dimen(rlim)
+	set dimen(rfh1) = dimen(rlim)
+	set dimen(bfh1) = dimen(rlim)
+	set dimen(xfh2) = dimen(rlim)
+	set dimen(rfh2) = dimen(rlim)
+	set dimen(bfh2) = dimen(rlim)
+
+	do i=0,$nmax{
+	   set xfh1[$i]=xfh[$($i*2)]
+	   set rfh1[$i]=rfh[$($i*2)]
+	   set bfh1[$i]=bfh[$($i*2)]
+	   set xfh2[$i]=xfh[$($i*2+1)]
+	   set rfh2[$i]=rfh[$($i*2+1)]
+	   set bfh2[$i]=bfh[$($i*2+1)]
+	}
+
+	define limite ? {plot against Radio [1] or optlim [2] ?}
+	if(substr('$limite',0,1) == '1') {
+	    define plotx rlim 
+	    define check optval
+	    define xlim1 0.02
+	    define xlim2 0.3
+	    define labx  <Radio Flux>
+	} else {
+	    define plotx optlim
+	    define check rval
+	    define xlim1 20.5
+	    define xlim2 16.0
+	    define labx  <Optical Magnitude>
+	}
+
+
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0
+	limits $xlim1 $xlim2 -0.05 1.05
+	box
+	xlabel $labx
+	relocate ( $gx1 $($gy2+500) ) 
+	putlabel 6 Number of sources for the three scenarios
+
+	print <$check>
+	define checkval ? {which value of the other limiting vector ?}
+
+	expand 2.5
+	ptype 4 3 
+	if('$check' == 'rval') {
+	ctype 3 points  $plotx xfh1    if(rlim == $checkval)
+
+	ctype 5 points  $plotx rfh1    if(rlim == $checkval)
+
+	ctype 4 points  $plotx bfh1    if(rlim == $checkval)
+	}
+
+	if('$check' == 'optval') {
+	ctype 3 points  $plotx xfh1    if(optlim == $checkval)
+
+	ctype 5 points  $plotx rfh1    if(optlim == $checkval)
+
+	ctype 4 points  $plotx bfh1    if(optlim == $checkval)
+	}
+
+
+#---------------------------------------------------------------------------
+# selectstrip
+selectstrip
+
+	location 6000 31000 6000 31000
+	define howmany ? {howmany trial targets ?}
+
+	define nmax $(dimen(rlim)-1)
+
+	do i=0,$nmax{
+	   set xfh1[$i]=xfh[$($i*2)]
+	   set rfh1[$i]=rfh[$($i*2)]
+	   set bfh1[$i]=bfh[$($i*2)]
+	   set xfh2[$i]=xfh[$($i*2+1)]
+	   set rfh2[$i]=rfh[$($i*2+1)]
+	   set bfh2[$i]=bfh[$($i*2+1)]
+	}
+
+	set xnfh1 = $howmany*xfh1
+	set rnfh1 = $howmany*rfh1
+	set bnfh1 = $howmany*bfh1
+	set xnfh2 = $howmany*xfh2
+	set rnfh2 = $howmany*rfh2
+	set bnfh2 = $howmany*bfh2
+
+	set err_xnfh1 = sqrt($howmany*xfh1)
+	set err_rnfh1 = sqrt($howmany*rfh1)
+	set err_bnfh1 = sqrt($howmany*bfh1)
+	set err_xnfh2 = sqrt($howmany*xfh2)
+	set err_rnfh2 = sqrt($howmany*rfh2)
+	set err_bnfh2 = sqrt($howmany*bfh2)
+
+	set strip_u_xnfh1 = xnfh1 + err_xnfh1 
+	set strip_d_xnfh1 = xnfh1 - err_xnfh1 
+	set strip_u_rnfh1 = rnfh1 + err_rnfh1 
+	set strip_d_rnfh1 = rnfh1 - err_rnfh1 
+	set strip_u_bnfh1 = bnfh1 + err_bnfh1 
+	set strip_d_bnfh1 = bnfh1 - err_bnfh1 
+
+	define limite ? {plot against Radio [1] or optlim [2] ?}
+	if(substr('$limite',0,1) == '1') {
+	    define plotx rlim 
+	    define check optval
+	    define xlim1 0.02
+	    define xlim2 0.3
+	    define labx  <Radio Flux>
+	} else {
+	    define plotx optlim
+	    define check rval
+	    define xlim1 20.5
+	    define xlim2 16.0
+	    define labx  <Optical Magnitude>
+	}
+
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0
+	limits $xlim1 $xlim2 0 $howmany
+	box
+	xlabel $labx
+	relocate ( $gx1 $($gy2+500) ) 
+	putlabel 6 Number of sources for the three scenarios
+
+	print <$check>
+	define checkval ? {which value of the other limiting vector ?}
+
+	if('$check' == 'rval') {
+	   set dimen(ax)   = $nopt
+	   set dimen(ax_u) = $nopt
+	   set dimen(ax_d) = $nopt
+	   set dimen(ar)   = $nopt
+	   set dimen(ar_u) = $nopt
+	   set dimen(ar_d) = $nopt
+	   set dimen(ab)   = $nopt
+	   set dimen(ab_u) = $nopt
+	   set dimen(ab_d) = $nopt
+	   do 1=0,$($nopt-1) {
+	     set ax  = xnfh1 if(rlim == $checkval)
+	     set ax_u= strip_u_xnfh1 if(rlim == $checkval)
+	     set ax_d= strip_d_xnfh1 if(rlim == $checkval)
+	     set ar  = rnfh1 if(rlim == $checkval)
+	     set ar_u= strip_u_rnfh1 if(rlim == $checkval)
+	     set ar_d= strip_d_rnfh1 if(rlim == $checkval)
+	     set ab  = bnfh1 if(rlim == $checkval)
+	     set ab_u= strip_u_bnfh1 if(rlim == $checkval)
+	     set ab_d= strip_d_bnfh1 if(rlim == $checkval)
+           }	      
+	}
+
+	expand 2.5
+	ptype 4 3 
+	lweight 5
+
+	if('$check' == 'rval') {
+	ctype 3
+	points  $plotx xnfh1             if(rlim == $checkval)
+	connect $plotx (xnfh1+err_xnfh1) if(rlim == $checkval)
+	connect $plotx (xnfh1-err_xnfh1) if(rlim == $checkval)
+
+	ctype 5
+	points  $plotx rnfh1             if(rlim == $checkval)
+	connect $plotx (rnfh1+err_rnfh1) if(rlim == $checkval)
+	connect $plotx (rnfh1-err_rnfh1) if(rlim == $checkval)
+
+	ctype 4
+	points  $plotx bnfh1             if(rlim == $checkval)
+	connect $plotx (bnfh1+err_bnfh1) if(rlim == $checkval)
+	connect $plotx (bnfh1-err_bnfh1) if(rlim == $checkval)
+	}
+
+	if('$check' == 'optval') {
+	ctype 3 
+	points  $plotx xnfh1             if(optlim == $checkval)
+	connect $plotx (xnfh1+err_xnfh1) if(optlim == $checkval)
+	connect $plotx (xnfh1-err_xnfh1) if(optlim == $checkval)
+
+	ctype 5 
+	points  $plotx rnfh1             if(optlim == $checkval)
+	connect $plotx (rnfh1+err_rnfh1) if(optlim == $checkval)
+	connect $plotx (rnfh1-err_rnfh1) if(optlim == $checkval)
+
+	ctype 4 
+	points  $plotx bnfh1             if(optlim == $checkval)
+	connect $plotx (bnfh1+err_bnfh1) if(optlim == $checkval)
+	connect $plotx (bnfh1-err_bnfh1) if(optlim == $checkval)
+	}
+
+	ctype 2
+	lweight 3
+
+
+#---------------------------------------------------------------------------
+# select
+select
+
+	define howmany ? {howmany trial targets ?}
+
+	define nmax $(dimen(rlim)-1)
+
+	do i=0,$nmax{
+	   set xfh1[$i]=xfh[$($i*2)]
+	   set rfh1[$i]=rfh[$($i*2)]
+	   set bfh1[$i]=bfh[$($i*2)]
+	   set xfh2[$i]=xfh[$($i*2+1)]
+	   set rfh2[$i]=rfh[$($i*2+1)]
+	   set bfh2[$i]=bfh[$($i*2+1)]
+	}
+
+	set xnfh1 = $howmany*xfh1
+	set rnfh1 = $howmany*rfh1
+	set bnfh1 = $howmany*bfh1
+	set xnfh2 = $howmany*xfh2
+	set rnfh2 = $howmany*rfh2
+	set bnfh2 = $howmany*bfh2
+
+	set err_xnfh1 = sqrt($howmany*xfh1)
+	set err_rnfh1 = sqrt($howmany*rfh1)
+	set err_bnfh1 = sqrt($howmany*bfh1)
+	set err_xnfh2 = sqrt($howmany*xfh2)
+	set err_rnfh2 = sqrt($howmany*rfh2)
+	set err_bnfh2 = sqrt($howmany*bfh2)
+
+	define limite ? {plot against Radio [1] or optlim [2] ?}
+	if(substr('$limite',0,1) == '1') {
+	    define plotx rlim 
+	    define check optval
+	    define xlim1 0.02
+	    define xlim2 0.3
+	} else {
+	    define plotx optlim
+	    define check rval
+	    define xlim1 20.5
+	    define xlim2 16.0
+	}
+
+
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0
+	limits $xlim1 $xlim2 0 $howmany
+	box
+
+	print <$check>
+	define checkval ? {which value of the other limiting vector ?}
+
+	expand 2.5
+	ptype 4 3 
+
+	if('$check' == 'rval') {
+	ctype 3
+	points  $plotx xnfh1             if(rlim == $checkval)
+	connect $plotx (xnfh1+err_xnfh1) if(rlim == $checkval)
+	connect $plotx (xnfh1-err_xnfh1) if(rlim == $checkval)
+
+	ctype 5
+	points  $plotx rnfh1             if(rlim == $checkval)
+	connect $plotx (rnfh1+err_rnfh1) if(rlim == $checkval)
+	connect $plotx (rnfh1-err_rnfh1) if(rlim == $checkval)
+
+	ctype 4
+	points  $plotx bnfh1             if(rlim == $checkval)
+	connect $plotx (bnfh1+err_bnfh1) if(rlim == $checkval)
+	connect $plotx (bnfh1-err_bnfh1) if(rlim == $checkval)
+	}
+
+	if('$check' == 'optval') {
+	ctype 3 
+	points  $plotx xnfh1             if(optlim == $checkval)
+	connect $plotx (xnfh1+err_xnfh1) if(optlim == $checkval)
+	connect $plotx (xnfh1-err_xnfh1) if(optlim == $checkval)
+
+	ctype 5 
+	points  $plotx rnfh1             if(optlim == $checkval)
+	connect $plotx (rnfh1+err_rnfh1) if(optlim == $checkval)
+	connect $plotx (rnfh1-err_rnfh1) if(optlim == $checkval)
+
+	ctype 4 
+	points  $plotx bnfh1             if(optlim == $checkval)
+	connect $plotx (bnfh1+err_bnfh1) if(optlim == $checkval)
+	connect $plotx (bnfh1-err_bnfh1) if(optlim == $checkval)
+	}
+
+	ctype 2
+
+
+#---------------------------------------------------------------------------
+

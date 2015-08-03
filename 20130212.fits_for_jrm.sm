@@ -1,0 +1,879 @@
+#---------------------------------------------------------------------------
+# curfit 08
+curfit 08
+
+    if(!$(is_macro(mdeclare_rect))) {
+       echo "WARNING: this macro REQUIRES matrix.sm"
+       return
+    }
+
+    # if('$1' == '-h' || '$1' == '?' || '$1' == '-help') {
+    if(!$?1) {
+       echo "*****************************************************************"
+       echo "  INPUTS"
+       echo "  [1] X     : array, for independent variable"
+       echo "  [2] Y     : array, for dependent variable"
+       echo "  [3] sigmaY: array, sigma for dependent variable"
+       echo "  [4] mode  : determines method of weighting least=squares fit"
+       echo "              | +1 weight = 1/sigmay**2"
+       echo "              |  0 weight = 1 [no weight]"
+       echo "              | -1 weight = 1/y"
+       echo "  [5] a     : array of parameters"
+       echo "  [6] deltaa: array of increments for parameters a"
+       echo "  [7] sigmaa: array of sigma for parameters a"
+       echo "  [8] flambda: proportion of gradient search included"
+       echo "      ycalc : array of calculated values of Y"
+       echo "      chisq : chi square for fit"
+       echo "  "
+       echo "  REQUIRED ROUTINES (?maybe?)"
+       echo "   functn(x,i,a)"
+       echo "      | evaluates the fitting function for the i-th term"
+       echo "   der_functn(x,i,a,deltaa,nterms,deriv)"
+       echo "      | evaluates the derivatives of the fitting function"
+       echo "      | for the i-th term with respect to each parameter"
+       echo "   matinv(array,nterms,det)"
+       echo "      | inverts a symmetric 2-dimensional matrix of degree nterms"
+       echo "      | and calculates its determinant"
+       echo "*****************************************************************"
+       return
+    }
+
+    set _x        = $1
+    set _y        = $2
+    set _sigmay   = $3
+    define mode     $4
+    set _a        = $5
+    set _deltaa   = $6
+    set _sigmaa   = $7
+    define flambda  $8
+
+    define npts    $(dimen($1))
+    define nterms  $(dimen(_a))
+    define nfree   ($npts - $nterms)
+
+    set _aux = _x*0
+
+    #----------------------------------------------
+    # evaluate weights
+    #
+    if($mode ==  1) { set _weight = 0*_x + 1/_sigmay/_sigmay }
+    if($mode ==  0) { set _weight = 1 }
+    if($mode == -1) { set _weight = 0*_x + 1/_y }
+
+    #----------------------------------------------
+    # evaluate _alpha and _beta matrices
+    #
+    set dimen(_b)    = $nterms
+    set dimen(_beta) = $nterms
+    set _b    = 0*_a
+    set _beta = 0*_a
+
+    mdeclare_rect   _dyda  $nterms $npts
+    mdeclare_square _alpha $nterms
+    mdeclare_square _array $nterms
+    msetnum  _alpha 0
+    msetnum  _array 0
+
+    #----------------------------------------------
+    # define values of the vector of the derivatives of the 
+    # fitting function with respect to the model parameters
+    #  _dyda_$j = derivative of model function with respect to j-th parameter
+    #
+    set _ycalc  = $testfunc(_x,_a)
+
+    do j=0,$($nterms-1) {
+       set _dyda_$j = der_$testfunc(_x,_a,$j)
+    }
+
+    do j=0,$($nterms-1) { 
+       set _aux = _weight*(_y-_ycalc)*_dyda_$j
+       set _beta[$j]= sum(_aux)
+    }
+
+    do j=0,$($nterms-1) { 
+      do k=0,$j {
+	 set _aux = _weight*_dyda_$j*_dyda_$k
+         set _alpha_$j[$k] = sum(_aux)
+      }
+    }
+
+    #----------------------------------------------
+    # symmetrizza la matrice _alpha
+    #
+    do j=0,$($nterms-1) { 
+       do k=0,$j {
+	  set _alpha_$k[$j] = _alpha_$j[$k]
+       }
+    }
+
+    #----------------------------------------------
+    # evaluate chisq at starting point
+    #
+    set _ycalc  = $testfunc(_x,_a)
+
+    set _oldchivec = _weight*(_y - _ycalc)**2.
+    define _oldchi $(sum(_oldchivec))
+    define _newchi ($_oldchi + 10)
+
+    if($chatter == 1) { echo " * Evaluating chisq at starting point: "$_oldchi }
+
+    #----------------------------------------------
+    # invert modified curvature matrix to find new parameters
+    #
+    while { $_oldchi < $_newchi } {
+       if($chatter == 1) {  echo "["$_oldchi"] has been compared to ["$_newchi"]" }
+
+       do j=0,$($nterms-1) { 
+          do k=0,$j {
+	     set _array_$j[$k] = _alpha_$j[$k]/sqrt(_alpha_$j[$j]*_alpha_$k[$k])
+          }
+          set _array_$j[$j] = 1. + $flambda
+       }
+
+       minv _array
+
+       do j=0,$($nterms-1) {
+          set _b[$j] = _a[$j] 
+             do k=0,$($nterms-1) {
+	        set _b[$j] = _b[$j] + _beta[$k]*_array_$j[$k]/sqrt(_alpha_$j[$j]*_alpha_$k[$k])
+             }
+       }
+
+       #----------------------------------------------
+       # if chisq increased, increase flambda and try again
+       #
+       set _ycalc  = $testfunc(_x,_b)
+
+       set _newchivec = _weight*(_y - _ycalc)**2.
+       define _newchi $(sum(_newchivec))
+
+       if($_newchi > $_oldchi) {
+          define flambda (10.*$flambda)
+          if($chatter == 1) {  echo "   Increasing flambda" }
+       }
+
+    }  # while
+
+    #----------------------------------------------
+    # evaluate parameters and uncertainties
+    #
+    if($_newchi <= $_oldchi) {
+       define flambda (0.1*$flambda)
+       if($chatter == 1) { echo "   Decreasing flambda" }
+       set _a = _b
+       do j=0,$($nterms-1) {
+          set _sigmaa[$j] = sqrt(_array_$j[$j]/_alpha_$j[$j])
+       }
+    }
+
+################################################################################
+#---------------------------------------------------------------------------
+# prepare_data_for_fit
+prepare_data_for_fit
+
+	define dum "n"
+	define dum ? < Use named arrays [if yes, give suffix]: >
+	if( substr('$dum',0,1) == 'n' && strlen('$dum') == 1 ) { 
+	   echo ">>> Using standard names. "
+	} else {
+	   echo ">>> Using renamed arrays : *_"$dum
+	   foreach 1 < xtt rt ert rx erx nx > {
+	      set  $1 = $1_$dum
+	   }
+	}
+
+	if(!$?1) { 
+	   define xtt1 ? < Start Time : >
+	   define xtt2 ? <  Stop Time : >
+	} else {
+	   define xtt1 $1
+	   define xtt2 $2
+	}
+
+	if( abs($xtt1) < 2000 ) { define xtt1 $($xtt1*1000) }
+	if( abs($xtt2) < 2000 ) { define xtt2 $($xtt2*1000) }
+
+	foreach var < rx erx rt ert xtt > {
+	    set _$var local
+	}
+	set fitx = rx   if( xtt > $xtt1 && xtt <= $xtt2  && rx > 0.01) 
+	set fity = rt   if( xtt > $xtt1 && xtt <= $xtt2  && rx > 0.01) 
+	set fitw = ert  if( xtt > $xtt1 && xtt <= $xtt2  && rx > 0.01) 
+
+	define whaterr 1
+	define whaterr ? < Use actual errors [1] or fake [any \#]: >
+
+#---------------------------------------------------------------------------
+# main_fit 01 : define outside of this routine the following arrays: 
+#               fitx, fity, fitw 
+#               It assumes that "fity" has to be POSITIVE.
+main_fit 01
+
+	define chatter 1
+
+	if($?1) { 
+	   define itercheck $1
+	} else {
+	   define itercheck 10
+	}
+
+	echo "-------------------------------------------------------------"
+	echo " *** DATA Section ***"
+	define end "dummy"
+	#define end ? { Suffix of vectors [NOT USED]: }
+	define 1 $end
+
+	define preparedata ? < Prepare data or data-ready [1|2] : >
+	if( $preparedata == 1 ) {
+	    prepare_data_for_fit
+	} else {
+	    echo " * Going ahead assuming arrays fitx, fity, fitw are defined... "
+	}
+
+	define t1 ?   {                                      Min. X : }
+	define t2 ?   {                                      MAX. X : }
+
+	define syst ? { Systematic Error to be added to Y-data [0-1]: }
+
+	# define outside of this routine the following arrays: fitx, fity, fitw 
+	set pass_x = fitx      if( fitx > $t1 && fitx < $t2 )
+	set pass_y = fity      if( fitx > $t1 && fitx < $t2 )
+	set pass_w = fitw      if( fitx > $t1 && fitx < $t2 )
+
+	sort < pass_x pass_y pass_w >
+
+	#--- scaling X array ---#
+	#define linorlogx ? {              Use LOG or LIN for X data [1|2]: } 
+	define linorlogx ? {                  Are X data LIN or LOG [1|2]: } 
+	if($linorlogx == 1) { 
+	    define x0 $(sqrt($t1*$t2))
+	    echo  middle of the LOG band is : $x0
+	    set pass_x = lg(pass_x)
+	} else {
+	    define x0 $(($t1+$t2)/2)
+	    echo  middle of the LIN band is : $x0
+	}
+	define x0 ?     {                                 Reference X : }
+	if($linorlogx == 1) { 
+	    define x0 (lg($x0))
+	}
+
+	#--- scaling Y array ---#
+	#define linorlogy ? {              Use LOG or LIN for Y data [1|2]: } 
+	define linorlogy ? {                  Are Y data LIN or LOG [1|2]: } 
+	if($linorlogy == 1) { 
+	    set pass_w = (lg(pass_y+pass_w) - lg(pass_y-pass_w))/2.
+	    set pass_y = lg(pass_y)
+	}
+	set pass_w = (1 + $syst)*pass_w
+	if($whaterr != 1) { 
+	   set pass_w = 0*pass_y + $whaterr
+	}
+
+	define xs (1)
+	echo " Using predefined x0="$x0" to shift X axis"
+	#echo " Using predefined fit_x0="$fit_x0" to shift X axis"
+
+	# define xs ?     { Scale to rescale X values : }
+	# NOTE : XS needs to be SERIOUSLY re-visited 
+
+	# preparing dummy-x array for plotting purposes
+	if( $x0 <  $(pass_x[0]) ) {
+	   define xstart $x0
+	} else {
+	   define xstart $(pass_x[0])
+	}
+	define xstep ((pass_x[$(dimen(pass_x)-1)]-$xstart)/100.)
+	set xdum = $xstart,$(pass_x[$(dimen(pass_x)-1)]*1.05),$xstep
+
+	set pass_x = (pass_x - $x0)/$xs
+	set xdum   = (xdum   - $x0)/$xs
+
+	echo "-------------------------------------------------------------"
+	define testfunc  ? {                          Test Function Name : }
+
+	init_$testfunc
+
+	set parstep  = parvec/10.
+	set parsigma = 0*parvec
+
+	define flambda  0.0001
+	define conv 10
+	define iter 0
+
+	while { $conv > 0.1 } {
+	    define iter ($iter+1)
+	    echo "======== Main_Fit iteration ["$iter"] ...calling" curfit
+
+	    curfit pass_x pass_y pass_w 1 parvec parstep parsigma $flambda
+
+	    set pass_x   = _x
+	    set pass_y   = _y
+	    set pass_w   = _sigmay
+	    set parvec   = _a
+	    set parstep  = _deltaa
+	    set parsigma = _sigmaa
+
+	    if($chatter == 1) { 
+	       echo     Old Chi^2 = $_oldchi
+	       echo     New Chi^2 = $_newchi
+	    }
+
+	    define conv ($_oldchi-$_newchi)
+	    if($(int($iter/$itercheck)*$itercheck) == $iter) { 
+	       print { _a }
+	       echo === $_newchi ===
+	       define goahead ? { Ten steps done, go ahead ? [y/n] }
+	       if(substr('$goahead',0,1) == 'n') {
+		   define conv 0.01
+	       }
+	    }
+	}
+
+	echo "-----------------------------------------"
+	echo " Chi^2 = "$_newchi "/"$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-----------------------------------------"
+	print '  %14.7f\n' { _a}
+	echo "-----------------------------------------"
+
+        set ff = $testfunc(_x,_a)
+        set chisq_dev  = (pass_y - ff)**2./pass_w/pass_w
+        set delchi_dev = chisq_dev*(pass_y - ff)/abs(pass_y - ff)
+        set sigma_dev  = sqrt(chisq_dev)*(pass_y - ff)/abs(pass_y - ff)
+
+        exit_$testfunc
+
+        page
+
+	define drawornot ? { Draw "fit" [2-8 == color/ or 0] }
+	if($drawornot >= 2) { 
+	    ctype $drawornot
+	    lweight 3
+	    ltype 0
+	    connect xdum ydum
+	    ctype 2 
+	    ltype 0 
+	}
+
+	foreach var { _a _b _aux _newchivec _oldchivec _x _y _sigmay _weight _deltaa _sigmaa _ycalc } {
+	   delete $var
+	}
+
+	do n=0,$($nterms-1) {
+	   delete _alpha_$n
+	   delete _array_$n
+	   delete _dyda_$n
+	}
+
+###############################################################################
+# init_linear
+init_linear
+
+	echo " "
+	echo "*** Model is: Linear Fit (in log-log space) *** "
+	echo "    Give initial guess for parameters: "
+	if($linorlogx == 1) { 
+	   define var0 ? <                           Y value [@x=$(10**($x0))]: >
+	}
+	if($linorlogy == 1) { 
+	   define var0 $(lg($var0))
+	}
+	define var1  ? <                                   Slope : >
+
+	set parvec = < $var0 $var1 >
+
+	# convert the time vector back to actual values
+	#
+	## set pass_x = $xs*pass_x + $x0
+
+	## set xdum = $xstart,$(pass_x[$(dimen(pass_x)-1)]*1.05),$xstep
+	## set xdum = (xdum - $x0)/$xs
+
+	# set xdum   = $(pass_x[0]),$(pass_x[$(dimen(pass_x)-1)]+5000),500
+	# set pass_x = pass_x/$x0
+	# set xdum   = xdum/$x0
+
+##---------------------------------------------------------------------------
+## exit_linear
+exit_linear
+
+	if($linorlogy == 1) { 
+	    define p0 (10**$(parvec[0]))
+	}
+
+	echo "-------------------------------------------------------------" 
+	echo "*** Model is: CONSTANT + Straight line (for ???-??? data) ***" 
+	echo " " 
+	if($linorlogx == 1) { 
+	   echo   - Y value    : $p0 [@x=$(10**$x0)]
+	} else {
+	   echo   - Y value    : $p0 [@x=$x0]
+	}
+	echo   - Slope      : $(parvec[1])
+	echo -------------------------------------------------------------
+	echo  Chi^2 = $_newchi /$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo -------------------------------------------------------------
+
+	set ydum = $testfunc(xdum,_a)
+	# set xdum = xdum*$x0
+	set xdum = xdum*$xs + $x0
+
+##---------------------------------------------------------------------------
+## linear 2       : f(x,a)
+linear 2
+
+	set $0 =  $2[0] + $2[1]*$1
+
+##---------------------------------------------------------------------------
+## der_linear 3   : df(x,a,j)
+der_linear 3
+
+	if($3 == 0) { 
+	   set $0 = 1 + 0*$1
+	}
+
+	if($3 == 1) { 
+	   set $0 = $1
+	}
+
+################################################################################
+#-------------------------------------------------------------------------------
+# test_pl_cutoff
+test_pl_cutoff 101
+
+        if($?1) {
+            if(substr('$1',0,2) == '-h' ){
+               echo "-----------------------------------------------"
+               echo " pl_cutoff: "
+               echo " "
+               echo " USAGE: "
+               echo "    > pl_cutoff K=2e-10 g=3.1 efold=4.3 "
+               echo "  or"
+               echo "    > pl_cutoff (in this case it draws the line in black) "
+               echo " "
+               echo "-----------------------------------------------"
+               return
+            } else {
+               # define silentparsing 1
+	       echo $1
+               mparsep $1
+               define silentparsing 0
+            }
+        }
+
+	echo $K
+	echo $g
+	echo $efold
+	set lg_eee = $(lg(0.3)),$(lg(10.5)),0.01
+	define lgK $(lg($K))
+	#define g (2.1)
+	#define efold (4.3)
+
+	set lg_fff = $lgK - ($g-2)*lg_eee - 0.4343*(10.**lg_eee/4.3)
+
+	connect lg_eee lg_fff
+
+################################################################################
+#-------------------------------------------------------------------------------
+# init_pl_cutoff
+init_pl_cutoff
+
+	echo "*** Model is: POWER LAW + EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "    Give initial guess for parameters: "
+	define var0 ? < Normalization (linear value)   : >
+	define var1 ? < Power Law Photon Index [Gamma] : > 
+	define var2 ? < Cutoff Energy (linear value)   : >
+	
+	define var0 (lg($var0))
+	# define var1 (lg(var1))
+	# define var2 (lg(var2/$xs))
+	define var2 ($var2/10.0**$x0)
+
+	set parvec = < $var0 $var1 $var2 >
+	
+##-------------------------------------------------------------------------------
+## pl_cutoff 2  f(x,a)
+pl_cutoff 2
+
+        set $0 =  $2[0] - ($2[1]-2)*$1 - 0.4343*10.0**$1/$2[2]
+
+##---------------------------------------------------------------------------
+## der_pl_cutoff 3   : df(x,a,j)
+der_pl_cutoff 3
+
+	if($3 == 0) { 
+	   set $0 = 1.0 + 0.0*$1
+	}
+
+	if($3 == 1) { 
+	   set $0 = -1.0*$1
+	}
+
+	if($3 == 2) { 
+	   set $0 = 0.4343*10.0**($1)/($3*$3)
+	}
+
+##-------------------------------------------------------------------------------
+## exit_pl_cutoff
+exit_pl_cutoff
+
+	# set parvec = 10.**parvec
+	# set parvec[2] = parvec[2]*$xs
+	set parvec[0] = 10.0**$(parvec[0])
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+	define var2 $(parvec[2])
+
+	echo "-----------------------------------------------------------------------" 
+	echo "*** Model is: POWER LAW + EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "  "
+	echo "  - Normalization (linear value)   :" $(parvec[0])
+	echo "  - Power Law Photon Index [Gamma] :" $(parvec[1])
+	echo "  - Cutoff Energy (linear value)   :" $(parvec[2])
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 =" $_newchi "/"$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+	set ydum = $testfunc(xdum,_a)
+	set xdum = xdum*$xs + $x0
+
+################################################################################
+##-------------------------------------------------------------------------------
+# init_new_pl_cutoff
+init_new_pl_cutoff
+
+	echo "*** Model is: POWER LAW + EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "    Give initial guess for parameters: "
+	define var0 ? < Normalization (linear value)   : >
+	define var1 ? < Power Law Photon Index [Gamma] : > 
+	define var2 ? < Cutoff Energy (linear value)   : >
+	
+	define var0 (lg($var0))
+	# define var1 (lg(var1))
+	# define var2 (lg(var2/$xs))
+	define var2 ($var2/10.0**$x0)
+
+	set parvec = < $var0 $var1 $var2 >
+
+	#print < parvec > 
+	
+##-------------------------------------------------------------------------------
+## new_pl_cutoff 2  f(x,a)
+new_pl_cutoff 2
+
+        set $0 =  $2[0] - $2[1]*$1 - 0.4343*(10.0**$1)/$2[2]
+	#echo " calculating function for parameters : "
+	#print < $2 > 
+
+##---------------------------------------------------------------------------
+## der_new_pl_cutoff 3   : df(x,a,j)
+der_new_pl_cutoff 3
+
+	if($3 == 0) { 
+	   set $0 = 1.0 + 0.0*$1
+	}
+
+	if($3 == 1) { 
+	   set $0 = -1.0*$1
+	}
+
+	if($3 == 2) { 
+	  #set $0 = 0.4343*(10.0**$1)/($3*$3)
+	   set $0 = 0.4343*(10.0**$1)/($2[2]*$2[2])
+	}
+
+##-------------------------------------------------------------------------------
+## exit_new_pl_cutoff
+exit_new_pl_cutoff
+
+	set ydum = $testfunc(xdum,parvec)
+	set xdum = xdum*$xs + $x0
+
+	set parvec[0] = 10.0**$(parvec[0])
+	set parvec[2] = parvec[2]*10.0**$x0
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+	define var2 $(parvec[2])
+
+	echo "-----------------------------------------------------------------------" 
+	echo "*** Model is: POWER LAW + EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "  "
+	echo "  - Normalization (linear value)   :" $(parvec[0])
+	echo "  - Power Law Photon Index [Gamma] :" $(parvec[1])
+	echo "  - Cutoff Energy (linear value)   :" $(parvec[2])
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 =" $_newchi "/"$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+################################################################################
+##-------------------------------------------------------------------------------
+# init_pl_superexp
+init_pl_superexp
+
+	echo "-----------------------------------------------------------------------------" 
+	echo "*** Model is: POWER LAW + MODIFIED EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "    Give initial guess for parameters: "
+	define var0 ? < Normalization (linear value) : >
+	define var1 ? < Power Law Photon Index       : > 
+	define var2 ? < Cutoff Energy (linear value) : >
+	define var3 ? < Superexp. coefficient        : >
+	
+	define var0 (lg($var0))
+	# define var1 (lg(var1))
+	# define var2 (lg(var2/$xs))
+	define var2 (lg($var2) - $x0)
+	#define var2 ($var2/10.0**$x0)
+
+	set parvec = < $var0 $var1 $var2 $var3 >
+
+	define cx_alpha (2.0)
+	
+##-------------------------------------------------------------------------------
+## pl_superexp 2  f(x,a)
+pl_superexp 2
+
+        set $0 =  $2[0] - $2[1]*$1 - 0.4343*($cx_alpha/$2[3])*10.0**(($1 - $2[2])*$2[3])
+
+##---------------------------------------------------------------------------
+## der_pl_superexp 3   : df(x,a,j)
+der_pl_superexp 3
+
+	echo ' $3 = '$3
+	if($3 == 0) { 
+	   set $0 = 1.0 + 0*$1
+	}
+
+	if($3 == 1) { 
+	   set $0 = -1.0*$1
+	}
+
+	if($3 == 2) { 
+	   set $0 = $cx_alpha*10.0**(($1 - $2[2])*$2[3])
+	}
+
+	if($3 == 3) { 
+	   set $0 = ($cx_alpha/$2[3])*10.0**(($1 - $2[2])*$2[3])*( 0.4343/$2[3] - ($1 - $2[2]) )
+	}
+
+##-------------------------------------------------------------------------------
+## exit_pl_superexp
+exit_pl_superexp
+
+	set ydum = $testfunc(xdum,parvec)
+	set xdum = xdum*$xs + $x0
+
+	set parvec[0] = 10.0**$(parvec[0])
+	set parvec[2] = parvec[2]*10.0**$x0
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+	define var2 $(parvec[2])
+	define var3 $(parvec[3])
+
+	echo "-----------------------------------------------------------------------------" 
+	echo "*** Model is: POWER LAW + MODIFIED EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "  "
+	echo "  - Normalization (linear value) : " $(parvec[0])
+	echo "  - Power Law Photon Index [p]   : " $(parvec[1])
+	echo "  - Cutoff Energy (linear value) : " $(parvec[2])
+	echo "  - Superexp. coefficient        : " $(parvec[3])
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 =" $_newchi "/"$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+################################################################################
+##-------------------------------------------------------------------------------
+# init_ff_linear
+init_ff_linear
+
+	echo "-----------------------------------------------------------------------" 
+	echo "*** Model is: LINEAR (e.g. Power Law for LOG-LOG data) *** "
+	echo "    Give initial guess for parameters: "
+	define var0 ? < Normalization   : >
+	define var1 ? < Slope           : >
+
+	echo " a = "$var0
+	echo " b = "$var1
+	
+	# define var0 (lg($var0))
+	# define var1 (lg(var1))
+	# define var2 (lg(var2/$xs))
+
+	set parvec = < $var0 $var1 >
+	
+##-------------------------------------------------------------------------------
+## ff_linear 2  f(x,a)
+ff_linear 2
+
+        set $0 =  $2[0] + $2[1]*$1 
+
+##---------------------------------------------------------------------------
+## der_ff_linear 3   : df(x,a,j)
+der_ff_linear 3
+
+	if($3 == 0) { 
+	   set $0 = 1
+	}
+
+	if($3 == 1) { 
+	   set $0 = $1
+	}
+
+##-------------------------------------------------------------------------------
+## exit_ff_linear
+exit_ff_linear
+
+	# set parvec = 10.**parvec
+	# set parvec[2] = parvec[2]*$xs
+	# set parvec[0] = 10.0**$(parvec[0])
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+
+	echo "-----------------------------------------------------------------------" 
+	echo "*** Model is: LINEAR (e.g. Power Law for LOG-LOG data) *** "
+	echo "  "
+	echo "  - Normalization                  :" $(parvec[0])
+	echo "  - Slope                          :" $(parvec[1])
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 =" $_newchi "/"$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+	set ydum = $testfunc(xdum,_a)
+	set xdum = xdum*$xs + $x0
+	#set xdum = xdum*$xs + $fit_x0
+
+################################################################################
+##-------------------------------------------------------------------------------
+# init_poly_3rd
+init_poly_3rd
+
+	echo "-----------------------------------------------------------------------" 
+	echo "*** Model is: THIRD DEGREE POLYNOMIAL *** "
+	echo "    Give initial guess for parameters: "
+	define var0 ? < Normalization   : >
+	define var1 ? < Slope           : >
+
+	echo " a = "$var0
+	echo " b = "$var1
+	
+	# define var0 (lg($var0))
+	# define var1 (lg(var1))
+	# define var2 (lg(var2/$xs))
+
+	set parvec = < $var0 $var1 >
+	
+##-------------------------------------------------------------------------------
+## poly_3rd 2  f(x,a)
+poly_3rd 2
+
+        set $0 =  $2[0] + $2[1]*$1 
+
+##---------------------------------------------------------------------------
+## der_poly_3rd 3   : df(x,a,j)
+der_poly_3rd 3
+
+	if($3 == 0) { 
+	   set $0 = 1
+	}
+
+	if($3 == 1) { 
+	   set $0 = $1
+	}
+
+##-------------------------------------------------------------------------------
+## exit_poly_3rd
+exit_poly_3rd
+
+	# set parvec = 10.**parvec
+	# set parvec[2] = parvec[2]*$xs
+	# set parvec[0] = 10.0**$(parvec[0])
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+
+	echo "-----------------------------------------------------------------------" 
+	echo "*** Model is: LINEAR (e.g. Power Law for LOG-LOG data) *** "
+	echo "  "
+	echo "  - Normalization                  :" $(parvec[0])
+	echo "  - Slope                          :" $(parvec[1])
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 =" $_newchi "/"$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+	set ydum = $testfunc(xdum,_a)
+	set xdum = xdum*$xs + $x0
+	#set xdum = xdum*$xs + $fit_x0
+
+###############################################################################
+##-------------------------------------------------------------------------------
+# init_cons_pl
+init_cons_pl
+
+	echo "*** Model is: CONSTANT + PowerLaw (for LIN-LIN data) *** "
+	echo "    Give initial guess for parameters: "
+	define var0  ? <          Constant Baseline  :>
+	define var1  ? <          Y value    [@x=$x0]:> 
+	define var2  ? <          PowerLaw Exponent  :>
+
+	set parvec = < $var0 $var1 $var2 >
+
+	# convert the time vector back to actual values
+	#
+	## set pass_x = $xs*pass_x + $x0
+
+	## set xdum = $xstart,$(pass_x[$(dimen(pass_x)-1)]*1.05),$xstep
+	## set xdum = (xdum - $x0)/$xs
+
+	# set xdum   = $(pass_x[0]),$(pass_x[$(dimen(pass_x)-1)]+5000),500
+	# set pass_x = pass_x/$x0
+	# set xdum   = xdum/$x0
+
+##---------------------------------------------------------------------------
+## exit_cons_pl
+exit_cons_pl
+
+	echo "------------------------------------------------------------- "
+	echo "*** Model is: CONSTANT + PowerLaw (for LIN-LIN data) *** "
+	echo "  "
+	echo "  - Constant Baseline :" $(parvec[0])
+	echo "  - Y value           :" $(parvec[1]) [@x=$x0]
+	echo "  - PowerLaw Exponent :" $(parvec[2])
+	echo "------------------------------------------------------------- "
+	echo " Chi^2 =" $_newchi /$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "------------------------------------------------------------- "
+
+	set ydum = $testfunc(xdum,_a)
+	set xdum = xdum*$xs + $x0
+
+##---------------------------------------------------------------------------
+## cons_pl 2       : f(x,a)
+cons_pl 2
+
+	set $0 =  $2[0] + $2[1]*$1**$2[2]
+
+##---------------------------------------------------------------------------
+## der_cons_pl 3   : df(x,a,j)
+der_cons_pl 3
+
+	if($3 == 0) { 
+	   set $0 = 1 + 0*$1
+	}
+
+	if($3 == 1) { 
+	   set $0 = $1**$2[2]
+	}
+
+	if($3 == 2) { 
+	   set $0 = $2[1]*ln($1)*($1**$2[2])
+	}
+
+###############################################################################
+#************************************************************************
+#** WARNING 
+#**   myload macro 'matrix' before to proceed.                         **
+#**   It is needed to load the macros necessary for matrix handling    **
+#**                                                                    ** 
+#************************************************************************

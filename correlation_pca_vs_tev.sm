@@ -1,0 +1,435 @@
+#------------------------------------------------------------------------------
+# tev_vs_pca
+tev_vs_pca
+        
+        lweight 3
+	ctype 2 
+	expand 1.5
+	ltype 0
+
+	define xmin (7)
+	define xmax (70)
+	define ymin (1.0)
+	define ymax (20.0)
+
+	limits $(lg($xmin)) $(lg($xmax)) $(lg($ymin)) $(lg($ymax))
+	ticksize -1 5 -1 5
+	box 
+	xlabel RXTE/PCA rate
+	ylabel Whipple rate
+
+	read < time 1 tev 2 e_tev 3 pca 4 e_pca 5 >
+
+
+	points  (lg(pca)) (lg(tev))
+	logerr  (lg(pca)) (lg(tev)) e_tev
+	# error_x (lg(pca)) (lg(tev)) e_pca 
+	# error_y (lg(pca)) (lg(tev)) e_pca 
+
+	ctype 3
+	expand 3 ptype 4 3 
+	points (lg(pca)) (lg(tev)) if( time < 100e3)
+	ctype 2 expand 3 ptype 4 0 
+	points (lg(pca)) (lg(tev)) if( time < 100e3)
+
+	ctype 4
+	expand 3 ptype 4 3 
+	points (lg(pca)) (lg(tev)) if( time < 150e3 && time >100e3)
+	ctype 2 expand 3 ptype 4 0 
+	points (lg(pca)) (lg(tev)) if( time < 150e3 && time >100e3)
+	
+	ctype 5 
+	expand 3 ptype 4 3 
+	points (lg(pca)) (lg(tev)) if( time < 250e3 && time >150e3)
+	ctype 2 expand 3 ptype 4 0 
+	points (lg(pca)) (lg(tev)) if( time < 250e3 && time >150e3)
+
+	ctype 6
+	expand 3 ptype 4 3 
+	points (lg(pca)) (lg(tev)) if( time < 350e3 && time >250e3)
+	ctype 2 expand 3 ptype 4 0 
+	points (lg(pca)) (lg(tev)) if( time < 350e3 && time >250e3)
+
+	ctype 7
+	expand 3 ptype 4 3 
+	points (lg(pca)) (lg(tev)) if( time < 450e3 && time >350e3)
+	ctype 2 expand 3 ptype 4 0 
+	points (lg(pca)) (lg(tev)) if( time < 450e3 && time >350e3)
+
+	ctype 8
+	expand 3 ptype 4 3 
+	points (lg(pca)) (lg(tev)) if( time < 500e3 && time >450e3)
+	ctype 2 expand 3 ptype 4 0 
+	points (lg(pca)) (lg(tev)) if( time < 500e3 && time >450e3)
+
+	ctype 1
+	expand 3 ptype 4 3 
+	points (lg(pca)) (lg(tev)) if( time < 600e3 && time >500e3)
+	ctype 2 expand 3 ptype 4 0 
+	points (lg(pca)) (lg(tev)) if( time < 600e3 && time >500e3)
+
+	ctype 2
+
+#------------------------------------------------------------------------------
+# tev_vs_pca_2
+tev_vs_pca_2
+        
+        lweight 3
+	ctype 2 
+	expand 1.5
+	ltype 0
+
+	echo -------------------------------------------------------
+	echo  [1] PCA hard band
+	echo  [2] PCA soft band
+	echo  [3] HEXTE soft band
+	define band ? { Pick your energy band : }
+	define 1 $band
+
+	if( $band == 1 ) { define lab_x " RXTE/PCA 6-10 keV "} 
+	if( $band == 2 ) { define lab_x " RXTE/PCA 2-4 keV "} 
+	if( $band == 3 ) { define lab_x " RXTE/HEXTE 20-40 keV "} 
+
+	if( $band == 1 || $band == 2 ) {
+	   define xmin (7)
+	   define xmax (70)
+	} else {
+	   define xmin (0.4)
+	   define xmax (8.0)
+	}
+
+	define ymin (1.0)
+	define ymax (20.0)
+
+	limits $(lg($xmin)) $(lg($xmax)) $(lg($ymin)) $(lg($ymax))
+	ticksize -1 5 -1 5
+	box 
+	xlabel $lab_x
+	ylabel Whipple rate
+
+	data whipple_vs_pca_tev.dat
+	read < time 1 tev 2 e_tev 3 >
+	data whipple_vs_pca_xray.dat
+	read < hard 2 e_hard 3 soft 4 e_soft 5 hr 6 e_hr 7 >
+	data whipple_vs_pca_hexte.dat
+	read < hexte 8 e_hexte 9 >
+
+	if( $band == 1 ) { 
+	   set pca = hard 
+	   set e_pca = e_hard 
+	} 
+	if( $band == 2 ) { 
+	   set pca = soft
+	   set e_pca = e_soft 
+	}
+	if( $band == 3 ) { 
+	   set pca = hexte
+	   set e_pca = e_hexte 
+	}
+
+	points  (lg(pca)) (lg(tev))
+	logerr  (lg(pca)) (lg(tev)) e_tev
+
+	ctype 3
+	expand 3 ptype 4 3 
+	points (lg(pca)) (lg(tev)) if( time < 100e3)
+	ctype 2 expand 3 ptype 4 0 
+	points (lg(pca)) (lg(tev)) if( time < 100e3)
+
+	ctype 4
+	expand 3 ptype 4 3 
+	points (lg(pca)) (lg(tev)) if( time < 150e3 && time >100e3)
+	ctype 2 expand 3 ptype 4 0 
+	points (lg(pca)) (lg(tev)) if( time < 150e3 && time >100e3)
+	
+	ctype 5 
+	expand 3 ptype 4 3 
+	points (lg(pca)) (lg(tev)) if( time < 250e3 && time >150e3)
+	ctype 2 expand 3 ptype 4 0 
+	points (lg(pca)) (lg(tev)) if( time < 250e3 && time >150e3)
+
+	ctype 6
+	expand 3 ptype 4 3 
+	points (lg(pca)) (lg(tev)) if( time < 350e3 && time >250e3)
+	ctype 2 expand 3 ptype 4 0 
+	points (lg(pca)) (lg(tev)) if( time < 350e3 && time >250e3)
+
+	ctype 7
+	expand 3 ptype 4 3 
+	points (lg(pca)) (lg(tev)) if( time < 450e3 && time >350e3)
+	ctype 2 expand 3 ptype 4 0 
+	points (lg(pca)) (lg(tev)) if( time < 450e3 && time >350e3)
+
+	ctype 8
+	expand 3 ptype 4 3 
+	points (lg(pca)) (lg(tev)) if( time < 500e3 && time >450e3)
+	ctype 2 expand 3 ptype 4 0 
+	points (lg(pca)) (lg(tev)) if( time < 500e3 && time >450e3)
+
+	ctype 1
+	expand 3 ptype 4 3 
+	points (lg(pca)) (lg(tev)) if( time < 600e3 && time >500e3)
+	ctype 2 expand 3 ptype 4 0 
+	points (lg(pca)) (lg(tev)) if( time < 600e3 && time >500e3)
+
+	ctype 2
+
+	set qx=-2,2,0.05
+
+	if( $band == 1 || $band == 2 ) {
+	   define x0 (10)
+	   define y0 (2)
+	} else {
+	   define x0 (1)
+	   define y0 (3)
+	}
+
+	ltype 2  
+	define a 2
+	define a ? { slope : }
+	set qy=$(lg($y0)) + $a*(qx-$(lg($x0))) connect qx qy
+	ltype 0 
+
+#------------------------------------------------------------------------------
+# tev_vs_pca_1flare
+tev_vs_pca_1flare
+        
+        lweight 3
+	ctype 2 
+	expand 1.5
+	ltype 0
+
+	echo -------------------------------------------------------
+	echo  [1] PCA hard band
+	echo  [2] PCA soft band
+	echo  [3] HEXTE soft band
+	define band ? { Pick your energy band : }
+	define 1 $band
+
+	if( $band == 1 ) { define lab_x " RXTE/PCA 6-10 keV "} 
+	if( $band == 2 ) { define lab_x " RXTE/PCA 2-4 keV "} 
+	if( $band == 3 ) { define lab_x " RXTE/HEXTE 20-40 keV "} 
+
+	if( $band == 1 || $band == 2 ) {
+	   define xmin (7)
+	   define xmax (35)
+	} else {
+	   define xmin (0.4)
+	   define xmax (8.0)
+	}
+
+	define ymin (1.0)
+	define ymax (20.0)
+
+	limits $(lg($xmin)) $(lg($xmax)) $(lg($ymin)) $(lg($ymax))
+	ticksize -1 5 -1 5
+	box 
+	xlabel $lab_x
+	ylabel Whipple rate
+
+	data whipple_vs_pca_tev.dat
+	read < time 1 tev 2 e_tev 3 >
+	data whipple_vs_pca_xray.dat
+	read < hard 2 e_hard 3 soft 4 e_soft 5 hr 6 e_hr 7 >
+	data whipple_vs_pca_hexte.dat
+	read < hexte 8 e_hexte 9 >
+
+	if( $band == 1 ) { 
+	   set pca = hard 
+	   set e_pca = e_hard 
+	} 
+	if( $band == 2 ) { 
+	   set pca = soft     if( time < 100e3 )
+	   set e_pca = e_soft if( time < 100e3 )
+	   set tev = tev      if( time < 100e3 )
+	   set e_tev = e_tev  if( time < 100e3 )
+	}
+	if( $band == 3 ) { 
+	   set pca = hexte
+	   set e_pca = e_hexte 
+	}
+
+	points  (lg(pca)) (lg(tev))
+	logerr  (lg(pca)) (lg(tev)) e_tev
+
+	ctype 3
+	expand 3 ptype 4 3 
+	points (lg(pca)) (lg(tev)) 
+	ctype 2 expand 3 ptype 4 0 
+	points (lg(pca)) (lg(tev))
+
+	set qx=-2,2,0.05
+
+	if( $band == 1 || $band == 2 ) {
+	   define x0 (10)
+	   define y0 (2)
+	} else {
+	   define x0 (1)
+	   define y0 (3)
+	}
+
+	ltype 2  
+	define a 2
+	define a ? { slope : }
+	set qy=$(lg($y0)) + $a*(qx-$(lg($x0))) connect qx qy
+	ltype 0 
+
+#------------------------------------------------------------------------------
+# tev_vs_pca_shaded
+tev_vs_pca_shaded
+        
+        lweight 3
+	ctype 2 
+	expand 1.5
+	ltype 0
+	location 4500 31500 4500 31000
+
+	echo -------------------------------------------------------
+	echo  [1] PCA hard band
+	echo  [2] PCA soft band
+	echo  [3] HEXTE soft band
+	define band ? { Pick your energy band : }
+	define 1 $band
+
+	if( $band == 1 ) { define lab_x " RXTE/PCA 6-10 keV "} 
+	if( $band == 2 ) { define lab_x " RXTE/PCA 2-4 keV "} 
+	if( $band == 3 ) { define lab_x " RXTE/HEXTE 20-40 keV "} 
+
+	if( $band == 1 || $band == 2 ) {
+	   define xmin (7)
+	   define xmax (70)
+	} else {
+	   define xmin (0.4)
+	   define xmax (8.0)
+	}
+
+	define ymin (1.0)
+	define ymax (20.0)
+
+	limits $(lg($xmin)) $(lg($xmax)) $(lg($ymin)) $(lg($ymax))
+	ticksize -1 5 -1 5
+	box 
+	xlabel $lab_x
+	ylabel Whipple rate
+
+	data whipple_vs_pca_tev.dat
+	read < time 1 tev 2 e_tev 3 >
+	data whipple_vs_pca_xray.dat
+	read < hard 2 e_hard 3 soft 4 e_soft 5 hr 6 e_hr 7 >
+	data whipple_vs_pca_hexte.dat
+	read < hexte 8 e_hexte 9 >
+
+	if( $band == 1 ) { 
+	   set pca = hard 
+	   set e_pca = e_hard 
+	} 
+	if( $band == 2 ) { 
+	   set pca = soft
+	   set e_pca = e_soft 
+	}
+	if( $band == 3 ) { 
+	   set pca = hexte
+	   set e_pca = e_hexte 
+	}
+
+	set feed_x = lg(pca)
+	set feed_y = lg(tev)
+	gsave 1
+	     expand 4.0
+	     echo "***** Calling color shading routine *****"
+             plot_shaded_dots feed_x feed_y hr
+	     echo "***** Returning...."
+	$grestore1
+
+	ctype 2
+
+	set qx=-2,2,0.05
+
+	if( $band == 1 || $band == 2 ) {
+	   define x0 (10)
+	   define y0 (2)
+	} else {
+	   define x0 (1)
+	   define y0 (3)
+	}
+
+	define a 2
+	define a ? { slope : }
+	ltype 2  
+	set qy=$(lg($y0)) + $a*(qx-$(lg($x0))) connect qx qy
+	ltype 0 
+
+
+#------------------------------------------------------------------------------
+# total_t2
+total_t2
+
+	define suffix ?     { * Suffix of vectors to be loaded : }
+	define t_step ?     { * Time step of light curve       : }
+	define t_step_max ? { * Max. Time difference for good bins : }
+
+	set v = rate_$suffix
+	set t = newt_$suffix
+	define last $(dimen(v)-1)
+
+	set dimen(tmp) = 1
+	set tmp[0] = $(v[$last]) 
+	set v1 =  v  CONCAT  tmp 
+	set tmp[0] = $(v[0]) 
+	set v2 =  tmp  CONCAT  v 
+
+	set tmp[0] = $(t[$last]) 
+	set t2 = t CONCAT tmp
+	set tmp[0] = $(t[0]) 
+	set t1 = tmp CONCAT t 
+
+	# set t1 = newt_$suffix - $t_step/2
+	# set t2 = newt_$suffix + $t_step/2
+
+	set dv = v2 - v1
+	set dt = t2 - t1
+
+	define dflux_u (0)
+	define dtime_u (0)
+	define dflux_d (0)
+	define dtime_d (0)
+	define n_up    (0)
+	define n_down  (0)
+	define n_bad   (0)
+
+	do 1=0,$last {
+	  if( dt[$1] <= $t_step_max ) {
+	    if( dv[$1] >= 0 && dt[$1] <= $t_step_max ) {
+	       define dflux_u ( $dflux_u + $(dv[$1]) )
+	       define dtime_u ( $dtime_u + $(dt[$1]) )
+	       define n_up    ( $n_up + 1 )
+	    } 
+	    if( dv[$1] <  0 && dt[$1] <= $t_step_max ) {
+	       define dflux_d ( $dflux_d + $(dv[$1]) )
+	       define dtime_d ( $dtime_d + $(dt[$1]) )
+	       define n_down  ( $n_down + 1 )
+	    }
+	  } else {
+	       define n_bad  ( $n_bad + 1 )
+	  }
+	}
+
+	define tau_u $( $dtime_u / ( lg(   ($(v1[0]) + $dflux_u )/$(v1[0]))/lg(2) ) )
+	define tau_d $( $dtime_d / ( lg(abs($(v1[0]) + $dflux_d )/$(v1[0]))/lg(2) ) )
+	echo -------------------------------------------------------
+	echo   Flux reference : $(v1[0])
+	echo            N_bad : $n_bad
+	echo -------------------------------------------------------
+	echo              N_up : $n_up
+	echo    Total dFlux up : $dflux_u
+	echo              Time : $dtime_u
+	echo               tau : $tau_u
+	echo    
+	echo            N_down : $n_down
+	echo  Total dFlux down : $dflux_d
+	echo              Time : $dtime_d
+	echo               tau : $tau_d
+	echo -------------------------------------------------------
+
+
+#------------------------------------------------------------------------------

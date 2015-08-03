@@ -1,0 +1,121 @@
+#-------------------------------------------------------------------------------
+#  macros for testing the analysis of the Wagner, Lorenz paper.
+#-------------------------------------------------------------------------------
+# test_exp  F0=0.2  a0=6.0   tau_r=9.80    tau_f=163.98  t_span=450  t_peak=90
+# 
+#  Fig.3 :  F0=0.2  a0=6.0   tau_r=9.80    tau_f=163.98  t_span=450  t_peak=90
+#  Fig.4 :  F0=0.0  a0=12.0  tau_r=37.92   tau_f=50.22   t_span=200  t_peak=40
+#  Fig.5 :  F0=4.0  a0=12.0  tau_r=107.70  tau_f=36.60   t_span=360  t_peak=250
+# 
+test_exp 101 
+
+	echo "-------------------------------------------------------------------------------"
+	echo " Fig.3 :  F0=0.2  a0=6.0   tau_r=9.80    tau_f=163.98  t_span=450  t_peak=90"
+	echo " Fig.4 :  F0=0.0  a0=12.0  tau_r=37.92   tau_f=50.22   t_span=200  t_peak=40"
+	echo " Fig.5 :  F0=4.0  a0=12.0  tau_r=107.70  tau_f=36.60   t_span=360  t_peak=250"
+	echo "-------------------------------------------------------------------------------"
+
+        define silentparsing 0
+        mparsep $1
+
+	echo " parameters: "$1
+	echo "-------------------------------------------------------------------------------"
+
+	#-----------------------------------------------------------
+	reset_graph
+	location 5500 30000 19000 28000
+
+        # set tmin = $(-0.1*$t_span),$(1.1*$t_span),0.25
+        set tmin = 0.0,$t_span,0.25
+	set tday = tmin/(24.*60.)
+	set dt   = tmin - $t_peak
+
+        set F  = $F0 + $a0/(2.**(dt/$tau_f) + 2.**(-1.*dt/$tau_r))
+        set Fr = $F0 + $a0*2.**(dt/$tau_r)
+        set Ff = $F0 + $a0/2.**(dt/$tau_f)
+        
+	vecminmax F F1 F2
+        limits $(-0.1*$t_span/24./60.) $(1.1*$t_span/24./60.) -1 $($F2*1.1)
+	ticksize 0.01 0.05 0 0 
+	box
+	relocate $($t_peak/24./60.) $fy1 
+	ctype 4 ltype 1 draw $($t_peak/24./60.) $fy2
+        ctype 5 ltype 0 lweight 4 connect tday F
+        ctype 3 ltype 2 lweight 3 connect tday Fr
+        ctype 6 ltype 2 lweight 3 connect tday Ff 
+	ctype 2 ltype 0 
+
+	#-----------------------------------------------------------
+        set tmin = 0.0,$t_span,10.
+	set tday = tmin/(24.*60.)
+	set dt   = tmin - $t_peak
+
+        set F  = $F0 + $a0/(2.**(dt/$tau_f) + 2.**(-1.*dt/$tau_r))
+        set Fr = $F0 + $a0*2.**(dt/$tau_r)
+        set Ff = $F0 + $a0/2.**(dt/$tau_f)
+        set F  =       $a0/(2.**(dt/$tau_f) + 2.**(-1.*dt/$tau_r))
+        set Fr =       $a0*2.**(dt/$tau_r)
+        set Ff =       $a0/2.**(dt/$tau_f)
+        
+	set f1=F
+	set f2=F
+	shift f2 -1
+	set t1=tmin
+	set t2=tmin
+	shift t2 -1
+	set rf = f2/f1
+	set dt = t2 - t1
+
+	set tau = abs(0.693*dt/ln(rf))
+
+	set dum_tau = < $tau_r $tau_f >
+	vecminmax dum_tau tau1 tau2
+	set tau_lim = tau if(tau < 250)
+
+	# print '  %10.6g  %8.6f  %4.1f   %9.7f   %7.3f\n' < tmin tday dt rf tau >
+
+	location 5500 30000  7000 16000
+	ticksize 0.01 0.05 0 0 
+        limits $(-0.1*$t_span/24./60.) $(1.1*$t_span/24./60.) $(-2.*$tau_f) $(2.*$tau_r)
+        limits $(-0.1*$t_span/24./60.) $(1.1*$t_span/24./60.) tau_lim
+	box
+
+	relocate $fx1 $tau_r ctype 3 ltype 2 draw $fx2 $tau_r
+	relocate $fx1 $tau_f ctype 6 ltype 2 draw $fx2 $tau_f
+        ctype 5 ltype 0 lweight 2 connect tday tau
+	ptype 4 3 
+        ctype 5 ltype 0 lweight 4 points  tday tau
+	ctype 2 
+	reset_graph
+
+#--------------------------------------------------------------------------------
+# test_exp_fig3
+test_exp_fig3
+	test_exp F0=0.2  a0=6.0   tau_r=9.80    tau_f=163.98  t_span=450  t_peak=90
+
+##--------------------------------------------------------------------------------
+# test_exp_fig3_real
+test_exp_fig3_real
+	test_exp F0=0.2  a0=5.5   tau_r=9.80    tau_f=163.98  t_span=450  t_peak=75
+
+##-------------------------------------------------------------------------------
+# test_exp_fig4
+test_exp_fig4
+	test_exp F0=0.0  a0=12.0  tau_r=37.92   tau_f=50.22   t_span=200  t_peak=40
+
+##-------------------------------------------------------------------------------
+# test_exp_fig4_real
+test_exp_fig4_real
+	test_exp F0=0.0  a0=12.0  tau_r=7.      tau_f=50.22   t_span=200  t_peak=40
+
+##-------------------------------------------------------------------------------
+# test_exp_fig5
+test_exp_fig5
+	test_exp F0=4.0  a0=12.0  tau_r=107.70  tau_f=36.60   t_span=360  t_peak=270 
+
+##-------------------------------------------------------------------------------
+# test_exp_fig5_real
+test_exp_fig5_real
+	test_exp F0=4.0  a0=12.0  tau_r=107.70  tau_f=12.0    t_span=360  t_peak=270 
+
+##-------------------------------------------------------------------------------

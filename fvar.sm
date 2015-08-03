@@ -1,0 +1,492 @@
+#---------------------------------------------------------------------------
+# f_var
+f_var
+
+	echo -------------------------------------------------------------
+	echo  *** DATA Section ***
+	define end ? { Suffix of vectors : }
+	define 1 $end
+
+	define t1 ? { Start Time : }
+	define t2 ? { End   Time : }
+
+	set test_y = rate_$1        if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+	set test_w = err_rate_$1    if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+
+	mystats  test_y        mean_y  width_y  absdev_y skew_y
+	# stats2 test_y test_w mean2_y width2_y kurt2_y
+
+	median test_y med
+
+	echo -----------------------------------------------------------------
+	echo * Average cts/sec = $mean_y   #  $mean2_y
+	echo * sigma           = $width_y  #  $width2_y
+	echo * Skewness        = $skew_y   #  $kurt2_y
+	echo * Abs. Deviation  = $absdev_y 
+	echo * median          = $med
+
+	define sigma_f2 (sum((test_y - $mean_y)**2.)/$(dimen(test_y)-1))
+	define delta_f2 (sum(test_w*test_w)/$(dimen(test_y)))
+
+	define fvar (sqrt($sigma_f2 - $delta_f2)/$mean_y)
+	define sigma_fvar ($fvar*($sigma_f2/$delta_f2)*sqrt(2/$(dimen(test_y)-1))/2/($sigma_f2/$delta_f2-1) )
+
+	echo -----------------------------------------------------------------
+	echo * Sigma_F = $(sqrt($sigma_f2))      
+	echo * Delta_F = $(sqrt($delta_f2))
+	echo -----------------------------------------------------------------
+	echo * DATA: $end 
+	echo *       N = $(dimen(test_y))
+	echo *   F_Var = $fvar +/- $sigma_fvar
+	echo -----------------------------------------------------------------
+
+	set pt   = < $fvar >
+	set e_pt = < $sigma_fvar >
+
+	define xpt ? { Plot dot ? if YES give X-coordinate }
+	if($xpt != 0) {
+	   set xptv = < $xpt >
+   	   ctype 4 
+	   expand 3.0
+	   points  xptv pt
+	   error_y xptv pt e_pt
+	   ctype 2 
+	   expand 2.0
+	}
+
+	delete xptv
+	delete pt
+	delete e_pt
+
+#---------------------------------------------------------------------------
+# f_var_tail
+f_var_tail
+
+	echo -------------------------------------------------------------
+	echo  *** DATA Section ***
+	define end ? { Suffix of vectors : }
+	define 1 $end
+
+	define t1 ? { Start Time : }
+	define t2 ? {   End Time : }
+
+	set test_y = rate_$1        if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+	set test_w = err_rate_$1    if(newt_$1>$t1 && newt_$1<$t2 && rate_$1>0)
+
+	mystats  test_y        mean_y  width_y  absdev_y skew_y
+	# stats2 test_y test_w mean2_y width2_y kurt2_y
+
+	median test_y med
+
+	echo -----------------------------------------------------------------
+	echo * Average cts/sec = $mean_y   #  $mean2_y
+	echo * sigma           = $width_y  #  $width2_y
+	echo * Skewness        = $skew_y   #  $kurt2_y
+	echo * Abs. Deviation  = $absdev_y 
+	echo * Median          = $med ******
+
+	define sigma_f2 (sum((test_y - $mean_y)**2.)/$(dimen(test_y)-1))
+	define delta_f2 (sum(test_w*test_w)/$(dimen(test_y)))
+	define fvar (sqrt($sigma_f2 - $delta_f2)/$mean_y)
+	define sigma_fvar ($fvar*($sigma_f2/$delta_f2)*sqrt(2/$(dimen(test_y)-1))/2/($sigma_f2/$delta_f2-1) )
+
+	echo -----------------------------------------------------------------
+	echo * OLD Sigma_F = $(sqrt($sigma_f2))      
+	echo * OLD Delta_F = $(sqrt($delta_f2))
+	echo -----------------------------------------------------------------
+	echo * DATA: $end 
+	echo *       N = $(dimen(test_y))
+	echo *   F_Var = $fvar +/- $sigma_fvar
+	echo -----------------------------------------------------------------
+
+	#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	# selecting only the upper half of the count rate distribution
+	#
+	set testb_y = test_y        if(test_y >= $med)
+	set testb_w = test_w        if(test_y >= $med)
+
+	echo * selected elements are:  $(dimen(testb_y)) out of $(dimen(test_y))
+
+	# define sigma_f2 (sum(2*(testb_y - $mean_y)**2.)/$(2*dimen(testb_y)-1))
+
+	define sigma_f2 (sum(2*(testb_y - $med)**2.)/$(2*dimen(testb_y)-1))
+	define delta_f2 (sum(testb_w*testb_w)/$(dimen(testb_y)))
+
+	define fvar1 (sqrt($sigma_f2 - $delta_f2)/$mean_y)
+	define fvar2 (sqrt($sigma_f2 - $delta_f2)/$med)
+	define sigma_fvar ($fvar*($sigma_f2/$delta_f2)*sqrt(2/$(2*dimen(testb_y)-1))/2/($sigma_f2/$delta_f2-1) )
+
+	echo -----------------------------------------------------------------
+	echo * NEW Sigma_F = $(sqrt($sigma_f2))      
+	echo * NEW Delta_F = $(sqrt($delta_f2))
+	echo -----------------------------------------------------------------
+	echo * DATA: $end 
+	echo *       N = $(dimen(test_y))
+	echo *   F_Var_1 = $fvar1 +/- $sigma_fvar
+	echo *   F_Var_2 = $fvar2 +/- $sigma_fvar
+	echo -----------------------------------------------------------------
+
+	set pt   = < $fvar >
+	set e_pt = < $sigma_fvar >
+
+	define xpt ? { Plot dot ? if YES give X-coordinate }
+	if($xpt != 0) {
+	   set xptv = < $xpt >
+   	   ctype 4 
+	   expand 3.0
+	   points  xptv pt
+	   error_y xptv pt e_pt
+	   ctype 2 
+	   expand 2.0
+	}
+
+	delete xptv
+	delete pt
+	delete e_pt
+
+#---------------------------------------------------------------------------
+# f_var_histo [<color>]
+f_var_histo 01
+
+	f_var
+
+	if($?1) { define hcol $1 } else { define hcol 2 }
+
+	define  width_y $(sqrt($sigma_f2))
+	# define xvecmin $($mean_y - 10*$width_y)
+	# define xvecmax $($mean_y + 10*$width_y)
+	define xvecmin ? { X-min : }
+	define xvecmax ? { X-max : }
+        define step ? {Give me the STEP for the histogram...}
+
+	define step2 ($step/10.)
+        set xstep  = $xvecmin-$step/2.,$xvecmax+$step/2.,$step
+        set xstep2 = $xvecmin-$step/2.,$xvecmax+$step/2.,$step2
+	define num $(dimen(test_y))
+	set h_y    = histogram(test_y:xstep)/$num
+
+	vecminmax h_y a b 
+	define a delete
+
+	location 6500 31000 6500 31000
+	lweight 3
+	limits xstep -0.01 $($b*1.05)
+	limits $xvecmin $xvecmax -0.01 0.4
+	ticksize $step 0.5 0 0 
+	expand 1.5
+	box
+	expand 2.0
+	xlabel cts/s
+	ylabel Relative Frequency
+	expand 1.5
+   
+	gauss xstep2 $mean_y $width_y
+	set model = gauss/$(sum(gauss))
+	gauss xstep2 $mean_y $(sqrt($delta_f2))
+	set model2= gauss/$(sum(gauss))
+
+	gauss xstep  $mean_y $width_y
+	set h_y2  = histogram(test_y:xstep)
+	set h_y3      = h_y2                if(h_y2 > 0)
+	set check_mod = gauss*$step*$num    if(h_y2 > 0)
+	set xstep3    = xstep               if(h_y2 > 0)
+	set dev   = (h_y3 - check_mod)**2/h_y3 
+
+	define chi2    (sum(dev))
+	define chi2red ($chi2/dimen(h_y3))
+
+	echo -----------------------------------
+	echo  Chi^2     = $chi2   ($(dimen(h_y3)))
+	echo  Chi^2_red = $chi2red
+	echo -----------------------------------
+
+	lweight 4
+	ctype 4 
+	connect xstep2 (model*$step/$step2)
+	ctype 7 
+	connect xstep2 (model2*$step/$step2)
+	ctype $hcol
+	histogram xstep h_y
+	points xstep h_y
+	set test_e = sqrt(h_y2)/$(dimen(test_y))
+	error_y xstep h_y test_e
+	ltype 2
+	ctype 3
+	relocate $mean_y -2
+	draw     $mean_y  2
+	ltype 0
+	ctype 2 
+
+	define dumsig ( sprintf('%7.4f',$sigma_f2) )	
+	define dumdel ( sprintf('%7.4f',$delta_f2) )	
+	define dumave ( sprintf('%7.4f',$mean_y) )	
+	define dumfva ( sprintf('%7.4f',$fvar) )	
+	relocate ( $gx1 $( $gy2 + 500 ) )
+	expand 1.2
+	putlabel 6 \sigma^2=$dumsig,  \Delta^2=$dumdel, \langle F\rangle=$dumave, F_{var}=$dumfva
+
+#---------------------------------------------------------------------------
+# f_var_histo_norm : subtract mean count rate before to make the distribution
+f_var_histo_norm 01
+
+	f_var
+
+
+	if($?1) { define hcol $1 } else { define hcol 2 }
+
+	echo ------------------------------------------------------------
+	echo  [1] Divide by the Average
+	echo  [2] do NOT divide
+	echo  [3] Divide by the data variance
+	define divido ? { What ? }
+
+	echo -------------------------------------------------------
+
+	if( $divido == 1 ) {
+	   set test_y = (test_y - $mean_y)/$mean_y
+	   define width_y  $(sqrt($sigma_f2)/$mean_y)
+	   define width2_y $(sqrt($delta_f2)/$mean_y)
+
+	   echo * Median          = $($med/$mean_y-1)
+	   echo * Skewness        = $skew_y       [$(6./sqrt(dimen(test_y)))] 
+	   echo * Abs. Deviation  = $($absdev_y/$mean_y) 
+	   echo * Sigma           = $(sqrt($sigma_f2)/$mean_y)
+	}
+	if( $divido == 2 ) {
+	   set test_y = (test_y - $mean_y)
+	   define width_y  $(sqrt($sigma_f2))
+	   define width2_y $(sqrt($delta_f2))
+
+	   echo * Median          = $($med-$mean_y)
+	   echo * Skewness        = $skew_y       [$(6./sqrt(dimen(test_y)))]
+	   echo * Abs. Deviation  = $absdev_y 
+	   echo * Sigma           = $(sqrt($sigma_f2))
+	}
+	if( $divido == 3 ) {
+	   set test_y = (test_y - $mean_y)/sqrt($delta_f2)
+	   define width_y  $(sqrt($sigma_f2/$delta_f2))
+	   define width2_y $(sqrt($delta_f2/$delta_f2))
+
+	   echo * Median          = $(($med-$mean_y)/sqrt($delta_f2))
+	   echo * Skewness        = $skew_y       [$(6./sqrt(dimen(test_y)))] 
+	   echo * Abs. Deviation  = $($absdev_y/sqrt($delta_f2))
+	   echo * Sigma           = $(sqrt($sigma_f2/$delta_f2))
+	}
+
+	echo -------------------------------------------------------
+	define xvecmin ? { X-min : }
+	define xvecmax (-1*$xvecmin)
+	define xvecmax ? { X-max : }
+        define step ? {Give me the STEP for the histogram...}
+
+	define step2 ($step/10.)
+        set xstep_a   = $step/2.,$xvecmax+$step/2.,$step
+        set xstep_b   = 0 - xstep_a
+	set xstep_b   = reverse(xstep_b)
+        set xstep2_a  = $step/2.,$xvecmax+$step/2.,$step2
+        set xstep2_b  = 0 - xstep2_a
+	set xstep2_b  = reverse(xstep2_b)
+	set xstep     = xstep_b CONCAT xstep_a
+	set xstep2    = xstep2_b CONCAT xstep2_a
+
+	define num $(dimen(test_y))
+	set h_y       = histogram(test_y:xstep)/$num
+
+	vecminmax h_y a b 
+	define a delete
+
+	location 6500 31000 6500 31000
+	lweight 3
+	limits $xvecmin $xvecmax -0.01 0.4
+	ticksize $step $( $step*5 ) 0 0 
+	expand 1.5
+	box
+	expand 2.0
+	if( $divido == 1 ) { xlabel (F-\langle F\rangle)/\langle F\rangle }
+	if( $divido == 2 ) { xlabel (F-\langle F\rangle) [cts/s]}
+	if( $divido == 3 ) { xlabel (F-\langle F\rangle)/\Delta_F }
+	ylabel Relative Frequency
+	expand 1.5
+   
+	gauss xstep2 0 $width_y
+	set model = gauss/$(sum(gauss))
+	gauss xstep2 0 $width2_y
+	set model2= gauss/$(sum(gauss))
+
+	gauss xstep  0 $width_y
+	set h_y2      = histogram(test_y:xstep)
+	set h_y3      = h_y2                if(h_y2 > 0)
+	set check_mod = gauss*$step*$num    if(h_y2 > 0)
+	set xstep3    = xstep               if(h_y2 > 0)
+	set dev   = (h_y3 - check_mod)**2/h_y3 
+
+	define chi2    (sum(dev))
+	define chi2red ($chi2/dimen(h_y3))
+
+	echo -----------------------------------
+	echo  Chi^2     = $chi2   ($(dimen(h_y3)))
+	echo  Chi^2_red = $chi2red
+	echo -----------------------------------
+
+	lweight 4
+	ctype 4 
+	connect xstep2 (model*$step/$step2)
+	if( $divido != 3 ) {
+	    ctype 7 
+	    connect xstep2 (model2*$step/$step2)
+	}
+	ctype $hcol
+	histogram xstep h_y
+	points xstep h_y
+	set test_e = sqrt(h_y2)/$(dimen(test_y))
+	error_y xstep h_y test_e
+	ltype 1
+	ctype 3
+	relocate 0 -2
+	draw     0  2
+	ctype 6
+	ltype 2 
+	if( $divido == 1 ) {
+	    relocate $($med/$mean_y-1) -2
+	    draw     $($med/$mean_y-1)  2
+	}
+	if( $divido == 2 ) {
+	    relocate $($med-$mean_y) -2
+	    draw     $($med-$mean_y)  2
+	}
+	if( $divido == 3 ) {
+	    relocate $(($med-$mean_y)/sqrt($delta_f2)) -2
+	    draw     $(($med-$mean_y)/sqrt($delta_f2))  2
+	}
+	ltype 0
+	ctype 2 
+
+	if( $divido == 1 ) {
+	    define dumsig ( sprintf('%7.4f',$(sqrt($sigma_f2)/$mean_y) ))
+	    define dumdel ( sprintf('%7.4f',$(sqrt($delta_f2)/$mean_y) ))
+	}
+	if( $divido == 2 ) {
+	    define dumsig ( sprintf('%7.4f',$(sqrt($sigma_f2)) ))
+	    define dumdel ( sprintf('%7.4f',$(sqrt($delta_f2)) ))
+	}
+	if( $divido == 3 ) {
+	    define dumsig ( sprintf('%7.4f',$(sqrt($sigma_f2/$delta_f2)) ))
+	    define dumdel ( sprintf('%7.4f',$(sqrt($delta_f2/$delta_f2)) ))
+	}
+	define dumave ( sprintf('%7.4f',$mean_y) )	
+	define dumfva ( sprintf('%5.3f',$fvar) )	
+	relocate ( $gx1 $( $gy2 + 500 ) )
+	expand 1.2
+	if( $divido == 1 ) {
+	    putlabel 6 \sigma/\langle F\rangle=$dumsig,  \Delta\langle F\rangle=$dumdel, \langle F\rangle=$dumave, F_{var}=$dumfva
+	}
+	if( $divido == 2 ) {
+	    putlabel 6 \sigma=$dumsig,  \Delta=$dumdel, \langle F\rangle=$dumave, F_{var}=$dumfva
+	}
+	if( $divido == 3 ) {
+	    putlabel 6 \sigma/\Delta=$dumsig, \langle F\rangle=$dumave, F_{var}=$dumfva
+	}
+
+	define dumchi ( sprintf('%7.3f',$chi2) )	
+	define dumchr ( sprintf('%7.3f',$chi2red) )	
+	relocate ( $($gx2 + 600) $gy2 )
+	angle 270
+	putlabel 6 \chi^2=$dumchi ($(dimen(h_y3))), \chi^2_{\\nu}=$dumchr
+	angle 0
+
+#---------------------------------------------------------------------------
+# f_var_histo_norm2: subtract mean count rate and divide by expected variance
+f_var_histo_norm2 01
+
+	f_var
+
+	if($?1) { define hcol $1 } else { define hcol 2 }
+
+	set test_y = (test_y - $mean_y)/sqrt($delta_f2)
+
+	define width_y $(sqrt($sigma_f2))
+	define xvecmin2 ? { X-min : }
+	define xvecmax2 (-1*$xvecmin2)
+	define xvecmax2 ? { X-max : }
+        define stepp ? {Give me the STEP for the histogram...}
+
+	define step2 ($stepp/10.)
+        set xstep  = $xvecmin2-$stepp/2.,$xvecmax2+$stepp/2.,$stepp
+        set xstep2 = $xvecmin2-$stepp/2.,$xvecmax2+$stepp/2.,$step2
+	define num $(dimen(test_y))
+	set h_y    = histogram(test_y:xstep)/$num
+
+	vecminmax h_y a b 
+	define a delete
+
+	location 6500 31000 6500 31000
+	lweight 3
+	limits $xvecmin2 $xvecmax2 -0.01 0.4
+	ticksize $stepp $( $stepp*4 ) 0 0 
+	expand 1.5
+	box
+	expand 2.0
+	xlabel (F-\langle F\rangle)/\Delta_F
+	ylabel Relative Frequency
+	expand 1.5
+   
+	gauss xstep2 0 $($width_y/sqrt($delta_f2))
+	set model = gauss/$(sum(gauss))
+	gauss xstep2 0 1
+	set model2= gauss/$(sum(gauss))
+
+	gauss xstep  0 $($width_y/sqrt($delta_f2))
+	set h_y2      = histogram(test_y:xstep)
+	set h_y3      = h_y2                if(h_y2 > 0)
+	set check_mod = gauss*$stepp*$num    if(h_y2 > 0)
+	set xstep3    = xstep               if(h_y2 > 0)
+	set dev   = (h_y3 - check_mod)**2/h_y3 
+
+	define chi2    (sum(dev))
+	define chi2red ($chi2/dimen(h_y3))
+
+	echo -----------------------------------
+	echo  Chi^2     = $chi2   ($(dimen(h_y3)))
+	echo  Chi^2_red = $chi2red
+	echo -----------------------------------
+
+	lweight 4
+	ctype 4 
+	connect xstep2 (model*$stepp/$step2)
+	# ctype 7 
+	# connect xstep2 (model2*$step/$step2)
+	ctype $hcol
+	histogram xstep h_y
+	points xstep h_y
+	set test_e = sqrt(h_y2)/$(dimen(test_y))
+	error_y xstep h_y test_e
+	ltype 2
+	ctype 3
+	relocate 0 -2
+	draw     0  2
+	ltype 0
+	ctype 2 
+
+#---------------------------------------------------------------------------
+# idea
+idea
+
+	f_var
+
+	set dimen(progr1) = $(dimen(test_y)-1)
+	set dimen(progr2) = $(dimen(test_y)-1)
+	do i=1,$(dimen(test_y)-1) {
+	    set progr1[$($i-1)] = abs(test_y[$i] - test_y[$($i-1)])
+	    set progr2[$($i-1)] = (test_y[$i] - test_y[$($i-1)])**2/(test_w[$i]**2+test_y[$($i-1)]**2)/4
+	}
+
+	define sumprogr1 (sum(progr1))
+	define sumprogr2 (sqrt(sum(progr1)))
+
+	echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	echo  Sum-1 : $sumprogr1
+	echo  Sum-2 : $sumprogr2
+	echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+#---------------------------------------------------------------------------

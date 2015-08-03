@@ -1,0 +1,319 @@
+#---------------------------------------------------------------------------
+# help.light_curve
+help.light_curve
+
+
+	echo -------------------------------------------------------
+	echo * load_all_lc
+	echo * go_lc            <data_code> [<color>]
+	echo * readdata_lc_fits [<filename-of-unbinned-LC>]
+	echo                    Legge i dati dai file originali output di LCURVE[1]
+	echo                    che sono FITS file dumped to ASCII
+	echo * read_whipple 
+	echo * 
+	echo -------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# load_all_lc_fnt
+load_all_lc_fnt
+
+	# data rate_fnt_L1.dat
+	# read {  rate_l1 3 err_rate_l1 4 }
+
+	foreach 9 { 1 2 3 } {
+	   data rate_fnt_2_10_e0$9.dat
+	   read < rate_all_$9 3 err_rate_all_$9 4 >
+	   data rate_fnt_2_4_e0$9.dat
+	   read < rate_soft_$9 3 err_rate_soft_$9 4 >
+	   data rate_fnt_4_10_e0$9.dat
+	   read < rate_hard_$9 3 err_rate_hard_$9 4 >
+	}
+
+	foreach 9 { all soft hard } {
+           set rate_$9     = rate_$9_1     CONCAT rate_$9_2     CONCAT rate_$9_3
+           set err_rate_$9 = err_rate_$9_1 CONCAT err_rate_$9_2 CONCAT err_rate_$9_3
+	}
+
+	data times_fnt.dat
+	read { times 3 }
+
+	set tjd_nosort = times/86400. + 9353.000699574
+	set tjd = tjd_nosort
+	sort < tjd >
+
+	foreach 3 < all soft hard > {
+	    set newt_$3   = tjd_nosort
+
+	    sort < newt_$3 rate_$3 err_rate_$3 >
+	    set newt1_$3  = tjd-0.25
+	    set newt2_$3  = tjd+0.25
+	    set newbin_$3 = 0*rate_$3 + 0.5
+	    set cvrfr_$3  = 0*rate_$3 + 1.0
+	}
+
+#------------------------------------------------------------------------------
+# load_all_fits
+load_all_fits
+
+	data single_pl_fits.dat
+	read { g 5 g_d 6 g_u 7 pl_fl_2_4 8 pl_fl_4_10 9 pl_fl_2_10 10  }
+
+	data bkn_pl_fits.dat
+	read { g1 2 g1_d 3 g1_u 4 g2 5 g2_d 6 g2_u 7 eb 8 eb_d 9 eb_u 10 bkn_fl_2_4 11 bkn_fl_4_10 12 bkn_fl_2_10 13 }
+
+	# do 1=0,$(dimen(g1)-1) {
+	#     if( $(g1_d[$1]) < 0.01 ) {
+	#        set g1_d[$1] = -0.001
+	#     }
+	#     if( $(g2_d[$1]) < 0.01 ) {
+	#        set g2_d[$1] = -0.001
+	#     }
+	# }
+
+	foreach 1 < g g1 g2 eb > {
+	   set rate_$1       = $1
+	   set err_rate_$1_u = $1_u - $1
+	   set err_rate_$1_d = $1   - $1_d
+
+	   set newt_$1   = tjd_nosort
+	   sort < newt_$1 rate_$1 err_rate_$1_d err_rate_$1_u >
+	   set newt1_$1  = newt_$1     - 0.25
+	   set newt2_$1  = newt_$1     + 0.25
+	   set newbin_$1 = newt_$1*0.0 + 0.5
+	   set cvrfr_$1  = newt_$1*0.0 + 1.0
+	}
+
+	foreach 1 < pl bkn > {
+	   foreach 2 < 2_4 4_10 2_10 > {
+	      set rate_$1_$2     = $1_fl_$2*1.0e10
+
+	      set newt_$1_$2   = tjd_nosort
+	      sort < newt_$1_$2 rate_$1_$2 >
+	      set newt1_$1_$2  = newt_$1_$2     - 0.25
+	      set newt2_$1_$2  = newt_$1_$2     + 0.25
+	      set newbin_$1_$2 = newt_$1_$2*0.0 + 0.5
+	      set cvrfr_$1_$2  = newt_$1_$2*0.0 + 1.0
+	   }
+	   set err_rate_$1_2_4  = rate_$1_2_4*err_rate_soft/rate_soft
+	   set err_rate_$1_4_10 = rate_$1_4_10*err_rate_hard/rate_hard
+	   set err_rate_$1_2_10 = rate_$1_2_10*err_rate_all/rate_all
+	   # all these arrays are already sorted, therefore there is no need to sort 'err_rate'
+	}
+
+#------------------------------------------------------------------------------
+# load_all_lc_brt
+load_all_lc_brt
+
+	foreach 9 { 1 2 3 } {
+	   data rate_brt_2_10_e0$9.dat
+	   read < rate_all_brt_$9 3 err_rate_all_brt_$9 4 >
+	   data rate_brt_2_4_e0$9.dat
+	   read < rate_soft_brt_$9 3 err_rate_soft_brt_$9 4 >
+	   data rate_brt_4_10_e0$9.dat
+	   read < rate_hard_brt_$9 3 err_rate_hard_brt_$9 4 >
+	}
+
+	foreach 9 { all_brt soft_brt hard_brt } {
+           set rate_$9     = rate_$9_1     CONCAT rate_$9_2     CONCAT rate_$9_3
+           set err_rate_$9 = err_rate_$9_1 CONCAT err_rate_$9_2 CONCAT err_rate_$9_3
+	}
+
+	data times_brt.dat
+	read { times_brt 3 }
+
+	set tjd_brt_nosort = times_brt/86400. + 9353.000699574
+	set tjd_brt = tjd_brt_nosort
+	sort < tjd_brt >
+
+	foreach 3 < all_brt soft_brt hard_brt > {
+	    set newt_$3   = tjd_brt_nosort
+
+	    sort < newt_$3 rate_$3 err_rate_$3 >
+	    set newt1_$3  = tjd-0.25
+	    set newt2_$3  = tjd+0.25
+	    set newbin_$3 = 0*rate_$3 + 0.5
+	    set cvrfr_$3  = 0*rate_$3 + 1.0
+	}
+
+#------------------------------------------------------------------------------
+# load_all_fits_brt
+load_all_fits_brt
+
+	data single_pl_fits_109.dat
+	read { g_brt 5 g_brt_d 6 g_brt_u 7 pl_fl_brt_2_4 8 pl_fl_brt_4_10 9 pl_fl_brt_2_10 10  }
+
+	# data bkn_pl_fits.dat
+	# read { g1_brt 2 g1_brt_d 3 g1_brt_u 4 g2_brt 5 g2_brt_d 6 g2_brt_u 7 }
+	# read { eb_brt 8 eb_brt_d 9 eb_brt_u 10 bkn_fl_brt_2_4 11 bkn_fl_brt_4_10 12 bkn_fl_brt_2_10 13 }
+
+	# foreach 1 < g_brt g1_brt g2_brt eb_brt > {
+	foreach 1 < g_brt > {
+	   set rate_$1       = $1
+	   set err_rate_$1_u = $1_u - $1
+	   set err_rate_$1_d = $1   - $1_d
+
+	   set newt_$1   = tjd_brt_nosort
+	   sort < newt_$1 rate_$1 err_rate_$1_d err_rate_$1_u >
+	   set newt1_$1  = newt_$1     - 0.25
+	   set newt2_$1  = newt_$1     + 0.25
+	   set newbin_$1 = newt_$1*0.0 + 0.5
+	   set cvrfr_$1  = newt_$1*0.0 + 1.0
+	}
+
+	# foreach 1 < pl bkn > {
+	foreach 1 < pl > {
+	   foreach 2 < 2_4 4_10 2_10 > {
+	      set rate_$1_$2     = $1_fl_brt_$2*1.0e10
+
+	      set newt_$1_$2   = tjd_brt_nosort
+	      sort < newt_$1_$2 rate_$1_$2 >
+	      set newt1_$1_$2  = newt_$1_$2     - 0.25
+	      set newt2_$1_$2  = newt_$1_$2     + 0.25
+	      set newbin_$1_$2 = newt_$1_$2*0.0 + 0.5
+	      set cvrfr_$1_$2  = newt_$1_$2*0.0 + 1.0
+	   }
+	   set err_rate_$1_2_4  = rate_$1_2_4*err_rate_soft_brt/rate_soft_brt
+	   set err_rate_$1_4_10 = rate_$1_4_10*err_rate_hard_brt/rate_hard_brt
+	   set err_rate_$1_2_10 = rate_$1_2_10*err_rate_all_brt/rate_all_brt
+	   # all these arrays are already sorted, therefore there is no need to sort 'err_rate'
+	}
+
+#------------------------------------------------------------------------------
+# load_hxt
+load_hxt
+
+	echo " Available Time binnigs : "
+	echo "   21600 "
+	echo "   28800 "
+	define tbin ? { What Time Binning : }
+
+	#--- HEXTE cluster A ---
+	data rate_hxta_20_40_"$!tbin"s.dat
+	read < newt_hxta 1 newbin_hxta 2 rate_hxta 3 err_rate_hxta 4 cvrfr_hxta 5 >
+
+	set newt1_hxta = newt_hxta - newbin_hxta
+	set newt2_hxta = newt_hxta + newbin_hxta
+	set newbin_hxta = 2.0*newbin_hxta
+
+	#--- HEXTE cluster B ---
+	data rate_hxtb_20_40_"$!tbin"s.dat
+	read < newt_hxtb 1 newbin_hxtb 2 rate_hxtb 3 err_rate_hxtb 4 cvrfr_hxtb 5 >
+
+	set newt1_hxtb = newt_hxtb - newbin_hxtb
+	set newt2_hxtb = newt_hxtb + newbin_hxtb
+	set newbin_hxtb = 2.0*newbin_hxtb
+
+	#--- HEXTE cluster A+B ---
+	data rate_hxt_ab_20_40_"$!tbin"bis.dat
+	read < newt_hxt 1 newbin_hxt 2 rate_hxt 3 err_rate_hxt 4 cvrfr_hxt 5 >
+
+	set newt1_hxt = newt_hxt - newbin_hxt
+	set newt2_hxt = newt_hxt + newbin_hxt
+	set newbin_hxt = 2.0*newbin_hxt
+
+#------------------------------------------------------------------------------
+# go_lc <data_code> [<color>]
+go_lc 12
+	
+	if($?2) { ctype $2 } 
+
+	points  tjd r_$1
+	error_y tjd r_$1 err_r_$1
+
+#---------------------------------------------------------------------------
+# readdata_lc_fits : Legge i dati dai file originali output di LCURVE[1]
+#                    che sono FITS file dumped to ASCII
+#                    
+readdata_lc_fits 01
+
+	if($?1 == 0) {
+	   define oldname  ? {Data file name ?}
+	   define 1 $oldname
+	}
+	define oldname  $1
+
+	data $1
+	lines  5  5   read ndum  3   define nn      $(ndum)
+	lines 33 33   read tddum 3   define t0d_int $(tddum)
+	lines 34 34   read tsdum 3   define t0d_dec $(tsdum)
+	lines 63 $(62+$nn)
+	read { t 2 dt 3 rate 4 sigma_rate 5 cvrfr 6 }
+
+	echo ----------------------
+	echo  T_0 = $t0d_int [TJD] + $t0d_dec [s]
+	echo  Good Bins = $nn
+	echo ----------------------
+
+	define t0ref $t0d_int
+
+	define whattodo ? {Rescale Time-Axis ?}
+	if(substr('$whattodo',0,1) == 'y') {
+	  define t0ref  ? { Time (in days) to which rescale ? }
+	  define t0ref2   ((($t0d_int - $t0ref) + $t0d_dec)*86400)
+	  set t  = t + $t0ref2
+	} 
+
+	set t1         = t 
+	set t2         = t + 2.*dt
+	set dt_true    = cvrfr*2*dt
+
+	set counts     = dt_true*rate
+
+	define how_error ? {Poisson error or Propagate ? [1/2] }
+	if(substr('$how_error',0,1) == '1') {
+	    set err_counts = sqrt(counts)
+	} else {
+	    set err_counts = sigma_rate
+	}
+	set err_rate   = err_counts/dt_true
+
+	define basicbin ($(2*$(dt[0])))
+
+	vecminmax t tmin tmax
+	define tmin_lim ($tmin-40*$basicbin)
+	define tmin_lim (0-40*$basicbin)
+	define tmax_lim ($tmax+40*$basicbin)
+
+	echo $tmin_lim 
+	echo $tmax_lim 
+
+#---------------------------------------------------------------------------
+# read_whipple
+read_whipple
+
+	data whipple_96_run_ab_55.dat
+
+	read { time 2 rate_tev 7 err_rate_tev 8 }
+	set err_rate_tev_d = err_rate_tev	
+	set err_rate_tev_u = err_rate_tev	
+
+	do 1=0,$(dimen(rate_tev)-1) {
+	   if ( $(rate_tev[$1]) <= 0.0 ) {
+	       set rate_tev[$1] = 1.e-10
+	   }
+	}
+	
+	set newt_tev   = time - 40000.0
+	set newt1_tev  = newt_tev
+	set newt2_tev  = newt_tev
+	set newbin_tev = newt_tev*0.0 + 0.25
+	set cvrfr_tev   = 0*rate_tev + 1
+
+
+	data whipple_96_mixed_fixed.dat
+	read { time2 2 rate_tev2 7 err_rate_tev2 8 }
+	set err_rate_tev2_d = err_rate_tev2	
+	set err_rate_tev2_u = err_rate_tev2	
+
+	do 1=0,$(dimen(rate_tev2)-1) {
+	   if ( $(rate_tev2[$1]) <= 0.0 ) {
+	       set rate_tev2[$1] = 1.e-10
+	   }
+	}
+	
+	set newt_tev2   = time2 - 40000.0
+	set newt1_tev2  = newt_tev2
+	set newt2_tev2  = newt_tev2
+	set newbin_tev2 = newt_tev2*0.0 + 0.25
+	set cvrfr_tev2   = 0*rate_tev2 + 1
+#---------------------------------------------------------------------------

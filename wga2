@@ -1,0 +1,53 @@
+#---------------------------------------------------------------------------
+# sky_wga_2
+sky_wga_2	
+
+	define boh ? {* Did you already run "histo_exp_wga" ? [y/n]}
+
+	if(substr('$boh',0,1) != 'y') { return }
+
+	location 6000 31000 7000 31000
+	window 1 1 1 1
+
+	data exp_times.dat
+	read t_exp 4
+	set lg_t_exp = lg(t_exp)
+	
+	define cts4det ? { Counts for detection ? }
+	if(!$?convfac) { define convfac (1.5e-11) }   # 3.e-11 ?
+	define convfac ? { Cts/Sec --> 0.1-2.4 Flux Conversion Factor ? }
+	define pspc_area ? { PSPC FOV area ? [deg^2] }
+
+	define newterm ? { Additional term due to OFFSET re-normalization ? }
+
+	set lg_cps  = 0.7*lg($cts4det/10.**x) - 0.7 + $newterm
+	set cps  = 10.**lg_cps
+	set flux = cps*$convfac
+	set flux = reverse(flux)
+	set lg_flux = lg(flux)
+	set rht = reverse(ht)
+	set sky_cum=cumulate(rht)
+	set sky_cum=sky_cum
+	set sky_cum=$pspc_area*sky_cum
+
+	define checkbox ? { Plot box [y/n] ? }
+	if(substr('$checkbox',0,1) == 'y' ) { 
+           limits lg_flux sky_cum
+           limits -16 -9 sky_cum
+           ticksize -1 0 0 0 
+           ctype 2 expand 1.5
+           box
+           xlabel PSPC 0.1-2.4 Flux [erg/cm^2/sec]
+           ylabel Sky Covered [deg^2]
+	}
+
+	ltype 2 
+	ctype 3 
+	connect  lg_flux sky_cum
+	ltype 0
+	ctype 2 
+	ptype 4 3 
+	points lg_flux sky_cum
+
+
+#---------------------------------------------------------------------------

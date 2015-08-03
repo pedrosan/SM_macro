@@ -1,0 +1,4231 @@
+#---------------------------------------------------------------------------
+# ellipse  x0 y0 a b 
+ellipse 4 
+
+	define x0 $1
+	define y0 $2
+	define a  $3
+	define b  $4
+
+	set _x local set _y1 local set _y2 local
+
+	set _x = -$a,$a,$($a/101.)
+
+	set _y1 =$b*sqrt(1- (_x/$a)**2.) 
+	set _y2 = -1*_y1
+
+	set _x  = _x  + $x0
+	set _y1 = _y1 + $y0
+	set _y2 = _y2 + $y0
+
+	connect _x _y1
+	connect _x _y2
+
+##---------------------------------------------------------------------------
+## read_area1  !!! OBSOLETE !!!
+read_area1
+
+
+##     RA   (J2000)  Dec     Peak Flux Int. Flux Flux Dist1 alpha  Ecl Emag Ocl Omag  Color Dist2a Dist2b Class        Notes
+##                             (20cm)    (20cm) (6cm)
+##    (FIRST POSITION)        (mJy)     (mJy)  (mJy)  (")   (radio)     (mag)    (mag)  (mag)  (")  (") 
+## ------------ ------------- --------- -------- ----- ----- ------ --- ----- -- ----- ------ ----- ---- ----- -----------------
+## 1  2  3        4  5  6             7        8     9    10     11  12    13 14    15     16    17   18
+## ------------ ------------- --------- -------- ----- ----- ------ --- ----- -- ----- ------ ----- ---- ----- -----------------
+## 00 01 21.522  -00 11 40.75     39.38    80.62    49  27.8   0.18  -1 19.22 -1 20.83   1.61  0.89 1.04
+## 00 02 57.196  -00 24 47.51    124.90   159.13   139  15.0   0.09  -1 19.19 -1 20.85   1.66  0.33 0.54 Galaxy? (z unknown)
+
+	## data sally_area1.sample.dat
+	data sally_north_full_NEW.dat
+	read { ra_h 1 ra_m 2 ra_s 3 dec_d 4 dec_m 5 dec_s 6 f_first_peak 7 f_first_tot 8 f5 9 }
+	read { ecl 12 emag 13 ocl 14 omag 15 }
+
+	set ra  = (ra_h + ra_m/60.  + ra_s/3600.)*15.
+	set dec = dec_d   + dec_m/60. + dec_s/3600. 
+
+
+##---------------------------------------------------------------------------
+## read_area2  !!! OBSOLETE !!!
+read_area2
+
+
+##     RA   (J2000)  Dec     Peak Flux Int. Flux Flux Dist1 alpha  Ecl Emag Ocl Omag  Color Dist2a Dist2b Class        Notes
+##                             (20cm)    (20cm) (6cm)
+##    (FIRST POSITION)        (mJy)     (mJy)  (mJy)  (")   (radio)     (mag)    (mag)  (mag)  (")  (") 
+## ------------ ------------- --------- -------- ----- ----- ------ --- ----- -- ----- ------ ----- ---- ----- -----------------
+## 1  2  3        4  5  6             7        8     9    10     11  12    13 14    15     16    17   18
+## ------------ ------------- --------- -------- ----- ----- ------ --- ----- -- ----- ------ ----- ---- ----- -----------------
+## 00 01 21.522  -00 11 40.75     39.38    80.62    49  27.8   0.18  -1 19.22 -1 20.83   1.61  0.89 1.04
+## 00 02 57.196  -00 24 47.51    124.90   159.13   139  15.0   0.09  -1 19.19 -1 20.85   1.66  0.33 0.54 Galaxy? (z unknown)
+
+	## data sally_area2.sample.dat
+	data sally_south_full.dat
+	read { ra_h 1 ra_m 2 ra_s 3 dec_d 4 dec_m 5 dec_s 6 f_first_peak 7 f_first_tot 8 f5 9 }
+	read { ecl 12 emag 13 ocl 14 omag 15 }
+
+	set ra  = (ra_h + ra_m/60.  + ra_s/3600.)*15.
+	set dec = dec_d   + dec_m/60. + dec_s/3600. 
+
+
+##---------------------------------------------------------------------------
+## read_list1   !!! OBSOLETE !!!
+read_list1
+
+##     RA   (J2000)  Dec     Peak Flux Int. Flux Flux Dist1 alpha  Ecl Emag Ocl Omag  Color Dist2a Dist2b Class        Notes
+##                             (20cm)    (20cm) (6cm)
+##    (FIRST POSITION)        (mJy)     (mJy)  (mJy)  (")   (radio)     (mag)    (mag)  (mag)  (")  (") 
+## ------------ ------------- --------- -------- ----- ----- ------ --- ----- -- ----- ------ ----- ---- ----- -----------------
+## 1  2  3        4  5  6             7        8     9    10     11  12    13 14    15     16    17   18
+## ------------ ------------- --------- -------- ----- ----- ------ --- ----- -- ----- ------ ----- ---- ----- -----------------
+## 00 01 21.522  -00 11 40.75     39.38    80.62    49  27.8   0.18  -1 19.22 -1 20.83   1.61  0.89 1.04
+## 00 02 57.196  -00 24 47.51    124.90   159.13   139  15.0   0.09  -1 19.19 -1 20.85   1.66  0.33 0.54 Galaxy? (z unknown)
+
+	## data sally_list1.sample.dat
+	data sally_north_subsample_NEW.dat
+	read { ra_h 1 ra_m 2 ra_s 3 dec_d 4 dec_m 5 dec_s 6 f5 9 }
+	read { ecl 12 emag 13 ocl 14 omag 15 }
+
+	set ra  = (ra_h + ra_m/60.  + ra_s/3600.)*15.
+	set dec = dec_d   + dec_m/60. + dec_s/3600. 
+
+##---------------------------------------------------------------------------
+## my_aitoffgrid
+my_aitoffgrid
+
+	define min_ra_deg    ? {   Min RA, in deg : }
+	define max_ra_deg    ? {   Max RA, in deg : }
+	define step_ra_deg   ? {  Step RA, in deg : }
+	define min_dec_deg   ? {  Min DEC, in deg : }
+	define max_dec_deg   ? {  Max DEC, in deg : }
+	define step_dec_deg  ? { Step DEC, in deg : }
+
+	limits $($min_ra_deg-5) $($max_ra_deg+5) $($min_dec_deg-5) $($max_dec_deg+5)
+
+	define i local
+	foreach i (_l _b _x _y) {
+	   set $i local
+	}
+
+	ctype 2
+
+	set _l = $min_ra_deg,$max_ra_deg
+	do i = $min_dec_deg,$max_dec_deg,$step_dec_deg {
+	   set _b = $i
+	   aitoff _l _b _x _y
+	   connect _x _y
+	}
+
+	set _b = $min_dec_deg,$max_dec_deg
+	do i = $min_ra_deg,$max_ra_deg,$step_ra_deg {
+	   set _l = $i
+	   aitoff _l _b _x _y
+	   connect _x _y
+	}
+
+#---------------------------------------------------------------------------
+# plot_sky
+plot_sky
+
+	aitoffgrid
+	eqgald ra dec l b
+	aitoff l b x y
+	ctype 2 
+	ptype 4 3 
+	points x y
+	ctype 5 aitoffdec 0
+	foreach a { 20 30 40 50 60 70 80 } { ctype 3 aitoffdec $a }
+	ctype 2
+
+##---------------------------------------------------------------------------
+## read_cross_rass  !!![OBSOLETE]!!!!
+read_cross_rass
+
+	echo "**********************************"
+	echo "**** THIS PROGRAM IS OBSOLETE ****"
+	echo "**********************************"
+
+	data cross_ffss_vsRASS.dat
+	read { ra_h 1 ra_m 2 ra_s 3 dec_d 4 dec_m 5 dec_s 6 f5 8 ar 9 }
+	read { ecl 10 emag 11 ocl 12 omag 13 xcps 14 e_xcps 15 xbcps 16 xexp 17 }
+
+	set ra  = (ra_h + ra_m/60.  + ra_s/3600.)*15.
+	set dec = dec_d   + dec_m/60. + dec_s/3600. 
+
+##---------------------------------------------------------------------------
+## read_cross_wga   !!![OBSOLETE]!!!
+read_cross_wga
+
+	echo "**********************************"
+	echo "**** THIS PROGRAM IS OBSOLETE ****"
+	echo "**********************************"
+
+	data cross_ffss_vs_WGA.dat
+	read { ra_h 1 ra_m 2 ra_s 3 dec_d 4 dec_m 5 dec_s 6 f5 8 ar 9 }
+	read { ecl 10 emag 11 ocl 12 omag 13 xcps 14 e_xcps 15 xexp 16 }
+
+	set ra  = (ra_h + ra_m/60.  + ra_s/3600.)*15.
+	set dec = dec_d + dec_m/60. + dec_s/3600. 
+
+#---------------------------------------------------------------------------
+# read_ffss  :  alias for read_true
+read_ffss
+	
+	read_true
+
+#---------------------------------------------------------------------------
+# read_true  : reads cross-correlations with VV and WGA/RASS
+#              together with the actual selected subample of FFSS.
+#              It assigns GUESSed X-ray fluxes to undetected sources.
+#
+#         !!!! THIS IS THE CORRECT MACRO TO LOAD THE FFSS SAMPLE !!!!
+#
+#  FILES: xVV_all_details.dat        : most data
+#         FFSS_main_***.dat          : redshift and class, MOST DATA since 2007.09.xx
+#         FFSS_main_2mass.dat        : 2MASS data if available
+#         FFSS_main_cross_ALLx_*.dat : X data if available [changed from sally_ on 2008.03.16]
+#         FFSS_main_XRAY_obs.dat     : X data including chandra (and XMM) and gf_X_flag [changed from sally_ on 2008.03.16]
+#         FFSS_Fblr.dat              : F_blr data guesstimated from SDSS spectral fits.
+#         FFSS_Mbh.dat               : black hole masses from H_beta or MgII or CIV from Shen et al. paper
+#
+#  2009.06.21: added F_blr
+#  2009.06.22: added Mbh
+#  2009.07.20: notice that a_radio=0.2 supersedes the actual tabulated values!
+#  2010.06.07: changed chflag to gf_X_flag
+#
+read_true
+
+	define FFSSarchive "/home/gfossati/Science/Blazars/First_FSR"
+
+	data "$!FFSSarchive/FFSS_main_core.dat"
+	read < ra_h 1 ra_m 2 ra_s 3 dec_d 4 dec_m 5 dec_s 6 >
+	read < f_first_peak 7 f_first_int 8 f5 9 ar 11 >
+	read < ecl 12 emag 13 ocl 14 omag 15 >
+	read < z 19 zs 20.s flag_sl_spec 21 class 22.s >
+
+	set flag_z = z*0 + 1
+	do i=0,dimen(flag_z)-1 {
+	   if( z[$i] == 0 ) { set flag_z[$i] = 0 }
+	}
+
+	#-----------------------------------------------------------------------------
+	echo " * Defining cosmological parameters...  "
+	echo "   (calling cosmo_calculator_vec) "
+        if(!$(is_macro(cosmo_calculator_vec))) {
+            echo "WARNING: this macro REQUIRES cosmo_calculator_vec included in cosmo_calculator.sm"
+	    myload cosmo_calculator
+        }
+	cosmo_calculator_vec z
+	# returns lg_dl_cm_vec
+	# set dum_dl = 0*lg_dl_cm_vec + 0
+	set dum_dl = fill(lg_dl_cm_vec,0)
+	set tmp_dl = flag_z ? lg_dl_cm_vec : dum_dl
+	set lg_dl_cm_vec = tmp_dl
+	delete dum_dl
+	delete tmp_dl
+
+	set ar = -1.0*ar
+
+	set ra  = (ra_h +  ra_m/60. +  ra_s/3600.)*15.
+	set dec = dec_d + dec_m/60. + dec_s/3600. 
+
+	set f_first         = f_first_int
+	set lg_f_first_int  = lg(f_first_int) - 26.
+	set lg_f_first_peak = lg(f_first_peak) - 26.
+
+	set lg_f_first = lg(f_first) - 26.
+	set lg_f_r_5  = lg(f5)  - 26. 
+
+	set name=class
+
+	## this is to be used only when plotting data, not when using the sample
+	## for target selection!
+	##z_other
+
+	#---------------------------------------
+	# WENSS
+	#---------------------------------------
+	data "$!FFSSarchive/FFSS_main_wenss.dat"
+	read < f_wenss_peak 14 f_wenss_int 16 r_first_wenss 19 >
+
+	set lg_f_wenss_peak = lg(f_wenss_peak) - 26.
+	set lg_f_wenss_int  = lg(f_wenss_int)  - 26.
+
+	#---------------------------------------
+	# NVSS
+	#---------------------------------------
+	data "$!FFSSarchive/FFSS_main_nvss_fluxes.dat"
+	read < f_nvss 7 r_first_nvss 9 >
+
+	set lg_f_nvss = lg(f_nvss) - 26.
+
+	#---------------------------------------
+	# Miscellaneous radio morphology diagnostics (e.g. Kimball & Ivezic 2008)
+	#---------------------------------------
+	set ratio_first_nvss = lg(f_first_int/f_nvss)
+	set theta_first      = sqrt(f_first_int/f_first_peak)
+
+	set a_92_6  = lg(f_wenss_int/f5)/lg(92./6.)
+	set a_20_6  = lg(f_nvss/f5)/lg(20./6.)
+	set a_92_20 = lg(f_wenss_int/f_nvss)/lg(92./20.)
+
+	#---------------------------------------
+	# SDSS
+	#---------------------------------------
+	data "$!FFSSarchive/FFSS_main_sdss.dat"
+	read < sdss_u 23 sdss_g 24 sdss_r 25 sdss_i 26 sdss_z 27 >
+
+	define sdss_f0  (3631.0)
+	define sdss_u_b (1.4e-10)
+	define sdss_g_b (0.9e-10)
+	define sdss_r_b (1.2e-10)
+	define sdss_i_b (1.8e-10)
+	define sdss_z_b (7.4e-10)
+
+	foreach 9 < u g r i z > { 
+	   set x = 10.**(-0.4*sdss_$9) - ($sdss_$9_b**2.)*10**(0.4*sdss_$9)
+	   set f_sdss_$9    = 3631.0*x
+	   set lg_f_sdss_$9 = lg(f_sdss_$9) - 23.
+	}
+
+	#---------------------------------------
+	# SDSS BLR
+	#---------------------------------------
+	data "$!FFSSarchive/FFSS_Fblr.dat"
+	read < sdss_id 1.s sdss_nseq 2 sdss_classn 3 blr_nline 4 blr_factor 5 f_blr 6 lg_f_blr 7 ca_break_in 8 >
+	set ca_break = ca_break_in
+	set flag_ca_break = ca_break_in*0 + 1
+	do 1=0,dimen(sdss_id)-1 {
+	   if( ca_break_in[$1] <= 0   ) { set ca_break[$1] = 0.0 }
+	   if( ca_break_in[$1] >  0.5 ) { set ca_break[$1] = 0.5 }
+
+	   if( ca_break_in[$1] <  0 ) { set flag_ca_break[$1] = -1 }
+	   if( ca_break_in[$1] == 0 ) { set flag_ca_break[$1] =  0 }
+	}
+
+	#---------------------------------------
+	# SDSS Mbh
+	#---------------------------------------
+	data "$!FFSSarchive/FFSS_Mbh.dat"
+	read < bh_id 1.s hbeta_fwhm 2 hbeta_l_cont 3 hbeta_Mbh 4 mgii_fwhm 5 mgii_l_cont 6 mgii_Mbh 7 civ_fwhm 8 civ_l_cont 9 civ_Mbh 10 Mbh 11 >
+	set lg_hbeta_l_cont = lg(hbeta_l_cont) + 44.0
+	set lg_mgii_l_cont  = lg(mgii_l_cont)  + 44.0
+	set lg_civ_l_cont   = lg(civ_l_cont)   + 44.0
+
+	set Ledd = 38.10 + Mbh
+
+	#---------------------------------------
+	# X-RAY
+	#---------------------------------------
+	# These xcps array is used for computing fluxes for ROSAT observed objects.
+	data "$!FFSSarchive/FFSS_main_cross_ALLx_with_data_source.dat"  # GF 2008.03.31
+	read { xcps 14 e_xcps 15 xdatasource 17.s }
+
+	# These instead are used only for Chandra/XMM objects
+	## NOTE: added for AO5.
+	# gf_X_flag = 1.xx , 2.xx = MY sources
+	# gf_X_flag = 0.5         = sources observed by somebody else
+	# data "$!FFSSarchive/gf_XRAY_obs.dat"
+	data "$!FFSSarchive/FFSS_main_XRAY_obs.dat"
+	read { newxcps 7 e_newxcps 8 xmm_trial_flat 9 xmm_trial_mid 10 xmm_trial_steep 11 gf_X_flag 12 }
+
+	#---------------------------------------
+	# 2MASS
+	#---------------------------------------
+	# twoflag = 1  yes
+	# twoflag = 0  no
+	# twoflag = 2  extended
+	#data sally_cross_2MASS.dat
+	#data "$!FFSSarchive/sally_cross_2MASS.dat"
+	data "$!FFSSarchive/FFSS_main_2mass.dat"
+	read { twoflag 2 }
+	read { mJ  6 emJ  7 phflagJ 15.s rdflagJ 18 blflagJ 21 ccflagJ 24.s }
+	read { mH  9 emH 10 phflagH 16.s rdflagH 19 blflagH 22 ccflagH 25.s }
+	read { mK 12 emK 13 phflagK 17.s rdflagK 20 blflagK 23 ccflagK 26.s }
+	read { usesrc 27 extkey 28.s }
+	set HELP usesrc "2MASS: flag for goodness of source: 1=good, 0=straddling detection, 2=potential duplicate"
+	set HELP extkey "2MASS: string key for extension"
+
+	set jmag = mJ
+	set hmag = mH
+	set kmag = mK
+
+	# RD_FLAG
+	set jflag = rdflagJ
+	set hflag = rdflagH
+	set kflag = rdflagK
+	set jbinflag = 0*jflag + 1
+	set hbinflag = 0*hflag + 1
+	set kbinflag = 0*kflag + 1
+	do n=0,dimen(twoflag)-1 {
+	   if( jflag[$n] == 0 || jflag[$n] > 3 ) { set jbinflag[$n] = 0 }
+	   if( hflag[$n] == 0 || hflag[$n] > 3 ) { set hbinflag[$n] = 0 }
+	   if( kflag[$n] == 0 || kflag[$n] > 3 ) { set kbinflag[$n] = 0 }
+	}
+	set twobinflag = jbinflag + 2*hbinflag + 4*kbinflag
+
+	# PH FLAG
+	set jphflag = 0*jflag + 0
+	set hphflag = 0*hflag + 0
+	set kphflag = 0*kflag + 0
+	do n=0,dimen(twoflag)-1 {
+	   if( substr('$(phflagJ[$n])',0,1) == 'A' ) { set jphflag[$n] = 4 }
+	   if( substr('$(phflagJ[$n])',0,1) == 'B' ) { set jphflag[$n] = 3 }
+	   if( substr('$(phflagJ[$n])',0,1) == 'C' ) { set jphflag[$n] = 2 }
+	   if( substr('$(phflagJ[$n])',0,1) == 'D' ) { set jphflag[$n] = 1 }
+
+	   if( substr('$(phflagH[$n])',0,1) == 'A' ) { set hphflag[$n] = 4 }
+	   if( substr('$(phflagH[$n])',0,1) == 'B' ) { set hphflag[$n] = 3 }
+	   if( substr('$(phflagH[$n])',0,1) == 'C' ) { set hphflag[$n] = 2 }
+	   if( substr('$(phflagH[$n])',0,1) == 'D' ) { set hphflag[$n] = 1 }
+
+	   if( substr('$(phflagK[$n])',0,1) == 'A' ) { set kphflag[$n] = 4 }
+	   if( substr('$(phflagK[$n])',0,1) == 'B' ) { set kphflag[$n] = 3 }
+	   if( substr('$(phflagK[$n])',0,1) == 'C' ) { set kphflag[$n] = 2 }
+	   if( substr('$(phflagK[$n])',0,1) == 'D' ) { set kphflag[$n] = 1 }
+	}
+	set binphflag = jphflag + 5*hphflag + 25*kphflag
+
+	set jgood = 0*jflag + 0
+	set hgood = 0*hflag + 0
+	set kgood = 0*kflag + 0
+	do n=0,dimen(twoflag)-1 {
+	   if( jphflag[$n] >= 3 && jbinflag > 0 ) { set jgood[$n] = 1 }
+	   if( hphflag[$n] >= 3 && hbinflag > 0 ) { set hgood[$n] = 1 }
+	   if( kphflag[$n] >= 3 && kbinflag > 0 ) { set kgood[$n] = 1 }
+	}
+	set flag_2mass_j = jgood
+	set flag_2mass_h = hgood
+	set flag_2mass_k = kgood
+	set bingood = jgood + 2*hgood + 4*kgood
+
+	set JK    = jmag - kmag
+	set HELP JK "2MASS: J-K color" 
+	set a_jk  = -1.57 + 1.67*JK
+	set jkflag= 0*JK + 1
+	do n=0,dimen(twoflag)-1 {
+	   if( substr('$(extkey[$n])',0,2) == 'nu' ) {
+	       set twoflag[$n] = 1
+	   } else { if(  substr('$(extkey[$n])',0,2) == '00' ) {
+	       set twoflag[$n] = 0
+	   } else {
+	       set twoflag[$n] = 2
+	   }}
+	   if( jflag[$n] == 0 || jflag[$n] > 3 || kflag[$n] == 0  || kflag[$n] > 3 ) {
+	      set jkflag[$n] = 0 
+	   }
+	}
+	
+	verbose 0
+
+	set lg_f_j =  lg(1592e-23) - 0.4*jmag
+	set lg_f_h =  lg(1024e-23) - 0.4*hmag
+	set lg_f_k =  lg( 667e-23) - 0.4*kmag
+
+	#--- ---#
+	##set lg_f_ir  = -19.556 - 0.4*emag   # GF 2008.03.18
+	##set lg_f_uv  = -19.348 - 0.4*omag
+	##set lg_f_opt1= lg_f_ir - lg(5.432/4.282)  
+	##set lg_f_opt2= lg_f_uv + lg(8.213/5.432)
+	##set a_eo     = 3.53*(-0.208 - 0.4*(emag-omag)) 
+
+	set lg_f_ir  = -19.526 - 0.4*emag
+	set lg_f_uv  = -19.342 - 0.4*omag
+	set a_eo     = (-0.184 - 0.4*(emag-omag))/0.201 
+	do 9=0,dimen(lg_f_ir)-1 {
+	   if( omag[$9] < 5 || emag[$9] < 5 ) {
+	      set a_eo[$9] = 1.0
+	   }
+	}
+
+	# Can use the actual slope between the two E-O bands to infer
+	# the optical flux, instead of assuming a_eo=1
+	set a_eo_extrap = 0.0*a_eo + 1
+	set a_eo_extrap = a_eo
+
+	set lg_f_opt1= lg_f_ir - a_eo_extrap*lg(5.432/4.612)
+	set lg_f_opt2= lg_f_uv - a_eo_extrap*lg(5.432/7.312)
+	set HELP lg_f_opt1 "FFSS: optical flux from E and a_EO index"
+	set HELP lg_f_opt2 "FFSS: optical flux from O and a_EO index"
+
+	set dlg_f_opt= lg_f_opt1 - lg_f_opt2
+	set dumvmag1 = -2.5*(lg_f_opt1 - lg(3480.e-23))
+	set dumvmag2 = -2.5*(lg_f_opt2 - lg(3480.e-23))
+	set dum1 = 10.0**(lg_f_opt1+26.)    # in mJy
+	set dum2 = 10.0**(lg_f_opt2+26.)    # in mJy
+	#set diff_f_opt = abs(dum2 - dum1)/dum1
+	set diff_f_opt = abs(dum2 - dum1)/(0.5*(dum1+dum2))
+	set diff_vmag  = dumvmag1 - dumvmag2
+	set rel_diff_vmag = abs(diff_vmag)/(0.5*(dumvmag1 + dumvmag2))
+
+	echo "-----------------------------------------------------------------"
+	echo "*** Computing Optical flux from O and E magnitudes...            "
+	echo "    Extrapolates to V band from IR and UV, and take the average. "
+	echo "    Otherwise take the extrapolation from the one that exists.   "
+
+	set lg_f_opt = lg( 0.5*( 10.**(lg_f_opt1 + 26.) + 10.**(lg_f_opt2 + 26.) ) ) - 26. 
+	set lg_f_opt = 0.5*(lg_f_opt1 + lg_f_opt2)
+
+	do 1=0,$(dimen(ra)-1) {
+	   if( emag[$1] == 0 && omag[$1] >  0 ) { set lg_f_opt[$1] = lg_f_opt2[$1] }
+	   if( emag[$1] >  0 && omag[$1] == 0 ) { set lg_f_opt[$1] = lg_f_opt1[$1] }
+	}
+	set HELP lg_f_opt "FFSS: optical V band flux from log average of values extrapolated from E and O magnitudes if both available"
+
+	set vmag = -2.5*(lg_f_opt - lg(3480.e-23))
+
+	##define lg_nu_ir (lg(4.282e14))
+	##define lg_nu_uv (lg(8.213e14))
+	define lg_nu_ir (lg(4.612e14))
+	define lg_nu_uv (lg(7.312e14))
+
+	#---------------------------------------------------------------------
+	# Assigning a numeric flag for class identification
+	#---------------------------------------------------------------------
+	echo "*** assigning a numeric flag for the CLASS. "
+	echo "    [-2] : Star / Planetary Nebula "
+	echo "    [-1] : ZZZ "
+	echo "    [ 0] : Galaxy / Seyfert "
+	echo "    [ 1] : BL Lac "
+	echo "    [ 2] : Quasar "
+
+	# Assigns a starting default class of "QUASAR" to all objects.
+	set classn   = lg_f_opt*0.0 + 2 
+
+	do 1=0,$(dimen(ra)-1) {
+	   define dumcl "$(class[$1])"
+
+	   if(substr('$dumcl',0,1) == 'P'     ){ set classn[$1] = -2 }
+	   if(substr('$dumcl',0,2) == 'St'    ){ set classn[$1] = -2 }
+	   if(substr('$dumcl',0,1) == 'Z'     ){ set classn[$1] = -1 }
+	   if(substr('$dumcl',0,1) == 'R'     ){ set classn[$1] =  0 }
+	   if(substr('$dumcl',0,1) == 'G'     ){ set classn[$1] =  0 }
+	   if(substr('$dumcl',0,2) == 'Sy'    ){ set classn[$1] =  3 } # was 0
+	   if(substr('$dumcl',0,5) == 'Starb' ){ set classn[$1] =  3 } # was 0
+	   if(substr('$dumcl',0,1) == 'B'     ){ set classn[$1] =  1 }
+	   if(substr('$dumcl',0,1) == 'A'     ){ set classn[$1] =  2 }
+	}
+
+	echo "*** Computing alpha_RJ..."
+	set a_rj = (lg_f_r_5 - lg_f_j)/(14.379-9.698)
+	set a_rk = (lg_f_r_5 - lg_f_k)/(14.140-9.698)
+
+	echo "*** Computing alpha_RO... and alpha_RX flat/steep/mid"
+	set a_ro      = (lg_f_r_5 - lg_f_opt )/5.037
+	set a_ro1     = (lg_f_r_5 - lg_f_opt1)/5.037
+	set a_ro2     = (lg_f_r_5 - lg_f_opt2)/5.037
+
+	#---------------------------------------------------------------------
+	# Guessing the IRAC flux, at approx 4 microns, from the a_RO
+	set lg_f_irac_wcs0 = lg_f_r_5 - a_ro*lg(7.5e13/5e9)
+	set lg_f_irac_wcs1 = lg_f_r_5 - 0.75*lg(7.5e13/5e9)
+	set lg_f_irac_wcs2 = lg_f_opt - 0.20*lg(7.5e13/5.45e14)
+	set lg_f_irac_wcs3 = lg_f_opt - 0.00*lg(7.5e13/5.45e14)
+	set f_irac_wcs0    = 10.0**(lg_f_irac_wcs0 + 29.0)
+	set f_irac_wcs1    = 10.0**(lg_f_irac_wcs1 + 29.0)
+	set f_irac_wcs2    = 10.0**(lg_f_irac_wcs2 + 29.0)
+	set f_irac_wcs3    = 10.0**(lg_f_irac_wcs3 + 29.0)
+	set f_irac_wcs     = lg_f_irac_wcs0 + 0 
+
+	do 9=0,dimen(f_irac_wcs)-1 {
+	   set dum = < $(f_irac_wcs0[$9]) $(f_irac_wcs1[$9]) $(f_irac_wcs2[$9]) $(f_irac_wcs3[$9]) > 
+	   vecminmax dum dum1 dum2
+	   set f_irac_wcs[$9] = $dum1
+	}
+	set lg_f_irac_wcs = lg(f_irac_wcs) - 29.0
+
+	#---------------------------------------------------------------------
+	# Renaming arrays for homogeneity with other cases
+	#  and definining spectral indices.
+	#---------------------------------------------------------------------
+	set type = classn
+	set m_V  = vmag
+	set f_radio    = f5
+	set lg_f_radio = lg_f_r_5
+	set f_opt      = 10.**(lg_f_opt)
+	set lg_f_opt   = lg_f_opt
+
+	define a_radio   0.2
+	define a_opt     1.00
+	set a_opt   = 0*f_radio + $a_opt
+	set a_radio = 0*f_radio + $a_radio
+	set HELP a_opt   "FFSS: fake optical spectral index, 1.0 for all sources"
+	set HELP a_radio "FFSS: fake radio spectral index, superseding the tabulated values, 0.2 for all sources"
+	#---------------------------------------------------------------------
+	# NOTE NOTE NOTE!!!
+	#   the radio spectral index is set to 0.2 for all objects, 
+	#   ignoring the measured one....  Maybe this should be changed!
+	#---------------------------------------------------------------------
+
+	#---------------------------------------------------------------------
+	# Taking care of the x-ray fluxes
+	#---------------------------------------------------------------------
+	# INPUT: unabsorbed flux (0.1 - 2.4keV) == 1.000E-11 ergs/cm/cm/s
+	# NH:    3e20
+	# Gamma = 1.6 ==> K= 2.445E-03, f1= 1.620 microJy
+	# Gamma = 1.7 ==> K= 2.343E-03, f1= 1.553 microJy
+	# Gamma = 2.0 ==> K= 1.964E-03, f1= 1.301 microJy
+	# Gamma = 2.5 ==> K= 1.240E-03, f1= 0.822 microJy
+	# Gamma = 3.0 ==> K= 6.513E-04, f1= 0.431 microJy
+	#  
+	# INSTRUMENT: ROSAT PSPC OPEN
+	#                 0.1-2.4 keV                           0.24-2.0 keV
+	#                    rate    f(1cps)UNABS  f_1             rate    f(1cps)UNABS  f_1 
+	#                 -----------------------------------   -----------------------------------
+	# Gamma = 1.6 ==>  0.561 c/s  1.783e-11   2.888 muJy     0.518 c/s  1.930e-11   3.228 muJy
+	# Gamma = 1.7 ==>  0.552 c/s  1.811e-11   2.812 muJy     0.505 c/s  1.980e-11   3.075 muJy
+	# Gamma = 2.0 ==>  0.516 c/s  1.938e-11   2.521 muJy     0.456 c/s  2.193e-11   2.853 muJy
+	# Gamma = 2.5 ==>  0.429 c/s  2.331e-11   1.916 muJy     0.350 c/s  2.857e-11   2.348 muJy
+	# Gamma = 3.0 ==>  0.338 c/s  2.958e-11   1.275 muJy     0.248 c/s  4.032e-11   1.738 muJy
+	#   The f(1cps) fluxes are in the 0.1-2.4 keV band, for 1cps in the selected band
+	#-----------------------------------------------------------
+	
+	echo "*** Computing X-ray flux from ROSAT count rate.  "
+	echo "    For alpha=0.6 [flat] and alpha=2.0 [steep]   "
+	echo "    and their average [mid].                     "
+
+	set is_x_rass    = xcps*0
+	set is_x_wga     = xcps*0
+	set is_x_chandra = xcps*0
+	set is_x_xmm     = xcps*0
+	set is_x_upper   = xcps*0
+
+	do 1=1,dimen(xcps)-1 {
+	    if( substr('$(xdatasource[$1])',0,1) == 'R' ) { set is_x_rass[$1] = 1 }
+	    if( substr('$(xdatasource[$1])',0,1) == 'W' ) { set is_x_wga[$1]  = 1 }
+	}
+
+	# fluxes are all for the 0.1-2.4 keV band, 
+	#    what changes are the inputs because counts were integrated over different bands.
+	set lg_f_x_flat_rass  = lg(xcps*1.811e-11)   # alpha=0.7 nH=3e20  FOR COUNTS in 0.10-2.4 keV band, valid for RASS
+	set lg_f_x_steep_rass = lg(xcps*2.958e-11)   # alpha=2.0 nH=3e20  FOR COUNTS in 0.10-2.4 keV band, valid for RASS
+	set lg_f_x_flat_wga   = lg(xcps*1.978e-11)   # alpha=0.7 nH=3e20  FOR COUNTS in 0.24-2.0 keV band, valid for WGA
+	set lg_f_x_steep_wga  = lg(xcps*4.031e-11)   # alpha=2.0 nH=3e20  FOR COUNTS in 0.24-2.0 keV band, valid for WGA
+
+	set lg_f_1_flat_rass  = lg(xcps*2.811e-29)   # 1 cps [0.10-2.4] ==> F_1=2.811 muJy (alpha=0.7)  valid for RASS
+	set lg_f_1_steep_rass = lg(xcps*1.277e-29)   # 1 cps [0.10-2.4] ==> F_1=1.277 muJy (alpha=2.0)  valid for RASS
+	set lg_f_1_flat_wga   = lg(xcps*3.071e-29)   # 1 cps [0.24-2.0] ==> F_1=3.071 muJy (alpha=0.7)  valid for WGA
+	set lg_f_1_steep_wga  = lg(xcps*1.739e-29)   # 1 cps [0.24-2.0] ==> F_1=1.739 muJy (alpha=2.0)  valid for WGA
+
+	# little quick and dirty trick to assign the correct flux value
+	set lg_f_x_flat  = (is_x_rass*lg_f_x_flat_rass  + is_x_wga*lg_f_x_flat_wga)/(is_x_rass + is_x_wga)
+	set lg_f_x_steep = (is_x_rass*lg_f_x_steep_rass + is_x_wga*lg_f_x_steep_wga)/(is_x_rass + is_x_wga)
+	set lg_f_1_flat  = (is_x_rass*lg_f_1_flat_rass  + is_x_wga*lg_f_1_flat_wga)/(is_x_rass + is_x_wga)
+	set lg_f_1_steep = (is_x_rass*lg_f_1_steep_rass + is_x_wga*lg_f_1_steep_wga)/(is_x_rass + is_x_wga)
+
+	#-----------------------------------------------------------
+	# INPUT: unabsorbed flux (0.1 -2.4keV) == 1.000E-11 ergs/cm/cm/s  [WHY using this input band!?]
+	# NH:    3e20
+	# OUTPUT BAND: 0.3-8.0 keV
+	# (alpha=0.6 : K= 2.445E-03, f1= 1.620 microJy)  
+	# (alpha=2.0 : K= 6.513E-04, f1= 0.431 microJy)  
+	#  
+	# INSTRUMENT: Chandra-AO4 ACIS-S 
+	# Gamma = 1.6 ==> 2.325 c/s ==> f[0.1-2.4](1 cps 0.3-8.0) = 0.430e-11 (UNABS) / 7.073e12 in [0.3-8.0 keV]
+	# Gamma = 3.0 ==> 0.684 c/s ==> f[0.1-2.4](1 cps 0.3-8.0) = 1.462e-11 (UNABS) / 4.879e12 in [0.3-8.0 keV]
+	#  
+	# INSTRUMENT: Chandra-AO6 ACIS-S 
+	# Gamma = 1.6 ==> 1.854 c/s ==> f[0.1-2.4](1 cps 0.3-8.0) = 0.539e-11 (UNABS) / 8.869e12 in [0.3-8.0 keV]
+	# Gamma = 3.0 ==> 0.436 c/s ==> f[0.1-2.4](1 cps 0.3-8.0) = 2.293e-11 (UNABS) / 7.685e12 in [0.3-8.0 keV]
+	#  
+	# INSTRUMENT: Chandra-AO9 ACIS-S 
+	# Gamma = 1.6 ==> 2.088 c/s ==> f[0.1-2.4](1 cps 0.3-8.0) = 0.479e-11 (UNABS)
+	# Gamma = 3.0 ==> 0.502 c/s ==> f[0.1-2.4](1 cps 0.3-8.0) = 1.992e-11 (UNABS)
+	#  
+	# INSTRUMENT: Chandra-AO10 ACIS-S 
+	# Gamma = 1.6 ==> 2.087 c/s ==> f[0.1-2.4](1 cps 0.3-8.0) = 0.479e-11 (UNABS), 0.775 muJy
+	# Gamma = 3.0 ==> 0.501 c/s ==> f[0.1-2.4](1 cps 0.3-8.0) = 1.997e-11 (UNABS), 0.862 muJy
+	#-----------------------------------------------------------
+	# Chandra fluxes
+	#  They are quoted in the same ROSAT band 0.1-2.4 keV, for consistency.
+	# It is assumed that each source will only have one of these new data available (hence the non-unique variable names)
+	do i=0,dimen(gf_X_flag)-1 {
+	   if( gf_X_flag[$i] == 1.04 ) {
+	      set is_x_chandra[$i] = 1
+	      set lg_f_x_flat[$i]  = lg(newxcps[$i]*0.430e-11)        # alpha=0.6, nH=3e20, 1 c/s ==> 7.073e-12 cgs [0.3-8.0 keV] / 4.300e-12 [0.1-2.4 keV]
+	      set lg_f_x_steep[$i] = lg(newxcps[$i]*1.463e-11)        # alpha=2.0, nH=3e20, 1 c/s ==> 4.897e-12 cgs [0.3-8.0 keV] / 1.463e-11 [0.1-2.4 keV]
+	      set lg_f_1_flat[$i]  = lg(newxcps[$i]*0.696e-29)        # 1 cps ==> F_1=0.696 muJy, for alpha=0.6, nH=0 ==> 0.707e-11 cgs in 0.3-8.0 keV UNABS
+	      set lg_f_1_steep[$i] = lg(newxcps[$i]*0.631e-29)        # 1 cps ==> F_1=0.631 muJy, for alpha=2.0, nH=0 ==> 0.489e-11 cgs in 0.3-8.0 keV UNABS
+	   }
+	   if( gf_X_flag[$i] == 1.06 ) {
+	      set is_x_chandra[$i] = 1
+	      set lg_f_x_flat[$i]  = lg(newxcps[$i]*0.539e-11)        # alpha=0.6, nH=3e20, 1 c/s ==> 8.869e-12 cgs [0.3-8.0 keV] / 5.393e-12 [0.1-2.4 keV]
+	      set lg_f_x_steep[$i] = lg(newxcps[$i]*2.296e-11)        # alpha=2.0, nH=3e20, 1 c/s ==> 7.685e-12 cgs [0.3-8.0 keV] / 2.296e-11 [0.1-2.4 keV]
+	      set lg_f_1_flat[$i]  = lg(newxcps[$i]*0.873e-29)        # 1 cps ==> F_1=0.873 muJy, for alpha=0.6, nH=0 ==> 8.869e-12 cgs in 0.3-8.0 keV UNABS
+	      set lg_f_1_steep[$i] = lg(newxcps[$i]*0.991e-29)        # 1 cps ==> F_1=0.991 muJy, for alpha=2.0, nH=0 ==> 7.685e-12 cgs in 0.3-8.0 keV UNABS
+	   }
+	   if( gf_X_flag[$i] >= 2.0 && gf_X_flag[$i] < 3.0 ) {
+	      set is_x_xmm[$i] = 1
+	      set lg_f_x_flat[$i]  = lg(xmm_trial_flat[$i])            # 
+	      set lg_f_x_steep[$i] = lg(xmm_trial_steep[$i])           # 
+	      set lg_f_1_flat[$i]  = lg(xmm_trial_flat[$i]*1.691e-18)  # F[0.1-2.4;g=1.6] = 6.174e-12*F[1keV,microJy] = 6.174e17 F[1keV;c.g.s.]
+	      set lg_f_1_steep[$i] = lg(xmm_trial_steep[$i]*4.316e-17) # F[0.1-2.4;g=3.0] = 2.317e-11*F[1keV,microJy] = 2.317e18 F[1keV;c.g.s.]
+	   }
+	}
+
+	set lg_f_1_mid   = 0.5*(lg_f_1_flat + lg_f_1_steep)
+
+	#-----------------------------------------------------------------------------
+	# IMPORTANT NOTE ON X-RAY DATA!!!
+	# This routine assigns fictituous a_x and converts rosat count rates to fluxes
+	#
+	# It pretty much overrides the flux values assigned just above 
+	#    BUT NOT the 'is_x_***' arrays
+	#
+	# It returns a NEW 'lg_f_x' array, that is in fact a new one... 
+	#    used at least for a_ox and a_rx, perhaps more.
+	# Its f_x array is the one used by 'bulk_other'
+	
+	sub_assign_x_data
+	set check_x = flag_x 
+	
+	#-----------------------------------------------------------------------------
+        if(!$(is_macro(bulk_other))) {
+            echo "WARNING: this macro REQUIRES bulk_other included in read_other_samples.sm"
+            return
+        }
+
+	# computes k-corrected fluxes, and luminosities (also with w/out k-correction)
+	bulk_other radio 26
+	bulk_other opt   23
+	bulk_other x     29
+
+	# Needs to convert F_blr into luminosity.
+	# Remember that F_blr is already a erg/cm2/s quantity it needs only 
+	# to be corrected for the luminosity distance just computed above
+	# NOTE: does it need to be corrected for (1+z) factor, e.g. the EW?
+	#       or the definition of d_l takes care of that already?
+        set l_blr  = 1.09920986 + 2.*lg_dl_cm_vec + lg_f_blr
+        set nl_blr = l_blr
+
+	# computes broad band spectral indices, with plain fluxes and with k-corrected values
+	bb_indices radio opt ro
+	bb_indices radio x   rx
+	bb_indices opt   x   ox
+	set_sed_type
+
+	guess_xpeak a_rorx sed_type_rorx
+	# foreach 1 < 1 2 3 > {
+	#   # set guess_xp$1ss = guess_xp1
+	#   set guess_xp$1ss = guess_xp1
+	#}
+
+	#---------------------------------------------------------------------
+
+	#---------------------------------------------------------------------
+	# here it simply uses the estimates/guesses
+	#---------------------------------------------------------------------
+	set a_rx_flat = (lg_f_r_5 - lg_f_1_flat)/7.685
+	set a_rx_steep= (lg_f_r_5 - lg_f_1_steep)/7.685
+	set a_rx_mid  = (lg_f_r_5 - lg_f_1_mid)/7.685
+
+	set a_jo      = (lg_f_j   - lg_f_opt)/(14.736-14.379)
+	set a_ko      = (lg_f_k   - lg_f_opt)/(14.736-14.140)
+	set a_jx_mid  = (lg_f_j   - lg_f_1_mid)/(17.384-14.379)
+
+	echo "*** Computing alpha_RX "GUESS" from alpha_RO  "
+	echo "     and F_1keV guessed [f_1_ujy] which will be used "
+	echo "     to estimate Chandra count rates. "
+
+	set a_rx_guess_old = 0.52 + 0.55*sqrt((a_ro-0.3)/0.5)
+
+	#--- new section for a_RX guessing ---
+	# bottom boundary of the data
+	set a_rx_guess_newL = 1.05 - 0.65*((a_ro-1.15)/0.90)**2.
+
+	# top boundary of the data
+	set a_rx_guess_newH = 1.10 - 0.60*((a_ro-1.00)/0.85)**2. 
+	set a_rx_guess_newH = 1.07 - 0.60*((a_ro-1.00)/0.85)**2. 
+
+	# average of top and bottom
+	set a_rx_guess_newM = 0.5*(a_rx_guess_newL + a_rx_guess_newH)
+
+	set HELP a_rx_guess_newL "FFSS: a_RX guessed from a_RO with newL parameterization (bottom enveloped of data)"
+	set HELP a_rx_guess_newH "FFSS: a_RX guessed from a_RO with newH parameterization (top enveloped of data)"
+	set HELP a_rx_guess_newM "FFSS: a_RX guessed from a_RO, average of newL and newH guesses"
+
+	echo "-----------------------------------------------------------------"
+	echo " Three options for aRO ==> aRX conversion:      "
+	echo "    newL: low  aRX for a given aRO ==> higher Fx "
+	echo "    newH: high aRX for a given aRO ==> lower  Fx "
+	echo "    newM: average of newL and newH               "
+	define whatarx ? < Which a_RX recipe [newL|newM|newH] : >
+	if( substr('$whatarx',0,1) == 'n' ) {
+	   echo "*** Using NEW prescription for a_RX"
+	   define xcase $(substr('$whatarx',3,1))
+	   echo "--- X-guess case : "$whatarx "/" $xcase "---"
+	   set a_rx_guess = a_rx_guess_new$xcase
+	} else {
+	   echo "*** Using OLD prescription for a_RX"
+	   set a_rx_guess = a_rx_guess_old
+	}
+
+	#-------------------------------------
+
+	set a_ox      = (lg_f_opt  - lg_f_x)/2.648
+	set a_rx      = (lg_f_radio- lg_f_x)/7.685
+
+	set a_ox_mid  = (lg_f_opt  - lg_f_1_mid)/2.648
+	set a_ox_mid1 = (lg_f_opt1 - lg_f_1_mid)/2.648
+	set a_ox_mid2 = (lg_f_opt2 - lg_f_1_mid)/2.648
+
+	set lg_f_1_guess = lg_f_r_5 - 7.685*a_rx_guess 
+
+	set f_1_ujy = 10.**(lg_f_1_guess + 29.)
+
+	echo "-----------------------------------------------------------------"
+	define whatmission ? < What mission [chandra/xmm/NONE/swift]: >
+
+	if( substr('$whatmission',0,2) != 'NO' ) {
+
+	############################################################
+	# CHANDRA
+	############################################################
+	if( substr('$whatmission',0,2) == 'ch' ) {
+	   # These numbers are the F_1 in microJy for F_[0.2-8] = 1e-13 c.g.s 
+	   # 15.6 and 26.7 are the cts/ks for Gamma=1.6 or 3.0 and F=1.e-13
+   	   #
+	   # ao3 #define flat_1kev_norm  ( 0.00933 )
+	   # ao3 #define steep_1kev_norm ( 0.00835 )
+	   #---------------------------------------
+	   # These constants are the cts/ks for 
+	   #   F=1.e-13
+	   #   in the 0.2-8 keV band.
+	   #   Gamma=1.6 or 3.0 
+	   #   nH = 2e20
+	   #---------------------------------------
+	   # ao3 #define flat_conv_factor_full  ( 15.98 )
+	   # ao3 #define flat_conv_factor_soft  ( 11.26 )
+	   # ao3 #define flat_conv_factor_hard  (  4.71 )
+	   # ao3 #define steep_conv_factor_full ( 22.19 )
+	   # ao3 #define steep_conv_factor_soft ( 20.86 )
+	   # ao3 #define steep_conv_factor_hard (  1.33 )
+
+	   echo "*** Computing Chandra 0.2-8 and soft/hard count rates"
+	   echo "    For alpha=0.6 [flat] and alpha=2.0 [steep]"
+	   echo "    Soft band: 0.2-1.5 keV "
+	   echo "    Hard band: 1.5-8.0 keV "
+
+	   define flat_1kev_norm  ( 0.00933629 ) # same for all AOs
+	   define steep_1kev_norm ( 0.00848151 ) # it's just from the 1e-13 for a given spectrum, nH=0
+	
+	   define chandra_ao ? < What AO [4|5|6|7|8|9|10] : >
+	   if( $chandra_ao == 4 ) { 
+	      #---- AO4 ----#
+	      define T_exp_min (3.0)
+	      # define flat_conv_factor_full  ( 13.31 ) # for AO4 # ERROR!!!! it should be 14.29!!!
+	      define flat_conv_factor_full  ( 14.29 ) # for AO4 # ERROR!!!! it should be 14.29!!!
+	      define flat_conv_factor_soft  (  9.64 ) # for AO4 
+	      define flat_conv_factor_hard  (  4.65 ) # for AO4 
+	      #
+	      define steep_conv_factor_full ( 17.04 ) # for AO4
+	      define steep_conv_factor_soft ( 15.73 ) # for AO4
+	      define steep_conv_factor_hard (  1.32 ) # for AO4
+	   } 
+
+	   if( $chandra_ao == 5 ) { 
+	      #---- AO5 ----#
+	      define T_exp_min (3.0)
+	      define flat_conv_factor_full  ( 10.93 ) # for AO5
+	      define flat_conv_factor_soft  (  6.46 ) # for AO5
+	      define flat_conv_factor_hard  (  4.47 ) # for AO5
+	      #
+	      define steep_conv_factor_full ( 10.84 ) # for AO5
+	      define steep_conv_factor_soft (  9.59 ) # for AO5
+	      define steep_conv_factor_hard (  1.25 ) # for AO5
+	   }
+
+	   if( $chandra_ao == 6 ) { 
+	      #---- AO6 ----#
+	      define T_exp_min (3.0)
+	      define flat_conv_factor_full  ( 11.37 ) # for AO6
+	      define flat_conv_factor_soft  (  6.87 ) # for AO6 
+	      define flat_conv_factor_hard  (  4.50 ) # for AO6 
+	      #
+	      define steep_conv_factor_full ( 11.69 ) # for AO6
+	      define steep_conv_factor_soft ( 10.43 ) # for AO6
+	      define steep_conv_factor_hard (  1.26 ) # for AO6
+	   }
+
+	   if( $chandra_ao == 7 ) {
+	      #---- AO7 ----#
+	      define T_exp_min (3.0)
+	      # nH 4e20
+	      define flat_conv_factor_full  ( 11.32 ) # for AO7 nH=4e20
+	      define flat_conv_factor_soft  (  6.64 ) # for AO7 nH=4e20
+	      define flat_conv_factor_hard  (  4.68 ) # for AO7 nH=4e20
+	      #
+	      define steep_conv_factor_full ( 10.29 ) # for AO7 nH=4e20
+	      define steep_conv_factor_soft (  8.98 ) # for AO7 nH=4e20
+	      define steep_conv_factor_hard (  1.31 ) # for AO7 nH=4e20
+
+	      # nH 2e20
+	      define flat_conv_factor_full  ( 12.16 ) # for AO7 nH=2e20
+	      define flat_conv_factor_soft  (  7.45 ) # for AO7 nH=2e20
+	      define flat_conv_factor_hard  (  4.71 ) # for AO7 nH=2e20
+	      #
+	      define steep_conv_factor_full ( 13.16 ) # for AO7 nH=2e20
+	      define steep_conv_factor_soft ( 11.84 ) # for AO7 nH=2e20
+	      define steep_conv_factor_hard (  1.32 ) # for AO7 nH=2e20
+
+	   }
+
+	   if( $chandra_ao == 8 ) {
+	      #---- AO8 ----#
+	      define T_exp_min (3.0)
+	      # nH 4e20
+	      define flat_conv_factor_full  ( 11.97 ) # for AO8 nH=4e20
+	      define flat_conv_factor_soft  (  6.95 ) # for AO8 nH=4e20
+	      define flat_conv_factor_hard  (  5.02 ) # for AO8 nH=4e20
+	      #
+	      define steep_conv_factor_full ( 10.73 ) # for AO8 nH=4e20
+	      define steep_conv_factor_soft (  9.33 ) # for AO8 nH=4e20
+	      define steep_conv_factor_hard (  1.40 ) # for AO8 nH=4e20
+
+	      # nH 2e20
+	      define flat_conv_factor_full  ( 12.85 ) # for AO8 nH=2e20
+	      define flat_conv_factor_soft  (  7.80 ) # for AO8 nH=2e20
+	      define flat_conv_factor_hard  (  5.05 ) # for AO8 nH=2e20
+	      #
+	      define steep_conv_factor_full ( 13.68 ) # for AO8 nH=2e20
+	      define steep_conv_factor_soft ( 12.27 ) # for AO8 nH=2e20
+	      define steep_conv_factor_hard (  1.41 ) # for AO8 nH=2e20
+
+	   }
+
+	   if( $chandra_ao == 9 ) {
+	      #---- AO9 ----#
+	      define T_exp_min (3.0)
+	      # nH 4e20
+	      define flat_conv_factor_full  ( 11.96 ) # for AO9 nH=4e20
+	      define flat_conv_factor_soft  (  6.93 ) # for AO9 nH=4e20
+	      define flat_conv_factor_hard  (  5.03 ) # for AO9 nH=4e20
+	      #
+	      define steep_conv_factor_full ( 10.69 ) # for AO9 nH=4e20
+	      define steep_conv_factor_soft (  9.29 ) # for AO9 nH=4e20
+	      define steep_conv_factor_hard (  1.40 ) # for AO9 nH=4e20
+
+	      # nH 2e20
+	      define flat_conv_factor_full  ( 12.84 ) # for AO9 nH=2e20
+	      define flat_conv_factor_soft  (  7.77 ) # for AO9 nH=2e20
+	      define flat_conv_factor_hard  (  5.07 ) # for AO9 nH=2e20
+	      #
+	      define steep_conv_factor_full ( 13.62 ) # for AO9 nH=2e20
+	      define steep_conv_factor_soft ( 12.21 ) # for AO9 nH=2e20
+	      define steep_conv_factor_hard (  1.41 ) # for AO9 nH=2e20
+
+	   }
+
+	   if( $chandra_ao == 10 ) {
+	      #---- AO10 ----#
+	      define T_exp_min (3.0)
+	      # nH 4e20
+	      define flat_conv_factor_full  ( 11.96 ) # for AO9 nH=4e20
+	      define flat_conv_factor_soft  (  6.92 ) # for AO9 nH=4e20
+	      define flat_conv_factor_hard  (  5.04 ) # for AO9 nH=4e20
+	      #
+	      define steep_conv_factor_full ( 10.67 ) # for AO9 nH=4e20
+	      define steep_conv_factor_soft (  9.27 ) # for AO9 nH=4e20
+	      define steep_conv_factor_hard (  1.40 ) # for AO9 nH=4e20
+
+	      # nH 2e20
+	      define flat_conv_factor_full  ( 12.84 ) # for AO9 nH=2e20
+	      define flat_conv_factor_soft  (  7.76 ) # for AO9 nH=2e20
+	      define flat_conv_factor_hard  (  5.08 ) # for AO9 nH=2e20
+	      #
+	      define steep_conv_factor_full ( 13.59 ) # for AO9 nH=2e20
+	      define steep_conv_factor_soft ( 12.18 ) # for AO9 nH=2e20
+	      define steep_conv_factor_hard (  1.42 ) # for AO9 nH=2e20
+
+	   }
+	}
+	#___ end of Chandra ___#
+
+	############################################################
+	# XMM
+	############################################################
+	if( substr('$whatmission',0,2) == 'xm' ) {
+	   # updated 2003.04.21
+	   echo "*** Computing XMM 0.2-10 and soft/hard count rates"
+	   echo "    For alpha=0.6 [flat] and alpha=2.0 [steep] "
+
+	   # band-to-mono conversion factors
+	   # >>>same for all AOs<<<  These depend only on integrating a P.L.
+	   # They are just from the 1e-13 [0.2-10] for a given spectrum, without nH.
+	   define flat_1kev_norm  ( 0.0083291  ) 
+	   define steep_1kev_norm ( 0.00844175 ) 
+	
+	   define xmm_ao ? < What AO [3/4/5/7] : >
+	   if( $xmm_ao == 3 ) { 
+	      define T_exp_min (5.0)
+	      echo "    Soft band: 0.1- 1.5 keV "
+	      echo "    Hard band: 1.5-10.0 keV "
+	      #---- AO3 ----
+	      # for AO3 files used are: clean_output_pn_UnAbs_3.txt 
+	      # bands are 0.1-1.5 and 1.5-10 keV
+
+	      # NOTE: EPIC-pn + 1xEPIC-mos rates
+	      define flat_conv_factor_full  ( 36.92 ) # for AO3, for nH=6e20
+	      define flat_conv_factor_soft  ( 22.05 ) # for AO3, for nH=6e20
+	      define flat_conv_factor_hard  ( 14.87 ) # for AO3, for nH=6e20
+	      #
+	      define steep_conv_factor_full ( 43.57 ) # for AO3, for nH=6e20
+	      define steep_conv_factor_soft ( 39.34 ) # for AO3, for nH=6e20
+	      define steep_conv_factor_hard (  4.23 ) # for AO3, for nH=6e20
+	
+	   }
+	   if( $xmm_ao == 4 ) { 
+	      define T_exp_min (5.0)
+	      echo "    Soft band: 0.1- 1.5 keV "
+	      echo "    Hard band: 1.5-10.0 keV "
+	      #---- AO4 ----
+	      # for AO3 files used are: clean_output_pn_UnAbs_3.txt 
+	      # bands are 0.1-1.5 and 1.5-10 keV
+
+	      # NOTE: EPIC-pn + 2xEPIC-mos rates
+	      define flat_conv_factor_full  ( 28.01 ) # for nH=6e20
+	      define flat_conv_factor_soft  ( 16.19 ) # for nH=6e20
+	      define flat_conv_factor_hard  ( 11.82 ) # for nH=6e20
+	      #
+	      define steep_conv_factor_full ( 31.29 ) # for nH=6e20
+	      define steep_conv_factor_soft ( 27.93 ) # for nH=6e20
+	      define steep_conv_factor_hard (  3.36 ) # for nH=6e20
+	   }
+	   if( $xmm_ao == 5 ) { 
+	      #---- AO5 ----
+	      # 2005.10.10
+
+	      define T_exp_min (5.0)
+	      echo "    Soft band: 0.1- 1.5 keV "
+	      echo "    Hard band: 1.5-10.0 keV "
+
+	      # files used are: clean_output_pn/mos_thin_UnAbs_3.txt 
+	      # bands are 0.1-1.5 and 1.5-10 keV
+
+	      # NOTE: EPIC-pn + 2xEPIC-mos rates
+	      define flat_conv_factor_full  ( 29.12 ) # for nH=6e20
+	      define flat_conv_factor_soft  ( 16.92 ) # for nH=6e20
+	      define flat_conv_factor_hard  ( 12.20 ) # for nH=6e20
+	      #
+	      define steep_conv_factor_full ( 33.00 ) # for nH=6e20
+	      define steep_conv_factor_soft ( 29.53 ) # for nH=6e20
+	      define steep_conv_factor_hard (  3.47 ) # for nH=6e20
+	   }
+	   if( $xmm_ao == 7 ) {
+	      #---- AO7 ----
+	      # 2007.10.04
+
+	      define T_exp_min (6.0)
+	      echo "    Soft band: 0.1- 1.5 keV "
+	      echo "    Hard band: 1.5-10.0 keV "
+
+	      # files used are: clean_output_[pn|mos]_thin_UnAbs_3.txt
+	      # bands are 0.1-1.5 and 1.5-10 keV
+
+	      # NOTE: EPIC-pn + 2xEPIC-mos rates
+	      define flat_conv_factor_full  ( 26.39 ) # for nH=6e20
+	      define flat_conv_factor_soft  ( 16.13 ) # for nH=6e20  
+	      define flat_conv_factor_hard  ( 10.26 ) # for nH=6e20
+	      #
+	      define steep_conv_factor_full ( 32.30 ) # for nH=6e20
+	      define steep_conv_factor_soft ( 29.31 ) # for nH=6e20
+	      define steep_conv_factor_hard (  2.99 ) # for nH=6e20
+	   }
+	}
+	#___ end of XMM ___#
+	############################################################
+
+	############################################################
+	# SWIFT
+	############################################################
+	if( substr('$whatmission',0,2) == 'sw' ) {
+	   #-----------------------------------------------
+	   # The constants given below are the cts/ks for 
+	   #   F=1.e-13 UNABS
+	   #   in the 0.2-10 keV band.
+	   #   Gamma=1.6 or 3.0 
+	   #   nH = 2e20 or 4e20
+	   #-----------------------------------------------
+
+	   echo "*** Computing Swift 0.2-10 and soft/hard count rates"
+	   echo "    For alpha=0.6 [flat] and alpha=2.0 [steep]"
+	   echo "    Soft band: 0.2-1.5 keV "
+	   echo "    Hard band: 1.5-10.0 keV "
+
+	   define flat_1kev_norm  ( 0.008329   ) # same for all AOs
+	   define steep_1kev_norm ( 0.008442   ) # it's just from the 1e-13 for a given spectrum, nH=0
+	                                         #   computed from the K, model internal norm, 
+	                                         #   converted to microJy (i.e. *662.6176)
+	
+	   define swift_ao ? <              What AO [5] : >
+
+	   if( $swift_ao == 5 ) {
+
+	      #---- AO5 ----#
+	      define T_exp_min (1.0)
+	      # nH 4e20
+	      define flat_conv_factor_full  (  2.03 ) # for AO5 nH=4e20
+	      define flat_conv_factor_soft  (  1.06 ) # for AO5 nH=4e20
+	      define flat_conv_factor_hard  (  0.97 ) # for AO5 nH=4e20
+	      #
+	      define steep_conv_factor_full (  2.01 ) # for AO5 nH=4e20
+	      define steep_conv_factor_soft (  1.73 ) # for AO5 nH=4e20
+	      define steep_conv_factor_hard (  0.28 ) # for AO5 nH=4e20
+
+	      # nH 2e20
+	      define flat_conv_factor_full  (  2.18 ) # for AO5 nH=2e20
+	      define flat_conv_factor_soft  (  1.20 ) # for AO5 nH=2e20
+	      define flat_conv_factor_hard  (  0.98 ) # for AO5 nH=2e20
+	      #
+	      define steep_conv_factor_full (  2.54 ) # for AO5 nH=2e20
+	      define steep_conv_factor_soft (  2.26 ) # for AO5 nH=2e20
+	      define steep_conv_factor_hard (  0.28 ) # for AO5 nH=2e20
+
+	   }
+	}
+	#___ end of Swift ___#
+	############################################################
+
+	set f_x_band_flat  = (f_1_ujy/$flat_1kev_norm)*1.e-13    #! not really used 
+	set f_x_band_steep = (f_1_ujy/$steep_1kev_norm)*1.e-13   #! not really used 
+
+	set ra_flat       = (f_1_ujy/$flat_1kev_norm)*($flat_conv_factor_full/1000.)
+	set ra_flat_soft  = (f_1_ujy/$flat_1kev_norm)*($flat_conv_factor_soft/1000.)
+	set ra_flat_hard  = (f_1_ujy/$flat_1kev_norm)*($flat_conv_factor_hard/1000.)
+
+	set ra_steep      = (f_1_ujy/$steep_1kev_norm)*($steep_conv_factor_full/1000.)
+	set ra_steep_soft = (f_1_ujy/$steep_1kev_norm)*($steep_conv_factor_soft/1000.)
+	set ra_steep_hard = (f_1_ujy/$steep_1kev_norm)*($steep_conv_factor_hard/1000.)
+
+	set ra_avrg = 0.5*(ra_flat + ra_steep)
+
+	#-----------------------------------------------------------
+	# 100/150/200 required counts, divided by the rate cts/ks
+	#    to give the exposure time in kiloseconds
+	#
+	if( substr('$whatmission',0,2) == 'ch' ) {
+	   define cts_full ( 150. )
+	   define cts_soft ( 150. )
+	   define cts_hard ( 150. )
+	}
+	if( substr('$whatmission',0,2) == 'xm' ) {
+	   define cts_full ( 200. )
+	   define cts_soft ( 200. )
+	   define cts_hard ( 200. )
+	   define cts_full ( 300. )
+	   define cts_soft ( 300. )
+	   define cts_hard ( 300. )
+	   define cts_full ( 400. )
+	   define cts_soft ( 400. )
+	   define cts_hard ( 400. )
+	}
+	if( substr('$whatmission',0,2) == 'sw' ) {
+	   define cts_full (  80. )
+	   define cts_soft (  80. )
+	   define cts_hard (  80. )
+	}
+
+	echo "**************************************"
+	echo "*** Required count number is: "$cts_full "***"
+	echo "**************************************"
+
+	echo "*** Computing T_exp (in ks) for TOT counts for flat and steep X-ray case."
+	echo "    for the full band ["$cts_full" cts] :       time_flat|time_steep"
+	echo "    for the hard band ["$cts_soft" cts] :  time_flat_hard|time_steep_hard"
+	echo "    for the soft band ["$cts_hard" cts] :  time_flat_soft|time_steep_soft"
+
+	set time_flat        = $cts_full/(ra_flat*1000.)
+	set time_flat_soft   = $cts_soft/(ra_flat_soft*1000.)
+	set time_flat_hard   = $cts_hard/(ra_flat_hard*1000.)
+
+	set time_steep       = $cts_full/(ra_steep*1000.)
+	set time_steep_soft  = $cts_soft/(ra_steep_soft*1000.)
+	set time_steep_hard  = $cts_hard/(ra_steep_hard*1000.)
+
+	#-----------------------------------------------------------
+	# rounded exposure times, at multiples of 2 and 3.
+	set time_flat_disc_1 = 3*int( time_flat/3. ) + 3
+	set time_flat_disc_2 = 2*int( time_flat/2. ) + 2 
+
+	set time_steep_disc_1 = 3*int( time_steep/3. ) + 3
+	set time_steep_disc_2 = 2*int( time_steep/2. ) + 2 
+
+	#-----------------------------------------------------------
+	# rounded average of time flat and steep,
+	# and rounding up to the minimum exposure T_exp_min
+	set time_avrg_1     = 1.0001*int( 0.5*(time_flat+time_steep)/1.0001 )     + 1.0001
+	set time_avrg_0.5   = 1.0001*int(     (time_flat+time_steep)/1.0001 )/2.  + 0.5001
+	set time_avrg_0.25  = 1.0001*int( 2.0*(time_flat+time_steep)/1.0001 )/4.  + 0.2501
+	set time_avrg_0.25b = 1.0001*int( 2.0*(time_flat+time_steep)/1.0001 )/4.  
+
+	echo " "
+	define rounding ? < Rounding for T_avrg : [1|0.5|0.25|0.25b] >
+	set time_avrg = time_avrg_$rounding
+
+	do 9=0,dimen(time_avrg)-1 {
+	   if( time_avrg[$9] < $T_exp_min ) { set time_avrg[$9] = $T_exp_min }
+	}
+
+	}
+	#___ end of NONE for "what mission"___
+
+	remind_arrays
+
+	echo "------------------------------------------------------------"
+	echo "  PLEASE run rename_ffss to save important arrays as _ffss  "
+	echo "------------------------------------------------------------"
+
+	verbose 1
+
+#---------------------------------------------------------------------------
+# sub_assign_x_data
+sub_assign_x_data
+
+	set flag_x = 0.0*xcps + 0
+
+	#-----------------------------------------------------------
+	# INPUT: unabsorbed flux (0.3 - 8.0 keV) == 1.000E-11 ergs/cm/cm/s
+	# NH:    3e20
+	#  
+	# INSTRUMENT: Chandra-AO4 ACIS-S   [gf_X_flag = 1.04]
+	# Gamma = 1.6 ==> 1.414  c/s  (K= 1.486E-03, f1= 0.985 microJy)
+	# Gamma = 1.7 ==> 1.496  c/s  (K= 1.601e-03, f1= 1.061 microJy)
+	# Gamma = 2.0 ==> 1.728  c/s  (K= 1.901E-03, f1= 1.259 microJy)
+	# Gamma = 2.5 ==> 1.987  c/s  (K= 2.120E-03, f1= 1.405 microJy)
+	# Gamma = 3.0 ==> 2.042  c/s  (K= 1.945E-03, f1= 1.288 microJy)
+	#  
+	# INSTRUMENT: Chandra-AO6 ACIS-S   [gf_X_flag = 1.06]
+	# Gamma = 1.6 ==> 1.127  c/s  (K= 1.486E-03, f1= 0.985 microJy)
+	# Gamma = 1.7 ==> 1.176  c/s  (K= 1.601e-03, f1= 1.061 microJy)
+	# Gamma = 2.0 ==> 1.297  c/s  (K= 1.901E-03, f1= 1.259 microJy)
+	# Gamma = 2.5 ==> 1.376  c/s  (K= 2.120E-03, f1= 1.405 microJy)
+	# Gamma = 3.0 ==> 1.301  c/s  (K= 1.945E-04, f1= 1.288 microJy)
+	#-----------------------------------------------------------
+	
+	#-----------------------------------------------------------
+	# INPUT: unabsorbed flux (0.1 - 2.4 keV) == 1.000E-11 ergs/cm/cm/s
+	# NH:    3e20
+	#  
+	# INSTRUMENT: ROSAT PSPC OPEN
+	# Gamma = 1.6 ==> 0.5608 c/s  (K = 2.445E-03)
+	# Gamma = 1.7 ==> 0.5522 c/s  (K = 2.343E-03)
+	# Gamma = 2.0 ==> 0.5157 c/s  (K = 1.964E-03, f1= 1.301 microJy)
+	# Gamma = 2.5 ==> 0.4299 c/s  (K = 1.240E-03)
+	# Gamma = 3.0 ==> 0.3380 c/s  (K = 6.513E-04)
+	#
+	# For (0.24 - 2.0 keV) 
+	# Gamma = 2.0 ==> 0.4559 c/s  (K = 1.964E-03, f1= 1.301 microJy)
+	#-----------------------------------------------------------
+	# RASS upper limit
+	#  about 90% of the sky 0.03 cps
+	   define rass_min_cps (0.05)
+	#-----------------------------------------------------------
+	
+	#-----------------------------------------------------------
+	# >>> Computing F[1keV;microJy] <<<
+	#
+	# First sets GENERIC value for Gamma=2.0 for all objects
+	#
+	# ROSAT generic F[1keV;microJy] 
+	set a_x = 0*xcps + 1.0
+	set f_x_rass = 1.301*(xcps/0.5157)                      # 0.10-2.4 keV ==> RASS
+	set f_x_wga  = 1.301*(xcps/0.4559)                      # 0.24-2.0 keV ==> WGA
+	set f_x_ul   = xcps*0 + 1.301*($rass_min_cps/0.5157)    # rough RASS upper limit
+
+	set f_x = (is_x_rass*f_x_rass + is_x_wga*f_x_wga)/(is_x_rass + is_x_wga)
+
+	set test_x_ul = is_x_rass + is_x_wga + is_x_chandra + is_x_xmm
+	do i=0,dimen(gf_X_flag)-1 {
+	   if( test_x_ul[$i] < 1 ) {
+	      set is_x_upper[$i] = 1 
+	      set f_x[$i] = f_x_ul[$i]
+	   }
+	}
+
+	# Chandra/XMM generic F[1keV;microJy] 
+	do i=0,dimen(gf_X_flag)-1 {
+	   if( gf_X_flag[$i] == 1.04 )                        { set f_x[$i] = 1.259*(newxcps[$i]/1.728)   }
+	   if( gf_X_flag[$i] == 1.06 )                        { set f_x[$i] = 1.259*(newxcps[$i]/1.297)   }
+	   if( gf_X_flag[$i] >= 2.0 && gf_X_flag[$i] < 3.0  ) { set f_x[$i] = xmm_trial_mid[$i]/7.685e-12 }
+	}
+
+	do i=0,dimen(gf_X_flag)-1 {
+	   if( xcps[$i]      > 1e-20 ) { set flag_x[$i] = 1 }
+	   if( gf_X_flag[$i] > 1.0   ) { set flag_x[$i] = 1 }
+	}
+
+	#-----------------------------------------------------------
+	# Trying to tailor Gamma_X to the a_ro value, under the ASSUMPTION that there is
+	#  indeed a a_ro-a_x correlation.
+	#
+	# CHANDRA
+	# * 1.987, 1.376 are the count rates for AO4 and AO6 for 1e-11 flux in the 0.3-8.0 keV band, 
+	#         with nH=3e20 (applied to counts, not to flux that is incoming/intrinsic UNABS)
+	#
+	# ROSAT
+	# * 0.4299 is the count rate for 1e-11 in the 0.1-2.4 keV band for alpha=1.5
+	#        with nH=3e20 (applied to counts, not to flux that is incoming/intrinsic UNABS)
+	#        This is valid only for RASS data.  
+	#        For WGA the factor is 0.3503.
+	#        The scaling is different because of the different data band, 0.24-2.0 keV.
+	#        Still using as input the 0.1-2.4 keV band, normalized to 1e-11, but the count rate
+	#        is computed over the narrower 0.24-2.0 keV band.
+	#
+	# * For 1e-11 in the 0.3-8.0 keV, alpha=1.5 ==> K=2.120e-03 ==> F_1=1.405 microJy
+	# * For 1e-11 in the 0.1-2.4 keV, alpha=1.5 ==> K=1.24e-03  ==> F_1=0.822 microJy
+	#   These values do not depend on telescope/instrument because it is just algebra
+	#
+	# E.g.:  F = cps/0.4299 * 1e-11
+	#
+	do 1=0,$(dimen(ra)-1) {
+
+	   # Gamma=2.5
+	   if( a_ro[$1] <= 0.45 ) { 
+	       set a_x[$1] = 1.5
+	       set f_x_rass[$1] = 0.822*(xcps[$1]/0.4299)          # 0.10-2.4 keV
+	       set f_x_wga[$1]  = 0.822*(xcps[$1]/0.3503)          # 0.24-2.0 keV
+	       set f_x_ul[$1]   = 0.822*($rass_min_cps/0.4299)     # 0.10-2.4 keV upper limit
+	       if( is_x_rass[$1]  == 1    ) { set f_x[$1] = f_x_rass[$1] }
+	       if( is_x_wga[$1]   == 1    ) { set f_x[$1] = f_x_wga[$1]  }
+	       if( is_x_upper[$1] == 1    ) { set f_x[$1] = f_x_ul[$1]  }
+	       if( gf_X_flag[$1]  == 1.04 ) { set f_x[$1] = 1.405*(newxcps[$1]/1.987) }
+	       if( gf_X_flag[$1]  == 1.06 ) { set f_x[$1] = 1.405*(newxcps[$1]/1.376) }
+	       if( gf_X_flag[$1]  >= 2.0 && gf_X_flag[$1] < 3.0 ) { set f_x[$1] = xmm_trial_mid[$1]/7.685e-12 } 
+	                 # FUDGING!!  These are values for Gamma=2.0
+	   }
+
+	   # Gamma=1.6 (most values are actually for Gamma=1.7)
+	   if( a_ro[$1] >= 0.60 ) { 
+	       set a_x[$1] = 0.7    ## <<<<=======
+	       # set f_x[$1] = (662.6176*2.343e-3)*(xcps[$1]/0.5522) 
+	       set f_x_rass[$1] = 1.522*(xcps[$1]/0.5522)          # 0.10-2.4 keV
+	       set f_x_wga[$1]  = 1.522*(xcps[$1]/0.5055)          # 0.24-2.0 keV
+	       set f_x_ul[$1]   = 1.522*($rass_min_cps/0.5522)     # 0.10-2.4 keV upper limit
+	       if( is_x_rass[$1]  == 1    ) { set f_x[$1] = f_x_rass[$1] }
+	       if( is_x_wga[$1]   == 1    ) { set f_x[$1] = f_x_wga[$1]  }
+	       if( is_x_upper[$1] == 1    ) { set f_x[$1] = f_x_ul[$1]  }
+	       if( gf_X_flag[$1]  == 1.04 ) { set f_x[$1] = 1.061*(newxcps[$1]/1.496) }   # 1.496 is for Gamma=1.7 ! It's 1.414 for Gamma=1.6
+	       if( gf_X_flag[$1]  == 1.06 ) { set f_x[$1] = 1.061*(newxcps[$1]/1.176) }   # 1.176 is for Gamma=1.7 ! It's 1.127 for Gamma=1.6
+	       if( gf_X_flag[$1]  >= 2.0 && gf_X_flag[$1] < 3.0 ) { set f_x[$1] = xmm_trial_flat[$1]/6.174e-12 }  # this is for Gamma=1.6 ... 
+	   }
+	}
+
+	# WHAT ABOUT for alpha_RO 0.45-0.60 ???
+	# It falls under the 'generic' case computed above.
+
+	# This is in microJy now, taking into accout RASS vs. WGA vs. Chandra 4/6
+	#
+	set lg_f_x  = lg(f_x) 
+	set flag_ax = 0*lg_f_x + 3.  # this value flags 'fake' x-ray spectral indices
+
+#---------------------------------------------------------------------------
+# rename_ffss  <suffix>
+rename_ffss 01 
+
+	if( $?1 ) {
+	   define ext $1
+	} else {
+	   define ext ? < Suffix for renamed arrays : >
+	}
+	define 9 $ext
+
+	foreach 1 < is_x_upper > {
+	   echo " Setting : "$1"_"$9
+	   set $1_$9 = $1 
+	}
+
+	foreach 1 < z type class flag_x check_x flag_z a_x m_V > { 
+	   echo " Setting : "$1"_"$9
+	   set $1_$9 = $1 
+	}
+
+	foreach 1 < f lg_f lg_kf l nl > {
+	  foreach 2 < radio opt x > {
+	     echo " Setting : "$1"_"$2"_"$9
+	     set $1_$2_$9 = $1_$2
+	  }
+	}
+
+	set a_radio_opt = a_ro
+	set a_radio_x   = a_rx
+	set a_opt_x     = a_ox
+	set a_rorx      = a_radio_opt + a_radio_x
+
+	foreach 1 < radio_opt radio_x opt_x > { 
+	  foreach 2 { a ak } {
+	     echo " Setting : "$2"_"$1"_"$9
+	     set $2_$1_$9 = $2_$1
+	  }
+	}
+	set a_rorx_$9 = a_rorx
+
+	set_sed_type
+
+	foreach 1 < rorx ro rx ox > {
+	   define 2 "sed_type"
+	   echo " Setting : "$2"_"$1"_"$9
+	   set $2_$1_$9 = $2_$1 
+	}
+
+	foreach 1 < 1 2 3 > {
+	   set guess_xp$1_$9 = guess_xp$1
+	}
+	set dguess_xp2_$9    = dguess_xp2
+	set guess_xp2_alt_$9 = guess_xp2_alt
+
+	# name
+	# flag_z
+	# flag_x 
+	# check_x
+	# a_x
+	# f_x
+	# lg_f_x
+	# lg_kf_x
+	# lg_kf_radio
+	# lg_kf_opt
+	# l_x
+	# l_radio
+	# l_opt
+	# nl_x
+	# nl_radio
+	# nl_opt
+	# ak_ra
+	# a_radio_x
+	# ak_ra	
+	# a_opt_x
+	# ak_opt_x
+	# sed_type_[rorx|ro|rx|ox]
+
+#---------------------------------------------------------------------------
+# check_f_1_guess
+check_f_1_guess
+
+	limits -3 2 -3 2 
+	ctype 2 
+	box 
+	
+	ltype 2 ctype 4 
+	relocate -10 -10 
+	draw 10 10 
+	ltype 0 ctype 2
+	xlabel F_x mid from ROSAT
+	ylabel F_x guessed 
+
+	ctype 3 points (lg_f_1_mid+29) (lg_f_1_guess+29)
+	ctype 2 
+
+#---------------------------------------------------------------------------
+# read_super_sample_colors : useful to check the a_RX vs. a_RO correlation 
+read_super_sample_colors
+
+	data super_sample.dat
+	read < ss_lg_fr 3 ss_lg_fo 4 ss_lg_fx 5 ss_lg_kfr 6 ss_lg_kfo 7 ss_lg_kfx 8 >
+
+	set ss_aro  = (ss_lg_fr  - ss_lg_fo)/5.037
+	set ss_aox  = (ss_lg_fo  - ss_lg_fx)/2.648
+	set ss_arx  = (ss_lg_fr  - ss_lg_fx)/7.685
+	set ss_akro = (ss_lg_kfr - ss_lg_kfo)/5.037
+	set ss_akox = (ss_lg_kfo - ss_lg_kfx)/2.648
+	set ss_akrx = (ss_lg_kfr - ss_lg_kfx)/7.685
+
+#---------------------------------------------------------------------------
+# check_aro_arx
+#               : needs to have "read_super_sample_colors" run.
+check_aro_arx
+
+	location 6000 31000 6000 31000
+	ctype 2 
+	ticksize 0.05 0.2 0.05 0.2
+	limits -0.1 1.2 0.2 1.2 
+	expand 1.5 
+	lweight 3 
+	box
+	expand 2.0
+	xlabel \alpha_{RO}
+	ylabel \alpha_{RX}
+
+	expand 1.1
+	define plot_ffss_check ? < Plot FFSS points        [0|1] : >
+	define plot_ss_check   ? < Plot SuperSample points [0|1] : >
+
+	if( $plot_ffss_check == 1 ) {
+	   ctype 3 
+	   ptype 3 3 
+	   points a_ro a_rx_mid
+	}
+
+	if( $plot_ss_check == 1 ) {
+	   ctype 2 
+	   lweight 2
+	   #ptype 12 0
+	   ptype 4 0
+	   points ss_akro ss_akrx
+	   lweight 3
+	}
+
+	set xaro=-0.2,1.4,0.01
+
+	## set yarx=0.52 + 0.55*sqrt((xaro-0.3)/0.5)
+	## set yarx = 1.05 - 0.65*(xaro-1.15)**2.
+	## set yarx = 1.05 - 0.65*((xaro-1.15)/0.95)**2.
+	## set yarx = 1.05 - 0.65*((xaro-1.1)/0.95)**2.
+	## set yarx = 1.05 - 0.65*((xaro-1.1)/1.05)**2.
+
+	# BOTTOM boundary of the data [newL]
+	set yarx1 = 1.05 - 0.65*((xaro-1.15)/0.90)**2.
+	ctype 7 connect xaro yarx1
+
+	# TOP    boundary of the data [newH]
+	set yarx2 = 1.10 - 0.60*((xaro-1.00)/0.85)**2. 
+	set yarx2 = 1.07 - 0.60*((xaro-1.00)/0.85)**2. 
+	ctype 6 connect xaro yarx2
+
+	# AVERAGE of top and bottom
+	set yarx = 0.5*(yarx1+yarx2)
+	ctype 4 connect xaro yarx
+
+	echo "-------------------------------------------------"
+	echo "  newH : cyan "
+	echo "  newM : green "
+	echo "  newL : magenta "
+	echo "-------------------------------------------------"
+	echo " > empty squares are the 'super sample' objects"
+	echo " > red triangles are the 'FFSS' objects"
+	echo "-------------------------------------------------"
+
+	## from 'read_true'
+	##set a_rx_guess_newL = 1.05 - 0.65*((a_ro-1.15)/0.90)**2.
+	##set a_rx_guess_newH = 1.10 - 0.60*((a_ro-1.00)/0.85)**2. 
+
+##---------------------------------------------------------------------------
+remind_arrays
+
+	echo "-----------------------------------------------------------------"
+	echo "Defined Arrays :"
+	echo "   coord:  ra dec ra_h ra_m ra_s dec_d dec_m dec_s "
+	echo "   class:  class classn z gf_X_flag"
+	echo "   radio:  f_first  f5   lg_f_first  lg_f_r_5 "
+	echo "infrared:  twoflag jmag  jflag  lg_f_j"
+	echo "                   hmag  hflag  lg_f_h"
+	echo "                   kmag  kflag  lg_f_k"
+	echo " optical:  emag  omag  vmag  lg_f_[ir|uv|opt1|opt2|opt]"
+	echo "   x-ray:  lg_f_x_[flat|steep]  lg_f_1_[flat|steep]  lg_f_1_mid "
+	echo "           lg_f_1_guess  f_1_ujy  xcps"
+	echo "           f_x_band_flat  f_x_band_steep"
+	echo "    a_RO:  a_ro  a_ro1  a_ro2 "
+	echo "           a_rj  a_rk a_jo a_ko"
+	echo "    a_JX:  a_jx_mid  "
+	echo "    a_RX:  a_rx_[flat|steep]  a_rx_mid  a_rx_guess "
+	echo "    a_OX:  a_ox_[mid|mid1|mid2]"
+	echo " chandra:  ra_flat           ra_steep         ra_avrg "
+	echo "           time_flat         time_steep "
+	echo "           time_flat_disc_1  time_flat_disc_2 "
+	echo "           time_steep_disc_1 time_steep_disc_2 "
+	echo "           time_avrg (also rounded to T_exp_min) in the chosen format "
+	echo "-----------------------------------------------------------------"
+	echo "Classification (classn):"
+	echo "    2 : Quasar/AGN"
+	echo "    1 : BL_Lac"
+	echo "    0 : RadioG, Galaxy, Starburst, Seyfert"
+	echo "   -1 : ZZZZZ, i.e. unIdentified"
+	echo "   -2 : PN, Star (bad stuff)"
+	echo "-----------------------------------------------------------------"
+
+#---------------------------------------------------------------------------
+# make_t_exp_histo : makes histogram of T_exp/Chandra rate for selected subsample
+make_t_exp_histo
+
+	echo First define variable "filter"
+
+	set _ra_flat           = ra_flat            if( $filter )
+	set _ra_steep          = ra_steep           if( $filter )
+	set _time_flat         = time_flat          if( $filter )
+	set _time_steep        = time_steep         if( $filter )
+	set _time_flat_disc_1  = time_flat_disc_1   if( $filter )
+	set _time_steep_disc_1 = time_steep_disc_1  if( $filter )
+	set _time_flat_disc_2  = time_flat_disc_2   if( $filter )
+	set _time_steep_disc_2 = time_steep_disc_2  if( $filter )
+
+	echo " "
+	echo "*** the sub-sample size is : "$(dimen(_ra_flat))
+	echo " "
+
+	set lg_ra_flat    = lg(_ra_flat)
+	set lg_ra_steep   = lg(_ra_steep)
+	set lg_time_flat  = lg(_time_flat)
+	set lg_time_steep = lg(_time_steep)
+
+	define step ? { Histogram step : }
+
+	set xrate=-3-0.5*$step,+3+0.5*$step,$step
+	set h_ra_flat    = histogram(lg_ra_flat:xrate)
+	set h_ra_steep   = histogram(lg_ra_steep:xrate)
+	set h_time_flat  = histogram(lg_time_flat:xrate)
+	set h_time_steep = histogram(lg_time_steep:xrate)
+
+	expand 1.5
+	lweight 3 
+	ctype 2 
+
+	window 1 1 1 1
+	location 6000 30000 10000 28000
+
+	limits -3 3 h_ra_flat 
+	ticksize -1 0 0 0 
+	expand 1.5
+	box 1 2 3 0 
+	expand 2.0
+	xlabel Rate [cts/s]
+	histogram xrate h_ra_flat
+	ctype 4 
+	ltype 2 
+	foreach pip_rate < 0.02 0.05 0.1 > {
+	   relocate $(lg($pip_rate)) -10 
+	   draw     $(lg($pip_rate)) 100
+	}
+	ctype 2 
+	ltype 0
+
+	limits 2 -4 h_ra_flat
+	expand 1.5
+	box 3 3 1 0
+	ctype 2 
+	relocate ( $( 0.5*($gx1+$gx2) ) $( $gy2 + 2000 ) )
+	expand 2.0
+	putlabel 8 T_{exp} [ks]
+
+	window 1 1 1 1
+	location 6000 30000 6000 31000
+
+#---------------------------------------------------------------------------
+# print_irac_list  | prints list with:
+#                  |   coords   Fr  z  a_RO   Fx   xcps  
+#                  |   rate_flat rate_steep
+#                  |   T_flat    T_steep (just plain)
+#                  |   T_avrg (rounded to T_exp_min) 
+#           ************************
+#           *** BEST FOR SPITZER ***
+#           ************************
+print_irac_list
+
+	define pref1 ? { Prefix for Vectors : }
+	define out   ? {    Output Filename : }
+	define 1 $pref1
+
+	set veclist1 = < ra_h ra_m ra_s dec_d dec_m dec_s \
+			 z f5 a_ro f_1_ujy xcps \
+			 jgood hgood kgood bingood \
+			 f_irac_wcs f_irac_wcs0 f_irac_wcs1 f_irac_wcs2 f_irac_wcs3 \
+			 class >
+	foreach 2 veclist1 {
+	   set pr_$2 = $1_$2
+	}
+
+	do 9=0,dimen(pr_f_irac_wcs)-1 {
+	   if( pr_f_irac_wcs[$9]  > 99999.0 ) { set pr_f_irac_wcs[$9]  = 99999 }
+	   if( pr_f_irac_wcs0[$9] > 99999.0 ) { set pr_f_irac_wcs0[$9] = 99999 }
+	   if( pr_f_irac_wcs1[$9] > 99999.0 ) { set pr_f_irac_wcs1[$9] = 99999 }
+	   if( pr_f_irac_wcs2[$9] > 99999.0 ) { set pr_f_irac_wcs2[$9] = 99999 }
+	   if( pr_f_irac_wcs3[$9] > 99999.0 ) { set pr_f_irac_wcs3[$9] = 99999 }
+	}
+
+	format_ra_and_dec
+
+	define print_noheader 1
+	define coordfmt   " %02.0f %02.0f %04.1f    +%02.0f %02.0f %04.1f"
+	define datafmt    "  %6.4f  %6.0f  %6.3f  %10.4e"
+	define twomassfmt "  %1.0f  %1.0f  %1.0f  %1.0f"
+	define iracfmt    "   %7.1f  %7.1f  %7.1f  %7.1f  %7.1f"
+	define auxfmt     "  %-12s"
+
+	define str1a "    RA           DEC         z         Fr    a_RO     Fx_1    "
+	define str2a " 2mass-flag    F_irac0  F_irac1  F_irac2  F_irac3   F_irac    class"
+	define str1b "                                                              "
+	define str2b " J  H  K  T      R(RO)  R(0.75)   O(0.2)  O(flat)   select   "
+	define str1c "   1-3           4-6         7         8      9        10     "
+	define str2c "   11-14          15       16       17       18       19       20 "
+
+	define coordnames   " pr_ra_h pr_ra_m pr_ra_s pr_dec_d pr_dec_m pr_dec_s "
+	define datanames    " pr_z pr_f5 pr_a_ro pr_f_1_ujy "
+	define twomassnames " pr_jgood pr_hgood pr_kgood pr_bingood "
+	define iracnames    " pr_f_irac_wcs0 pr_f_irac_wcs1 pr_f_irac_wcs2 pr_f_irac_wcs3   pr_f_irac_wcs"
+	define auxnames     " pr_class "
+
+	define 9 $1_filter
+	write $out "# FILTER: "$$9
+	write + $out "# $!str1a $!str2a "
+	write + $out "# $!str1b $!str2b "
+	write + $out "# $!str1c $!str2c "
+	write + $out "# "
+
+	print + $out '$!coordfmt $!datafmt $!twomassfmt $!iracfmt $!auxfmt\n' < $!coordnames $!datanames $!twomassnames $!iracnames $!auxnames > 
+	define print_noheader 0
+
+#---------------------------------------------------------------------------
+# print_rps| prints list with:
+#          |   coords   Fr  z  a_RO   Fx   xcps  
+#          |   rate_flat rate_steep
+#          |   T_flat    T_steep (just plain)
+#          |   T_avrg (rounded to T_exp_min) 
+#           *******************************************
+#           *** THE BEST FOR PROPOSALS (17 columns) ***
+#           *******************************************
+print_rps
+
+	define pref1 ? { Prefix for Vectors : }
+	define out   ? {    Output Filename : }
+	define 1 $pref1
+
+	set veclist1 = < ra_h ra_m ra_s dec_d dec_m dec_s \
+			 z f5 a_ro f_1_ujy xcps \
+			 ra_flat ra_steep ra_avrg \
+			 time_flat time_steep \
+			 time_avrg class >
+	foreach 2 veclist1 {
+	   set pr_$2 = $1_$2
+	}
+
+	format_ra_and_dec
+
+	define print_noheader 1
+	#define fmt1 " %02.0f %02.0f %04.1f    +%02.0f %02.0f %04.1f  %6.4f %6.0f  %6.3f %10.6f %7.4f"
+	define fmt1 " %02.0f %02.0f %04.1f    +%02.0f %02.0f %04.1f  %6.4f %6.0f  %6.3f %10.6f "
+	define fmt2 "   %6.2e  %6.2e   %7.3f  %6.2f  %6.2f  %6.2f   %s"
+	#define str1a "    RA           DEC         z       Fr    a_RO     Fx_1     xcps  "
+	define str1a "    RA           DEC         z       Fr    a_RO     Fx_1    "
+	define str2a "  ra_flat   ra_steep   ra_avrg   T_flat  T_steep T_avrg  class"
+	#define str1b "   1-3           4-6         7       8      9        10       11   "
+	#define str2b "     12        13         14       15      16      17     18  "
+	define str1b "   1-3           4-6         7       8      9        10     "
+	define str2b "     11        12         13       14      15      16     17  "
+
+	define coordnames " pr_ra_h pr_ra_m pr_ra_s pr_dec_d pr_dec_m pr_dec_s "
+	#define datanames  " pr_z pr_f5 pr_a_ro pr_f_1_ujy pr_xcps "
+	define datanames  " pr_z pr_f5 pr_a_ro pr_f_1_ujy "
+	define ratenames  " pr_ra_flat pr_ra_steep pr_ra_avrg "
+	define timenames  " pr_time_flat pr_time_steep pr_time_avrg "
+	define auxnames   " pr_class "
+
+	define 9 $1_filter
+	#write $out "# FILTER: $!filter"
+	write $out "# FILTER: "$$9
+	write + $out "# $!str1a $!str2a "
+	write + $out "# $!str1b $!str2b "
+	write + $out "# "
+
+	print + $out '$!fmt1 $!fmt2\n' < $!coordnames $!datanames $!ratenames $!timenames $!auxnames>
+	define print_noheader 0
+
+##---------------------------------------------------------------------------
+format_ra_and_dec
+
+	set coordveclist = < ra_h ra_m dec_d dec_m >
+	foreach 3 coordveclist {
+	     do i=0,$(dimen(pr_ra_h)-1) {
+		if( pr_$3[$i] < 10 ) {
+		    set pr_$3[$i] = $(sprintf('0%1d',$(pr_$3[$i])))
+		}
+	     }
+	}
+
+	set coordveclist = < ra_s dec_s >
+	foreach 3 coordveclist {
+	     do i=0,$(dimen(pr_ra_h)-1) {
+		if( pr_$3[$i] < 10 ) {
+		    set pr_$3[$i] = $(sprintf('0%3.1f',$(pr_$3[$i])))
+		}
+	     }
+	}
+
+#---------------------------------------------------------------------------
+# print_rps_short| prints list with:  (possibly ***BAD***, e.g. not useful)
+#                |   coords. / Fr / a_RO /
+#                |   rate_flat / rate_steep
+#                |   T_flat T_steep (3x: plain and rounded-1 and rounded-2)
+print_rps_short
+
+	define pref1 ? { Define Prefix for Vectors  : }
+	define out   ? { Define Output Filename : }
+	define 1 $pref1
+
+	set veclist1 = < ra_h ra_m ra_s dec_d dec_m dec_s \
+			 f5 a_ro \
+			 ra_flat ra_steep \
+			 time_flat time_flat_disc_1 time_flat_disc_2 \
+			 time_steep time_steep_disc_1 time_steep_disc_2 >
+	foreach 2 veclist1 {
+	   set pr_$2 = $1_$2
+	}
+
+	format_ra_and_dec
+
+	define fmt " %2d %2d %4.1f    +%2d %2d %4.1f   %6d %6.3f  %6.2e %6.2e   %6.2f  %6.2f  %6.2f    %6.2f  %6.2f  %6.2f"
+	define coordnames " pr_ra_h pr_ra_m pr_ra_s pr_dec_d pr_dec_m pr_dec_s "
+	define datanames  " pr_f5 pr_a_ro "
+	define ratenames  " pr_ra_flat pr_ra_steep "
+	define timenames1 " pr_time_flat pr_time_flat_disc_1 pr_time_flat_disc_2 "
+	define timenames2 " pr_time_steep pr_time_steep_disc_1 pr_time_steep_disc_2 "
+
+	print $out '$!fmt\n' < $!coordnames $!datanames $!ratenames $!timenames1 $!timenames2 >
+
+#---------------------------------------------------------------------------
+# print_rps_decsort| prints list SORTED by declination with : 
+#                  |   coords / Fr / a_RO
+#                  |   rate_flat / rate_steep
+#                  |   T_flat T_steep (3x: plain and rounded-1 and rounded-2)
+print_rps_decsort
+
+	define pref1 ? { Define Prefix for Vectors : }
+	define out   ? {    Define Output Filename : }
+	define 1 $pref1
+
+	set savesortvec = $1_dec_d + $1_dec_m/60.0 + $1_dec_s/3600.
+
+	set veclist1 = < ra_h ra_m ra_s dec_d dec_m dec_s \
+			 f5 a_ro \
+			 ra_flat ra_steep \
+			 time_flat  time_flat_disc_1  time_flat_disc_2 \
+			 time_steep time_steep_disc_1 time_steep_disc_2 >
+	foreach 2 veclist1 {
+	   set sortvec = savesortvec
+	   set pr_$2 = $1_$2
+	   sort < sortvec pr_$2 >
+	}
+
+	format_ra_and_dec
+
+	define fmt " %2d %2d %4.1f    +%2d %2d %4.1f   %6d %6.3f  %6.2e %6.2e   %6.2f  %6.2f  %6.2f    %6.2f  %6.2f  %6.2f"
+	define coordnames " pr_ra_h pr_ra_m pr_ra_s pr_dec_d pr_dec_m pr_dec_s "
+	define datanames  " pr_f5 pr_a_ro "
+	define ratenames  " pr_ra_flat pr_ra_steep "
+	define timenames1 " pr_time_flat pr_time_flat_disc_1 pr_time_flat_disc_2 "
+	define timenames2 " pr_time_steep pr_time_steep_disc_1 pr_time_steep_disc_2 "
+
+	print $out '$!fmt\n' < $!coordnames $!datanames $!ratenames $!timenames1 $!timenames2 >
+
+#---------------------------------------------------------------------------
+# print_chandra_decsort| prints list SORTED by declination with :
+#                      |   coords / z / Fr / a_RO / Fx / xcps / class
+#                      |   rate_flat / rate_steep
+#                      |   T_flat T_steep (just plain)
+print_chandra_decsort
+
+	define pref1 ? { Define Prefix for Vectors : }
+	define out   ? {    Define Output Filename : }
+	define 1 $pref1
+
+	set savesortvec = $1_dec_d + $1_dec_m/60.0 + $1_dec_s/3600.
+
+	set veclist1 = < ra_h ra_m ra_s dec_d dec_m dec_s \
+			 z f5 a_ro f_1_ujy xcps \
+			 class \
+			 ra_flat ra_steep \
+			 time_flat time_steep >
+	foreach 2 veclist1 {
+	   set sortvec = savesortvec
+	   set pr_$2 = $1_$2
+	   sort < sortvec pr_$2 > 
+	}
+
+	define fmt " %2d %2d %6.3f    +%2d %2d %5.2f   %6.4f %6d %6.3f %10.6f %7.4f  %6.2e  %6.2e  %6.2f  %6.2f  %s"
+	define coordnames " pr_ra_h pr_ra_m pr_ra_s pr_dec_d pr_dec_m pr_dec_s "
+	define datanames  " pr_z pr_f5 pr_a_ro pr_f_1_ujy pr_xcps "
+	define ratenames  " pr_ra_flat pr_ra_steep "
+	define timenames  " pr_time_flat pr_time_steep "
+	define auxnames   " pr_class "
+
+	print $out '$!fmt\n' < $!coordnames $!datanames $!ratenames $!timenames $!auxnames >
+
+#---------------------------------------------------------------------------
+# print_sample | prints list with:
+#              |   coords / z / Fr / a_RO / Fx / xcps / class
+#              |   rate_flat / rate_steep
+#              |   T_flat T_steep (3x: plain rounded-1 rounded-2)
+#              |   T_average (rounded to T_exp_min) 
+#              *************************************************
+#              *** THIS IS THE MOST COMPLETE AND THE BEST!!! ***
+#              *************************************************
+print_sample
+
+	define pref1 ? < Define Prefix for Vectors : >
+	define out   ? <    Define Output Filename : >
+	define 1 $pref1
+
+	set veclist1 = < ra_h ra_m ra_s dec_d dec_m dec_s \
+			 z f5 a_ro f_1_ujy xcps \
+			 ra_flat ra_steep class \
+			 time_flat  time_flat_disc_1  time_flat_disc_2 \
+			 time_steep time_steep_disc_1 time_steep_disc_2 \
+			 time_avrg gf_X_flag >
+	foreach 2 veclist1 {
+	   set pr_$2 = $1_$2
+	}
+
+	define print_noheader 1
+	define fmt1 " %02.0f %02.0f %04.1f    +%02.0f %02.0f %04.1f "
+	define fmt2 " %6.4f %6.0f %6.3f %10.6f %7.4f  %6.2e %6.2e  "
+	define fmt3 " %6.2f  %6.2f %6.2f    %6.2f  %6.2f  %6.2f  %6.2f  %-12s %5.2f "
+	define str1a "    RA            DEC         z       Fr   a_RO     Fx_1     xcps    ra_flat"
+	define str2a "ra_steep    T_flat   disc3  disc2   T_steep   disc3   disc2   T_avrg  class    gf_X_flag"
+	define str1b "   1-3            4-6         7       8     9        10       11       12   "
+	define str2b "   13         14       15     16       17       18      19      20     21        22 "
+	define coordnames " pr_ra_h pr_ra_m pr_ra_s   pr_dec_d pr_dec_m pr_dec_s "
+	define datanames  " pr_z   pr_f5   pr_a_ro   pr_f_1_ujy   pr_xcps "
+	define ratenames  " pr_ra_flat pr_ra_steep "
+	define timenames1 " pr_time_flat pr_time_flat_disc_1 pr_time_flat_disc_2 "
+	define timenames2 " pr_time_steep pr_time_steep_disc_1 pr_time_steep_disc_2 pr_time_avrg"
+	define auxnames   " pr_class pr_gf_X_flag "
+
+	define 9 $1_filter
+	#write $out "# FILTER: $!filter"
+	write $out "# FILTER: "$$9
+	write + $out "# $!str1a $!str2a "
+	write + $out "# $!str1b $!str2b "
+	write + $out "# "
+	print + $out '$!fmt1 $!fmt2 $!fmt3\n' < $!coordnames $!datanames $!ratenames $!timenames1 $!timenames2 $!auxnames >
+	define print_noheader 0
+
+#---------------------------------------------------------------------------
+# print_sample_for_XMMSOC | prints list with:
+#                         |   coords / distance / object name 
+#                           *************************************************
+#                           *** THIS IS THE MOST COMPLETE AND THE BEST!!! ***
+#                           *************************************************
+print_sample_for_XMMSOC
+
+	define pref1 ? { Define Prefix for Vectors : }
+	define out   ? {    Define Output Filename : }
+	define 1 $pref1
+
+	set veclist1 = < ra_h ra_m ra_s dec_d dec_m dec_s >
+	foreach 2 veclist1 {
+	   set pr_$2 = $1_$2
+	}
+
+	define fmt_ra   "%02.0f:%02.0f:%04.1f"
+	define fmt_dec  "+%02.0f:%02.0f:%04.1f"
+	define fmt_dist "%3.1f"
+	define fmt_name "FFSS %3d"
+	define names_ra  " pr_ra_h pr_ra_m pr_ra_s "
+	define names_dec " pr_dec_d pr_dec_m pr_dec_s "
+
+	set pr_dist = pr_ra_h*0.0 + 8.0
+	set pr_seqn = do(1,dimen(pr_ra_h),1)
+
+	define print_noheader 1
+	print $out '$!fmt_ra $!fmt_dec $!fmt_dist $!fmt_name\n' < $!names_ra  $!names_dec pr_dist pr_seqn >
+	define print_noheader 0
+
+#---------------------------------------------------------------------------
+# print_sample_decsort| prints list with:
+#                     |   coords / z / Fr / a_RO / Fx / xcps / class
+#                     |   rate_flat / rate_steep
+#                     |   T_flat T_steep (plain rounded-1 rounded-2)
+#                     |   T_average (rounded to T_exp_min) 
+#                      *************************************************
+#                      ***          SORTED BY DECLINATION            ***
+#                      *************************************************
+#                      *** THIS IS THE MOST COMPLETE AND THE BEST!!! ***
+#                      *************************************************
+print_sample_decsort
+
+	define pref1 ? { Define Prefix for Vectors : }
+	define out   ? {    Define Output Filename : }
+	define 1 $pref1
+
+	set savesortvec = $1_dec_d + $1_dec_m/60.0 + $1_dec_s/3600.
+
+	set veclist1 = < ra_h ra_m ra_s dec_d dec_m dec_s \
+			 z f5 a_ro f_1_ujy xcps \
+			 ra_flat ra_steep class \
+			 time_flat  time_flat_disc_1  time_flat_disc_2 \
+			 time_steep time_steep_disc_1 time_steep_disc_2 \
+			 time_avrg >
+	foreach 2 veclist1 {
+	   set sortvec = savesortvec
+	   set pr_$2 = $1_$2
+	   sort < sortvec pr_$2 > 
+	}
+
+	# define fmt " %2d %2d %6.3f    +%2d %2d %5.2f   %6.4f %6d %6.3f %10.6f %7.4f  %7.3e  %7.3e   %s"
+	define fmt " %2d %2d %4.1f    +%2d %2d %4.1f   %6.4f %6d %6.3f %10.6f %7.4f  %6.2e %6.2e   %6.2f  %6.2f %6.2f    %6.2f  %6.2f  %6.2f  %s"
+	define fmt " %02.0f %02.0f %04.1f    +%02.0f %02.0f %04.1f   %6.4f %6.0f %6.3f %10.6f %7.4f  %6.2e %6.2e   %6.2f  %6.2f %6.2f    %6.2f  %6.2f  %6.2f %6.2f  %s"
+	define coordnames " pr_ra_h pr_ra_m pr_ra_s   pr_dec_d pr_dec_m pr_dec_s "
+	define datanames  " pr_z   pr_f5   pr_a_ro   pr_f_1_ujy   pr_xcps "
+	define ratenames  " pr_ra_flat pr_ra_steep "
+	define timenames1 " pr_time_flat pr_time_flat_disc_1 pr_time_flat_disc_2 "
+	define timenames2 " pr_time_steep pr_time_steep_disc_1 pr_time_steep_disc_2 pr_time_avrg"
+	define auxnames   " pr_class "
+
+	write $out "# FILTER: $!filter"
+	print + $out '$!fmt\n' < $!coordnames $!datanames $!ratenames $!timenames1 $!timenames2 $!auxnames >
+
+#---------------------------------------------------------------------------
+# print_sample_more | More parameters not necessarily T_exp.
+#                   |   coords / z / Fr / hmag / kmag / jmag / vmag / Fx / xcps / 
+#                   |   a_RO / a_RJ / a_RX / JK / a_JX / twoflag / twobinflag /
+#                   |   gf_X_flag / class
+print_sample_more 
+
+	define pref1 ? { Define Prefix for Vectors : }
+	define out   ? {    Define Output Filename : }
+	define 1 $pref1
+
+	set veclist1 = < ra_h ra_m ra_s dec_d dec_m dec_s \
+			 z f5 hmag kmag jmag vmag f_1_ujy xcps \
+			 a_ro a_rj a_rx_mid JK a_jx_mid \
+			 twoflag twobinflag gf_X_flag class >
+	foreach 2 veclist1 {
+	   set pr_$2 = $1_$2
+	}
+
+	define print_noheader 1
+	define fmt1 " %02.0f %02.0f %04.1f    +%02.0f %02.0f %04.1f"
+	define fmt2 " %6.4f %6.0f %6.3f %6.3f %6.3f %6.3f  %10.4e %7.4f"
+	define fmt3 " %6.3f  %6.3f  %6.3f  %5.2f  %6.3f "
+	define fmt4 " %1.0f %1.0f  %4.2f  %s"
+	             #08 43 59.2    +51 05 25.6   0.0000    116 13.644 14.943 15.411    0.271186  0.0000  "
+		     # 0.335  0.393  5.382 13.153   0.00  ZZZZZ
+	define str1 "  RA             DEC         z       Fr   K      H      J      V        Fx_1     xcps   "
+	define str2 " a_ro    a_rj  a_rx_mid   JK a_jx_mid  2mass Xflag class "
+	define coordnames  " pr_ra_h pr_ra_m pr_ra_s   pr_dec_d pr_dec_m pr_dec_s "
+	define fluxnames   " pr_z pr_f5 pr_kmag pr_hmag pr_jmag pr_vmag pr_f_1_ujy pr_xcps "
+	define alphanames  " pr_a_ro pr_a_rj pr_a_rx_mid pr_JK pr_a_jx_mid "
+	define auxnames    " pr_twoflag pr_twobinflag pr_gf_X_flag pr_class "
+
+	write $out "# FILTER: $!filter"
+	write + $out "# $!str1 $!str2"
+	write + $out "# "
+	print + $out '$!fmt1 $!fmt2 $!fmt3 $!fmt4\n' < $!coordnames $!fluxnames $!alphanames $!auxnames >
+	define print_noheader 0
+
+#---------------------------------------------------------------------------
+# select  : accepts a selection filter, passed as argument to an if(-)
+#           and returns a series of filtered arrays.
+select
+
+	define filter ? < Filter : >
+	define pref   ? < Prefix for Vectors : >
+	define 2 $pref
+	define 3 (string('$filter'))
+
+	set veclist = < ra dec ra_h ra_m ra_s dec_d dec_m dec_s \
+			gf_X_flag class classn z f_first f5 emag omag \
+			twoflag JK twobinflag \
+			jmag jflag lg_f_j \
+			hmag hflag lg_f_h \
+			kmag kflag lg_f_k \
+			jphflag hphflag kphflag binphflag \
+			bingood jgood hgood kgood \
+			lg_f_irac_wcs lg_f_irac_wcs0 lg_f_irac_wcs1 lg_f_irac_wcs2 lg_f_irac_wcs3 \
+			f_irac_wcs f_irac_wcs0 f_irac_wcs1 f_irac_wcs2 f_irac_wcs3 \
+			lg_f_ir lg_f_uv vmag lg_f_opt lg_f_opt1 lg_f_opt2 \
+			lg_f_x lg_f_x_flat lg_f_x_steep lg_f_1_flat lg_f_1_steep \
+			f_x_band_flat  f_x_band_steep \
+			a_ro a_rj a_rk a_jo a_ko \
+			lg_f_1_mid a_ro1 a_ro2 \
+			a_rx_flat a_rx_steep a_rx_mid \
+			a_jx_mid \
+			a_rx_guess a_ox_mid a_ox_mid1 a_ox_mid2 \
+			lg_f_1_guess f_1_ujy \
+			xcps lg_f_first lg_f_r_5 \
+			ra_flat ra_steep ra_avrg \
+			time_flat time_steep \
+			time_flat_disc_1 time_flat_disc_2 \
+			time_steep_disc_1 time_steep_disc_2 \
+			time_avrg >
+
+	echo "> Filter : "$3
+	foreach 1 veclist {
+	   # set $2_$1 = $1 if( $!filter ) 
+	   # set $2_$1 = $1 if( $3 ) 
+	   # echo "> array : "$1
+	   # set $1_$2 = $1 if( $3 ) 
+	   set $2_$1 = $1 if( $3 ) 
+	}
+	define $2_filter "$!3"
+
+	echo "-----------------------------------------------------------------"
+	echo "  The filter applied is: "
+	echo "    >>> "$3
+	echo ""
+	echo "  The size of the reduced sample is  : "$(dimen($2_ra))
+	echo "  The prefix for the selected set is : "$2
+	echo "-----------------------------------------------------------------"
+
+##---------------------------------------------------------------------------
+load_chandra_rates_ao7
+
+	#------------------------------------------------------------
+	# RATES for 0.2-8.0 keV flux of 1.e-13
+	#   for 7 values of nH  = < 2e20 4e20 6e20 1e21 2e21 1e22 1e23 >
+	#   and 4 values of a_X = < 0.6 1.0 1.5 2.0 >
+	#------------------------------------------------------------
+	echo "**********************************"
+	echo " [1] - 0.2 / 0.6 / 1.5"
+	echo " [2] - 0.2 / 0.7 / 1.5"
+	echo " [3] - 0.2 / 0.8 / 1.5"
+	echo " [4] - 0.2 / 1.0 / 1.5"
+
+	define what_soft_bands ? { Select an option : }
+
+	define archive "/home/gfossati/Science/Proposals/Chandra/O7/FFSS/PIMMS"
+
+	define 8 "UnAbs"
+	define 9 $what_soft_bands
+
+	macro read "$!archive/clean_output_acis-s_ao7"_$8_$9.txt
+	get_auxiliary_data
+
+	#foreach 2 < 1 2 3 4 5 6 7 > {
+	#   set chandra_all_$2  = chandra_soft_$2  + chandra_hard_$2
+	#   set chandra_bkg_all = chandra_bkg_soft + chandra_bkg_hard
+	#}
+
+##---------------------------------------------------------------------------
+load_chandra_rates_ao8
+
+	#------------------------------------------------------------
+	# RATES for 0.2-8.0 keV flux of 1.e-13
+	#   for 7 values of nH  = < 2e20 4e20 6e20 1e21 2e21 1e22 1e23 >
+	#   and 4 values of a_X = < 0.6 1.0 1.5 2.0 >
+	#------------------------------------------------------------
+	echo "**********************************"
+	echo " [1] - 0.2 / 0.6 / 1.5"
+	echo " [2] - 0.2 / 0.7 / 1.5"
+	echo " [3] - 0.2 / 0.8 / 1.5"
+	echo " [4] - 0.2 / 1.0 / 1.5"
+
+	define what_soft_bands ? { Select an option : }
+
+	define archive "/home/gfossati/Science/Proposals/Chandra/O8/FFSS/PIMMS"
+
+	define 8 "UnAbs"
+	define 9 $what_soft_bands
+
+	macro read "$!archive/clean_output_acis-s_ao8"_$8_$9.txt
+	get_auxiliary_data
+
+	#foreach 2 < 1 2 3 4 5 6 7 > {
+	#   set chandra_all_$2  = chandra_soft_$2  + chandra_hard_$2
+	#   set chandra_bkg_all = chandra_bkg_soft + chandra_bkg_hard
+	#}
+
+##---------------------------------------------------------------------------
+load_chandra_rates_ao9
+
+	#------------------------------------------------------------
+	# RATES for 0.2-8.0 keV flux of 1.e-13
+	#   for 7 values of nH  = < 2e20 4e20 6e20 1e21 2e21 1e22 1e23 >
+	#   and 4 values of a_X = < 0.6 1.0 1.5 2.0 >
+	#------------------------------------------------------------
+	echo "**********************************"
+	echo " [1] - 0.2 / 0.6 / 1.5"
+	echo " [2] - 0.2 / 0.7 / 1.5"
+	echo " [3] - 0.2 / 0.8 / 1.5"
+	echo " [4] - 0.2 / 1.0 / 1.5"
+	echo "   with 0.2-1.5 and 1.5-8.0 always as soft and hard "
+	echo " [5] - 0.2-0.8 / 0.8-1.2 vs. 0.2-1.2 / 1.2-8.0 "
+
+	define what_soft_bands ? { Select an option : }
+
+	define archive "/home/gfossati/Science/Proposals/Chandra/O9/FFSS/PIMMS"
+
+	define 8 "UnAbs"
+	define 9 $what_soft_bands
+
+	macro read "$!archive/clean_output_acis-s_ao9"_$8_$9.txt
+	get_auxiliary_data
+
+	#foreach 2 < 1 2 3 4 5 6 7 > {
+	#   set chandra_all_$2  = chandra_soft_$2  + chandra_hard_$2
+	#   set chandra_bkg_all = chandra_bkg_soft + chandra_bkg_hard
+	#}
+
+##---------------------------------------------------------------------------
+load_chandra_rates_ao10
+
+	#------------------------------------------------------------
+	# RATES for 0.2-8.0 keV flux of 1.e-13
+	#   for 7 values of nH  = < 2e20 4e20 6e20 1e21 2e21 1e22 1e23 >
+	#   and 4 values of a_X = < 0.6 1.0 1.5 2.0 >
+	#------------------------------------------------------------
+	echo "**********************************"
+	echo " [1] - 0.2 / 0.6 / 1.5"
+	echo " [2] - 0.2 / 0.7 / 1.5"
+	echo " [3] - 0.2 / 0.8 / 1.5"
+	echo " [4] - 0.2 / 1.0 / 1.5"
+	echo "   with 0.2-1.5 and 1.5-8.0 always as soft and hard "
+	echo " [5] - 0.2-0.8 / 0.8-1.2 vs. 0.2-1.2 / 1.2-8.0 "
+
+	define what_soft_bands ? { Select an option : }
+
+	define archive "/home/gfossati/Science/Proposals/Chandra/10/FFSS/PIMMS"
+
+	define 8 "UnAbs"
+	define 9 $what_soft_bands
+
+	macro read "$!archive/clean_output_acis-s_ao10"_$8_$9.txt
+	get_auxiliary_data
+
+	#foreach 2 < 1 2 3 4 5 6 7 > {
+	#   set chandra_all_$2  = chandra_soft_$2  + chandra_hard_$2
+	#   set chandra_bkg_all = chandra_bkg_soft + chandra_bkg_hard
+	#}
+
+#---------------------------------------------------------------------------
+# chandra_rates_hr2  : *** THE GOOD ONE ***
+#
+chandra_rates_hr2
+
+	location 5000 31000 5000 31000
+
+	set fake_x = < 0.6 1.0 1.5 2.0 >
+
+	define ao ? < What chandra AO [3|4|5|6|7|8|9|10] : >
+
+	load_chandra_rates_ao$ao
+
+	set chandra_bkg_ssoft = < 0.0 0.0 0.0 0.0 >
+	set chandra_bkg_hsoft = < 0.0 0.0 0.0 0.0 >
+	set chandra_bkg_soft  = < 0.0 0.0 0.0 0.0 >
+	set chandra_bkg_hard  = < 0.0 0.0 0.0 0.0 >
+
+	set filter = < 1 1 1 1 >
+
+	define mission "chandra"
+	define 1 $mission
+
+	#--- AO3 ---
+	if( $ao == 3 ) { 
+	   echo "-------------------------------------------------------"
+	   echo " [1] nH = 2e20"
+	   echo " [2] nH = 4e20"
+	   echo " [3] nH = 6e20"
+	   echo " [4] nH = 2e21"
+	   echo " [5] nH = 1e22"
+	   define nhcase ? { What case : }
+	   define 2 $nhcase
+	   set nh_vec = < 2e20 4e20 6e20 2e21 1e22 >
+	} 
+
+	#--- AO4/AO5 ---
+	if( $ao == 4 || $ao == 5 ) {
+	   echo "-------------------------------------------------------"
+	   echo " [1] nH = 2e20"
+	   echo " [2] nH = 4e20"
+	   echo " [3] nH = 6e20"
+	   echo " [4] nH = 1e21"
+	   echo " [5] nH = 2e21"
+	   echo " [6] nH = 1e22"
+	   define nhcase ? { What case : }
+	   define 2 $nhcase
+	   set nh_vec = < 2e20 4e20 6e20 1e21 2e21 1e22 >
+	}
+
+	#--- AO6 ---
+	if( $ao == 6 ) {
+	   echo "-------------------------------------------------------"
+	   echo " [1] nH = 2e20"
+	   echo " [2] nH = 4e20"
+	   echo " [3] nH = 6e20"
+	   echo " [4] nH = 1e21"
+	   echo " [5] nH = 2e21"
+	   echo " [6] nH = 1e22"
+	   echo " [7] nH = 1e23"
+	   define nhcase ? { What case : }
+	   define 2 $nhcase
+	   set nh_vec = < 0 2e20 4e20 6e20 1e21 2e21 1e22 1e23 >
+	}
+
+	if( $ao == 7 || $ao == 8  || $ao == 9 || $ao == 10 ) {
+	   echo "-------------------------------------------------------"
+	   echo " [1] nH = 2e20"
+	   echo " [2] nH = 4e20"
+	   echo " [3] nH = 6e20"
+	   echo " [4] nH = 1e21"
+	   echo " [5] nH = 2e21"
+	   echo " [6] nH = 5e21"
+	   echo " [7] nH = 1e23"
+	   define nhcase ? { What case : }
+	   define 2 $nhcase
+	   set nh_vec = < 0 2e20 4e20 6e20 1e21 2e21 5e21 1e23 >
+	}
+
+	define lab_nh "$!(nh_vec[$2])"
+	echo "nH = "$lab_nh
+
+	echo "-------------------------------------------------------"
+	echo " [1] withOUT Background"
+	echo " [2] with    Background"
+	define back ? { Select : }
+
+	set f_soft_1 = $1_soft_$2 
+	set f_hard_1 = $1_hard_$2 
+	set f_soft_2 = $1_ssoft_$2 
+	set f_hard_2 = $1_hsoft_$2 
+
+	set fake_x = fake_x + 0.05*($2 - 2)
+
+	define flux  ? { 0.2-8 keV Flux in units of 1e-13 c.g.s.: }
+	define t_exp ? {                     Exposure time (ks) : }
+
+	set cts_soft_1_src = $t_exp*(f_soft_1*$flux) 
+	set cts_soft_1_bkg = $t_exp*(($back - 1)*$1_bkg_soft)
+	set cts_hard_1_src = $t_exp*(f_hard_1*$flux) 
+	set cts_hard_1_bkg = $t_exp*(($back - 1)*$1_bkg_hard)
+
+	set cts_full_1_src = cts_soft_1_src + cts_hard_1_src
+	set cts_full_1_bkg = cts_soft_1_bkg + cts_hard_1_bkg
+
+	set snr_soft_1 = cts_soft_1_src/sqrt(cts_soft_1_src + cts_soft_1_bkg )
+	set snr_hard_1 = cts_hard_1_src/sqrt(cts_hard_1_src + cts_hard_1_bkg )
+	set snr_full_1 = cts_full_1_src/sqrt(cts_full_1_src + cts_full_1_bkg )
+
+	set cts_soft_2_src = $t_exp*(f_soft_2*$flux) 
+	set cts_soft_2_bkg = $t_exp*(($back - 1)*$1_bkg_ssoft)
+	set cts_hard_2_src = $t_exp*(f_hard_2*$flux) 
+	set cts_hard_2_bkg = $t_exp*(($back - 1)*$1_bkg_hsoft)
+
+	set cts_full_2_src = cts_soft_2_src + cts_hard_2_src
+	set cts_full_2_bkg = cts_soft_2_bkg + cts_hard_2_bkg
+
+	set snr_soft_2 = cts_soft_2_src/sqrt(cts_soft_2_src + cts_soft_2_bkg )
+	set snr_hard_2 = cts_hard_2_src/sqrt(cts_hard_2_src + cts_hard_2_bkg )
+	set snr_full_2 = cts_full_2_src/sqrt(cts_full_2_src + cts_full_2_bkg )
+
+	define prfl $(sprintf('%5.2f',$flux))
+	define print_noheader 1
+	echo "-----------------------------------------------------------------------------"
+	echo "* Telescope:" $mission
+	echo "-----------------------------------------------------------------------------"
+	echo "* F_[0.2-8keV] =" $prfl "e-13 erg/cm^2/s" 
+	echo "*        T_exp =" $t_exp ks
+	echo "*           nH =" $(nh_vec[$($nhcase-1)])
+	echo "*" 
+
+	echo "----- Soft band ------------------------------------ sSoft band --------------"
+	print '%8.3f [%8.3f]==> S/N: %5.2f || %8.3f [%8.3f]==> S/N: %5.2f\n' < cts_soft_1_src cts_soft_1_bkg snr_soft_1 cts_soft_2_src cts_soft_2_bkg snr_soft_2 >
+
+	echo "----- Hard band ------------------------------------ sHard band --------------"
+	print '%8.3f [%8.3f]==> S/N: %5.2f || %8.3f [%8.3f]==> S/N: %5.2f\n' < cts_hard_1_src cts_hard_1_bkg snr_hard_1 cts_hard_2_src cts_hard_2_bkg snr_hard_2 >
+
+	set hr_1   = cts_hard_1_src/cts_soft_1_src
+	set e_hr_1 = hr_1*sqrt( (cts_soft_1_src + cts_soft_1_bkg)/cts_soft_1_src**2. + \
+		              (  cts_hard_1_src + cts_hard_1_bkg)/cts_hard_1_src**2. )
+
+	set hr_2   = cts_hard_2_src/cts_soft_2_src
+	set e_hr_2 = hr_2*sqrt( (cts_soft_2_src + cts_soft_2_bkg)/cts_soft_2_src**2. + \
+		              (  cts_hard_2_src + cts_hard_2_bkg)/cts_hard_2_src**2. )
+
+	foreach vec < hr_1 hr_2 > {
+	   set $vec   = $vec     if( filter > 0 )
+	   set e_$vec = e_$vec   if( filter > 0 )
+	}
+
+	set pip_1  = hr_1/e_hr_1
+	set pip_2  = hr_2/e_hr_2
+
+	echo "----- Hardness Ratio ------------------------------- sHardness Ratio --------"
+	print ' %7.3f [%7.3f] ==> S/N: %5.2f || %8.3f [%8.3f] ==> S/N: %5.2f \n' < hr_1 e_hr_1 pip_1  hr_2 e_hr_2 pip_2 >
+	echo "-----------------------------------------------------------------------------"
+
+	if( $what_soft_bands == 1 ) {
+	    limits 0 8.5 0 1.5
+	    define label_x "HR (ACIS-S [0.6-1.5]/[0.2-0.6])"
+	} 
+	if( $what_soft_bands == 2 ) {
+	    limits 0  8.5 0 1.5
+	    limits 0 12.5 0 1.6 # for AO5
+	    define label_x "HR (ACIS-S [0.7-1.5]/[0.2-0.7])"
+	}
+	if( $what_soft_bands == 3 ) {
+	    limits 0  8.5 0 1.5
+	    limits 0  7.5 0 1.65 # for AO5
+	    limits 0  6.5 0 1.65 # for AO7
+	    limits 0  6.5 0 1.65 # for AO7
+	    define label_x "HR (ACIS-S [0.8-1.5]/[0.2-0.8])"
+	}
+	if( $what_soft_bands == 4 ) {
+	    limits 0  8.5 0 1.5
+	    limits 0  3.0 0 1.8 # for AO5
+	    define label_x "HR (ACIS-S [1.0-1.5]/[0.2-1.0])"
+	}
+
+	ctype 2 
+	expand 1.5
+	lweight 3
+	ticksize 0 0 0 0 
+	box
+	# if( substr('$1',0,2) == 'ch' ) { 
+	#     ylabel HR (ACIS-S [1.5-8]/[0.2-1.5])
+	# } else {
+	#     ylabel HR (XMM pn/thin [1.5-8]/[0.2-1.5])
+	# }
+	## xlabel HR (ACIS-S [0.6-1.5]/[0.2-0.6])
+	xlabel $label_x
+	ylabel HR (ACIS-S [1.5-8]/[0.2-1.5])
+	expand 2.5
+
+	ptype 4 3 
+	# This 'if' is simply to treat differently the nH=2e20 case.
+	if( $2 == 1 ) { 
+	    ctype 3 
+	    ptype 4 3 
+	    points   hr_2 hr_1  
+	    expand 0.5
+	    error_x  hr_2 hr_1 e_hr_2
+	    error_y  hr_2 hr_1 e_hr_1
+	    expand 2.5
+	    ltype 2
+	    connect  hr_2 hr_1
+	    ltype 2
+	    do 9=0,$(dimen(hr_1)-1) {
+	       ellipse $(hr_2[$9]) $(hr_1[$9]) $(e_hr_2[$9]) $(e_hr_1[$9]) 
+	    }
+	    ltype 0
+	    ctype 3 
+	    expand 1.5
+	    relocate 0.4 0.85
+	    # putlabel 6 N_{H}=2e20
+	    putlabel 6 N_{H}=$lab_nh
+	    ctype 2
+	} else {
+	    ctype 5 
+	    ptype 4 3 
+	    expand 3.
+	    points   hr_2 hr_1
+	    expand 0.5
+	    error_x  hr_2 hr_1 e_hr_2
+	    error_y  hr_2 hr_1 e_hr_1
+	    expand 2.5
+	    ltype 2
+	    connect   hr_2 hr_1
+	    ltype 0
+	    ctype 1 
+	    ptype 4 3 
+	    expand 1.5
+	    points   hr_2 hr_1
+	    ctype 5 
+	    ltype 2 
+	    do 9=0,$(dimen(hr_1)-1) {
+	       ellipse $(hr_2[$9]) $(hr_1[$9]) $(e_hr_2[$9]) $(e_hr_1[$9]) 
+	    }
+	    ltype 0
+	    ctype 5 
+	    expand 1.5
+	    relocate 5.0 0.85
+	    # putlabel 6 N_{H}=2e21
+	    putlabel 6 N_{H}=$lab_nh
+	    ctype 2
+	}
+
+	expand 1.5
+	ctype 2
+
+	define prfl     $(sprintf('%4.1f',$flux))
+	define prtexp   $(sprintf('%4.1f',$t_exp))
+	define fluence  ($flux*1e-13*$t_exp*1e3/1e-10)
+	# define fluence 12
+	define prfluence $(sprintf('%4.1f',$fluence))
+
+	expand 1.7
+	relocate ( $(0.5*($gx1+$gx2)) 29500)
+	putlabel 5 F^{unabs.}_{0.2-8keV}\times T_{exp}=$prfluence\times 10^{-10} erg/cm^2
+	# relocate (12500 29500)
+	# putlabel 6 F^{unabs.}_{0.2-8keV}=$prfl\times 10^{-13} erg/cm^2/s 
+	# relocate (12500 27500)
+	# putlabel 6      T_{exp}=$prtexp ks
+	expand 1.5
+
+	define print_noheader 0
+
+##---------------------------------------------------------------------------
+# overplot_chandra_data : reads file full_and_4bands_and_HR_with_error.dat
+overplot_chandra_data
+
+	define FFSS_Chandra_archive "/home/gfossati/Science/Blazars/First_FSR/Chandra"
+	# data full_and_4bands_and_HR_with_error.dat
+	data "$!FFSS_Chandra_archive/full_and_4bands_and_HR_with_error.dat"
+	read < ao 1 hrS 8 ehrS 9 hrH 10 ehrH 11 >
+
+	define whatao_overplot ? < What AO [4|6|46] >
+
+	if( $whatao_overplot == 4 ) { 
+	   foreach 1 < hrS ehrS hrH ehrH > {
+	      set $1 = $1   if( ao == 4 )
+	   }
+	}
+	if( $whatao_overplot == 6 ) { 
+	   foreach 1 < hrS ehrS hrH ehrH > {
+	      set $1 = $1   if( ao == 6 )
+	   }
+	}
+
+	set n=1,dimen(hrS),1
+
+	define sn_threshold ? < S/N threshold : >
+
+	set snS = hrS/ehrS
+	set snH = hrH/ehrH
+
+	foreach 1 < hrS ehrS hrH ehrH n ao > {
+	   set _$1 = $1   if( snS >= $sn_threshold && snH >= $sn_threshold )
+	}
+	sort < _hrS _ehrS _hrH _ehrH _n _ao > 
+	print < _hrS _ehrS _hrH _ehrH _n _ao > 
+
+	echo "------------------------------------------------------------"
+	echo " Number of good vs. all sources: " $(dimen(_hrS)) "vs." $(dimen(hrS))
+	echo "------------------------------------------------------------"
+
+        ctype 2 
+	expand 2.0
+	ptype 4 3 
+	points _hrS _hrH
+        error_y _hrS _hrH _ehrH  
+        error_x _hrS _hrH _ehrS  
+	
+	#REDUNDANT# define_new_ptypes
+	ctype 2
+
+	#-------------------------------------------------------------------------------
+	# Handling semi-detections 
+	#
+	echo "==> Handling hrS-only detections... "
+	foreach 1 < hrS ehrS hrH ehrH n ao > {
+	   set _$1 = $1   if( snS >= $sn_threshold && snH < $sn_threshold )
+	}
+	echo "    These are: " $(dimen(_hrS))
+
+	if( dimen(_hrS) > 0 ) { 
+	   set _hrHtrue = _hrH
+	   set _hrH = _hrH - _ehrH
+	   ctype grey50
+	   ptype 4 3 
+	   points _hrS _hrH
+   	   ptype $upper
+	   points _hrS _hrH
+           error_x _hrS _hrH _ehrS  
+	}
+	print < _hrS _ehrS _hrH _hrHtrue _ehrH _n _ao > 
+
+	echo "==> Handling hrH-only detections... "
+	foreach 1 < hrS ehrS hrH ehrH n ao > {
+	   set _$1 = $1   if( snS < $sn_threshold && snH >= $sn_threshold )
+	}
+	echo "    These are: " $(dimen(_hrS))
+
+	if( dimen(_hrS) > 0 ) { 
+	   set _hrStrue = _hrS 
+	   set _hrS = _hrS - _ehrS
+	   ctype grey50 
+	   ptype 4 3
+	   points  _hrS _hrH
+	   ptype $upper
+	   angle 90
+	   points  _hrS _hrH
+           error_y _hrS _hrH _ehrH
+	   angle 0
+	}
+	print < _hrS _hrStrue _ehrS _hrH _ehrH _n _ao > 
+
+	ptype 4 3 
+	ctype 2
+
+	echo "==> Consistency check for negative/negative cases... "
+	foreach 1 < hrS ehrS hrH ehrH n > {
+	   set _$1 = $1   if( snS < $sn_threshold && snH < $sn_threshold )
+	}
+	echo "    These are: " $(dimen(_hrS))
+
+##---------------------------------------------------------------------------
+# overplot_chandra_data_for_grid : reads file full_and_4bands_and_HR_with_error.dat
+#                                  *** HR is computed (H-S)/(H+S) ***
+#
+overplot_chandra_data_for_grid
+	
+	define FFSS_Chandra_archive "/home/gfossati/Science/Blazars/First_FSR/Chandra"
+
+	echo "**********************************"
+	# echo " [1] - 0.2 / 0.6 / 1.5"
+	# echo " [2] - 0.2 / 0.7 / 1.5"
+	echo " [3] - 0.2 / 0.8 / 1.5"
+	# echo " [4] - 0.2 / 1.0 / 1.5"
+	echo "   with 0.2-1.5 and 1.5-8.0 always as soft and hard "
+	echo " [5] - 0.2-0.8 / 0.8-1.2 vs. 0.2-1.2 / 1.2-8.0 "
+
+	define what_soft_bands ? { Select an option : }
+	define 9 $what_soft_bands
+
+	data "$!FFSS_Chandra_archive/full_and_4bands_and_HR_with_error_bands$!9.dat"
+	read < ao 1 cts_ssoft 4 cts_hsoft 5 cts_soft 6 cts_hard 7 >
+
+	set cts_soft_1 = cts_ssoft
+	set cts_hard_1 = cts_hsoft
+	set cts_soft_2 = cts_soft
+	set cts_hard_2 = cts_hard
+
+	set hr1 = (cts_hard_1 - cts_soft_1)/(cts_hard_1 + cts_soft_1)
+	set hr2 = (cts_hard_2 - cts_soft_2)/(cts_hard_2 + cts_soft_2)
+	
+	set e_hr1 = 2*sqrt( cts_hard_1*cts_soft_1/(cts_hard_1+cts_soft_1)**3.0 )
+	set e_hr2 = 2*sqrt( cts_hard_2*cts_soft_2/(cts_hard_2+cts_soft_2)**3.0 )
+
+	set hrS=hr1
+	set ehrS=e_hr1
+	set hrH=hr2
+	set ehrH=e_hr2
+
+	define whatao_overplot ? < What AO [4|6|46] >
+
+	if( $whatao_overplot == 4 ) { 
+	   foreach 1 < hrS ehrS hrH ehrH > {
+	      set $1 = $1   if( ao == 4 )
+	   }
+	}
+	if( $whatao_overplot == 6 ) { 
+	   foreach 1 < hrS ehrS hrH ehrH > {
+	      set $1 = $1   if( ao == 6 )
+	   }
+	}
+
+	set n=1,dimen(hrS),1
+
+	define sn_threshold ? < S/N threshold : >
+
+	set snS = hrS/ehrS
+	set snH = hrH/ehrH
+	set snS = sqrt(cts_soft)
+	set snH = sqrt(cts_hard)
+
+	foreach 1 < hrS ehrS hrH ehrH > {
+	   set _$1 = $1   if( abs(snS) >= $sn_threshold && abs(snH) >= $sn_threshold )
+	   # set _$1 = $1
+	}
+
+	echo "------------------------------------------------------------"
+	echo " Number of good vs. all sources: " $(dimen(_hrS)) "vs." $(dimen(hrS))
+	echo "------------------------------------------------------------"
+
+        ctype 2 
+	expand 2.0
+	ptype 4 3 
+	points hrS hrH
+        error_y _hrS _hrH _ehrH  
+        error_x _hrS _hrH _ehrS  
+	
+	#REDUNDANT# define_new_ptypes
+	ctype 2
+
+dummy
+
+	#--- handling semi-detections ---#
+	#
+	echo " Handling hrS-only detections... "
+	foreach 1 < hrS ehrS hrH ehrH n > {
+	   set _$1 = $1   if( snS >= $sn_threshold && snH < $sn_threshold )
+	}
+
+	if( dimen(_hrS) > 0 ) { 
+	   set _hrH = _hrH - _ehrH
+	   ptype 4 3 
+	   points _hrS _hrH
+   	   ptype $upper
+	   points _hrS _hrH
+           error_x _hrS _hrH _ehrS  
+	}
+
+	echo " Handling hrH-only detections... "
+	foreach 1 < hrS ehrS hrH ehrH n > {
+	   set _$1 = $1   if( snS < $sn_threshold && snH >= $sn_threshold )
+	}
+
+	if( dimen(_hrS) > 0 ) { 
+	   set _hrS = _hrS - _ehrS
+	   ptype 4 3
+	   points  _hrS _hrH
+	   ptype $upper
+	   angle 90
+	   points  _hrS _hrH
+           error_y _hrS _hrH _ehrH
+	   angle 0
+	}
+
+	ptype 4 3 
+	ctype 2
+
+##---------------------------------------------------------------------------
+load_xmm_rates_ao4
+
+	#------------------------------------------------------------
+	# RATES for 0.2-10.0 keV flux of 1.e-13
+	#   for six values of nH  = < 2e20 4e20 6e20 1e21 2e21 1e22 >
+	#   and four values of a_X = < 0.6 1.0 1.5 2.0 >
+	#------------------------------------------------------------
+
+	echo "*******************************************"
+	echo " [1] - 0.1-0.5 0.5-1.0 & 1.0-2.5 2.5-10.0"
+	echo " [2] - 0.1-0.5 0.5-1.0 & 0.1-1.0 1.0-10.0"
+	echo " [3] - 0.1-0.7 0.7-1.5 & 0.1-1.5 1.5-10.0"
+	echo " [4] - 0.1-1.5 1.5-3.0 & 1.5-3.0 3.0-10.0"
+	echo " [5] - 0.1-1.0 1.0-2.0 & 0.5-2.0 2.0-10.0 ***"
+
+	define what_soft_bands ? { Select an option : }
+	define 9 $what_soft_bands
+
+	echo "*******************************************"
+	echo " NOTE: "
+	echo " ABS.   means that the flux given will already take into account absorption."
+	echo " UNABS. means that the flux given will be then decreased by the set nH."
+	echo " The correct one to use is in most cases UNABS. because our guess is for the"
+	echo "   pre-abs. spectrum, and absorption is kind of an external factor."
+	echo " "
+	echo " [1] ABSORBED    flux"
+	echo " [2] UN ABSORBED flux"
+
+	define what_absorption ? { Select an option : }
+	if( $what_absorption == 1 ) { 
+	   define 8 "Abs"
+	} else {
+	   define 8 "UnAbs"
+	}
+
+	echo "*******************************************"
+	echo " [1] pn thin"
+	echo " [2] mos thin"
+	echo " [3] pn thin + 2x mos thin"
+
+	define what_detector ? { Select an option : }
+
+	#---------------------------------------------------------
+	# xmm background has approx. a spectrum propto gamma^-1
+	# the rates in different energy bands then more or less follow 
+	# the ratio of ln(e2/e1).
+	#                ln(e2/e1)                              
+	#    R[e1:e2] = ----------- R[eA:eB]
+	#                ln(eB/eA)                             
+	# 
+	#---------------------------------------------------------
+	# Use slope of bkg spectrum Gamma=0.9
+	# Data from Watson et al 2001: fromSoft and fromHard
+	#   0.1-10 keV MOS bkg = 6.699-6.456 <rate>=6.577
+	#   0.1-10 keV pn  bkg = 7.034-7.201 <rate>=7.117
+	# NOTE: rates for MOS are for 2 MOS combined!
+	#
+	# These 0.1-10 keV rates are obtained from the UHB bkg rates, 
+	# i.e. the 2.1/2.9 & 2.0/2.6 for pn and MOS (0.5-2 and 2-10 keV bands)
+	# rescaled by the "energy band geometric" factor.
+	# NOTE: rates for MOS are for 2 MOS combined!
+	#
+	#  define dG     ( (1 - $Gamma) )
+	#  define factor ( ($e2**$dG - $e1**$dG)/$dG )
+	# The factor for 0.1-10 Gamma=0.9 == 4.646
+	# Rate in band e1-e2 is <rate>*$factor/4.646
+	#---------------------------------------------------------
+	# NOTE ON BACKGROUND:
+	# Background rates are computed in the 'get_auxiliary' data routine
+	# e.g.
+        #    define e1 ( 1.5 )
+        #    define e2 ( 10.0 )
+        #    define factor ( ($e2**$dG - $e1**$dG)/$dG )
+        #    set xmm_bkg_hard = xmm_bkg_base*$avrg_bkg_mos*$factor/$norm_factor
+	#---------------------------------------------------------
+	set xmm_bkg_base  = < 1.0 1.0 1.0 1.0 >
+	define avrg_bkg_pn  ( 7.117 )
+	define avrg_bkg_mos ( 6.577/2. )
+	define norm_factor  ( 4.646 )
+	define dG ( 0.1 )
+
+	#---------------------------------------------------------
+	define archive "/home/gfossati/Science/Proposals/XMM/O4/FFSS/PIMMS"
+
+	#--- pn ---#
+	if( $what_detector == 1 || $what_detector == 3 ) {
+
+	   define 7 "pn"
+	   macro read "$!archive/clean_output_"$7_"thin_"$8_$9.txt
+	   get_auxiliary_data
+
+	   foreach 2 < 1 2 3 4 5 6 7 > {
+	      set xmm_all_$2  = xmm_soft_$2  + xmm_hard_$2
+	      set xmm_bkg_all = xmm_bkg_soft + xmm_bkg_hard
+	   }
+	}
+
+	if( $what_detector == 3 ) {
+	  foreach 1 < ssoft hsoft soft hard all > {
+	     foreach 2 < 1 2 3 4 5 6 7 > {
+	        set fa_$1_$2 = xmm_$1_$2
+	     }
+	     set bkga_$1 = xmm_bkg_$1
+	  }
+	}
+
+	#--- MOS ---#
+	if( $what_detector == 2 || $what_detector == 3 ) {
+
+	   define 7 "mos"
+	   macro read "$!archive/clean_output_"$7_"thin_"$8_$9.txt
+	   get_auxiliary_data
+
+	   foreach 2 < 1 2 3 4 5 6 7 > {
+	      set xmm_all_$2  = xmm_soft_$2  + xmm_hard_$2
+	      set xmm_bkg_all = xmm_bkg_soft + xmm_bkg_hard
+	   }
+	}
+
+	#--- merging ---#
+	if( $what_detector == 3 ) {
+	  foreach 1 < ssoft hsoft soft hard all > {
+	     foreach 2 < 1 2 3 4 5 6 7 > {
+	        set fb_$1_$2 = xmm_$1_$2
+	     }
+	     set bkgb_$1 = xmm_bkg_$1
+	  }
+
+	  foreach 1 < ssoft hsoft soft hard all > {
+	     foreach 2 < 1 2 3 4 5 6 7 > {
+	        set xmm_$1_$2 = fa_$1_$2 + 2*fb_$1_$2
+	     }
+	     set xmm_bkg_$1 = bkga_$1 + 2*bkgb_$1
+	  }
+	}
+
+
+##---------------------------------------------------------------------------
+load_xmm_rates_ao5
+
+	#------------------------------------------------------------
+	# RATES for 0.2-10.0 keV flux of 1.e-13
+	#   for six values of nH  = < 2e20 4e20 6e20 1e21 2e21 1e22 >
+	#   and four values of a_X = < 0.6 1.0 1.5 2.0 >
+	#------------------------------------------------------------
+
+	echo "*******************************************"
+	echo " [1] - 0.1-0.5 0.5-1.0 & 1.0-2.5 2.5-10.0"
+	echo " [2] - 0.1-0.5 0.5-1.0 & 0.1-1.0 1.0-10.0"
+	echo " [3] - 0.1-0.7 0.7-1.5 & 0.1-1.5 1.5-10.0"
+	echo " [4] - 0.1-1.5 1.5-3.0 & 1.5-3.0 3.0-10.0"
+	echo " [5] - 0.1-1.0 1.0-2.0 & 0.5-2.0 2.0-10.0 ***"
+
+	define what_soft_bands ? { Select an option : }
+	define 9 $what_soft_bands
+
+	echo "*******************************************"
+	echo " NOTE: "
+	echo " ABS.   means that the flux given will already take into account absorption."
+	echo " UNABS. means that the flux given will be then decreased by the set nH."
+	echo " The correct one to use is in most cases UNABS. because our guess is for the"
+	echo "   pre-abs. spectrum, and absorption is kind of an external factor."
+	echo " "
+	echo " [1] ABSORBED    flux"
+	echo " [2] UN ABSORBED flux"
+
+	define what_absorption ? { Select an option : }
+	if( $what_absorption == 1 ) { 
+	   define 8 "Abs"
+	} else {
+	   define 8 "UnAbs"
+	}
+
+	echo "*******************************************"
+	echo " [1] pn thin"
+	echo " [2] mos thin"
+	echo " [3] pn thin + 2x mos thin"
+
+	define what_detector ? { Select an option : }
+
+	#---------------------------------------------------------
+	# xmm background has approx. a spectrum propto gamma^-1
+	# the rates in different energy bands then more or less follow 
+	# the ratio of ln(e2/e1).
+	#                ln(e2/e1)                              
+	#    R[e1:e2] = ----------- R[eA:eB]
+	#                ln(eB/eA)                             
+	# 
+	#---------------------------------------------------------
+	# Use slope of bkg spectrum Gamma=0.9
+	# Data from Watson et al 2001: fromSoft and fromHard
+	#   0.1-10 keV MOS bkg = 6.699-6.456 <rate>=6.577
+	#   0.1-10 keV pn  bkg = 7.034-7.201 <rate>=7.117
+	# NOTE: rates for MOS are for 2 MOS combined!
+	#
+	# These 0.1-10 keV rates are obtained from the UHB bkg rates, 
+	# i.e. the 2.1/2.9 & 2.0/2.6 for pn and MOS (0.5-2 and 2-10 keV bands)
+	# rescaled by the "energy band geometric" factor.
+	# NOTE: rates for MOS are for 2 MOS combined!  
+	#       That's why there is /2. factor in the definition of avrg_bkg_mos
+	#
+	#  define dG     ( (1 - $Gamma) )
+	#  define factor ( ($e2**$dG - $e1**$dG)/$dG )
+	# The factor for 0.1-10 Gamma=0.9 == 4.646
+	# Rate in band e1-e2 is <rate>*$factor/4.646
+	#---------------------------------------------------------
+	# NOTE ON BACKGROUND:
+	# Background rates are computed in the 'get_auxiliary' data routine
+	# e.g.
+        #    define e1 ( 1.5 )
+        #    define e2 ( 10.0 )
+        #    define factor ( ($e2**$dG - $e1**$dG)/$dG )
+        #    set xmm_bkg_hard = xmm_bkg_base*$avrg_bkg_mos*$factor/$norm_factor
+	#---------------------------------------------------------
+	set xmm_bkg_base  = < 1.0 1.0 1.0 1.0 >
+	define avrg_bkg_pn  ( 7.117 )
+	define avrg_bkg_mos ( 6.577/2. )
+	define norm_factor  ( 4.646 )
+	define dG ( 0.1 )
+
+	#---------------------------------------------------------
+	define archive "/home/gfossati/Science/Proposals/XMM/O5/FFSS/PIMMS"
+
+	#--- pn ---#
+	if( $what_detector == 1 || $what_detector == 3 ) {
+
+	   define 7 "pn"
+	   macro read "$!archive/clean_output_"$7_"thin_"$8_$9.txt
+	   get_auxiliary_data
+
+	   foreach 2 < 1 2 3 4 5 6 7 > {
+	      set xmm_all_$2  = xmm_soft_$2  + xmm_hard_$2
+	   }
+	   set xmm_bkg_all = xmm_bkg_soft + xmm_bkg_hard
+	}
+
+	if( $what_detector == 3 ) {
+	  foreach 1 < ssoft hsoft soft hard all > {
+	     foreach 2 < 1 2 3 4 5 6 7 > {
+	        set fa_$1_$2 = xmm_$1_$2
+	     }
+	     set bkga_$1 = xmm_bkg_$1
+	  }
+	}
+
+	#--- MOS ---#
+	if( $what_detector == 2 || $what_detector == 3 ) {
+
+	   define 7 "mos"
+	   #macro read "$!archive/clean_output_"$7_$8_$9.txt
+	   macro read "$!archive/clean_output_"$7_"thin_"$8_$9.txt
+	   get_auxiliary_data
+
+	   foreach 2 < 1 2 3 4 5 6 7 > {
+	      set xmm_all_$2  = xmm_soft_$2  + xmm_hard_$2
+	   }
+	   set xmm_bkg_all = xmm_bkg_soft + xmm_bkg_hard
+	}
+
+	#--- merging ---#
+	if( $what_detector == 3 ) {
+	  foreach 1 < ssoft hsoft soft hard all > {
+	     foreach 2 < 1 2 3 4 5 6 7 > {
+	        set fb_$1_$2 = xmm_$1_$2
+	     }
+	     set bkgb_$1 = xmm_bkg_$1
+	  }
+
+	  foreach 1 < ssoft hsoft soft hard all > {
+	     foreach 2 < 1 2 3 4 5 6 7 > {
+	        set xmm_$1_$2 = fa_$1_$2 + 2*fb_$1_$2
+	     }
+	     set xmm_bkg_$1 = bkga_$1 + 2*bkgb_$1
+	  }
+	}
+
+
+##---------------------------------------------------------------------------
+load_xmm_rates_ao7
+
+	#------------------------------------------------------------
+	# RATES for 0.2-10.0 keV flux of 1.e-13
+	#   for six values of nH  = < 2e20 4e20 6e20 1e21 2e21 3e21 1e22 >
+	#   and four values of a_X = < 0.6 1.0 1.5 2.0 >
+	#------------------------------------------------------------
+
+	echo "*******************************************"
+	echo " [1] - 0.1-0.5 0.5-1.0 & 1.0-2.5 2.5-10.0"
+	echo " [2] - 0.1-0.5 0.5-1.0 & 0.1-1.0 1.0-10.0"
+	echo " [3] - 0.1-0.7 0.7-1.5 & 0.1-1.5 1.5-10.0"
+	echo " [4] - 0.1-1.5 1.5-3.0 & 1.5-3.0 3.0-10.0"
+	echo " [5] - 0.1-1.0 1.0-2.0 & 0.5-2.0 2.0-10.0 ***"
+	echo " [6] - 0.2-1.0 1.0-2.0 & 0.2-2.0 2.0-10.0 ***"
+	echo " [7] - 0.2-0.5 0.5-1.0 & 0.2-1.0 1.0-10.0 ***"
+	echo " [8] - 0.2-0.6 0.6-1.2 & 0.2-1.2 1.2-10.0 (good with new HR)"
+	echo " [9] - 0.2-1.2 1.2-10.0& 1.0-2.0 2.0-10.0"
+
+	define what_soft_bands ? { Select an option : }
+	define 9 $what_soft_bands
+
+	echo "*******************************************"
+	echo " NOTE: "
+	echo " ABS.   means that the flux given will already take into account absorption."
+	echo " UNABS. means that the flux given will be then decreased by the set nH."
+	echo " The correct one to use is in most cases UNABS. because our guess is for the"
+	echo "   pre-abs. spectrum, and absorption is kind of an external factor."
+	echo " "
+	echo " [1] ABSORBED    flux"
+	echo " [2] UN ABSORBED flux"
+
+	define what_absorption ? { Select an option : }
+	if( $what_absorption == 1 ) { 
+	   define 8 "Abs"
+	} else {
+	   define 8 "UnAbs"
+	}
+
+	echo "*******************************************"
+	echo " [1] pn thin"
+	echo " [2] mos thin"
+	echo " [3] pn thin + 2x mos thin"
+
+	define what_detector ? { Select an option : }
+
+	#---------------------------------------------------------
+	# xmm background has approx. a spectrum propto gamma^-1
+	# the rates in different energy bands then more or less follow 
+	# the ratio of ln(e2/e1).
+	#                ln(e2/e1)                              
+	#    R[e1:e2] = ----------- R[eA:eB]
+	#                ln(eB/eA)                             
+	# 
+	#---------------------------------------------------------
+	# Use slope of bkg spectrum Gamma=0.9
+	# Data from Watson et al 2001: fromSoft and fromHard
+	#   0.1-10 keV MOS bkg = 6.699-6.456 <rate>=6.577
+	#   0.1-10 keV pn  bkg = 7.034-7.201 <rate>=7.117
+	# NOTE: rates for MOS are for 2 MOS combined!
+	#
+	# These 0.1-10 keV rates are obtained from the UHB bkg rates, 
+	# i.e. the 2.1/2.9 & 2.0/2.6 for pn and MOS (0.5-2 and 2-10 keV bands)
+	# rescaled by the "energy band geometric" factor.
+	# NOTE: rates for MOS are for 2 MOS combined!  
+	#       That's why there is /2. factor in the definition of avrg_bkg_mos
+	#
+	#  define dG     ( (1 - $Gamma) )
+	#  define factor ( ($e2**$dG - $e1**$dG)/$dG )
+	# The factor for 0.1-10 Gamma=0.9 == 4.646
+	# Rate in band e1-e2 is <rate>*$factor/4.646
+	#---------------------------------------------------------
+	# NOTE ON BACKGROUND:
+	# Background rates are computed in the 'get_auxiliary' data routine
+	# e.g.
+        #    define e1 ( 1.5 )
+        #    define e2 ( 10.0 )
+        #    define factor ( ($e2**$dG - $e1**$dG)/$dG )
+        #    set xmm_bkg_hard = xmm_bkg_base*$avrg_bkg_mos*$factor/$norm_factor
+	#---------------------------------------------------------
+	set xmm_bkg_base  = < 1.0 1.0 1.0 1.0 >
+	define avrg_bkg_pn  ( 7.117 )
+	define avrg_bkg_mos ( 6.577/2. )
+	define norm_factor  ( 4.646 )
+	define dG ( 0.1 )
+
+	#---------------------------------------------------------
+	define archive "/home/gfossati/Science/Proposals/XMM/O7/FFSS/PIMMS"
+
+	#--- pn ---#
+	if( $what_detector == 1 || $what_detector == 3 ) {
+
+	   define 7 "pn"
+	   macro read "$!archive/clean_output_"$7_"thin_"$8_$9.txt
+	   get_auxiliary_data
+
+	   foreach 2 < 1 2 3 4 5 6 7 > {
+	      set xmm_all_$2  = xmm_soft_$2  + xmm_hard_$2
+	   }
+	   set xmm_bkg_all = xmm_bkg_soft + xmm_bkg_hard
+	}
+
+	if( $what_detector == 3 ) {
+	  foreach 1 < ssoft hsoft soft hard all > {
+	     foreach 2 < 1 2 3 4 5 6 7 > {
+	        set fa_$1_$2 = xmm_$1_$2
+	     }
+	     set bkga_$1 = xmm_bkg_$1
+	  }
+	}
+
+	#--- MOS ---#
+	if( $what_detector == 2 || $what_detector == 3 ) {
+
+	   define 7 "mos"
+	   macro read "$!archive/clean_output_"$7_"thin_"$8_$9.txt
+	   get_auxiliary_data
+
+	   foreach 2 < 1 2 3 4 5 6 7 > {
+	      set xmm_all_$2  = xmm_soft_$2  + xmm_hard_$2
+	   }
+	   set xmm_bkg_all = xmm_bkg_soft + xmm_bkg_hard
+	}
+
+	#--- merging ---#
+	if( $what_detector == 3 ) {
+	  foreach 1 < ssoft hsoft soft hard all > {
+	     foreach 2 < 1 2 3 4 5 6 7 > {
+	        set fb_$1_$2 = xmm_$1_$2
+	     }
+	     set bkgb_$1 = xmm_bkg_$1
+	  }
+
+	  foreach 1 < ssoft hsoft soft hard all > {
+	     foreach 2 < 1 2 3 4 5 6 7 > {
+	        set xmm_$1_$2 = fa_$1_$2 + 2*fb_$1_$2
+	     }
+	     set xmm_bkg_$1 = bkga_$1 + 2*bkgb_$1
+	  }
+	}
+
+
+#---------------------------------------------------------------------------
+# xmm_rates_hr2  : *** THE GOOD ONE ***
+xmm_rates_hr2
+
+	# location 5000 31000 5000 31000
+
+	set fake_x = < 0.6 1.0 1.5 2.0 >
+
+	define ao ? < What XMM AO [3/4/5/7] : >
+
+	##################################
+	load_xmm_rates_ao$ao
+	##################################
+
+	set dimen(nhstr) = 7.s
+	set nhstr[0]= '2e20' 
+	set nhstr[1]= '4e20'
+	set nhstr[2]= '6e20'
+	set nhstr[3]= '1e21'
+	set nhstr[4]= '2e21'
+	set nhstr[5]= '3e21'
+	set nhstr[6]= '1e22'
+	#set nhstr[5]= '1e22'
+	#set nhstr[6]= '1e23'
+
+	# xmm background has approx. a spectrum propto gamma^-1
+	# the rates in different energy bands then more or less follow 
+	# the ratio of ln(e2/e1).
+	#                ln(e2/e1)                              
+	#    R[e1:e2] = ----------- R[eA:eB]
+	#                ln(eB/eA)                             
+	# 
+	##set xmm_bkg_ssoft = < 0.0 0.0 0.0 0.0 >
+	##set xmm_bkg_hsoft = < 0.0 0.0 0.0 0.0 >
+	##set xmm_bkg_soft  = < 0.0 0.0 0.0 0.0 >
+	##set xmm_bkg_hard  = < 0.0 0.0 0.0 0.0 >
+
+	set filter = < 1 1 1 1 >
+
+	define mission "xmm"
+	define 1 $mission
+
+	if( $ao < 3 ) { 
+	   echo "-------------------------------------------------------"
+	   echo " [1] nH = 2e20"
+	   echo " [2] nH = 4e20"
+	   echo " [3] nH = 6e20"
+	   echo " [4] nH = 2e21"
+	   echo " [5] nH = 1e22"
+	   define nhcase ? { What case : }
+	   define 2 $nhcase
+	   set nh_vec = < 2e20 4e20 6e20 2e21 1e22 >
+
+	} else {
+
+	   echo "-------------------------------------------------------"
+	   echo " [1] nH = 2e20"
+	   echo " [2] nH = 4e20"
+	   echo " [3] nH = 6e20"
+	   echo " [4] nH = 1e21"
+	   echo " [5] nH = 2e21"
+	   echo " [6] nH = 3e21"
+	   echo " [7] nH = 1e22"
+	   #echo " [6] nH = 1e22"
+	   #echo " [7] nH = 1e23"
+	   define nhcase ? { What case : }
+	   define 2 $nhcase
+	   #set nh_vec = < 2e20 4e20 6e20 1e21 2e21 1e22 1e23 >
+	   set nh_vec = < 2e20 4e20 6e20 1e21 2e21 3e21 1e22 >
+
+	}
+
+	set deadtime = < 0 7 2 9 29 1.5 >
+	echo "--- Obs. Mode -----------------------------------------"
+	echo " [0] None     ( 0%)"
+	echo " [1] Full     ( 7% deadtime)"
+	echo " [2] FullExtd ( 2%)"
+	echo " [3] Large    ( 9%)"
+	echo " [4] Small    (29%)"
+	echo " [5] Timing   ( 1.5%)"
+	define obsmode ? { Select : }
+	define eff $(1 - deadtime[$obsmode]/100.)
+
+	echo "-------------------------------------------------------"
+	echo " [1] withOUT Background"
+	echo " [2] with    Background"
+	define back ? { Select : }
+
+	# bkg rates for 1 arcmin^2 set in load_rates
+	# now rescales to extraction area:
+	#
+	# FOUND ERROR in AO3 formula: a :pi: is missing in the area formula!!
+	#   background was underestimated by a factor of 3.
+	if( $back == 2 ) {
+	   define radius ?   <              Extraction Radius [arcsec] : >
+	   define bkgfudge ? <        Fudge factor for BKG scaling [2] : >
+	   foreach var < ssoft hsoft soft hard all > {
+	      set xmm_back_$var = xmm_bkg_$var*$bkgfudge*(3.1415*($radius/60.)**2.)
+	   }
+	} else {
+	   foreach var < ssoft hsoft soft hard all > {
+	      set xmm_back_$var = xmm_bkg_$var*0 
+	   }
+	}
+
+	set f_soft_1 = $1_soft_$2*$eff
+	set f_hard_1 = $1_hard_$2*$eff
+	set f_soft_2 = $1_ssoft_$2*$eff
+	set f_hard_2 = $1_hsoft_$2*$eff
+	set f_all    = $1_all_$2*$eff
+
+	set fake_x = fake_x + 0.05*($2 - 2)
+
+	define flux  ? < 0.2-10 keV Flux in units of 1e-13 c.g.s.: >
+	define t_exp ? <                      Exposure time (ks) : >
+
+	#----- counts and s/n -----#
+	set cts_soft_1_src = $t_exp*(f_soft_1*$flux) 
+	set cts_soft_1_bkg = $t_exp*(($back - 1)*$1_back_soft)
+	set cts_hard_1_src = $t_exp*(f_hard_1*$flux) 
+	set cts_hard_1_bkg = $t_exp*(($back - 1)*$1_back_hard)
+
+	set cts_full_1_src = cts_soft_1_src + cts_hard_1_src
+	set cts_full_1_bkg = cts_soft_1_bkg + cts_hard_1_bkg
+
+	set snr_soft_1a = cts_soft_1_src/sqrt( cts_soft_1_src + cts_soft_1_bkg )
+	set snr_soft_1b = cts_soft_1_src/sqrt( cts_soft_1_bkg )
+	set snr_hard_1a = cts_hard_1_src/sqrt( cts_hard_1_src + cts_hard_1_bkg )
+	set snr_hard_1b = cts_hard_1_src/sqrt( cts_hard_1_bkg )
+	#set snr_full_1a = cts_full_1_src/sqrt(cts_full_1_src + cts_full_1_bkg )
+	#set snr_full_1b = cts_full_1_src/sqrt( cts_full_1_bkg )
+
+	set cts_soft_2_src = $t_exp*(f_soft_2*$flux) 
+	set cts_soft_2_bkg = $t_exp*(($back - 1)*$1_back_ssoft)
+	set cts_hard_2_src = $t_exp*(f_hard_2*$flux) 
+	set cts_hard_2_bkg = $t_exp*(($back - 1)*$1_back_hsoft)
+
+	#set cts_full_2_src = cts_soft_2_src + cts_hard_2_src
+	#set cts_full_2_bkg = cts_soft_2_bkg + cts_hard_2_bkg
+
+	set snr_soft_2a = cts_soft_2_src/sqrt( cts_soft_2_src + cts_soft_2_bkg )
+	set snr_soft_2b = cts_soft_2_src/sqrt( cts_soft_2_bkg )
+	set snr_hard_2a = cts_hard_2_src/sqrt( cts_hard_2_src + cts_hard_2_bkg )
+	set snr_hard_2b = cts_hard_2_src/sqrt( cts_hard_2_bkg )
+	#set snr_full_2a = cts_full_2_src/sqrt(cts_full_2_src + cts_full_2_bkg )
+	#set snr_full_2b = cts_full_2_src/sqrt( cts_full_2_bkg )
+
+	set cts_all_src = $t_exp*(f_all*$flux) 
+	set cts_all_bkg = $t_exp*(($back - 1)*$1_back_all)
+	set snr_all_a   = cts_all_src/sqrt( cts_all_src + cts_all_bkg )
+	set snr_all_b   = cts_all_src/sqrt( cts_all_bkg )
+
+	define prfl $(sprintf('%5.2f',$flux))
+	define print_noheader 1
+	echo "-----------------------------------------------------------------------------"
+	echo "* Telescope: "$mission
+	echo "-----------------------------------------------------------------------------"
+	echo "* F_[0.2-10keV] = " $prfl "e-13 erg/cm^2/s "
+	echo "*        T_exp = " $t_exp "ks"
+	echo "*           nH = " $(nh_vec[$($nhcase-1)])
+	echo "* "
+
+	echo "----- Soft band --------------------------++-------- sSoft band --------------"
+	define fmt "%8.3f [%8.3f]==> S/N: %5.2f (%5.2f) || %8.3f [%8.3f]==> S/N: %5.2f (%5.2f)\n"
+	print '$!fmt' < cts_soft_1_src cts_soft_1_bkg snr_soft_1a snr_soft_1b cts_soft_2_src cts_soft_2_bkg snr_soft_2a snr_soft_2b >
+
+	echo "----- Hard band --------------------------++-------- sHard band --------------"
+	print '$!fmt' < cts_hard_1_src cts_hard_1_bkg snr_hard_1a snr_hard_1b cts_hard_2_src cts_hard_2_bkg snr_hard_2a snr_hard_2b >
+
+	echo "----- \"ALL\"  band -----------------"
+	print '%8.3f [%8.3f]==> S/N: %5.2f (%5.2f)\n' < cts_all_src cts_all_bkg snr_all_a snr_all_b >
+
+	#---------------------------------------
+	# Rough HR definition: h/s
+	# Error include background term
+	#---------------------------------------
+	set hr_1   = cts_hard_1_src/cts_soft_1_src
+	set e_hr_1 = hr_1*sqrt( (cts_soft_1_src + cts_soft_1_bkg)/cts_soft_1_src**2. + \
+		                (cts_hard_1_src + cts_hard_1_bkg)/cts_hard_1_src**2. )
+
+	set hr_2   = cts_hard_2_src/cts_soft_2_src
+	set e_hr_2 = hr_2*sqrt( (cts_soft_2_src + cts_soft_2_bkg)/cts_soft_2_src**2. + \
+		                (cts_hard_2_src + cts_hard_2_bkg)/cts_hard_2_src**2. )
+
+	#---------------------------------------
+	# More robust HR definition: (h-s)/(h+s)
+	# Error takes into account bkg contribution
+	#---------------------------------------
+	set hr_1   = (cts_hard_1_src - cts_soft_1_src)/(cts_hard_1_src + cts_soft_1_src)
+	set e_hr_1 = hr_1*0 + 0.1
+	# set e_hr_1 = sqrt(4*cts_hard_1_src*cts_soft_1_src/(cts_hard_1_src+cts_soft_1_src)**3.)   #?! need a SQRT ?!
+
+	set e_hr_1 = 2*cts_hard_1_src*cts_soft_1_src/(cts_hard_1_src+cts_soft_1_src)**2.* \
+	             sqrt( (cts_hard_1_src+cts_hard_1_bkg)/cts_hard_1_src**2. + (cts_soft_1_src+cts_soft_1_bkg)/cts_soft_1_src**2. )
+
+	set hr_2   = (cts_hard_2_src - cts_soft_2_src)/(cts_hard_2_src + cts_soft_2_src)
+	set e_hr_2 = hr_2*0 + 0.1
+	# set e_hr_2 = sqrt(4*cts_hard_2_src*cts_soft_2_src/(cts_hard_2_src+cts_soft_2_src)**3.)   #?! need a SQRT ?!
+	set e_hr_2 = 2*cts_hard_2_src*cts_soft_2_src/(cts_hard_2_src+cts_soft_2_src)**2.* \
+	             sqrt( (cts_hard_2_src+cts_hard_2_bkg)/cts_hard_2_src**2. + (cts_soft_2_src+cts_soft_2_bkg)/cts_soft_2_src**2. )
+
+	foreach vec < hr_1 hr_2 > {
+	   set $vec   = $vec     if( filter > 0 )
+	   set e_$vec = e_$vec   if( filter > 0 )
+	}
+
+	set pip_1  = hr_1/e_hr_1
+	set pip_2  = hr_2/e_hr_2
+
+	echo "----- Hardness Ratio ------------------------------- sHardness Ratio --------"
+	print ' %7.3f [%7.3f] ==> S/N: %5.2f || %8.3f [%8.3f] ==> S/N: %5.2f \n' < hr_1 e_hr_1 pip_1  hr_2 e_hr_2 pip_2 >
+	echo "-----------------------------------------------------------------------------"
+
+	if( $what_soft_bands == 1 ) {
+	    limits 0 8.5 0 1.5
+	    define label_x "HR  [0.5-1.0]/[0.1-0.5]"
+	    define label_y "HR  [2.5-10.0]/[1.0-2.5]"
+	} 
+	if( $what_soft_bands == 2 ) {
+	    limits 0  8.5 0 1.5
+	    define label_x "HR  [0.5-1.0]/[0.1-0.5]"
+	    define label_y "HR  [1.0-10.0]/[0.1-1.0]"
+	}
+	if( $what_soft_bands == 3 ) {
+	    limits 0  8.5 0 1.5
+	    limits 0  7.0 0 1.75
+	    #limits 0  4.0 0 1.25
+	    define label_x "HR  [0.7-1.5]/[0.1-0.7]"
+	    define label_y "HR  [1.5-10.0]/[0.1-1.5]"
+	}
+	if( $what_soft_bands == 4 ) {
+	    #limits 0  8.5 0 1.75
+	    limits  0  2.0 -0.2 1.0
+	    limits -0.5 3.7 -0.01 1.45
+	    #limits 0  0.5  0.0 0.2
+	    define label_x "HR  [1.5-3.0]/[0.1-1.5]"
+	    define label_y "HR  [3.0-10.0]/[1.5-3.0]"
+	}
+	if( $what_soft_bands == 5 ) {
+	    limits 0  8.5 0 1.75
+	    limits 0  2.5  0.0 2.2
+	    limits 0  2.0 -0.2 1.0
+	    limits 0  2.5 0.0 1.0
+	    define label_x "HR  [1.0-2.0]/[0.1-1.0]"
+	    define label_y "HR  [2.0-10.0]/[0.5-2.0]"
+	}
+	if( $what_soft_bands == 6 ) {
+	    limits 0  2.5 0.0 1.0
+	    limits 0  2.5 -0.1 0.9
+	    define label_x "HR  [1.0-2.0]/[0.2-1.0]"
+	    define label_y "HR  [2.0-10.0]/[0.2-2.0]"
+	}
+	if( $what_soft_bands == 7 ) {
+	    limits 0  2.5 0.0 1.0
+	    limits 0  2.5 -0.1 1.5
+	    limits -1 1 -1 1   # for new HR
+	    define label_x "HR  [0.5-1.0]/[0.2-0.5]"
+	    define label_y "HR  [1.0-10.0]/[0.2-1.0]"
+	}
+	if( $what_soft_bands == 8 ) {
+	    limits -1 1 -1 1   # for new HR
+	    define label_x "HR  [0.6-1.2]/[0.2-0.6]"
+	    define label_y "HR  [1.2-10.0]/[0.2-1.2]"
+	}
+	if( $what_soft_bands == 9 ) {
+	    limits -1 1 -1 1   # for new HR
+	    define label_x "HR  [0.2-1.2]/[1.2-10.0]"
+	    define label_y "HR  [2.0-10.0]/[1.0-2.0]"
+	}
+
+	limits -1 1 -1 1   # for new HR
+	limits -0.75 1 -1 0.75   # for new HR
+
+	ctype 2 
+	expand 1.5
+	lweight 3
+	ticksize 0 0 0 0 
+	box
+	# if( substr('$1',0,2) == 'ch' ) { 
+	#     ylabel HR (ACIS-S [1.5-8]/[0.2-1.5])
+	# } else {
+	#     ylabel HR (XMM pn/thin [1.5-8]/[0.2-1.5])
+	# }
+	## xlabel HR (ACIS-S [0.6-1.5]/[0.2-0.6])
+	xlabel $label_x
+	# ylabel HR (XMM [1.0-2.5]/[2.5-10.0])
+	ylabel $label_y
+	expand 2.5
+
+	define ellcolor 4
+	if( $2 <= 2 ) { define ellcolor 3 }
+	if( $2 >= 5 ) { define ellcolor 5 }
+
+	ptype 4 3 
+	#if( $2 == 1 ) { 
+	#    ctype $ellcolor
+	#    ptype 4 3 
+	#    points   hr_2 hr_1  
+	#    expand 0.5
+	#    error_x  hr_2 hr_1 e_hr_2
+	#    error_y  hr_2 hr_1 e_hr_1
+	#    expand 2.5
+	#    ltype 2
+	#    connect  hr_2 hr_1
+	#    ltype 2
+	#    do 9=0,$(dimen(hr_1)-1) {
+	#       ellipse $(hr_2[$9]) $(hr_1[$9]) $(e_hr_2[$9]) $(e_hr_1[$9]) 
+	#    }
+	#    ltype 0
+	#    ctype $ellcolor
+	#    relocate  $(hr_2[0]) $(hr_1[0]+1.2*e_hr_1[0]) 
+	#    expand 1.25
+	#    putlabel 5   N_{H}=$(sprintf('%4s',nhstr[$2-1]))
+	#    ctype 2
+	#}  else { if( $2 == 5 ) {
+	#    ctype $ellcolor 
+	#    ptype 4 3 
+	#    expand 3.
+	#    points   hr_2 hr_1
+	#    expand 0.5
+	#    error_x  hr_2 hr_1 e_hr_2
+	#    error_y  hr_2 hr_1 e_hr_1
+	#    expand 2.5
+	#    ltype 2
+	#    connect   hr_2 hr_1
+	#    ltype 0
+	#    ctype 1 
+	#    ptype 4 3 
+	#    expand 1.5
+	#    points   hr_2 hr_1
+	#    ctype $ellcolor 
+	#    ltype 2 
+	#    do 9=0,$(dimen(hr_1)-1) {
+	#       ellipse $(hr_2[$9]) $(hr_1[$9]) $(e_hr_2[$9]) $(e_hr_1[$9]) 
+	#    }
+	#    ltype 0
+	#    ctype $ellcolor 
+	#    expand 1.5
+	#    relocate  $(hr_2[0]) $(hr_1[0]+1.2*e_hr_1[0]) 
+	#    expand 1.25
+	#    putlabel 5 N_{H}=$(sprintf('%4s',nhstr[$2-1]))
+	#    ctype 2
+	#}  else {
+	    ctype $ellcolor 
+	    ptype 4 3 
+	    expand 3.
+	    points   hr_2 hr_1
+	    expand 0.5
+	    error_x  hr_2 hr_1 e_hr_2
+	    error_y  hr_2 hr_1 e_hr_1
+	    expand 2.5
+	    ltype 2
+	    connect   hr_2 hr_1
+	    ltype 0
+	    ctype 1 
+	    ptype 4 3 
+	    expand 1.5
+	    points   hr_2 hr_1
+	    ctype $ellcolor 
+	    ltype 2 
+	    do 9=0,$(dimen(hr_1)-1) {
+	       ellipse $(hr_2[$9]) $(hr_1[$9]) $(e_hr_2[$9]) $(e_hr_1[$9]) 
+	    }
+	    ltype 0
+	    ctype $ellcolor 
+	    relocate  $(hr_2[0]) $(hr_1[0]+1.2*e_hr_1[0]) 
+	    expand 1.25
+	    putlabel 5 N_{H}=$(sprintf('%4s',nhstr[$($2-1)]))
+	    ctype 2
+	#}
+	#}
+
+	expand 1.5
+	ctype 2
+
+	define prfl     $(sprintf('%4.1f',$flux))
+	define prtexp   $(sprintf('%4.1f',$t_exp))
+	define fluence  ($flux*1e-13*$t_exp*1e3/1e-10)
+	# define fluence 12
+	define prfluence $(sprintf('%4.1f',$fluence))
+
+	expand 1.7
+	relocate ( $(0.5*($gx1+$gx2)) $( $gy2 - 1500) )
+	if( $what_absorption == 1 ) {
+	   putlabel 5 F^{abs.}_{0.2-10keV}\times T_{exp}=$prfluence\times 10^{-10} erg/cm^2
+	} else {
+	   putlabel 5 F^{unabs.}_{0.2-10keV}\times T_{exp}=$prfluence\times 10^{-10} erg/cm^2
+	}
+	expand 1.5
+
+	define print_noheader 0
+
+#---------------------------------------------------------------------------
+# plot_xmm_rates  : 
+plot_xmm_rates
+
+	location 5000 31000 5000 31000
+
+	set fake_x = < 0.6 1.0 1.5 2.0 >
+
+	define ao ? { What XMM AO [3] : }
+
+	load_xmm_rates_ao$ao
+
+	set filter = < 1 1 1 1 >
+
+	define mission "xmm"
+	define 1 $mission
+
+	if( $ao < 3 ) { 
+	   echo "-------------------------------------------------------"
+	   echo " [1] nH = 2e20"
+	   echo " [2] nH = 4e20"
+	   echo " [3] nH = 6e20"
+	   echo " [4] nH = 2e21"
+	   echo " [5] nH = 1e22"
+	   define nhcase ? { What case : }
+	   define 2 $nhcase
+	   set nh_vec = < 2e20 4e20 6e20 2e21 1e22 >
+
+	} else {
+
+	   echo "-------------------------------------------------------"
+	   echo " [1] nH = 2e20"
+	   echo " [2] nH = 4e20"
+	   echo " [3] nH = 6e20"
+	   echo " [4] nH = 1e21"
+	   echo " [5] nH = 2e21"
+	   echo " [6] nH = 1e22"
+	   echo " [7] nH = 1e23"
+	   define nhcase ? { What case : }
+	   define 2 $nhcase
+	   set nh_vec = < 2e20 4e20 6e20 1e21 2e21 1e22 1e23 >
+
+	}
+
+	set deadtime = < 0 7 2 9 29 1.5 >
+	echo "--- Obs. Mode -----------------------------------------"
+	echo " [1] Full     ( 7% deadtime)"
+	echo " [2] FullExtd ( 2%)"
+	echo " [3] Large    ( 9%)"
+	echo " [4] Small    (29%)"
+	echo " [5] Timing   ( 1.5%)"
+	define obsmode ? { Select : }
+	define eff $(1 - deadtime[$obsmode]/100.)
+
+	echo "-------------------------------------------------------"
+	echo " [1] withOUT Background"
+	echo " [2] with    Background"
+	define back ? { Select : }
+
+	# bkg rates for 1 arcmin^2 set in load_rates
+	# now rescales to extraction area:
+	if( $back == 2 ) {
+	   define radius ? < Extraction Radius [arcsec] : >
+	   foreach var < ssoft hsoft soft hard all > {
+	      set xmm_back_$var = xmm_bkg_$var*($radius/60.)**2.
+	   }
+	} else {
+	   foreach var < ssoft hsoft soft hard all > {
+	      set xmm_back_$var = xmm_bkg_$var*0 
+	   }
+	}
+
+	set f_soft_1 = $1_soft_$2*$eff
+	set f_hard_1 = $1_hard_$2*$eff
+	set f_soft_2 = $1_ssoft_$2*$eff
+	set f_hard_2 = $1_hsoft_$2*$eff
+	set f_all    = $1_all_$2*$eff
+
+	set fake_x = fake_x + 0.05*($2 - 2)
+
+	define flux  ? { 0.2-10 keV Flux in units of 1e-13 c.g.s.: }
+	define t_exp ? {                      Exposure time (ks) : }
+
+	#----- counts and s/n -----#
+	set cts_soft_1_src = $t_exp*(f_soft_1*$flux) 
+	set cts_soft_1_bkg = $t_exp*(($back - 1)*$1_back_soft)
+	set cts_hard_1_src = $t_exp*(f_hard_1*$flux) 
+	set cts_hard_1_bkg = $t_exp*(($back - 1)*$1_back_hard)
+
+	set cts_full_1_src = cts_soft_1_src + cts_hard_1_src
+	set cts_full_1_bkg = cts_soft_1_bkg + cts_hard_1_bkg
+
+	set snr_soft_1a = cts_soft_1_src/sqrt(cts_soft_1_src + cts_soft_1_bkg )
+	set snr_soft_1b = cts_soft_1_src/sqrt( cts_soft_1_bkg )
+	set snr_hard_1a = cts_hard_1_src/sqrt(cts_hard_1_src + cts_hard_1_bkg )
+	set snr_hard_1b = cts_hard_1_src/sqrt( cts_hard_1_bkg )
+	#set snr_full_1a = cts_full_1_src/sqrt(cts_full_1_src + cts_full_1_bkg )
+	#set snr_full_1b = cts_full_1_src/sqrt( cts_full_1_bkg )
+
+	set cts_soft_2_src = $t_exp*(f_soft_2*$flux) 
+	set cts_soft_2_bkg = $t_exp*(($back - 1)*$1_back_ssoft)
+	set cts_hard_2_src = $t_exp*(f_hard_2*$flux) 
+	set cts_hard_2_bkg = $t_exp*(($back - 1)*$1_back_hsoft)
+
+	#set cts_full_2_src = cts_soft_2_src + cts_hard_2_src
+	#set cts_full_2_bkg = cts_soft_2_bkg + cts_hard_2_bkg
+
+	set snr_soft_2a = cts_soft_2_src/sqrt(cts_soft_2_src + cts_soft_2_bkg )
+	set snr_soft_2b = cts_soft_2_src/sqrt( cts_soft_2_bkg )
+	set snr_hard_2a = cts_hard_2_src/sqrt(cts_hard_2_src + cts_hard_2_bkg )
+	set snr_hard_2b = cts_hard_2_src/sqrt( cts_hard_2_bkg )
+	#set snr_full_2a = cts_full_2_src/sqrt(cts_full_2_src + cts_full_2_bkg )
+	#set snr_full_2b = cts_full_2_src/sqrt( cts_full_2_bkg )
+
+	set cts_all_src = $t_exp*(f_all*$flux) 
+	set cts_all_bkg = $t_exp*(($back - 1)*$1_back_all)
+	set snr_all_a   = cts_all_src/sqrt(cts_all_src + cts_all_bkg)
+	set snr_all_b   = cts_all_src/sqrt(cts_all_bkg)
+
+	define prfl $(sprintf('%5.2f',$flux))
+	define print_noheader 1
+	echo -----------------------------------------------------------------------------
+	echo * Telescope: $mission
+	echo -----------------------------------------------------------------------------
+	echo * F_[0.2-10keV] = $prfl e-13 erg/cm^2/s 
+	echo *        T_exp = $t_exp ks
+	echo *           nH = $(nh_vec[$($nhcase-1)])
+	echo * \
+
+	echo "----- Soft band ------------------------------------ sSoft band --------------"
+	define fmt "%8.3f [%8.3f]==> S/N: %5.2f (%5.2f) || %8.3f [%8.3f]==> S/N: %5.2f (%5.2f)\n"
+	print '$!fmt' < cts_soft_1_src cts_soft_1_bkg snr_soft_1a snr_soft_1b cts_soft_2_src cts_soft_2_bkg snr_soft_2a snr_soft_2b >
+
+	echo "----- Hard band ------------------------------------ sHard band --------------"
+	print '$!fmt' < cts_hard_1_src cts_hard_1_bkg snr_hard_1a snr_hard_1b cts_hard_2_src cts_hard_2_bkg snr_hard_2a snr_hard_2b >
+
+	echo "----- \"ALL\"  band -----------------"
+	print '%8.3f [%8.3f]==> S/N: %5.2f (%5.2f)\n' < cts_all_src cts_all_bkg snr_all_a snr_all_b >
+
+	set hr_1   = cts_hard_1_src/cts_soft_1_src
+	set e_hr_1 = hr_1*sqrt( (cts_soft_1_src + cts_soft_1_bkg)/cts_soft_1_src**2. + \
+		              (  cts_hard_1_src + cts_hard_1_bkg)/cts_hard_1_src**2. )
+
+	set hr_2   = cts_hard_2_src/cts_soft_2_src
+	set e_hr_2 = hr_2*sqrt( (cts_soft_2_src + cts_soft_2_bkg)/cts_soft_2_src**2. + \
+		              (  cts_hard_2_src + cts_hard_2_bkg)/cts_hard_2_src**2. )
+
+	foreach vec < hr_1 hr_2 > {
+	   set $vec   = $vec     if( filter > 0 )
+	   set e_$vec = e_$vec   if( filter > 0 )
+	}
+
+	set pip_1  = hr_1/e_hr_1
+	set pip_2  = hr_2/e_hr_2
+
+	echo "----- Hardness Ratio ------------------------------- sHardness Ratio --------"
+	print ' %7.3f [%7.3f] ==> S/N: %5.2f || %8.3f [%8.3f] ==> S/N: %5.2f \n' < hr_1 e_hr_1 pip_1  hr_2 e_hr_2 pip_2 >
+	echo "-----------------------------------------------------------------------------"
+
+	if( $what_soft_bands == 1 ) {
+	    limits 0 8.5 0 1.5
+	    define label_x "HR  [0.5-1.0]/[0.1-0.5]"
+	    define label_y "HR  [2.5-10.0]/[1.0-2.5]"
+	} 
+	if( $what_soft_bands == 2 ) {
+	    limits 0  8.5 0 1.5
+	    define label_x "HR  [0.5-1.0]/[0.1-0.5]"
+	    define label_y "HR  [1.0-10.0]/[0.1-1.0]"
+	}
+	if( $what_soft_bands == 3 ) {
+	    limits 0  8.5 0 1.5
+	    limits 0  7.0 0 1.75
+	    define label_x "HR  [0.7-1.5]/[0.1-0.7]"
+	    define label_y "HR  [1.5-10.0]/[0.1-1.5]"
+	}
+	if( $what_soft_bands == 4 ) {
+	    limits 0  8.5 0 1.75
+	    # limits 0  2.0 -0.2 1.0
+	    #limits 0  0.5  0.0 0.2
+	    define label_x "HR  [1.5-3.0]/[0.1-1.5]"
+	    define label_y "HR  [3.0-10.0]/[1.5-3.0]"
+	}
+	if( $what_soft_bands == 5 ) {
+	    limits 0  8.5 0 1.75
+	    limits 0  2.0 -0.2 1.0
+	    limits 0  0.5  0.0 0.2
+	    define label_x "HR  [1.0-2.0]/[0.1-1.0]"
+	    define label_y "HR  [2.0-10.0]/[0.5-2.0]"
+	}
+
+	ctype 2 
+	expand 1.5
+	lweight 3
+	ticksize 0 0 0 0 
+	box
+	xlabel $label_x
+	ylabel $label_y
+	expand 2.5
+
+	ptype 4 3 
+	if( $2 == 1 ) { 
+	    ctype 3 
+	    ptype 4 3 
+	    points   hr_2 hr_1  
+	    expand 0.5
+	    error_x  hr_2 hr_1 e_hr_2
+	    error_y  hr_2 hr_1 e_hr_1
+	    expand 2.5
+	    ltype 2
+	    connect  hr_2 hr_1
+	    ltype 2
+	    do 9=0,$(dimen(hr_1)-1) {
+	       ellipse $(hr_2[$9]) $(hr_1[$9]) $(e_hr_2[$9]) $(e_hr_1[$9]) 
+	    }
+	    ltype 0
+	    ctype 3 
+	    expand 1.5
+	    #relocate 0.4 0.85
+	    grelocate 0.1 0.05
+	    putlabel 6 N_{H}=2e20
+	    ctype 2
+	}  else { if( $2 == 5 ) {
+	    ctype 5 
+	    ptype 4 3 
+	    expand 3.
+	    points   hr_2 hr_1
+	    expand 0.5
+	    error_x  hr_2 hr_1 e_hr_2
+	    error_y  hr_2 hr_1 e_hr_1
+	    expand 2.5
+	    ltype 2
+	    connect   hr_2 hr_1
+	    ltype 0
+	    ctype 1 
+	    ptype 4 3 
+	    expand 1.5
+	    points   hr_2 hr_1
+	    ctype 5 
+	    ltype 2 
+	    do 9=0,$(dimen(hr_1)-1) {
+	       ellipse $(hr_2[$9]) $(hr_1[$9]) $(e_hr_2[$9]) $(e_hr_1[$9]) 
+	    }
+	    ltype 0
+	    ctype 5 
+	    expand 1.5
+	    relocate 6.0 0.95
+	    grelocate 0.75 0.75
+	    putlabel 6 N_{H}=2e21
+	    ctype 2
+	}  else {
+	    ctype 4 
+	    ptype 4 3 
+	    expand 3.
+	    points   hr_2 hr_1
+	    expand 0.5
+	    error_x  hr_2 hr_1 e_hr_2
+	    error_y  hr_2 hr_1 e_hr_1
+	    expand 2.5
+	    ltype 2
+	    connect   hr_2 hr_1
+	    ltype 0
+	    ctype 1 
+	    ptype 4 3 
+	    expand 1.5
+	    points   hr_2 hr_1
+	    ctype 4 
+	    ltype 2 
+	    do 9=0,$(dimen(hr_1)-1) {
+	       ellipse $(hr_2[$9]) $(hr_1[$9]) $(e_hr_2[$9]) $(e_hr_1[$9]) 
+	    }
+	    ltype 0
+	    ctype 4 
+	    #expand 1.5
+	    #relocate 6.0 0.95
+	    #grelocate 0.75 0.75
+	    #putlabel 6 N_{H}=2e21
+	    ctype 2
+	}
+	}
+
+	expand 1.5
+	ctype 2
+
+	define prfl     $(sprintf('%4.1f',$flux))
+	define prtexp   $(sprintf('%4.1f',$t_exp))
+	define fluence  ($flux*1e-13*$t_exp*1e3/1e-10)
+	# define fluence 12
+	define prfluence $(sprintf('%4.1f',$fluence))
+
+	expand 1.7
+	relocate ( $(0.5*($gx1+$gx2)) 29500)
+	if( $what_absorption == 1 ) {
+	   putlabel 5 F^{abs.}_{0.2-10keV}\times T_{exp}=$prfluence\times 10^{-10} erg/cm^2
+	} else {
+	   putlabel 5 F^{unabs.}_{0.2-10keV}\times T_{exp}=$prfluence\times 10^{-10} erg/cm^2
+	}
+	# relocate (12500 29500)
+	# putlabel 6 F^{unabs.}_{0.2-8keV}=$prfl\times 10^{-13} erg/cm^2/s 
+	# relocate (12500 27500)
+	# putlabel 6      T_{exp}=$prtexp ks
+	expand 1.5
+
+	define print_noheader 0
+
+#---------------------------------------------------------------------------
+# chandra_hr_grid  *** the GOOD one ***
+#                  Now set (hard coded) to compute HR as (H-S)/(H+S)
+#
+#                  NEEDS pimms_gamma_nh_grid.pl output
+#
+chandra_hr_grid
+
+	#location 5000 31000 5000 31000
+
+	set fake_x = < 0.2 0.4 0.6 1.0 1.4 1.8 2.2 >
+
+	# define ao ? { What chandra AO [3/4/5/6/7/8/9] : }
+	define ao ? { What chandra AO [4|6|7|9|10|11|12] : }
+
+	load_chandra_hr_grid $ao
+	
+	foreach 9 < 1 2 3 4 5 6 7 8 > {
+	   set chandra_tot_$9 = chandra_ssoft_$9 + chandra_hsoft_$9 + chandra_hard_$9
+	   set frac_ssoft_$9  = chandra_ssoft_$9/chandra_tot_$9
+	   set frac_hsoft_$9  = chandra_hsoft_$9/chandra_tot_$9
+	   set frac_hard_$9   = chandra_hard_$9/chandra_tot_$9
+	}
+
+	set chandra_bkg_ssoft = < 0.0 0.0 0.0 0.0 0.0 0.0 0.0 >
+	set chandra_bkg_hsoft = < 0.0 0.0 0.0 0.0 0.0 0.0 0.0 >
+	set chandra_bkg_soft  = < 0.0 0.0 0.0 0.0 0.0 0.0 0.0 >
+	set chandra_bkg_hard  = < 0.0 0.0 0.0 0.0 0.0 0.0 0.0 >
+
+	set filter = < 1 1 1 1 1 1 1 >
+
+	define mission "chandra"
+	define 1 $mission
+
+	#--- AO4, AO6 ---
+	if( $ao == 4 || $ao == 6 ) {
+	   echo "-------------------------------------------------------"
+	   echo " [1] nH = 2e20"
+	   echo " [2] nH = 4e20"
+	   echo " [3] nH = 6e20"
+	   echo " [4] nH = 1e21"
+	   echo " [5] nH = 2e21"
+	   echo " [6] nH = 1e22"
+	   echo " [7] nH = 3e22"
+	   echo " [8] nH = 1e23"
+	   define nhcase ? { What case : }
+	   define 2 $nhcase
+	   set nh_vec = < 2e20 4e20 6e20 1e21 2e21 1e22 1e23 >
+	}
+
+	#--- AO7 / AO9 / AO10 ---
+	if( $ao == 7 || $ao == 9 || $ao == 10 || $ao == 11 || $ao == 12 ) {
+	   echo "-------------------------------------------------------"
+	   echo " [1] nH = 2e20"
+	   echo " [2] nH = 4e20"
+	   echo " [3] nH = 6e20"
+	   echo " [4] nH = 1e21"
+	   echo " [5] nH = 3e21"
+	   echo " [6] nH = 1e22"
+	   echo " [7] nH = 3e22"
+	   echo " [8] nH = 1e23"
+	   define nhcase ? { What case : }
+	   define 2 $nhcase
+	   set nh_vec = < 2e20 4e20 6e20 1e21 3e21 1e22 3e22 1e23 >
+	}
+
+	## echo "-------------------------------------------------------"
+	## echo " [1] withOUT Background"
+	## echo " [2] with    Background"
+	## define back ? { Select : }
+	define back 1
+
+	# Here it determines pretty much what bands go into each HR.
+	set f_soft_1 = $1_ssoft_$2 
+	set f_hard_1 = $1_hsoft_$2 
+	set f_soft_2 = $1_soft_$2 
+	set f_hard_2 = $1_hard_$2 
+
+	set fake_x = fake_x + 0.05*($2 - 2)
+
+	define flux  ? { 0.2-8 keV Flux in units of 1e-13 c.g.s.: }
+	define t_exp ? {                     Exposure time (ks) : }
+
+	## define flux  (1000)
+	## define t_exp (3)
+
+	set cts_soft_1_src = $t_exp*(f_soft_1*$flux) 
+	set cts_soft_1_bkg = $t_exp*(($back - 1)*$1_bkg_soft)
+	set cts_hard_1_src = $t_exp*(f_hard_1*$flux) 
+	set cts_hard_1_bkg = $t_exp*(($back - 1)*$1_bkg_hard)
+
+	set cts_full_1_src = cts_soft_1_src + cts_hard_1_src
+	set cts_full_1_bkg = cts_soft_1_bkg + cts_hard_1_bkg
+
+	set cts_soft_2_src = $t_exp*(f_soft_2*$flux) 
+	set cts_soft_2_bkg = $t_exp*(($back - 1)*$1_bkg_ssoft)
+	set cts_hard_2_src = $t_exp*(f_hard_2*$flux) 
+	set cts_hard_2_bkg = $t_exp*(($back - 1)*$1_bkg_hsoft)
+
+	set cts_full_2_src = cts_soft_2_src + cts_hard_2_src
+	set cts_full_2_bkg = cts_soft_2_bkg + cts_hard_2_bkg
+
+	define print_noheader 1
+
+	## define prfl $(sprintf('%5.2f',$flux))
+	## echo "-----------------------------------------------------------------------------"
+	## echo "* Telescope:" $mission
+	## echo "-----------------------------------------------------------------------------"
+	## echo "* F_[0.2-8keV] =" $prfl "e-13 erg/cm^2/s" 
+	## echo "*        T_exp =" $t_exp ks
+	## echo "*           nH =" $(nh_vec[$($nhcase-1)])
+	## echo "*" 
+
+	set check_frac = frac_ssoft_$2 + frac_hsoft_$2 + frac_hard_$2
+	echo "  "
+	echo " Fraction of counts by energy band " 
+	echo "-- alpha ------ softsoft ------ hardsoft --------- hard  ----------"
+	print '   %4.1f    :   %8.3f   ||   %8.3f   ||    %8.3f  %8.3f\n' < fake_x frac_ssoft_$2 frac_hsoft_$2 frac_hard_$2 check_frac >
+
+	set cts_all =  cts_soft_2_src + cts_hard_2_src 
+	echo " Counts in each band "
+	echo "     Soft_1  Hard_1         Soft_2   Hard_2  |    Overall "
+	echo "-----------+--------+-------------+----------+-------------"
+
+	print '   %7.2f  %7.2f        %7.2f  %7.2f  |  %7.2f\n' < cts_soft_1_src cts_hard_1_src cts_soft_2_src cts_hard_2_src cts_all >
+
+	#---------------------------------------
+	# Rough HR definition: h/s
+	# Error include background term
+	#---------------------------------------
+	set hr_1   = cts_hard_1_src/cts_soft_1_src
+	set e_hr_1 = hr_1*sqrt( (cts_soft_1_src + cts_soft_1_bkg)/cts_soft_1_src**2. + \
+		              (  cts_hard_1_src + cts_hard_1_bkg)/cts_hard_1_src**2. )
+
+	set hr_2   = cts_hard_2_src/cts_soft_2_src
+	set e_hr_2 = hr_2*sqrt( (cts_soft_2_src + cts_soft_2_bkg)/cts_soft_2_src**2. + \
+		              (  cts_hard_2_src + cts_hard_2_bkg)/cts_hard_2_src**2. )
+
+	#---------------------------------------
+	# More robust HR definition: (h-s)/(h+s)
+	# Error assume no background contribution
+	#---------------------------------------
+	set hr_1   = (cts_hard_1_src - cts_soft_1_src)/(cts_hard_1_src + cts_soft_1_src)
+	set e_hr_1 = hr_1*0 + 0.1
+	set e_hr_1 = sqrt(4*cts_hard_1_src*cts_soft_1_src/(cts_hard_1_src+cts_soft_1_src)**3.)  #?! need a SQRT ?!
+
+	set hr_2   = (cts_hard_2_src - cts_soft_2_src)/(cts_hard_2_src + cts_soft_2_src)
+	set e_hr_2 = hr_2*0 + 0.1
+	set e_hr_2 = sqrt(4*cts_hard_2_src*cts_soft_2_src/(cts_hard_2_src+cts_soft_2_src)**3.)   #?! need a SQRT ?!
+
+	foreach vec < hr_1 hr_2 > {
+	   set $vec   = $vec     if( filter > 0 )
+	   set e_$vec = e_$vec   if( filter > 0 )
+	}
+
+	set pip_1  = hr_1/e_hr_1
+	set pip_2  = hr_2/e_hr_2
+
+	echo "----- Hardness Ratio ------------------------------- sHardness Ratio --------"
+	print ' %7.3f [%7.3f] ==> S/N: %5.2f || %8.3f [%8.3f] ==> S/N: %5.2f \n' < hr_1 e_hr_1 pip_1  hr_2 e_hr_2 pip_2 >
+	echo "-----------------------------------------------------------------------------"
+
+	if( $what_soft_bands == 3 ) {
+	    limits 0  8.5 0 1.5
+	    limits 0  7.5 0 1.65 # for AO5
+	    limits 0  6.5 0 1.65 # for AO7
+	    limits 0 12.5 0 3.65 # for HR grid
+	    limits -1 1 -1 1   # for HR grid
+	    define label_x "HR (ACIS-S [0.8-1.5], [0.2-0.8])"
+	    define label_y "HR (ACIS-S [1.5-8.0], [0.2-1.5])"
+	}
+	if( $what_soft_bands == 4 ) {
+	    limits 0  8.5 0 1.5
+	    limits 0  3.0 0 1.8  # for AO5
+	    limits 0 12.5 0 3.6  # for HR grid
+	    limits -1 1 -1 1   # for HR grid
+	    define label_x "HR (ACIS-S [1.0-1.5], [0.2-1.0])"
+	    define label_y "HR (ACIS-S [1.5-8.0], [0.2-1.5])"
+	}
+	if( $what_soft_bands == 5 ) {
+	    limits 0  8.5 0 1.5
+	    limits 0  3.0 0 1.8  # for AO5
+	    limits 0 12.5 0 3.6  # for HR grid
+	    limits -1 1 -1 1     # for HR grid
+	    define label_x "HR (ACIS-S [0.8-1.2], [0.2-0.8])"
+	    define label_y "HR (ACIS-S [1.2-8.0], [0.2-1.2])"
+	}
+
+	ctype 2 
+	expand 1.5
+	lweight 3
+	ticksize 0 0 0 0 
+	box
+	xlabel $label_x
+	ylabel $label_y
+	expand 2.5
+
+	ptype 4 3 
+	# This 'if' is simply to treat differently the nH=2e20 case.
+	if( $2 == 1 ) { 
+	    ctype 3 
+	    ptype 4 3 
+	    points   hr_1 hr_2  
+	    expand 0.5
+	    error_x  hr_1 hr_2 e_hr_1
+	    error_y  hr_1 hr_2 e_hr_2
+	    expand 2.5
+	    ltype 2
+	    connect  hr_1 hr_2
+	    ltype 2
+	    do 9=0,$(dimen(hr_1)-1) {
+	       ellipse $(hr_1[$9]) $(hr_2[$9]) $(e_hr_1[$9]) $(e_hr_2[$9]) 
+	    }
+	    ltype 0
+	    ctype 3 
+	    expand 1.5
+	    relocate 0.4 0.85
+	    putlabel 6 N_{H}=2e20
+	    ctype 2
+	} else {
+	    ctype 5 
+	    ptype 4 3 
+	    expand 3.
+	    points   hr_1 hr_2
+	    expand 0.5
+	    error_x  hr_1 hr_2 e_hr_1
+	    error_y  hr_1 hr_2 e_hr_2
+	    expand 2.5
+	    ltype 2
+	    connect  hr_1 hr_2
+	    ltype 0
+	    ctype 1 
+	    ptype 4 3 
+	    expand 1.5
+	    points   hr_1 hr_2
+	    ctype 5 
+	    ltype 2 
+	    do 9=0,$(dimen(hr_1)-1) {
+	       ellipse $(hr_1[$9]) $(hr_2[$9]) $(e_hr_1[$9]) $(e_hr_2[$9]) 
+	    }
+	    ltype 0
+	    ctype 5 
+	    expand 1.5
+	    relocate 5.0 0.85
+	    putlabel 6 N_{H}=2e21
+	    ctype 2
+	}
+
+	expand 1.5
+	ctype 2
+
+	define print_noheader 0
+
+##---------------------------------------------------------------------------
+load_chandra_hr_grid 01
+
+	#------------------------------------------------------------
+	# RATES for 0.2-8.0 keV flux of 1.e-13
+	#   for 8 values of nH  = < 2e20 4e20 6e20 1e21 3e21 1e22 3e22 1e23 >
+	#   and 7 values of a_X = < 0.2 0.4 0.6 1.0 1.4 1.8 2.2 >
+	#------------------------------------------------------------
+	echo "**********************************"
+	if( $?1 ) {
+	   define whatao $1
+	} else {
+ 	   define whatao ? < What AO [4|6|7|9|10|11|12] >
+	}
+
+	echo "**********************************"
+	# echo " [1] - 0.2 / 0.6 / 1.5"
+	# echo " [2] - 0.2 / 0.7 / 1.5"
+	echo " [3] - 0.2 / 0.8 / 1.5"
+	# echo " [4] - 0.2 / 1.0 / 1.5"
+	echo "   with 0.2-1.5 and 1.5-8.0 always as soft and hard "
+	echo " [5] - 0.2-0.8 / 0.8-1.2 / 0.2-1.2 / 1.2-8.0 "
+
+	define what_soft_bands ? { Select an option : }
+
+	define 7 $whatao
+	define 8 "UnAbs"
+	define 9 $what_soft_bands
+
+	# define archive "/home/gfossati/Science/Proposals/Chandra/O$!7/FFSS/PIMMS"
+	# define archive "/home/gfossati/Science/Proposals/Chandra/O7/FFSS/PIMMS"
+	# define archive "/home/gfossati/Science/Proposals/Chandra/O9/FFSS/PIMMS"
+	if( $7 == 10 ) { define archive "/home/gfossati/Science/Proposals/Chandra/10/FFSS/PIMMS" }
+	if( $7 == 12 ) { define archive "/home/gfossati/Science/Proposals/Chandra/12/FermiNonDetections/PIMMS" }
+	macro read "$!archive/grid_output_acis-s_ao"$7_$8_$9.txt
+	get_auxiliary_data
+
+#---------------------------------------------------------------------------
+# test_samples
+test_samples
+
+	define arocut (0.1)
+
+	define frlim  ? < F_radio_cut : >
+	define zmin   ? < z_min       : >
+	define zmax   ? < z_max       : >
+	define arocut ? < aRO min     : >
+
+	if( $zmin == 0 ) { define zmin (-0.5) }
+	
+	set fsel = f_first
+	set fsel = f5
+
+	set a      = name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax )
+	set b      = name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && xcps<1e-20 && gf_X_flag <0.5 )
+	set nred1  = name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && a_ro >= 0.6  )
+	set nblue1 = name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && a_ro <  0.4  )
+	set nred2  = name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && a_ro >= 0.55 )
+	set nblue2 = name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && a_ro <  0.45 )
+
+	set n2massj= name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && lg_f_j < -19.81 )
+	set n2massh= name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && lg_f_h < -19.81 )
+	set n2massk= name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && lg_f_k < -19.81 )
+
+	set a_ros  = name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && xcps>1e-20 && gf_X_flag<0.5 )
+	set a_new  = name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && gf_X_flag> 0.5 )
+	set a_boh  = name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && gf_X_flag==0.5 )
+
+	# Observed by Other, archive
+	set a_archa= name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && gf_X_flag==0.51 )
+	set a_arxmm= name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && gf_X_flag==0.52 )
+	set a_arcx = name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && gf_X_flag==0.53 )
+	set a_arswi= name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && gf_X_flag==0.54 )
+
+	# Observed by GF
+	set a_gfcha= name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && gf_X_flag>=1.00 && gf_X_flag < 2.00)
+	set a_gfxmm= name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && gf_X_flag>=2.00 && gf_X_flag < 3.00)
+	set a_gfswi= name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && gf_X_flag>=4.00 && gf_X_flag < 5.00)
+
+	# Approved Observations
+	set a_xappr= name   if( classn >= -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax && gf_X_flag>=0.9 && gf_X_flag<1 )
+
+	set _notid = name   if( classn == -1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax )
+	set _galax = name   if( classn ==  0 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax )
+	set _bllac = name   if( classn ==  1 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax )
+	set _fsrq  = name   if( classn ==  2 && a_ro >= $arocut && fsel >= $frlim && z > $zmin && z <= $zmax )
+
+	define nn $(dimen(b))
+
+	if( $nn > 0 ) {
+	   set tt = time_avrg if( classn >= -1 && a_ro>=$arocut && fsel >= $frlim && z >= $zmin && z <= $zmax && xcps<1e-20 && gf_X_flag <0.5 )
+	   define tt  $(sum(tt))
+	   define tta $($tt/$nn)
+	   vecminmax tt tt1 tt2
+
+	   set xhtt=0.5,30.5,1
+	   set htt=histogram(tt:xhtt)
+	   set x1htt=xhtt-0.5
+	   set x2htt=xhtt+0.5
+	} 
+
+	define nID  $( dimen(_galax) + dimen(_bllac) + dimen(_fsrq) ) 
+
+	echo "======================================================================"
+	echo " Size of the sample                       : "$(dimen(a))
+	echo " Composition                              :   "$(dimen(_notid))" //  "$(dimen(_galax))" /  "$(dimen(_bllac))" / "$(dimen(_fsrq))" ( ="$nID" )"
+	echo "                                            ?? // gal / BLL / FSRQ "
+	echo " Identification ratio                     : "$(sprintf('%4.1f',100.*$nID/$(dimen(a))))"%"
+	echo " "
+	echo " x-Red SEDs  (>0.6)                       : "$(sprintf('%3d',$(dimen(nred1)))) "[ "$(sprintf('%4.1f',$(100.*dimen(nred1)/dimen(a))))" %]"
+	echo " x-Blue SEDs (<0.4)                       : "$(sprintf('%3d',$(dimen(nblue1)))) "[ "$(sprintf('%4.1f',$(100.*dimen(nblue1)/dimen(a))))" %]"
+	echo " "
+	echo " Red SEDs  (>0.55)                        : "$(sprintf('%3d',$(dimen(nred2)))) "[ "$(sprintf('%4.1f',$(100.*dimen(nred2)/dimen(a))))" %]"
+	echo " Blue SEDs (<0.45)                        : "$(sprintf('%3d',$(dimen(nblue2)))) "[ "$(sprintf('%4.1f',$(100.*dimen(nblue2)/dimen(a))))" %]"
+	echo " "
+	echo " 2MASS j                                  : "$(sprintf('%3d',$(dimen(n2massj)))) "[ "$(sprintf('%4.1f',$(100.01*dimen(n2massj)/dimen(a))))" %]"
+	echo " 2MASS h                                  : "$(sprintf('%3d',$(dimen(n2massh)))) "[ "$(sprintf('%4.1f',$(100.01*dimen(n2massh)/dimen(a))))" %]"
+	echo " 2MASS k                                  : "$(sprintf('%3d',$(dimen(n2massk)))) "[ "$(sprintf('%4.1f',$(100.01*dimen(n2massk)/dimen(a))))" %]"
+	echo " "
+	echo " Number of objects with ROSAT data        : "$(dimen(a_ros))
+	echo " Number of objects with NEW X-ray Obs.    : "$(dimen(a_new))
+	echo " Number of objects with other X data      : "$(dimen(a_boh))
+	echo " ----"
+	echo " Number of objects with GF Chandra        : "$(dimen(a_gfcha))
+	echo " Number of objects with GF XMM            : "$(dimen(a_gfxmm))
+	echo " Number of objects with GF Swift          : "$(dimen(a_gfswi))
+	echo " "
+	echo " Number of objects with Archival Chandra  : "$(dimen(a_archa))
+	echo " Number of objects with Archival XMM      : "$(dimen(a_arxmm))
+	echo " Number of objects with Arch. Chandra&XMM : "$(dimen(a_arcx))
+	echo " Number of objects with Archival Swift    : "$(dimen(a_arswi))
+	echo " "
+	echo " Number of objects with approved X obs.   : "$(dimen(a_xappr))
+	echo " ----"
+	echo " "
+	echo " Number of objects WITHOUT X-ray data     : "$(dimen(b))
+	if( $nn > 0 ) { 
+	echo " Total needed exposure time               : "$(sprintf('%5.1f',$tt))" ks"
+	# echo "    Total needed exposure time (with tax)   : "$(sprintf('%5.1f',$tt+1.5*$nn))" ks"
+	echo " Total needed exposure time (with tax)    : "$(sprintf('%5.1f',$tt+3.0*$nn))" ks"
+	echo " "
+	echo " Average exposure time                    : "$(sprintf('%5.1f',$tta))" ks"
+	echo " Minimun exposure time                    : "$(sprintf('%5.1f',1.0001*$tt1))" ks"
+	echo " Maximum exposure time                    : "$(sprintf('%5.1f',1.0001*$tt2))" ks"
+	}
+	echo "======================================================================"
+
+	echo "FILTER: classn >= -1 && a_ro>=$!arocut && f5 >= $!frlim && z >= $!zmin && z <= $!zmax && xcps<1e-20 && gf_X_flag <0.5"
+	echo "  OR "
+	echo "FILTER: classn >= -1 && a_ro>=$!arocut && f_first >= $!frlim && z >= $!zmin && z <= $!zmax && xcps<1e-20 && gf_X_flag <0.5"
+
+#---------------------------------------------------------------------------
+# print_for_eileen
+print_for_eileen
+
+	# define pref1 ? { Prefix for Vectors : }
+	define out   ? {    Output Filename : }
+	# define 1 $pref1
+
+	foreach 9 < ra_h ra_m ra_s dec_d dec_m dec_s > {
+	   set pr_$9 = $9
+	}
+	set coordveclist = < ra_h ra_m dec_d dec_m >
+	foreach 3 coordveclist {
+	    do i=0,$(dimen(ra_h)-1) {
+		if( $3[$i] < 10 ) {
+		    set pr_$3[$i] = $(sprintf('0%1d',$($3[$i])))
+		}
+	    }
+	}
+
+	set coordveclist = < ra_s dec_s >
+	foreach 3 coordveclist {
+	    do i=0,$(dimen(ra_h)-1) {
+		if( $3[$i] < 10 ) {
+		    set pr_$3[$i] = $(sprintf('0%3.1f',$($3[$i])))
+		}
+	    }
+	}
+	echo " Done coordinate string conversion "
+
+
+	#define print_noheader 1
+	define fmt_coords " %02.0f %02.0f %04.1f    +%02.0f %02.0f %04.1f "
+	define fmt_data1  "  %6.4f %2.0f  %2.0f  %2.0f "
+	define fmt_data2  "   %6.0f  %7.1f  %7.1f %7.1f  %7.0f  %7.0f "
+	define fmt_data3  "  %6.2f   %6.2f %6.2f %6.2f  %1.0f %1.0f %1.0f "
+	define fmt_data4  "  %6.2f %6.2f %6.2f %6.2f %6.2f "
+	define fmt_data5  "  %6.2f %1.0f "
+	define fmt_data6  "  %6.2f %6.2f %6.2f %6.2f %6.2f %6.2f "
+	define fmt_data7  "  %6.2f %6.2f %6.2f %6.2f %6.2f %6.2f "
+
+	define names_coords " pr_ra_h pr_ra_m pr_ra_s pr_dec_d pr_dec_m pr_dec_s "
+	define names_data1  " z flag_z classn sdss_classn "
+	define names_data2  " f5 f_first_int f_first_peak f_nvss f_wenss_int f_wenss_peak "
+	define names_data3  " lg_f_opt lg_f_j lg_f_h lg_f_k flag_2mass_j flag_2mass_h flag_2mass_k "
+	define names_data4  " lg_f_sdss_g lg_f_sdss_i lg_f_sdss_r lg_f_sdss_u lg_f_sdss_z "
+	define names_data5  " lg_f_x is_x_upper "
+	define names_data6  " lg_kf_opt lg_kf_radio lg_kf_x nl_opt nl_radio nl_x "
+	define names_data7  " a_opt_x a_radio_opt a_radio_x ak_opt_x ak_radio_opt ak_radio_x "
+	
+	print + $out '$!fmt_coords $!fmt_data1 $!fmt_data2 $!fmt_data3 $!fmt_data4 $!fmt_data5 $!fmt_data6 $!fmt_data7\n' < $!names_coords $!names_data1 $!names_data2 $!names_data3 $!names_data4 $!names_data5 $!names_data6 $!names_data7 >
+	#define print_noheader 0
+
+#---------------------------------------------------------------------------

@@ -1,0 +1,1787 @@
+#===============================================================================
+# alpha_vs_theta
+alpha_vs_theta
+
+	reset_graph
+
+	define r       ? < blob position units of R (0-1) : > 
+	define plot_vs ? <        Plot theta or cos [t|c] : > 
+
+	if( substr('$plot_vs',0,1) == 't') {
+	   define theta_step (0.1)
+	   define theta_min $( acosd($r/sqrt($r*$r+1)) )
+  	   set theta = $theta_min,180,$theta_step
+	   set mu = cosd(theta)
+	} else {
+	   define mu_step (0.001)
+	   define mu_max $( $r/sqrt($r*$r+1) )
+  	   set mu_theta = -1,$mu_max,$mu_step
+	   set theta = acosd(mu_theta)
+	}
+
+	# set theta = 0,180,0.01
+	set sinth = sind(theta) 
+	set costh = cosd(theta)
+	set mu_alpha1 = $r*sinth**2 + sqrt( $r**2.*sinth**4. - $r**2.*sinth**2. + costh**2. )
+	set mu_alpha2 = $r*sinth**2 - sqrt( $r**2.*sinth**4. - $r**2.*sinth**2. + costh**2. )
+
+	set alpha1 = acosd(mu_alpha1)
+	set alpha2 = acosd(mu_alpha2)
+
+	set mu_alpha = (theta<=90) ? mu_alpha2 : mu_alpha1
+	set alpha = (theta<=90) ? alpha2 : alpha1
+
+	if( substr('$plot_vs',0,1) == 't') {
+	   set thlim = < 0 180 > 
+	   set allim = < 0 90 > 
+	   ticksize 10 30 10 30
+	   set x  = theta
+	   set y1 = alpha1
+	   set y2 = alpha2
+	   set y  = alpha
+	} else {
+	   set thlim = < 1 -1 >
+	   set x  = mu_theta
+	   ticksize 0.1 0.25 0.1 0.25 
+	   set thlim = < 0 180 >
+	   set x  = theta
+	   ticksize 10 30 0.1 0.25 
+
+	   set allim = < 0 1 >
+	   set y1 = mu_alpha1
+	   set y2 = mu_alpha2
+	   set y  = mu_alpha
+	}
+
+	limits -5 185 -5 95 
+	limits thlim allim
+	box 
+	xlabel \theta
+	ylabel \alpha
+
+	ltype 2 
+	ctype 3 connect (x+0.1) y1
+	ctype 5 connect (x-0.1) y2
+	ltype 0 
+	ctype 4 connect x y
+	ctype 2 
+
+	set theta_check = acosd( -1*(mu_alpha-$r)/sqrt($r*$r - 2*$r*mu_alpha + 1) )
+	set mu_alpha_check1 = $r*(1 - costh*costh) + costh*sqrt($r*$r*costh*costh - $r*$r + 1)
+	set mu_alpha_check2 = $r*(1 - costh*costh) - costh*sqrt($r*$r*costh*costh - $r*$r + 1)
+	set mu_alpha_check = (theta<=90) ? mu_alpha_check2 : mu_alpha_check1
+
+	set alpha_check1 = acosd(mu_alpha_check1)
+	set alpha_check2 = acosd(mu_alpha_check2)
+
+	set alpha_check = (theta<=90) ? alpha_check2 : alpha_check1
+
+	echo "+-----------------------------------------------------------"
+	echo "| + theta is the BH-blob-BLR angle: "
+	echo "|    =theta_min for BLR close to disk plane."
+	echo "|      ~180     for BLR close to jet axis plane."
+	echo "| "
+	echo "| + alpha is the BH-BLR-blob angle (CAREFUL, DIFFERENT DEFINITION!): "
+	echo "|       ~90 for BLR close to disk plane."
+	echo "|        ~0 for BLR close to jet axis."
+	echo "+-----------------------------------------------------------"
+
+##-------------------------------------------------------------------------------
+# geometry_alpha_vs_theta
+geometry_alpha_vs_theta
+
+	reset_graph
+
+	echo "+-----------------------------------------------------------"
+	define r      ? <| *                   blob position units of R (0-1) : > 
+	define theta_min $( acosd($r/sqrt($r*$r+1)) )
+	echo "| "
+	echo "| * Angle between BLR photons and blob velocity:" 
+	define theta  ? <|    (head-on = 180)             theta [$(sprintf('%.2f',$theta_min)) - 180] : >
+
+	define sinth $( sind($theta) )
+	define costh $( cosd($theta) )
+	if( $theta <= 90 ) { 
+	   define factor (-1)
+	} else {
+	   define factor (+1)
+	}
+	define mu_alpha $( $r*$sinth**2 + $factor*sqrt( $r**2.*$sinth**4. - $r**2.*$sinth**2. + $costh**2. ) )
+	define cosal $mu_alpha
+	define sinal $( sqrt(1.0 - $mu_alpha**2.) )
+	echo "+-----------------------------------------------------------"
+	echo "| cos(alpha) : "$mu_alpha
+	echo "|      alpha : "$(acosd($mu_alpha))
+	echo "|"
+        #echo "|    alpha is the angle BH-BLR-blob, "
+	echo "| alpha is the angle of the BH-BLR line w.r.t. to vertical" 
+	echo "|       ~0 for BLR close to jet axis"
+	echo "|      ~90 for BLR close to disk plane "
+	echo "+-----------------------------------------------------------"
+
+	limits -1.1 1.1 -0.1 2.1
+
+	set x=-1,1,0.01
+	set c = sqrt(1 - x*x)
+
+	connect x c 
+	relocate -1 0 draw 1 0 
+	
+	ltype 1
+	relocate 0 0 draw 0 2 
+	ltype 0 
+	
+	ctype 3 
+	ptype 4 3 
+	relocate 0 $r 
+	dot 
+	# relocate $( 0 - 1 ) $( $r-$costh/$sinth )  
+	# draw     $( 0 + 1 ) $( $r+$costh/$sinth )  
+
+	ctype 3 
+	ptype 20 0 
+	relocate $(0. - sqrt(1-$mu_alpha**2)) $($mu_alpha) 
+	dot
+	echo "| BLR cloud at : "$uxp $uyp" (circle)"
+	echo "+-----------------------------------------------------------"
+
+	draw $( $uxp + 1.5 ) $( $uyp + 1.5*$costh/$sinth )
+	ctype 5 
+	relocate $(0. - sqrt(1-$mu_alpha**2)) $($mu_alpha) 
+	draw $( $uxp + 1.5 ) $( $uyp - 1.5*$cosal/$sinal )
+
+#-------------------------------------------------------------------------------
+# Uext_integral_single
+Uext_integral_single
+
+	reset_graph
+
+	# define Gamma (15)
+	echo "+-----------------------------------------------------------"
+	define Gamma ?           <| *                          Gamma : > 
+	define zg ?              <| * blob position units of R (0-1) : > 
+	define emiss_prof_flag ? <| *   Emissivity profile [0|\ge 1] : >
+	echo "+-----------------------------------------------------------"
+	# the profile is (sin\theta)^n
+
+	define beta   $( sqrt(($Gamma**2.0 - 1)/$Gamma**2.0) )
+	define mu_max $( $zg/sqrt($zg*$zg + 1) )
+
+	define mu_step (0.0001)
+  	set mu = -1,$mu_max,$mu_step
+	echo "| mu(theta) max : "$mu_max 
+	echo "|     theta_min : "$(acosd($mu_max))
+	echo "+-----------------------------------------------------------"
+
+        set mu_alpha = $zg*(1 - mu*mu) - mu*sqrt( 1.0 - $zg*$zg*(1 - mu*mu) )
+	if( $emiss_prof_flag >= 1 ) { 
+	   set profile = sqrt(1-mu_alpha*mu_alpha)
+	   set profile = profile**$emiss_prof_flag
+	} else { 
+	   set profile = mu_alpha*0 + 1
+	}
+
+	# Integrand 
+	set df = profile*mu_alpha*(1 - $beta*mu)**2.*$mu_step
+	vecminmax df a b
+	set norm_df = df/$b
+
+	# cumulative integral 
+	set cum_df = cumulate(df)
+	vecminmax cum_df a b 
+	set norm_cum_df = cum_df/$b
+
+	# Plotting the integral 
+	limits -1.05 $(sqrt(2)/2+0.05) -5 120
+	box 1 2 0 4 
+	expand 2.5
+	xlabel \mu_\theta
+	expand 1.9
+	ctype 3 
+	ylabel Integral over \mu_\theta
+	ctype 2 
+	expand 1.5
+
+	ptype 4 3
+	ctype 3
+	connect mu cum_df
+	dot
+	ctype 2 
+
+	# plotting the integrand, normalized
+	ctype 5 
+	limits -1.05 $(sqrt(2)/2+0.05) -0.05 1.05
+	box 4 4 4 2
+	
+	connect mu norm_df
+	dot
+	ctype 2 
+
+##-------------------------------------------------------------------------------
+# Uext_integral_single_vs_alpha
+Uext_integral_single_vs_alpha
+
+	reset_graph
+
+	# define Gamma (15)
+	# define Gamma ?               <                        Gamma : > 
+	# define r ?               <                       R_blob : > 
+	# define emiss_prof_flag ? < Emissivity profile [0|\ge 1] : >
+	echo "+-----------------------------------------------------------"
+	define Gamma ?           <| *                          Gamma : > 
+	define zg ?              <| * blob position units of R (0-1) : > 
+	define emiss_prof_flag ? <| *   Emissivity profile [0|\ge 1] : >
+	echo "+-----------------------------------------------------------"
+	# the profile is (sin\theta)^n
+
+	define beta   $( sqrt(($Gamma**2.0 - 1)/$Gamma**2.0) )
+	define mu_max $( $zg/sqrt($zg*$zg + 1) )
+
+	define mu_step (0.0001)
+  	set mu = -1,$mu_max,$mu_step
+	echo "| mu(theta) max : "$mu_max 
+	echo "|     theta_min : "$(acosd($mu_max))
+	echo "+-----------------------------------------------------------"
+
+        set mu_alpha = $zg*(1 - mu*mu) - mu*sqrt( 1.0 - $zg*$zg*(1 - mu*mu) )
+	if( $emiss_prof_flag >= 1 ) { 
+	   set profile = sqrt(1-mu_alpha*mu_alpha)
+	   set profile = profile**$emiss_prof_flag
+	} else { 
+	   set profile = mu_alpha*0 + 1
+	}
+
+	# Integrand 
+	set df = profile*mu_alpha*(1 - $beta*mu)**2.*$mu_step
+	vecminmax df a b
+	set norm_df = df/$b
+
+	# cumulative integral 
+	set cum_df = cumulate(df)
+	vecminmax cum_df a b 
+	set norm_cum_df = cum_df/$b
+
+	# Plotting the integral 
+	limits -1.05 $(sqrt(2)/2+0.05) -5 120
+	limits -0.05 1.05 -5 120
+	box 1 2 0 4 
+	expand 2.5
+	xlabel \mu_\alpha
+	expand 1.9
+	ctype 3 
+	ylabel Integral 
+	ctype 2 
+
+	ptype 4 3
+	ctype 3
+	connect mu_alpha cum_df
+	dot
+	ctype 2 
+
+	# plotting the integrand, normalized
+	ctype 5 
+	limits -0.05 1.05 -0.05 1.05
+	box 4 4 4 2
+	
+	connect mu_alpha norm_df
+	dot
+	ctype 2 
+
+	relocate ( $($gx1) $($gy1-3000) )
+	putlabel 6 back
+	relocate ( $($gx2) $($gy1-3000) )
+	putlabel 4 front
+
+#-------------------------------------------------------------------------------
+# I_zeta_theta
+I_zeta_theta
+
+	reset_graph
+
+	echo "+-----------------------------------------------------------"
+	define zg ?              <| * blob position units of R (0-1) : > 
+	echo "+-----------------------------------------------------------"
+
+	define mu_max $( $zg/sqrt($zg*$zg + 1) )
+
+	echo "| mu(theta) max : "$mu_max 
+	echo "|     theta_min : "$(acosd($mu_max))
+	echo "+-----------------------------------------------------------"
+
+	define mu_step (0.0001)
+  	set mu = -1,$mu_max,$mu_step
+        set mu_alpha = $zg*(1 - mu*mu) - mu*sqrt( 1.0 - $zg*$zg*(1 - mu*mu) )
+
+	set f_theta = sqrt(1 - mu*mu)
+	#set f_theta = mu_alpha*sqrt(1 - mu*mu)
+
+	# Plotting the integral 
+	limits -1.05 1.05 f_theta
+	box 1 2 0 0
+	expand 2.5
+	xlabel "\mu_\theta"
+	expand 1.9
+	ctype 3 
+	ylabel "I(z,\theta)"
+	ctype 2 
+	expand 1.5
+
+	ptype 4 3
+	ctype 3
+	connect mu f_theta
+	ctype 2 
+
+#-------------------------------------------------------------------------------
+# Uext_integral_blr
+Uext_integral_blr
+
+	reset_graph
+
+	#define L_disk  (1.0e45)
+	#define R_blr   (1.0e17)
+	#define f_blr   (0.1)
+	#define R_disk  (1.0e15)
+	#define f_disk  (1.0)
+
+	echo "+-----------------------------------------------------------"
+	define L_disk ?          <| *                         L_disk : >
+	define R_blr  ?          <| *                         R_blr  : >
+	define f_blr  ?          <| *                         f_blr  : >
+	define R_disk ?          <| *                         R_disk : >
+	define f_disk ?          <| *                         f_disk : >
+	echo "+-----------------------------------------------------------"
+	define Gamma ?           <| *                          Gamma : > 
+	define emiss_prof_flag ? <| *   Emissivity profile [0|\ge 1] : >
+	echo "+-----------------------------------------------------------"
+	# the profile is (sin\theta)^n
+
+	define prefactor_blr ( $f_blr*$L_disk/(4*$pi*$R_blr**2.0*$c) )
+	echo " prefactor = "$prefactor_blr
+
+	define beta   $( sqrt(($Gamma**2.0 - 1)/$Gamma**2.0) )
+	echo " Gamma, beta = "$Gamma $beta
+
+        define mu_step_default (0.0001)
+	define zg_step         (1./500.)
+
+	set zg_vec = $zg_step,20,$zg_step
+	set zg_vec = $zg_step,2,$zg_step
+	set integral_blr = zg_vec*0
+
+	set vec_mu_min = zg_vec*0
+	set vec_mu_max = zg_vec*0
+	set vec_n_dmu  = zg_vec*0
+
+	define zg local
+	do 9=0,dimen(zg_vec)-1 {
+	   define zg $(zg_vec[$9])
+	   if( $zg <= 1 ) {
+	      define mu_min (-1)
+              define mu_max $( $zg/sqrt($zg*$zg + 1) )
+	   } else {
+              define mu_min $( sqrt($zg*$zg - 1)/$zg )
+	      define mu_max (1)
+	   }
+
+	   define n_dmu $( abs($mu_max-$mu_min)/$mu_step_default )
+	   if( $n_dmu >= 100 ) {
+	      define mu_step $mu_step_default
+	   } else {
+	      define mu_step $( abs($mu_max-$mu_min)/100. )
+	   }
+
+	   set vec_mu_min[$9] = $mu_min
+	   set vec_mu_max[$9] = $mu_max
+	   set vec_n_dmu[$9]  = ($mu_max-$mu_min)/$mu_step
+
+           set mu = $mu_min,$mu_max,$mu_step
+           set mu_alpha = $zg*(1 - mu*mu) - mu*sqrt( 1.0 - $zg*$zg*(1 - mu*mu) )
+
+           if( $emiss_prof_flag >= 1 ) { 
+              set profile = sqrt(1-mu_alpha*mu_alpha)
+	      set profile = profile**$emiss_prof_flag
+           } else { 
+              set profile = mu_alpha*0 + 1
+           }
+
+           set df = profile*mu_alpha*(1 - $beta*mu)**2.*$mu_step
+	   set integral_blr[$9] = sum(df)
+	}
+
+	set integral_blr = $prefactor_blr*$Gamma**2.0*integral_blr
+	vecminmax integral_blr a b 
+	set norm_integral_blr = integral_blr/$b
+
+	set r_plot_vec = zg_vec
+	limits (lg(r_plot_vec)) -3 0.1
+	limits (lg(r_plot_vec)) -1 0.1
+	ticksize -1 0 -1 0 
+
+	limits (lg(r_plot_vec)) -1 0.1
+	ticksize -1 0  0 0 
+
+	limits (lg(r_plot_vec)) -2 2
+	ticksize -1 0  0 0 
+
+	set r_plot_vec = zg_vec*$R_blr
+	limits 15 18 -5 4 
+	limits 15 19 -5 5 
+	ticksize 0 0  0 0 
+
+	box
+	#xlabel "R/R_{BLR}"
+	#ylabel "U'/U'_{max}"
+	xlabel "R [cm]"
+	ylabel "U\' [erg/cm^3]"
+
+	ctype 4 
+	ltype 2 
+	relocate 0 $fy1 
+	draw 0 $fy2
+	ctype 3 
+	ltype 0 
+	connect (lg(r_plot_vec)) (lg(integral_blr))
+	#connect (lg(r_plot_vec)) (lg(norm_integral_blr))
+	ctype 2 
+
+##-------------------------------------------------------------------------------
+# Uext_integral_disk
+Uext_integral_disk
+
+	reset_graph
+
+	#define L_disk  (1.0e45)
+	#define R_blr   (3.0e17)
+	#define f_blr   (0.1)
+	#define R_disk  (1.0e15)
+	#define f_disk  (1.0)
+
+	echo "+-----------------------------------------------------------"
+	define L_disk ?          <| *                         L_disk : >
+	define R_blr  ?          <| *                         R_blr  : >
+	define f_blr  ?          <| *                         f_blr  : >
+	define R_disk ?          <| *                         R_disk : >
+	define f_disk ?          <| *                         f_disk : >
+	echo "+-----------------------------------------------------------"
+	define Gamma ?           <| *                          Gamma : > 
+	define emiss_prof_flag ? <| *   Emissivity profile [0|\ge 1] : >
+	echo "+-----------------------------------------------------------"
+	# the profile is (sin\theta)^n
+
+	define prefactor_disk ( $f_disk*$L_disk/($pi*$R_disk**2.0*$c) )
+	echo " prefactor = "$prefactor_disk
+
+	define beta   $( sqrt(($Gamma**2.0 - 1)/$Gamma**2.0) )
+	echo " beta      = "$beta
+
+        define mu_step_default (0.0001)
+	define zg_step         (1./500.)
+
+	set zg_vec = $zg_step,20,$zg_step
+	set zg_vec = $zg_step,2,$zg_step
+	set integral_disk      = zg_vec*0
+	set integral_disk_comp = zg_vec*0
+
+	set vec_mu_min = zg_vec*0
+	set vec_mu_max = zg_vec*0
+	set vec_n_dmu  = zg_vec*0
+
+	define zg local
+	do 9=0,dimen(zg_vec)-1 {
+	   define zg $(zg_vec[$9])
+           define mu_min $( $zg/sqrt($zg*$zg + ($R_disk/$R_blr)**2.0) )
+	   # echo $zg $mu_min
+	   define mu_max (1)
+
+	   define n_dmu $( abs($mu_max-$mu_min)/$mu_step_default )
+	   if( $n_dmu >= 100 ) {
+	      define mu_step $mu_step_default
+	   } else {
+	      define mu_step $( abs($mu_max-$mu_min)/100. )
+	   }
+
+	   set vec_mu_min[$9] = $mu_min
+	   set vec_mu_max[$9] = $mu_max
+	   set vec_n_dmu[$9]  = ($mu_max-$mu_min)/$mu_step
+
+           set mu = $mu_min,$mu_max,$mu_step
+           set mu_alpha = 0*mu + 1
+
+           if( $emiss_prof_flag >= 1 ) { 
+              set profile = sqrt(1-mu_alpha*mu_alpha)
+	      set profile = profile**$emiss_prof_flag
+           } else { 
+              set profile = mu_alpha*0 + 1
+           }
+
+           set df = profile*mu_alpha*(1 - $beta*mu)**2.*$mu_step
+	   set integral_disk[$9] = sum(df)
+
+	   define muD $mu_min
+	   set integral_disk_comp[$9] = ( (1-$muD) - $beta*(1-$muD*$muD) + 0.333*$beta*$beta*(1-$muD**3.0) )
+	}
+
+	set integral_disk      = $prefactor_disk*$Gamma**2.0*integral_disk
+	set integral_disk_comp = $prefactor_disk*$Gamma**2.0*integral_disk_comp
+	vecminmax integral_disk a b 
+	set norm_integral_disk = integral_disk/$b
+
+	set r_plot_vec = zg_vec
+	limits (lg(r_plot_vec)) -3 0.1
+	limits (lg(r_plot_vec)) -1 0.1
+	ticksize -1 0 -1 0 
+
+	limits (lg(r_plot_vec)) -1 0.1
+	ticksize -1 0  0 0 
+
+	limits (lg(r_plot_vec)) -2 2
+	ticksize -1 0  0 0 
+
+	set r_plot_vec = zg_vec*$R_blr
+	limits 15 18 -5 4 
+	limits 15 19 -5 5 
+	ticksize 0 0  0 0 
+	box
+	#xlabel "R/R_{BLR}"
+	#ylabel "U'/U'_{max}"
+	xlabel "R [cm]"
+	ylabel "U\' [erg/cm^3]"
+
+	ctype 4 
+	ltype 2 
+	relocate 0 $fy1 
+	draw 0 $fy2
+	ctype 5 
+	ltype 0 
+	connect (lg(r_plot_vec)) (lg(integral_disk))
+	ctype 6 
+	connect (lg(r_plot_vec)) (lg(integral_disk_comp))
+	#connect (lg(r_plot_vec)) (lg(norm_integral_disk))
+	ctype 2 
+
+##-------------------------------------------------------------------------------
+# Uext_integral_mirror
+Uext_integral_mirror
+
+	reset_graph
+
+	#define L_disk  (1.0e45)
+	#define R_blr   (3.0e17)
+	#define f_blr   (0.1)
+	#define R_disk  (1.0e15)
+	#define f_disk  (1.0)
+
+	echo "+-----------------------------------------------------------"
+	define L_sync ?          <| *                       L_sync   : >
+	define R_blr  ?          <| *                       R_blr    : >
+	#define f_blr  ?          <| *                       f_blr    : >
+	#define R_disk ?          <| *                       R_disk   : >
+	define f_mirror ?        <| *                       f_mirror : >
+	echo "+-----------------------------------------------------------"
+	define Gamma ?           <| *                          Gamma : > 
+	echo "+-----------------------------------------------------------"
+
+	define prefactor_mirror ( $f_mirror*$L_sync/(8.0*$pi*$R_blr**2.0*$c) )
+	echo " prefactor = "$prefactor_mirror
+
+	define beta   $( sqrt(($Gamma**2.0 - 1)/$Gamma**2.0) )
+	echo " beta      = "$beta
+
+        define mu_step_default (0.0001)
+	define zg_step         (1./500.)
+
+	set zg_vec = $zg_step,20,$zg_step
+	set zg_vec = $zg_step,2,$zg_step
+	set integral_mirror      = zg_vec*0
+	set integral_mirror_comp = zg_vec*0
+
+	set vec_mu_min = zg_vec*0
+	set vec_mu_max = zg_vec*0
+	set vec_n_dmu  = zg_vec*0
+
+	do 9=0,dimen(zg_vec)-1 {
+	   define zg $(zg_vec[$9])
+	   if( $zg <= 1 ) {
+	      define mu_min (-1)
+              define mu_max $( $zg/sqrt($zg*$zg + 1) )
+	   } else {
+              define mu_min $( sqrt($zg*$zg - 1)/$zg )
+	      define mu_max (1)
+	   }
+
+	   define n_dmu $( abs($mu_max-$mu_min)/$mu_step_default )
+	   if( $n_dmu >= 100 ) {
+	      define mu_step $mu_step_default
+	   } else {
+	      define mu_step $( abs($mu_max-$mu_min)/100. )
+	   }
+
+	   set vec_mu_min[$9] = $mu_min
+	   set vec_mu_max[$9] = $mu_max
+	   set vec_n_dmu[$9]  = ($mu_max-$mu_min)/$mu_step
+
+           set mu = $mu_min,$mu_max,$mu_step
+	   set mua = mu     # GM96
+	   set mua = -1*mu  # correct for \theta = \pi - \alpha
+
+           set r_alpha = sqrt( 1.0 - $zg*$zg*(1 - mua*mua) ) - $zg*mua
+           set df = (1 - $beta*mu)**2.0/(1 - $beta*mua)**4.0/r_alpha**2.0*$mu_step
+
+	   set integral_mirror[$9] = sum(df)
+	}
+
+	set integral_mirror = $prefactor_mirror/$Gamma**2.0*integral_mirror
+	vecminmax integral_mirror a b 
+	set norm_integral_mirror = integral_mirror/$b
+
+	set r_plot_vec = zg_vec
+	limits (lg(r_plot_vec)) -3 0.1
+	limits (lg(r_plot_vec)) -1 0.1
+	ticksize -1 0 -1 0 
+
+	limits (lg(r_plot_vec)) -1 0.1
+	ticksize -1 0  0 0 
+
+	limits (lg(r_plot_vec)) -2 2
+	ticksize -1 0  0 0 
+
+	set r_plot_vec = zg_vec*$R_blr
+	limits 15 18 -5 4 
+	limits 15 19 -5 5 
+	ticksize 0 0  0 0 
+	box
+	#xlabel "R/R_{BLR}"
+	#ylabel "U'/U'_{max}"
+	xlabel "R [cm]"
+	ylabel "U\' [erg/cm^3]"
+
+	ctype 4 
+	ltype 2 
+	relocate 0 $fy1 
+	draw 0 $fy2
+	ctype 5 
+	ltype 0 
+	connect (lg(r_plot_vec)) (lg(integral_mirror))
+	ctype 6 
+	connect (lg(r_plot_vec)) (lg(integral_mirror_comp))
+	#connect (lg(r_plot_vec)) (lg(norm_integral_mirror))
+	ctype 2 
+
+#-------------------------------------------------------------------------------
+# equal_time_locus
+equal_time_locus
+
+	echo "+-----------------------------------------------------------"
+	#define R_blr        ? <| *                              BLR radius : > 
+	define R_blr (1.0)
+	define R_disk        ? <| *                       R_disk (units of R_blr) : > 
+	define alpha_blr_deg ? <| * location (alpha) of BLR bit (0=on axis) (deg) : > 
+	define DD_min   $( $R_blr*cosd($alpha_blr_deg) )
+	# define DD_max   $( sqrt(2.0*(1.+sind($alpha_blr_deg))) )   # valid only if R_disk = R_blr
+	define DD_max   $( sqrt($R_disk**2.0 + $R_blr**2.0 + 2.0*$R_disk*$R_blr*sind($alpha_blr_deg)) )   # ????
+	echo "|   height above disk plane (i.e. min D) : "$DD_min
+	echo "|   max distance if disk < R_blr         : "$DD_max 
+	define DD            ? <| *               distance from the BLR bit : > 
+	echo "+-----------------------------------------------------------"
+
+	set vec_phi_full = 0.0,360.0,1.0
+	define Rsinalpha $($R_blr*sind($alpha_blr_deg))
+
+	define max_sin_phi $( sqrt($DD*$DD - ($R_blr*cosd($alpha_blr_deg))**2.0 )/($R_blr*sind($alpha_blr_deg)) )
+	define max_phi     $( asind($max_sin_phi) )
+	echo "| max sin(phi), max phi = "$max_sin_phi" , "$max_phi
+	echo "+-----------------------------------------------------------"
+
+	set vec_phi_1  = 0.0,$max_phi,1.0
+	set vec_phi_2a = 360.0 - vec_phi_1
+	set vec_phi_2  = reverse(vec_phi_2a)
+	set vec_phi    = vec_phi_1 CONCAT vec_phi_2
+
+	set r_sin_cos = $R_blr*sind($alpha_blr_deg)*cosd(vec_phi_full)
+	set xx_rsc = r_sin_cos*cosd(vec_phi_full)
+	set yy_rsc = r_sin_cos*sind(vec_phi_full)
+	set rr_rsc = sqrt( xx_rsc**2.0 + yy_rsc**2.0 )
+
+	set d_locus_1 = $R_blr*( sind($alpha_blr_deg)*cosd(vec_phi) + sqrt( (sind($alpha_blr_deg)*cosd(vec_phi))**2.0 - 1 + $DD**2.) )
+
+	set xx_1 = d_locus_1*cosd(vec_phi) # if( d_locus_1 >= 0.0 )
+	set yy_1 = d_locus_1*sind(vec_phi) # if( d_locus_1 >= 0.0 )
+	set rr_1 = sqrt( xx_1**2.0 + yy_1**2.0 )
+
+	set d_locus_2 = $R_blr*( sind($alpha_blr_deg)*cosd(vec_phi) - sqrt( (sind($alpha_blr_deg)*cosd(vec_phi))**2.0 - 1 + $DD**2.) )
+	 set d_locus_2 = d_locus_2+0.02
+	 set xx_2= d_locus_2*cosd(vec_phi)
+	 set yy_2= d_locus_2*sind(vec_phi)
+	 set rr_2 = sqrt( xx_2**2.0 + yy_2**2.0 )
+
+	reset_graph
+	location 2500 30267 2500 30267 
+
+	limits -1.2 1.2 -1.2 1.2
+	ticksize 0 0 0 0
+
+	set x_circle = $R_disk*cosd(vec_phi_full)
+	set y_circle = $R_disk*sind(vec_phi_full)
+	connect x_circle y_circle
+
+	ptype 4 1 
+	angle 45
+	lweight 5
+	ctype 4 
+	relocate $(sind($alpha_blr_deg)) 0
+	dot
+	ctype 2 
+	relocate 0 0 
+	dot 
+	angle 0
+	lweight 3
+
+	ltype 1
+	ctype 4 
+	connect xx_rsc yy_rsc  
+
+	ltype 0
+	ctype 3
+	connect xx_1 yy_1   if( rr_1 <= $R_disk )
+	ltype 2 
+	ctype 5
+	connect xx_2 yy_2   if( rr_2 <= $R_disk )
+	ctype 2 
+
+	reset_graph
+
+##-------------------------------------------------------------------------------
+# equal_time_locus_new
+equal_time_locus_new
+
+	echo "+-----------------------------------------------------------"
+	#define R_blr        ? <| *                              BLR radius : > 
+	define R_blr (1.0)
+	define R_disk        ? <| *                       R_disk (units of R_blr) : > 
+	define alpha_blr_def ? <| * location (alpha) of BLR bit (0=on axis) (deg) : > 
+	define DD_min   $( $R_blr*cosd($alpha_blr_deg) )
+	define DD_max   $( sqrt($R_disk**2.0 + $R_blr**2.0 + 2.0*$R_disk*$R_blr*sind($alpha_blr_deg)) )   # ????
+	echo "|   height above disk plane (i.e. min D) : "$DD_min
+	echo "|   max distance if disk < R_blr         : "$DD_max 
+	define DD            ? <| *               distance from the BLR bit : > 
+	echo "+-----------------------------------------------------------"
+
+	if( $DD <= $DD_min || $DD >= $DD_max ) {
+	   echo "| "
+	   echo "| **** invalid value for the distance **** "
+	   echo "+-----------------------------------------------------------"
+	   return
+	}
+
+	set vec_theta = 0.0,360.0,1.0
+
+	define xc      ( $R_blr*sind($alpha_blr_deg) )
+	define yc      ( 0.0 )
+	define DD_proj ( sqrt( $DD*$DD - ($R_blr*cosd($alpha_blr_deg))**2.0 ) )
+
+	set xx_locus  = $xc + $DD_proj*cosd(vec_theta)
+	set yy_locus  = $yc + $DD_proj*sind(vec_theta)
+	set rr_locus  = sqrt( xx_locus**2.0 + yy_locus**2.0 )
+	set phi_locus = atan( yy_locus/xx_locus )
+
+	set vec_phi_full = 0.0,360.0,1.0
+
+	set r_sin_cos = $R_blr*sind($alpha_blr_deg)*cosd(vec_phi_full)
+	set xx_rsc = r_sin_cos*cosd(vec_phi_full)
+	set yy_rsc = r_sin_cos*sind(vec_phi_full)
+	set rr_rsc = sqrt( xx_rsc**2.0 + yy_rsc**2.0 )
+
+	reset_graph
+	location 2500 30267 2500 30267 
+
+	limits -1.2 1.2 -1.2 1.2
+	ticksize 0 0 0 0
+
+	set x_circle = $R_disk*cosd(vec_phi_full)
+	set y_circle = $R_disk*sind(vec_phi_full)
+	connect x_circle y_circle
+
+	ptype 4 1 
+	angle 45
+	lweight 5
+	ctype 4 
+	relocate $(sind($alpha_blr_deg)) 0
+	dot
+	ctype 2 
+	relocate 0 0 
+	dot 
+	angle 0
+	lweight 3
+
+	#ltype 1
+	#ctype 4 
+	#connect xx_rsc yy_rsc  
+
+	ltype 2 
+	ctype 5
+	connect xx_locus yy_locus 
+	ltype 0
+	ctype 3
+	connect xx_locus yy_locus   if( rr_locus <= $R_disk )
+	ctype 2 
+
+	reset_graph
+
+#-------------------------------------------------------------------------------
+# delay_vs_location
+delay_vs_location
+
+	reset_graph
+
+	set x = 0.0,1.0,0.01
+
+	define theta ? < theta (jet-l.o.s.) [deg] : >
+	define mu (cosd($theta))
+
+	set delay = 1. - (1.0 + $mu)*x + sqrt(x*x*($mu*$mu - 1.0) + 1.0)
+
+	limits 0 1 0 2 
+	box 1 2 0 0 
+	xlabel "R_{\gamma}/R_{BLR}"
+	expand 1.25
+	ylabel "time delay \gamma-ray vs. BLR [units of R_{BLR}/c]"
+	expand 1.5
+
+	ctype 3 
+	connect x delay
+	ctype 2 
+
+##-------------------------------------------------------------------------------
+# location_vs_delay
+location_vs_delay
+
+	reset_graph
+
+	set x = 0.0,1.0,0.01
+
+	define delay ? < time delay (units of R_BLR/c) : >
+  	set theta = 0.0,90.0,0.1
+	set mu = cosd(theta)
+
+	set Rg_over_Rblr = 0.5*( 1.0 - $delay + sqrt( (2.0 - (1.0 - mu)*(1.0 - $delay)**2.0)/(1.0 + mu) ) )
+
+	limits 0 1 0 1 
+	box 1 2 0 0 
+	xlabel "cos(\theta)"
+	ylabel "R_{\gamma}/R_{BLR}"
+
+	ctype 3 
+	connect mu Rg_over_Rblr
+	ctype 2 
+
+#===============================================================================
+# annulus_distance
+annulus_distance
+
+	reset_graph
+
+	echo "+-----------------------------------------------------------"
+	define obs_alpha_deg ? <|     alpha : > 
+	define obs_R ?         <|         R : >
+	define ann_r ?         <|         r : >
+	echo "+-----------------------------------------------------------"
+
+	define obs_z $( $obs_R*cosd($obs_alpha_deg) )
+	echo "|  z : "$obs_z
+
+	define ann_phi_step (0.01)
+	define dphi $ann_phi_step
+
+	set ann_phi=0,360-$ann_phi_step,$ann_phi_step
+	set vec_ann_muphi = cosd(ann_phi)
+
+	set ann_d = sqrt( $obs_R**2.0 + $ann_r**2.0 - 2.0*$obs_R*$ann_r*sind($obs_alpha_deg)*vec_ann_muphi )
+
+# disk_solid_angle_single_alpha
+disk_solid_angle_single_alpha
+
+	reset_graph
+
+	echo "+-----------------------------------------------------------"
+	define obs_alpha_deg ?  <| *           alpha (deg.) : > 
+	define obs_R ?          <| *                      R : >
+	define disk_r1 ?        <| *           R_disk_inner : >
+	define disk_r2 ?        <| *           R_disk_outer : >
+	echo "| "
+	define n_phi_steps ?    <| * Number of steps in phi : >
+	define n_r_steps   ?    <| * Number of steps in r   : >
+	echo "+-----------------------------------------------------------"
+
+	define obs_z $( $obs_R*cosd($obs_alpha_deg) )
+	echo "|  z : "$obs_z
+
+	define dphi_rad   $( (2.0*$pi/$n_phi_steps) )
+	set vec_phi_rad   = 0,(2.0*$pi-$dphi_rad),$dphi_rad
+	set vec_phi_rad   = vec_phi_rad + 0.5*$dphi_rad 
+	set vec_muphi_rad = cos(vec_phi_rad)
+	set vec_dphi_rad  = 0.0*vec_phi_rad + $dphi_rad
+
+	define dr ( ($disk_r2-$disk_r1)/$n_r_steps )
+	set vec_r = $disk_r1,$disk_r2-$dr,$dr
+	set vec_r = vec_r + 0.5*$dr
+
+	set vec_dr           = vec_r*0.0 + $dr
+	set vec_ring_dOmega  = vec_r*0.0
+	set vec_ring_dArea   = vec_r*0.0
+	set vec_ring_dArea_p = vec_r*0.0
+
+	set all_dArea    = < 0 >
+	set all_dArea_p  = < 0 >
+	set all_dOmega   = < 0 >
+	set all_d        = < 0 >
+	set all_sin_view = < 0 >
+
+	do 9=0,dimen(vec_r)-1 {
+	   define tmp_r $(vec_r[$9])
+
+	   set tmp_d = sqrt( $obs_R**2.0 + $tmp_r**2.0 + 0.0*vec_muphi)
+	   set tmp_d = sqrt( $obs_R**2.0 + $tmp_r**2.0 - 2.0*$obs_R*$tmp_r*sind($obs_alpha_deg)*vec_muphi )
+	   set tmp_sin_view = $obs_z/tmp_d
+
+	   set more_dArea   = $tmp_r*$dr*vec_dphi_rad
+	   set more_dArea_p = $tmp_r*$dr*vec_dphi_rad*tmp_sin_view
+	   set more_dOmega  = $tmp_r*$dr*vec_dphi_rad*tmp_sin_view/tmp_d**2.0
+
+	   set vec_ring_dArea[$9]   = sum( $tmp_r*$dr*vec_dphi_rad                         )
+	   set vec_ring_dArea_p[$9] = sum( $tmp_r*$dr*vec_dphi_rad*tmp_sin_view            )
+	   set vec_ring_dOmega[$9]  = sum( $tmp_r*$dr*vec_dphi_rad*tmp_sin_view/tmp_d**2.0 )
+
+	   set all_dArea    = all_dArea    CONCAT more_dArea
+	   set all_dArea_p  = all_dArea_p  CONCAT more_dArea_p
+	   set all_dOmega   = all_dOmega   CONCAT more_dOmega
+	   set all_d        = all_d        CONCAT tmp_d
+	   set all_sin_view = all_sin_view CONCAT tmp_sin_view
+
+	}
+
+	define int_dArea   $(sum(vec_ring_dArea  ))
+	define int_dArea_p $(sum(vec_ring_dArea_p))
+	define int_dOmega  $(sum(vec_ring_dOmega ))
+
+	set sel_dArea    = all_dArea     if( all_d > 0.0 ) 
+	set sel_dArea_p  = all_dArea_p   if( all_d > 0.0 ) 
+	set sel_dOmega   = all_dOmega    if( all_d > 0.0 ) 
+	set sel_sin_view = all_sin_view  if( all_d > 0.0 ) 
+	set sel_d        = all_d         if( all_d > 0.0 ) 
+
+	echo "| test: Omega (all/sel) = "$(sum(all_dOmega))   $(sum(sel_dOmega))
+	echo "| test: Area  (all/sel) = "$(sum(all_dArea))    $(sum(sel_dArea))
+	echo "| test: Omega from full arrays = "$(sum(sel_dArea*sel_sin_view/sel_d**2.0))
+
+	echo "| "
+	echo "| Sum[dOmega]         = "$(sprintf('%6.3f',$($int_dOmega)))"   (Omega/2pi ="$(sprintf('%6.3f',$($($int_dOmega/2.0/$pi))))")"
+	echo "| Sum[dArea_p]        = "$(sprintf('%6.3f',$($int_dArea_p)))
+	echo "| Area(integral)      = "$(sprintf('%6.3f',$($int_dArea)))"   (A/pi     = "$(sprintf('%6.3f',$($($int_dArea/$pi))))")"
+	echo "| Area(integral)_proj = "$(sprintf('%6.3f',$($($int_dArea*cosd($obs_alpha_deg)))))
+	echo "+-----------------------------------------------------------"
+
+	define x1 ($disk_r1/$obs_R)
+	define x2 ($disk_r2/$obs_R)
+
+	define face_on_true    (2.0*$pi*( 1.0/sqrt(1 + $x1*$x1) - 1.0/sqrt(1 + $x2*$x2) ))
+	define face_on_approx  ( $pi*($x2*$x2 - $x1*$x1) )
+	
+	echo "| Omega calculated with 'trick'   "
+	echo "|   alpha =  0 (face-on) = "$(sprintf('%6.3f',$(1e-5+  $face_on_true            )))
+	echo "|   alpha = 30           = "$(sprintf('%6.3f',$(1e-5+$($face_on_true*cosd(30.0)))))
+	echo "|   alpha = 45           = "$(sprintf('%6.3f',$(1e-5+$($face_on_true*cosd(45.0)))))
+	echo "|   alpha = 75           = "$(sprintf('%6.3f',$(1e-5+$($face_on_true*cosd(75.0)))))
+	echo "+-----------------------------------------------------------"
+
+# disk_solid_angle_vs_alpha
+disk_solid_angle_vs_alpha
+
+	reset_graph
+
+	echo "+-----------------------------------------------------------"
+	define obs_R ?        <| *                      R : >
+	define disk_r1 ?      <| *           R_disk_inner : >
+	define disk_r2 ?      <| *           R_disk_outer : >
+	echo "| "
+	define n_phi_steps ?  <| * Number of steps in phi : >
+	define n_r_steps   ?  <| * Number of steps in   r : >
+	echo "+-----------------------------------------------------------"
+
+	define dphi_rad $( (2.0*$pi/$n_phi_steps) )
+	set vec_phi_rad  = 0,(2.0*$pi-$dphi_rad),$dphi_rad
+	set vec_phi_rad  = vec_phi_rad + 0.5*$dphi_rad 
+	set vec_muphi    = cos(vec_phi_rad)
+	set vec_dphi_rad = 0.0*vec_phi_rad + $dphi_rad
+
+	define dr ( ($disk_r2-$disk_r1)/$n_r_steps )
+	set vec_r = $disk_r1,$disk_r2-$dr,$dr
+	set vec_r = vec_r + 0.5*$dr
+
+	set vec_dr           = vec_r*0.0 + $dr
+	set vec_ring_dOmega  = vec_r*0.0
+	set vec_ring_dArea   = vec_r*0.0
+	set vec_ring_dArea_p = vec_r*0.0
+
+	define n_alpha (18.0)
+	define dalpha_rad  $( (0.5*$pi/$n_alpha) )
+	set vec_alpha_rad    =0,0.5*($pi-0.1),$dalpha_rad
+	set vec_alpha_rad = vec_alpha_rad CONCAT < $(89.0/180.0*$pi) >
+	set vec_mu_alpha  = cos(vec_alpha_rad)
+
+        set int_dArea_vs_alpha      = 0.0*vec_alpha_rad
+        set int_dArea_p_vs_alpha    = 0.0*vec_alpha_rad
+        set int_dOmega_vs_alpha     = 0.0*vec_alpha_rad
+        set int_dOmega_alt_vs_alpha = 0.0*vec_alpha_rad
+
+        echo "|    alpha      Z    Sum[dOmega]     Sum[area_p]      A_disk  A_disk/pi  ~Omega "
+        echo "|                                  'true'    'alt'               "
+        echo "| "
+
+	do 8=0,dimen(vec_alpha_rad)-1 {
+           define tmp_alpha_rad $(vec_alpha_rad[$8])
+           define tmp_z $( $obs_R*cos($tmp_alpha_rad) )
+           
+           do 9=0,dimen(vec_r)-1 {
+              define tmp_r $(vec_r[$9])
+           
+              set tmp_d = sqrt( $obs_R**2.0 + $tmp_r**2.0 + 0.0*vec_muphi )
+              set tmp_d = sqrt( $obs_R**2.0 + $tmp_r**2.0 - 2.0*$obs_R*$tmp_r*sin($tmp_alpha_rad)*vec_muphi )
+	      set tmp_sin_view = $tmp_z/tmp_d
+           
+              set vec_ring_dArea[$9]   = sum( $tmp_r*$dr*vec_dphi_rad                          )
+              set vec_ring_dArea_p[$9] = sum( $tmp_r*$dr*vec_dphi_rad *tmp_sin_view            )
+              set vec_ring_dOmega[$9]  = sum( $tmp_r*$dr*vec_dphi_rad *tmp_sin_view/tmp_d**2.0 )
+
+           }
+
+	   define int_dArea       $(sum(vec_ring_dArea  ))
+	   define int_dArea_p     $(sum(vec_ring_dArea_p))
+           define int_dOmega      $(sum(vec_ring_dOmega ))
+	   define int_dArea_p_alt $($int_dArea*cos($tmp_alpha_rad))
+	   define int_dOmega_alt  $($int_dArea_p/$obs_R**2.0)
+
+           set int_dArea_vs_alpha[$8]      = $int_dArea
+           set int_dArea_p_vs_alpha[$8]    = $int_dArea_p
+           set int_dOmega_vs_alpha[$8]     = $int_dOmega
+           set int_dOmega_alt_vs_alpha[$8] = $int_dOmega_alt
+
+           echo "|   "$(sprintf('%6.3f',$(1e-4+$tmp_alpha_rad*180.0/$pi)))\
+		"   "$(sprintf('%6.3f',$(1.0e-5+1.00001*$tmp_z)))\
+		"    "$(sprintf('%6.3f',$(1.0e-5+1.00001*$int_dOmega)))\
+		"      "$(sprintf('%6.3f',$(1.0e-5+1.00001*$int_dArea_p)))\
+		"   "$(sprintf('%6.3f',$(1.0e-5+1.00001*$int_dArea_p_alt)))\
+		"    "$(sprintf('%6.3f',$(1.0e-5+1.00001*$int_dArea)))\
+		"   "$(sprintf('%6.4f',$(1.0e-5+1.00001*$int_dArea/$pi)))\
+		"    "$(sprintf('%6.3f',$(1.0e-5+1.00001*$int_dOmega_alt)))
+
+	}
+
+	set dummy = int_dOmega_vs_alpha CONCAT int_dOmega_alt_vs_alpha
+	vecminmax dummy a b 
+	limits -0.05 1.05 -0.05 3.5
+	limits 1.05 -0.05 $(0.0 - 0.05*$b) $(1.05*$b)
+	limits 1.05 -0.05 -0.1 6.5
+	ticksize 0 0 0 0
+	box
+	expand 2.5
+	xlabel "\mu_\alpha"
+	expand 1.9
+	ylabel \Omega
+
+	expand 1.5
+
+	ltype 2 
+	ctype 5 
+	connect vec_mu_alpha int_dOmega_alt_vs_alpha
+	ltype 0
+	ctype 3 
+	connect vec_mu_alpha int_dOmega_vs_alpha
+	ctype 2 
+
+	define x1 ($disk_r1/$obs_R)
+	define x2 ($disk_r2/$obs_R)
+
+	define face_on_true    (2.0*$pi*( 1.0/sqrt(1 + $x1*$x1) - 1.0/sqrt(1 + $x2*$x2) ))
+	define face_on_approx  ( $pi*($x2*$x2 - $x1*$x1) )
+	
+	echo "+-----------------------------------------------------------"
+	echo "| Omega calculated with 'trick'   "
+	echo "|   alpha =  0 (face-on) = "$(sprintf('%6.3f',$(1e-5+  $face_on_true            )))
+	echo "|   alpha = 30           = "$(sprintf('%6.3f',$(1e-5+$($face_on_true*cosd(30.0)))))
+	echo "|   alpha = 45           = "$(sprintf('%6.3f',$(1e-5+$($face_on_true*cosd(45.0)))))
+	echo "|   alpha = 75           = "$(sprintf('%6.3f',$(1e-5+$($face_on_true*cosd(75.0)))))
+	#echo "|  "$face_on_approx
+
+	echo "+-----------------------------------------------------------"
+
+#-------------------------------------------------------------------------------
+# disk_intensity_at_blr_single_alpha  // <R_blr>  <R_disk>  <R_inner>  <R_outer>  <alpha>  <time now>
+## disk_intensity_at_blr_single_alpha  ... 
+disk_intensity_at_blr_single_alpha
+
+	# UPDATE HERE
+	# define c_blr ( $c/$R_blr_cm )
+	define c_blr ( 1.0 )
+
+	#USE THIS# define n_theta_steps (1000)
+	#USE THIS# define n_r_steps   (1000)
+
+	#USE THIS# define input_z     $1
+	#USE THIS# define input_alpha $2
+	#USE THIS# define T_now       $3
+
+	echo "+-----------------------------------------------------------"
+	define input_alpha_deg ? <| *             alpha [deg.] : > 
+	define R_blr  ?          <| *                    R_blr : >
+	define R_disk ?          <| *                   R_disk : >
+	define R_on_inner ?      <| *          R_inner (for I) : >
+	define R_on_outer ?      <| *          R_outer (for I) : >
+	echo "| "
+	define n_theta_steps ?   <| * Number of steps in theta : >
+	define n_rc_steps ?      <| * Number of steps in     r : >
+	echo "+-----------------------------------------------------------"
+
+	if( $R_on_outer > $R_disk ) { 
+	   echo "| !!! R_outer > R_disk : resetting it to R_disk "
+	   define R_on_outer $R_disk
+	} 
+
+	define T_now ( 1.5 )  # DUMMY VALUE FOR TESTING
+	define T_now ? < T_now : > 
+
+	define tmp_alpha_deg ( $input_alpha_deg )
+	define tmp_alpha_rad ( $input_alpha_deg*$pi/180.0 )
+
+	define input_z ( $R_blr*cos($tmp_alpha_rad) ) 
+
+	# I may want, or it may be possible, to eliminate reference to R_blr and alpha_blr
+	#   and just work with z, and perhaps alpha_blr
+	# R_blr*sin(alpha) = z*tg(alpha) ==> rr_proj
+
+	# 'rr_' is with reference to the disk coordinate reference
+	define rr_proj $( $input_z*tan($tmp_alpha_rad) )
+
+	define xc      ( $rr_proj )
+	define yc      ( 0.0 )
+
+	# rc_min can be >0 if the projection on the disk falls outside of it, in which case it would be 
+	#        the distance to the nearest edge.
+	# rc_max should be the max distance to the far edge of the disk from the current position at \alpha
+
+	define rc_min_1  $( $rr_proj - $R_disk ) 
+	if( $rc_min_1 > 0 ) { 
+	   define rc_min $rc_min_1 
+	} else {
+	   define rc_min ( 0.0 )
+	}
+	define rc_max  $( $R_disk + $rr_proj ) 
+
+	# echo "| z        = "$input_z
+	# echo "| rr_proj  = "$rr_proj
+	# echo "| rc_min   = "$rc_min
+	# echo "| rc_max   = "$rc_max
+	# echo "+-----------------------------------------------------------"
+
+	# The integration angle is now \theta, because \phi is used for the disk coordinate system
+	define dtheta_rad   $( 2.0*$pi/$n_theta_steps )
+	set vec_theta_rad_1 = 0,(2.0*$pi-$dtheta_rad),$dtheta_rad
+	set vec_theta_rad_1 = vec_theta_rad_1 + 0.5*$dtheta_rad
+	set test1 = cos(vec_theta_rad_1)
+	set test2 = sin(vec_theta_rad_1)
+	set test  = test1*test2
+	set vec_theta_rad  = vec_theta_rad_1    if( test != 0.0 )
+	set vec_mutheta    = cos(vec_theta_rad)
+	set vec_dtheta_rad = 0.0*vec_theta_rad + $dtheta_rad
+
+	set vec_theta_deg = vec_theta_rad*180.0/$pi
+
+	define dr ( ($rc_max-$rc_min)/$n_rc_steps )
+	set vec_rc = $rc_min,$rc_max-$dr,$dr
+	set vec_rc = vec_rc + 0.5*$dr
+
+	set vec_dr          = vec_rc*0.0 + $dr
+	set vec_ring_dF     = vec_rc*0.0
+	set vec_ring_dI     = vec_rc*0.0
+	set vec_ring_dOmega = vec_rc*0.0
+	set vec_ring_dArea  = vec_rc*0.0
+
+	set dummy_1 = 0.0*vec_theta_rad + 1
+	set dummy_0 = 0.0*vec_theta_rad + 0
+
+	set check_rings = vec_rc*0
+
+	set vec_d =  sqrt(vec_rc**2.0 + $input_z**2.0) 
+
+	do 9=0,dimen(vec_rc)-1 {
+
+	   define tmp_r $(vec_rc[$9])
+	   # This 'r' is a DD_proj, and I need the DD to get the actual distance
+	   #   for the solid angle calculation and the retarded time.
+
+	   define DD_proj $tmp_r
+	   define DD      ( sqrt($DD_proj**2.0 + $input_z**2.0) )
+
+	   # Retarded time for this ring
+	   define TT ( $T_now - $DD/$c )
+	   define TT ( $T_now - $DD )   
+	   echo " TT = "$TT
+	   # FOR NOW, no speed of light.
+           # This could be somehow rescale to the crossing time of the disk or BLR
+           #   to avoid carrying through real physical quantities and work with
+           #   scaled quantities (often safer).
+	   # Can define a c_blr = c/R_blr and use this scaled speed of light.
+	   # This should work:
+	   define TT ( $T_now - $DD/$c_blr )
+
+	   # quanties defined w.r.t. to disk center
+           set x_locus   = $xc + $DD_proj*cos(vec_theta_rad)
+           set y_locus   = $yc + $DD_proj*sin(vec_theta_rad)
+
+	   # disk-system coordinates of the ring elements
+           set r_locus   = sqrt( x_locus**2.0 + y_locus**2.0 )
+           set phi_locus = atan( y_locus/x_locus )
+
+	   # I need to throw away sections of the ring that fall outside of the disk.
+	   # since the integration is done on \theta, I filter on this array to keep
+	   # only the good contributions
+           set filter_clip_R_disk = ( r_locus <= $R_disk ) ? dummy_1 : dummy_0
+
+	   set tmp_time         = $TT + 0.0*vec_mutheta
+	   set tmp_d            = $DD + 0.0*vec_mutheta
+
+	   set tmp_sin_view = $input_z/tmp_d
+	   set tmp_mu_view  = sqrt(1.0 - tmp_sin_view**2.0)
+
+	   set mu_at_obs_point  = ($R_blr**2.0 + tmp_d**2.0 - r_locus**2.0)/(2.0*$R_blr*tmp_d)
+
+	   # HERE HERE
+	   # At this point I need to include the retarded time "Intensity" value
+	   #   at each (r,phi) location.  I am no longer just integrating to get
+	   #   the area and solid angle.
+	   # Need I(r_locus, TT)
+	   #
+           set filter_clip_I = ( r_locus >= $R_on_inner && r_locus <= $R_on_outer ) ? dummy_1 : dummy_0
+           #
+           # It should be filled by calling a function, or make it a 2-d array
+           #   referred to directly by (t, r, phi) or (i_t, i_r, i_phi)
+	   #
+	   define csi (2.0)
+	   define csi (1.0)
+
+	   set tmp_I_disk   = I_disk_radius_csi(r_locus,$csi)
+	   set tmp_I_disk   = I_disk_radius_csi_time(r_locus,$csi,$TT)
+
+	   set I_disk_valid = tmp_I_disk * filter_clip_I
+	   ## GF: add an argument for the type of I(r) function
+
+	   set vec_ring_dArea[$9]  = sum( filter_clip_R_disk *$tmp_r*$dr*vec_dtheta_rad                                                     )
+	   set vec_ring_dOmega[$9] = sum( filter_clip_R_disk *$tmp_r*$dr*vec_dtheta_rad *$input_z/tmp_d**3.0                                )
+	   set vec_ring_dI[$9]     = sum( filter_clip_R_disk *$tmp_r*$dr*vec_dtheta_rad *$input_z/tmp_d**3.0 *I_disk_valid                  )
+	   set vec_ring_dF[$9]     = sum( filter_clip_R_disk *$tmp_r*$dr*vec_dtheta_rad *$input_z/tmp_d**3.0 *I_disk_valid *mu_at_obs_point )
+
+	   define ngood ( sum(filter_clip_R_disk) )
+	   set check_rings[$9] = $ngood
+
+	}
+
+	define int_dArea   $(sum(vec_ring_dArea ))
+	define int_dOmega  $(sum(vec_ring_dOmega))
+	define int_dI      $(sum(vec_ring_dI    ))
+	define int_dF      $(sum(vec_ring_dF    ))
+
+	echo "|    alpha      Z    r_proj  rc_min  rc_max  Sum[dOmega] Sum[dI]   Sum[dF]   Sum[dA] Sum[dA]/pi "
+	echo "| "
+        echo "|   "$(sprintf('%6.3f',   $(1.0e-4 + $tmp_alpha_deg)))\
+		"   "$(sprintf('%6.3f', $(1.0e-5 + 1.00001*$input_z)))\
+		"  "$(sprintf('%6.3f',  $(1.0e-5 + 1.00001*$rr_proj)))\
+		"  "$(sprintf('%6.3f',  $(1.0e-5 + 1.00001*$rc_min)))\
+		"  "$(sprintf('%6.3f',  $(1.0e-5 + 1.00001*$rc_max)))\
+		"    "$(sprintf('%6.3f',$(1.0e-7 + 1.00001*$int_dOmega)))\
+		"    "$(sprintf('%6.3f',$(1.0e-7 + 1.00001*$int_dI)))\
+		"    "$(sprintf('%6.3f',$(1.0e-7 + 1.00001*$int_dF)))\
+		"    "$(sprintf('%6.3f',$int_dArea))\
+		"   "$(sprintf('%6.4f',$($int_dArea/$pi)))
+
+	echo "+-----------------------------------------------------------"
+
+##-------------------------------------------------------------------------------
+# disk_intensity_at_blr_vs_alpha  <R_blr>  <R_disk>  <R_inner>  <R_outer>  <T_now>
+disk_intensity_at_blr_vs_alpha  05
+
+	# UPDATE HERE
+	# define c_blr ( $c/$R_blr_cm )
+	define c_blr ( 1.0 )
+
+	#USE THIS# define n_theta_steps (1000)
+	#USE THIS# define n_r_steps   (1000)
+
+	#USE THIS# define input_z     $1
+	#USE THIS# define input_alpha $2
+	#USE THIS# define T_now       $3
+
+	if( $?1 ) {
+           define R_blr       $1
+           define R_disk      $2
+           define R_on_inner  $3
+           define R_on_outer  $4
+           define T_now       $5
+          
+           define n_theta_steps (300)
+           define n_rc_steps    (300)
+           define n_alpha       (100)
+
+	} else {
+           echo "+-----------------------------------------------------------"
+           define R_blr  ?           <| *                    R_blr : >
+           define R_disk ?           <| *                   R_disk : >
+           define R_on_inner ?       <| *          R_inner (for I) : >
+           define R_on_outer ?       <| *          R_outer (for I) : >
+           echo "| "
+           define n_theta_steps ?    <| * Number of steps in theta : >
+           define n_rc_steps ?       <| * Number of steps in     r : >
+           echo "| "
+           define n_alpha    ?       <| * Number of steps in alpha : >
+           echo "+-----------------------------------------------------------"
+           
+           # define T_now ( 2.0*$R_blr + 1.0 )  # DUMMY VALUE FOR TESTING
+           define T_now ?  < T_now : > 
+	}
+
+	#----------------------------------------
+	# DEFINITION:
+        # The integration angle over same delay/distance locus \theta (\phi is used for the disk coordinate system)
+	#----------------------------------------
+        define dtheta_rad   $( 2.0*$pi/$n_theta_steps )
+        set vec_theta_rad_1 = 0,(2.0*$pi-$dtheta_rad),$dtheta_rad
+        set vec_theta_rad_1 = vec_theta_rad_1 + 0.5*$dtheta_rad
+        set test1 = cos(vec_theta_rad_1)
+        set test2 = sin(vec_theta_rad_1)
+        set test  = test1*test2
+        set vec_theta_rad  = vec_theta_rad_1    if( test != 0.0 )
+        set vec_mutheta    = cos(vec_theta_rad)
+        set vec_dtheta_rad = 0.0*vec_theta_rad + $dtheta_rad
+           
+	#----------------------------------------
+	# DEFINITION:
+	# \alpha (position on BLR shell) array 
+	#----------------------------------------
+	#define n_alpha (18.0)
+	#define n_alpha (6.0)
+
+	# radiants (now superseded by the definition first done in degrees, just below)
+	define dalpha_rad $( (0.5*$pi/$n_alpha) )
+	set vec_alpha_rad  = 0,0.5*$pi-$dalpha_rad,$dalpha_rad
+	set vec_alpha_rad  = vec_alpha_rad + 0.5*$dalpha_rad
+	set vec_dalpha_rad = 0.0*vec_alpha_rad + $dalpha_rad
+
+	# degrees
+	define dalpha_deg $( (90.0/$n_alpha) )
+	set vec_alpha_deg  = 0,90.0-$dalpha_deg,$dalpha_deg
+	set vec_alpha_deg  = vec_alpha_deg + 0.5*$dalpha_deg
+	set vec_dalpha_deg = 0.0*vec_alpha_deg + $dalpha_deg
+	#set vec_alpha_deg = < 0 30 50 75 > 
+
+	set vec_alpha_rad = vec_alpha_deg*$pi/180.0
+	set vec_mu_alpha  = cos(vec_alpha_rad)
+
+        set int_dF_vs_alpha         = 0.0*vec_alpha_rad
+        set int_dI_vs_alpha         = 0.0*vec_alpha_rad
+        set int_dArea_vs_alpha      = 0.0*vec_alpha_rad
+        set int_dOmega_vs_alpha     = 0.0*vec_alpha_rad
+        #set int_area_p_vs_alpha     = 0.0*vec_alpha_rad
+        #set int_dOmega_alt_vs_alpha = 0.0*vec_alpha_rad
+
+	set vec_z       = 0.0*vec_alpha_rad
+	set vec_rr_proj = 0.0*vec_alpha_rad
+
+	#echo "|    alpha      Z    r_proj  rc_min   rc_max  Sum[dOmega]  Sum[dI]    Sum[dF]   Sum[dA] Sum[dA]/pi "
+	#echo "| "
+	do 8=0,dimen(vec_alpha_rad)-1 {
+
+           define tmp_alpha_rad $(vec_alpha_rad[$8])
+           define tmp_alpha_deg $(vec_alpha_deg[$8])
+	   define tmp_z ( $R_blr*cos($tmp_alpha_rad) ) 
+	   
+	   set vec_z[$8] = $tmp_z
+
+           # I may want, or it may be possible, to eliminate reference to R_blr and alpha_blr
+           #   and just work with z, and perhaps alpha_blr
+           # R_blr*sin(alpha) = z*tg(alpha) ==> rr_proj
+           
+           # 'rr_' is with reference to the disk coordinate reference
+           define rr_proj $( $tmp_z*tan($tmp_alpha_rad) )
+	   set vec_rr_proj[$8] = $rr_proj
+           
+           define xc      ( $rr_proj )
+           define yc      ( 0.0 )
+           
+           # rc_min can be >0 if the projection on the disk falls outside of it, in which case it would be 
+           #        the distance to the nearest edge.
+           # rc_max should be the max distance to the far edge of the disk from the current position at \alpha
+           
+           define rc_min_1  $( $rr_proj - $R_disk ) 
+           if( $rc_min_1 > 0 ) { 
+              define rc_min $rc_min_1 
+           } else {
+              define rc_min ( 0.0 )
+           }
+           define rc_max  $( $R_disk + $rr_proj ) 
+           # echo "+-----------------------------------------------------------"
+	   # echo "| *** alpha   = "$tmp_alpha_deg
+	   # echo "|     z       = "$tmp_z
+           # echo "|     rr_proj = "$rr_proj
+           # echo "|     rc_min  = "$rc_min
+           # echo "|     rc_max  = "$rc_max
+           
+           define dr ( ($rc_max-$rc_min)/$n_rc_steps )
+	   set vec_rc = $rc_min,$rc_max-$dr,$dr
+	   set vec_rc = vec_rc + 0.5*$dr
+           
+	   set vec_dr          = vec_rc*0.0 + $dr
+           set vec_ring_dF     = vec_rc*0.0
+           set vec_ring_dI     = vec_rc*0.0
+           set vec_ring_dOmega = vec_rc*0.0
+           set vec_ring_dArea  = vec_rc*0.0
+           
+           set dummy_1 = 0.0*vec_theta_rad + 1
+           set dummy_0 = 0.0*vec_theta_rad + 0
+           
+           set check_filter_R       = vec_rc*0
+           set check_filter_I       = vec_rc*0
+           set check_filter_R_and_I = vec_rc*0
+           
+           do 9=0,dimen(vec_rc)-1 {
+           
+              define tmp_r $(vec_rc[$9])
+              # This 'r' is a DD_proj, and I need the DD to get the actual distance
+              #   for the solid angle calculation and the retarded time.
+           
+              define DD_proj $tmp_r
+              define DD ( sqrt($DD_proj**2.0 + $tmp_z**2.0) )
+           
+              # Retarded time for this ring
+              define TT ( $T_now - $DD/$c )
+              define TT ( $T_now - $DD )   
+              # FOR NOW, no speed of light.
+              # This could be somehow rescale to the crossing time of the disk or BLR
+              #   to avoid carrying through real physical quantities and work with
+              #   scaled quantities (often safer).
+              # Can define a c_blr = c/R_blr and use this scaled speed of light.
+              # This should work:
+              define TT ( $T_now - $DD/$c_blr )
+           
+              # quanties defined w.r.t. to disk center
+              set x_locus   = $xc + $DD_proj*cos(vec_theta_rad)
+              set y_locus   = $yc + $DD_proj*sin(vec_theta_rad)
+           
+              # disk-system coordinates of the ring elements
+              set r_locus   = sqrt( x_locus**2.0 + y_locus**2.0 )
+              set phi_locus = atan( y_locus/x_locus )
+           
+              # I need to throw away sections of the ring that fall outside of the disk.
+              # since the integration is done on \theta, I filter on this array to keep
+              # only the good contributions
+              set filter_clip_R_disk = ( r_locus <= $R_disk ) ? dummy_1 : dummy_0
+           
+              set tmp_time         = $TT + 0.0*vec_mutheta
+              set tmp_d            = $DD + 0.0*vec_mutheta
+           
+              set mu_at_obs_point  = ($R_blr**2.0 + tmp_d**2.0 - r_locus**2.0)/(2.0*$R_blr*r_locus)
+           
+              # HERE HERE
+              # At this point I need to include the retarded time "Intensity" value
+              #   at each (r,phi) location.  I am no longer just integrating to get
+              #   the area and solid angle.
+              # Need I(r_locus, TT)
+              #
+              # It should be filled by calling a function, or make it a 2-d array
+              #   referred to directly by (t, r, phi) or (i_t, i_r, i_phi)
+	      #
+              set filter_clip_I = ( r_locus >= $R_on_inner && r_locus <= $R_on_outer ) ? dummy_1 : dummy_0
+              #
+	      define csi (2.0)
+	      define csi (1.0)
+
+	      set tmp_I_disk   = I_disk_radius_csi(r_locus,$csi)
+	      set tmp_I_disk   = I_disk_radius_csi_time(r_locus,$csi,$TT)
+
+	      set I_disk_valid = tmp_I_disk * filter_clip_I
+	      ## GF: add an argument for the type of I(r) function
+           
+              set vec_ring_dArea[$9]  = sum( filter_clip_R_disk *$tmp_r*$dr*vec_dtheta_rad                                                    )
+              set vec_ring_dOmega[$9] = sum( filter_clip_R_disk *$tmp_r*$dr*vec_dtheta_rad *$tmp_z/tmp_d**3.0                                 )
+              set vec_ring_dI[$9]     = sum( filter_clip_R_disk *$tmp_r*$dr*vec_dtheta_rad *$tmp_z/tmp_d**3.0 *I_disk_valid                   )
+              set vec_ring_dF[$9]     = sum( filter_clip_R_disk *$tmp_r*$dr*vec_dtheta_rad *$tmp_z/tmp_d**3.0 *I_disk_valid *mu_at_obs_point  )
+
+	     # * dividing by mu_beta instead of multiplying... non-sense, just trying...
+             #set vec_ring_dF[$9]     = sum( filter_clip_R_disk *$tmp_r*$dr*vec_dtheta_rad *$tmp_z/tmp_d**3.0 *I_disk_valid /mu_at_obs_point  )
+
+	     # * without the dA projection 
+             #set vec_ring_dF[$9]     = sum( filter_clip_R_disk *$tmp_r*$dr*vec_dtheta_rad        /tmp_d**2.0 *I_disk_valid *mu_at_obs_point  )
+
+	     # * multiplying dI for dA twice, one for the solid angle, another for the emitting surface (I = dP/dA/dOmega... )
+             #set vec_ring_dI[$9]     = sum( filter_clip_R_disk *($tmp_r*$dr*vec_dtheta_rad)**2.0 *$tmp_z/tmp_d**3.0 *I_disk_valid                   )
+             #set vec_ring_dF[$9]     = sum( filter_clip_R_disk *($tmp_r*$dr*vec_dtheta_rad)**2.0 *$tmp_z/tmp_d**3.0 *I_disk_valid *mu_at_obs_point  )
+           
+              define ngood_R       ( sum(filter_clip_R_disk) )
+              define ngood_I       ( sum(filter_clip_I     ) )
+              define ngood_R_and_I ( sum(filter_clip_R_disk*filter_clip_I) )
+
+              set check_filter_R[$9]       = $ngood_R
+              set check_filter_I[$9]       = $ngood_I
+              set check_filter_R_and_I[$9] = $ngood_R_and_I
+           
+           }
+           
+           define int_dArea   $(sum(vec_ring_dArea ))
+           define int_dOmega  $(sum(vec_ring_dOmega))
+           define int_dI      $(sum(vec_ring_dI    ))
+           define int_dF      $(sum(vec_ring_dF    ))
+
+           set int_dArea_vs_alpha[$8]      = $int_dArea
+           set int_dOmega_vs_alpha[$8]     = $int_dOmega
+           set int_dI_vs_alpha[$8]         = $int_dI
+           set int_dF_vs_alpha[$8]         = $int_dF
+           #set int_area_p_vs_alpha[$8]     = $area_p
+           #set int_dOmega_alt_vs_alpha[$8] = $dOmega_alt
+
+	}
+
+temp_exit
+
+	echo "+-----------------------------------------------------------"
+
+	set dummy_for_limits = int_dF_vs_alpha CONCAT int_dI_vs_alpha
+	set dummy_for_limits = int_dI_vs_alpha
+	vecminmax dummy_for_limits a b
+	foreach yy < 500.0 100.0 50.0 10.0 > { 
+	   if( $b <= $yy ) { define ymax ( $yy ) } 
+	}
+	limits -0.05 1.05 -0.05 3.5
+	limits 1.05 -0.05 $(0.0 - 0.05*$b) $(1.05*$b)
+	limits 1.05 -0.05 -0.1 6.5
+	limits 1.05 -0.05 -0.1 $ymax
+	ticksize 0 0 0 0
+	box
+	expand 2.5
+	xlabel "\mu_\alpha"
+	expand 1.5
+	angle 90
+	relocate ( $($gx1 - 3000) $(0.5*($gy1+$gy2)) )
+	ctype 3 putlabel 6 " Intensity (red)"
+	relocate ( $($gx1 - 3000) $(0.5*($gy1+$gy2)) )
+        ctype 5 putlabel 4 "Flux (blue) ," 
+	angle 0
+	ctype 2 
+
+	expand 1.5
+
+	ltype 2 
+	ctype 5 
+	connect vec_mu_alpha int_dF_vs_alpha
+	ltype 0
+	ctype 3 
+	connect vec_mu_alpha int_dI_vs_alpha
+	ctype 2 
+
+
+        what_is_the_integrated_luminosity
+
+
+
+# what_is_the_integrated_luminosity
+what_is_the_integrated_luminosity
+
+	set dI_x_dArea = (2*$pi*$R_blr**2.0) * sin(vec_alpha_rad) * vec_dalpha_rad * int_dI_vs_alpha
+        set dF_x_dArea = (2*$pi*$R_blr**2.0) * sin(vec_alpha_rad) * vec_dalpha_rad * int_dF_vs_alpha
+
+	echo " "
+	echo " Sum[dF*dArea]   = "$(sum(dF_x_dArea))
+	echo " Sum[dI*dArea]   = "$(sum(dI_x_dArea))
+	echo " "
+
+
+# save_disk_intensity_arrays  [ <suffix> ]
+save_disk_intensity_arrays 01
+
+	if( $?1 ) { 
+	   define sfx $1
+	} else {
+	   define sfx ? < Suffix for saving arrays : >
+	}
+
+	foreach 1 < vec_alpha_deg \
+                    vec_dalpha_deg \
+                    vec_alpha_rad \
+                    vec_dalpha_rad \
+                    vec_z \
+                    int_dF_vs_alpha \
+                    int_dI_vs_alpha \
+                    int_dOmega_vs_alpha \
+                    int_dArea_vs_alpha > {
+	   set $1_$sfx = $1 
+	   echo " Saving array : "$1
+	}
+	
+	set dI_x_dArea_$sfx   = (2*$pi*$R_blr**2.0) * sin(vec_alpha_rad_$sfx) * vec_dalpha_rad_$sfx * int_dI_vs_alpha_$sfx
+        set dF_x_dArea_$sfx   = (2*$pi*$R_blr**2.0) * sin(vec_alpha_rad_$sfx) * vec_dalpha_rad_$sfx * int_dF_vs_alpha_$sfx
+        set dF_x_dArea_b_$sfx = (2*$pi*$R_blr     ) * sin(vec_alpha_rad_$sfx) *                       int_dF_vs_alpha_$sfx
+
+	echo " "
+	echo " Sum[dF*dArea]   = "$(sum(dF_x_dArea_$sfx))
+	echo " Sum[dI*dArea]   = "$(sum(dI_x_dArea_$sfx))
+	echo " "
+
+	print $sfx.dat ' %8.4f  %8.4f   %8.6f  %8.6f   %8.5f  %10.4e  %10.4e  %10.4f  %10.4f\n' \
+                           < vec_alpha_deg \
+                             vec_dalpha_deg \
+                             vec_alpha_rad \
+                             vec_dalpha_rad \
+                             vec_z \
+                             int_dF_vs_alpha \
+                             int_dI_vs_alpha \
+                             int_dOmega_vs_alpha \
+                             int_dArea_vs_alpha > 
+
+# loop_on_time
+loop_on_time
+
+
+        define input_R_blr      ( 2.0  )
+        define input_R_disk     ( 0.2  )
+        define input_R_on_inner ( 0.01 )
+        define input_R_on_outer ( 0.1  ) 
+
+	set time_series = 150.0,600.0,1.0
+	set time_series = 100.0,152.0,1.0
+
+	do 9=1,dimen(time_series) {
+          
+	   define this_idx  $(time_series[$9-1]) 
+	   define this_time $(time_series[$9-1]/100.) 
+	   disk_intensity_at_blr_vs_alpha $input_R_blr $input_R_disk $input_R_on_inner $input_R_on_outer $this_time
+
+	   #save_and_print_disk_intensity_arrays  "disk_blr_2p0_1p0_0p02_0p7_flare" $(sprintf('%04d',$this_idx))
+	   save_and_print_disk_intensity_arrays  "disk_blr_2p0_0p2_0p01_0p1_flare" $(sprintf('%04d',$this_idx))
+
+	}
+
+
+# save_and_print_disk_intensity_arrays  [ <suffix> ] [ <counter> ]
+save_and_print_disk_intensity_arrays 2
+
+	define str $1
+	define idx $2 
+
+	define sfx $1"_"$2
+	define 3 $sfx
+
+	foreach 9 < vec_alpha_deg \
+                    vec_dalpha_deg \
+                    vec_alpha_rad \
+                    vec_dalpha_rad \
+                    vec_z \
+                    int_dF_vs_alpha \
+                    int_dI_vs_alpha \
+                    int_dOmega_vs_alpha \
+                    int_dArea_vs_alpha > {
+	   set $9_$3 = $9 
+	   #echo " Saving array : "$9
+	}
+	
+	#set dI_x_dArea_$3   = (2*$pi*$R_blr**2.0) * sin(vec_alpha_rad_$3) * vec_dalpha_rad_$3 * int_dI_vs_alpha_$3
+        #set dF_x_dArea_$3   = (2*$pi*$R_blr**2.0) * sin(vec_alpha_rad_$3) * vec_dalpha_rad_$3 * int_dF_vs_alpha_$3
+        #set dF_x_dArea_b_$3 = (2*$pi*$R_blr     ) * sin(vec_alpha_rad_$3) *                     int_dF_vs_alpha_$3
+	#echo " "
+	#echo " Sum[dF*dArea]   = "$(sum(dF_x_dArea_$sfx))
+	#echo " Sum[dI*dArea]   = "$(sum(dI_x_dArea_$sfx))
+	#echo " "
+
+	print $3.dat ' %8.4f  %8.4f   %8.6f  %8.6f   %8.5f  %10.4e  %10.4e  %10.4f  %10.4f\n' \
+                           < vec_alpha_deg_$3 \
+                             vec_dalpha_deg_$3 \
+                             vec_alpha_rad_$3 \
+                             vec_dalpha_rad_$3 \
+                             vec_z_$3 \
+                             int_dF_vs_alpha_$3 \
+                             int_dI_vs_alpha_$3 \
+                             int_dOmega_vs_alpha_$3 \
+                             int_dArea_vs_alpha > 
+
+#-------------------------------------------------------------------------------
+# I_disk_radius_single  <radius>
+I_disk_radius_single 1 
+
+	define L_disk (100.0)
+
+	define csi    (0.0)
+	define I_0    ( $L_disk/(2.0*$pi**2.0*($R_on_outer**2.0 - $R_on_inner**2.0)) )
+	define csi    (1.0)
+	define I_0    ( $L_disk/(4.0*$pi**2.0*$R_on_inner*($R_on_outer - $R_on_inner)) )
+
+	define I_ret  ( $I_0*($1/$R_on_inner)**(-1.0*$csi) )
+	
+##-------------------------------------------------------------------------------
+# I_disk_radius_csi  <radii vec>  <csi>
+#        set vec = I_disk_radius_csi(r_array, $index)
+I_disk_radius_csi 2 
+
+	define L_disk (100.0)
+
+	define eta (2.0)  # F = 2\pi*I
+	define eta (1.0)  # F =  \pi*I
+
+	define csi (0.0)   # flat, uniform 
+	define csi (1.0)   # decreasing with 1/r
+
+	set _r_vec = $1
+	define csi $2
+
+	define I_0 ( (2.0-$csi)*$L_disk/(2.0*$eta*$pi**2.0)/($R_on_inner**$csi*($R_on_outer**(2.0-$csi) - $R_on_inner**(2.0-$csi))) )
+
+	set I_return =  $I_0*(_r_vec/$R_on_inner)**(-1.0*$csi)
+	set $0 = I_return
+	
+##-------------------------------------------------------------------------------
+# I_disk_radius_csi_time  <radii vec>   <csi>  <time>
+#        set vec = I_disk_radius_csi_time(r_array, $index, $time)
+I_disk_radius_csi_time 3 
+
+	define L_disk_0     (  0.0)
+	define L_disk_flare (100.0)
+
+	define time_1       (  0.0)
+	define time_peak    (  1.0)
+	define time_2       (  2.0)
+
+	define eta (2.0)  # F = 2\pi*I
+	define eta (1.0)  # F =  \pi*I
+
+	define csi (0.0)   # flat, uniform 
+	define csi (1.0)   # decreasing with 1/r
+
+	set    _r_vec = $1
+	define csi      $2
+	define _time    $3
+
+	if( $_time <  $time_1 || $_time >= $time_2 ) {
+	    define L_disk_t  ( $L_disk_0 )
+	}
+	if( $_time >= $time_1    && $_time <  $time_peak ) {
+	    define L_disk_t $( $L_disk_0 + ($_time - $time_1)/($time_peak - $time_1)*$L_disk_flare )
+	}
+	if( $_time >= $time_peak && $_time <  $time_2    ) {
+	    define L_disk_t $( $L_disk_0 + $L_disk_flare - ($_time - $time_peak)/($time_2 - $time_peak)*$L_disk_flare )
+	}
+
+	define I_0 ( (2.0-$csi)*$L_disk_t/(2.0*$eta*$pi**2.0)/($R_on_inner**$csi*($R_on_outer**(2.0-$csi) - $R_on_inner**(2.0-$csi))) )
+
+	if( $_time <= 0 ) {
+	   set I_return =  0.0*_r_vec 
+	} else {
+	   set I_return =  $I_0*(_r_vec/$R_on_inner)**(-1.0*$csi)
+	}
+
+	set $0 = I_return
+	
+#===============================================================================

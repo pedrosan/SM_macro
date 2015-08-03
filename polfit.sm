@@ -1,0 +1,1542 @@
+#---------------------------------------------------------------------------
+# help.polfit
+help.polfit
+
+        echo " * pol2fit "
+        echo " * pol3fit "
+        echo " *  "
+        echo " * fit_nln_all5 "
+        echo " * fit_nln_all6 "
+        echo " * rename_polfit "
+        echo " *   "
+        echo " * fit_nln_all_both "
+        echo " * rename_polfit_both "
+        echo " * "
+        echo " * plot_peaks_peak     [<frame>] "
+        echo " * plot_peaks_radio "
+        echo " * plot_peaks_gamma "
+        echo " *  "
+        echo " * plot_peaks_dominance   (works only if peak_total is defined) "
+        echo " * plot_peaks_alpha_peak  (works only if peak_total is defined) "
+        echo " * plot_peaks_both     [<frame>] "
+        echo " *  "
+        echo " * concat_samples "
+        echo " *  "
+        echo " * boxing    2    <x-filename> <y-filename> "
+        echo " * plot_grey      [<shade-colour>] [<contours-colour>] "
+        echo " * matrix2file1   <root-matrix-name> <#-of-vectors>   "
+        echo " * matrix2file2   <root-matrix-name> <#-of-vectors> "
+        echo " * save_image      "
+        echo " * read_image      "
+
+#---------------------------------------------------------------------------
+# pol3fit
+#       fits a 3rd degree polinomial to the latest pair of arrays 'vnu' and 'vnl'
+#       OUTPUT: peak2= peak frequency 
+#               test1= peak luminosity
+pol3fit
+
+        define x0      (9.698)
+        define lastidx ($(dimen(vnu))-1)
+        set true_y = vnl
+        set x      = vnu
+        set xx = x - $x0
+        set v0 = 0*xx + 1
+        set v1 = xx
+        set v2 = xx**2.
+        set v3 = xx**3.
+        set vv = {v0 v1 v2 v3}
+        linfit vv true_y cx var_cx
+        
+        set yy = v0*$(cx[0]) + v1*$(cx[1]) + v2*$(cx[2]) + v3*$(cx[3])
+        set xdum = $($(vnu[0])-1),$($(vnu[$lastidx])+2),0.1
+        set xdum = xdum - $x0
+        do j=0,3 {
+             define a$j ($(cx[$j])) 
+        }
+        show_cx
+        set ydum = $a0 + $a1*xdum + $a2*xdum**2. + $a3*xdum**3.
+        lweight 2.5
+        ctype 3
+        connect (xdum+$x0) ydum
+        lweight 1
+        ltype 2 
+        ctype 2
+        connect (xdum+$x0) ydum
+        ltype 0
+        
+        set testder = (3.*$a3*xdum**2.  +2.*$a2*xdum +$a1)
+        vecminmax testder dermin dermax
+        echo " minimum and maximum value of the first derivative :"
+        echo "       ["$dermin" - "$dermax"]"
+        if($dermin > 0) {
+            define checkdermin (0)
+            define peak2 ( 0 )
+            define test1 ( 0 )
+        } else {
+            define checkdermin (3)
+            define peak1 ( (-$a2 + sqrt($a2*$a2 - 3.*$a3*$a1))/(3.*$a3) +$x0 )
+            define peak2 ( (-$a2 - sqrt($a2*$a2 - 3.*$a3*$a1))/(3.*$a3) +$x0 )
+            echo "[cubic fit] Null derivative at : "$peak1 $peak2
+            # checkfit $peak1
+            checkfit $peak2
+        }
+
+#---------------------------------------------------------------------------
+# pol2fit
+#       fits a 2nd degree polinomial to the latest pair of arrays 'vnu' and 'vnl'
+#       OUTPUT: peak2= peak frequency 
+#               test1= peak luminosity
+pol2fit
+
+        define x0      (9.698)
+        define lastidx ($(dimen(vnu))-1)
+        set true_y = vnl
+        set x      = vnu
+        set xx = x - $x0
+        set v0 = 0*xx + 1
+        set v1 = xx
+        set v2 = xx**2.
+        set vv = {v0 v1 v2}
+        linfit vv true_y cx var_cx
+        
+        set yy = v0*$(cx[0]) + v1*$(cx[1]) + v2*$(cx[2]) 
+        set xdum = $($(vnu[0])-1),$($(vnu[$lastidx])+2),0.1
+        set xdum = xdum - $x0
+        do j=0,2 {
+             define a$j ($(cx[$j])) 
+        }
+        define a3 (0)
+        show_cx
+        set ydum = $a0 + $a1*xdum + $a2*xdum**2. + $a3*xdum**3.
+        lweight 2.5
+        ctype 3
+        connect (xdum+$x0) ydum
+        lweight 1
+        ltype 2 
+        ctype 2
+        connect (xdum+$x0) ydum
+        ltype 0
+        
+        set testder = 2.*$a2*xdum +$a1
+        vecminmax testder dermin dermax
+        echo " minimum and maximum value of the first derivative :"
+        echo "       ["$dermin" - "$dermax"]"
+        if($dermin > 0) {
+            define checkdermin (0)
+            define peak2 ( 0 )
+            define test1 ( 0 )
+        } else {
+            define checkdermin (2)
+            define peak1 ( -$a1/(2*$a2) +$x0 )
+            define peak2 ( -$a1/(2*$a2) +$x0 )
+            echo "[parabolic fit] Null derivative at : " $peak1 $peak2
+            # checkfit $peak1
+            checkfit $peak2
+        }
+
+##--------------------------------------------------------------------------
+show_cx
+
+        do j=0,3 {
+             echo  $j-th cx is : $a$j
+        }
+        
+##--------------------------------------------------------------------------
+checkfit 1
+
+        define test1 ($a0 +$a1*($1-$x0) +$a2*($1-$x0)**2. +$a3*($1-$x0)**3.)
+        define test2 (3.*$a3*($1-$x0)**2.  +2.*$a2*($1-$x0) +$a1)
+        echo "------------------------------------------------------------------"
+        echo "  at frequency [$!1] the value of the function is [$!test1]"
+        echo "                     and the first derivative is [$!test2]"
+        echo "------------------------------------------------------------------"
+
+#---------------------------------------------------------------------------
+# fit_nln_all5
+#       fits the entire sample at once.
+#       OUTPUT: fitparams0-5  storing, for all objects: 
+#               <a0 a1 a2 a3 peak2 test1> 
+#               for all "bad" objects values are set to "0"
+fit_nln_all5
+
+        nln_frame empty
+        
+        set vnu = <$nu5 $numm  $nuopt $nux>
+        
+        define maxind (dimen(f_radio)-1)
+        
+        do k=0,6 {
+           set dimen(fitparams$k) = dimen(f_radio)
+        }
+        
+        do i=0,$maxind {
+          define kk $i
+          set vnl=< $(nl_radio[$i]) $(nl_mm[$i]) $(nl_opt[$i]) $(nl_x[$i]) >
+          echo $(f_x[$i])
+        
+          if($(f_x[$i]) < 100) { 
+              define color ($i - 6*INT($i/6.)+2)
+              ctype $color 
+              points  vnu vnl
+              connect vnu vnl 
+        
+              pol3fit
+              if($checkdermin == 3) {
+                 echo $kk
+                 define i $kk
+                 set fitparams0[$kk] = $a0
+                 set fitparams1[$kk] = $a1
+                 set fitparams2[$kk] = $a2
+                 set fitparams3[$kk] = $a3
+                 set fitparams4[$kk] = $peak2
+                 set fitparams5[$kk] = $test1
+                 set fitparams6[$kk] = $checkdermin
+              } else {                    # i.e. $checkdermin == 0
+                 pol2fit
+                 echo $kk
+                 define i $kk
+                 set fitparams0[$kk] = $a0
+                 set fitparams1[$kk] = $a1
+                 set fitparams2[$kk] = $a2
+                 set fitparams3[$kk] = $a3
+                 set fitparams4[$kk] = $peak2
+                 set fitparams5[$kk] = $test1
+                 set fitparams6[$kk] = $checkdermin
+              }
+        
+              if($(flag_x[$i]) == 3) {
+                butterfly $(ax[$i]-1) err_ax_u[$i] err_ax_d[$i] 17.384 16.384 18.0
+                set nl_btfly = btfly + $(nl_x[$i]) 
+                connect nufly nl_btfly
+              } else {
+                echo ---> Source [$(name[$i])] has NOT a spectral index measure
+              }
+          } else { 
+              echo ---> skipping source ...$kk
+              set fitparams0[$kk] = 0
+              set fitparams1[$kk] = 0
+              set fitparams2[$kk] = 0
+              set fitparams3[$kk] = 0
+              set fitparams4[$kk] = 0
+              set fitparams5[$kk] = 0
+              set fitparams6[$kk] = 0
+          }
+        }                     #--end do
+
+#---------------------------------------------------------------------------
+# fit_nln_all6
+#       fits the entire sample at once.
+#       OUTPUT: fitparams0-5  storing, for all objects: 
+#               <a0 a1 a2 a3 peak2 test1> 
+#               for all "bad" objects values are set to "0"
+#
+# ====> Different from "fit_nln_all5" because it includes the IR flux as well
+#
+fit_nln_all6
+
+        nln_frame empty
+        define maxind (dimen(f_radio)-1)
+        
+        do k=0,6 {
+           set dimen(fitparams$k) = dimen(f_radio)
+        }
+        
+        do i=0,$maxind {
+        
+          define color ($i - 6*INT($i/6.)+2)
+          ctype $color 
+          define kk $i
+        
+          if($(flag_x[$i]) > 0 ) { 
+        
+              if( $(mir[$i]) < 0.01 ) {
+                 set vnu= < $nu5 $numm  $nuopt $nux >
+                 set vnl= < $(nl_radio[$i]) $(nl_mm[$i]) $(nl_opt[$i]) $(nl_x[$i])>
+              } else {
+                 set vnu= < $nu5 $numm  $nuir $nuopt $nux >
+                 set vnl= < $(nl_radio[$i]) $(nl_mm[$i]) $(nl_ir[$i]) $(nl_opt[$i]) $(nl_x[$i]) >
+              }
+        
+              points  vnu vnl
+              connect vnu vnl 
+        
+              pol3fit
+              if($checkdermin == 3) {
+                 echo $kk
+                 define i $kk
+                 set fitparams0[$kk] = $a0
+                 set fitparams1[$kk] = $a1
+                 set fitparams2[$kk] = $a2
+                 set fitparams3[$kk] = $a3
+                 set fitparams4[$kk] = $peak2
+                 set fitparams5[$kk] = $test1
+                 set fitparams6[$kk] = $checkdermin
+              } else {                    # i.e. $checkdermin == 0
+                 pol2fit
+                 echo $kk
+                 define i $kk
+                 set fitparams0[$kk] = $a0
+                 set fitparams1[$kk] = $a1
+                 set fitparams2[$kk] = $a2
+                 set fitparams3[$kk] = $a3
+                 set fitparams4[$kk] = $peak2
+                 set fitparams5[$kk] = $test1
+                 set fitparams6[$kk] = $checkdermin
+              }
+        
+              if($(flag_x[$i]) == 3) {
+                butterfly $(ax[$i]-1) err_ax_u[$i] err_ax_d[$i] 17.38 16.38 18.0
+                set nl_btfly = btfly + $(nl_x[$i]) 
+                connect nufly nl_btfly
+              } else {
+                echo ---> Source [$(name[$i])] has NOT a spectral index measure
+              }
+        
+          } else {             #--now for sources without X-ray flux
+                               #  checking for existence of IR flux
+        
+            if( $(mir[$i]) > 0.01 ) {
+              set vnu=<$nu5 $numm $nuir $nuopt >
+              set vnl=<$(nl_radio[$i]) $(nl_mm[$i]) $(nl_ir[$i]) $(nl_opt[$i])>
+        
+              points  vnu vnl
+              connect vnu vnl 
+        
+              pol3fit
+              if($checkdermin == 3) {
+                 echo $kk
+                 define i $kk
+                 set fitparams0[$kk] = $a0
+                 set fitparams1[$kk] = $a1
+                 set fitparams2[$kk] = $a2
+                 set fitparams3[$kk] = $a3
+                 set fitparams4[$kk] = $peak2
+                 set fitparams5[$kk] = $test1
+                 set fitparams6[$kk] = $checkdermin
+              } else {                    # i.e. $checkdermin == 0
+                 pol2fit
+                 echo $kk
+                 define i $kk
+                 set fitparams0[$kk] = $a0
+                 set fitparams1[$kk] = $a1
+                 set fitparams2[$kk] = $a2
+                 set fitparams3[$kk] = $a3
+                 set fitparams4[$kk] = $peak2
+                 set fitparams5[$kk] = $test1
+                 set fitparams6[$kk] = $checkdermin
+              }
+        
+            } else {           #--now for sources without IR flux
+        
+              echo ---> skipping source ...$kk
+              set fitparams0[$kk] = 0
+              set fitparams1[$kk] = 0
+              set fitparams2[$kk] = 0
+              set fitparams3[$kk] = 0
+              set fitparams4[$kk] = 0
+              set fitparams5[$kk] = 0
+              set fitparams6[$kk] = 0
+        
+            }                 #--end of check on IR flux
+          }                   #--end of check on X-ray flux
+        }                     #--end do
+
+#---------------------------------------------------------------------------
+# fit_nln_all_both
+#       fits the entire sample at once with pol2fit AND pol3fit
+#       allowing direct comparison of values object by object.
+#       OUTPUT: fitparams0-5  storing, for all objects: 
+#               <a0 a1 a2 a3 peak2 test1> 
+#               for all "bad" objects values are set to "0"
+fit_nln_all_both
+
+        nln_frame empty
+        
+        set vnu = <$nu5 $numm  $nuopt $nux>
+        
+        define maxind (dimen(f_radio)-1)
+        
+        do k=0,6 {
+           set dimen(fitparams3_$k) = dimen(f_radio)
+           set dimen(fitparams2_$k) = dimen(f_radio)
+        }
+        
+        do i=0,$maxind {
+          define kk $i
+          set vnl=< $(nl_radio[$i]) $(nl_mm[$i]) $(nl_opt[$i]) $(nl_x[$i]) >
+          echo $(f_x[$i])
+        
+          if($(f_x[$i]) < 100) {               # fa solo le sorgenti con
+        				       # flusso X misurato.
+              define color ($i - 6*INT($i/6.)+2)
+              ctype $color 
+              points  vnu vnl
+              connect vnu vnl 
+        
+              pol3fit
+              define i $kk
+              set fitparams3_0[$kk] = $a0
+              set fitparams3_1[$kk] = $a1
+              set fitparams3_2[$kk] = $a2
+              set fitparams3_3[$kk] = $a3
+              set fitparams3_4[$kk] = $peak2
+              set fitparams3_5[$kk] = $test1
+              set fitparams3_6[$kk] = $checkdermin
+        
+              pol2fit
+              define i $kk
+              set fitparams2_0[$kk] = $a0
+              set fitparams2_1[$kk] = $a1
+              set fitparams2_2[$kk] = $a2
+              set fitparams2_3[$kk] = $a3
+              set fitparams2_4[$kk] = $peak2
+              set fitparams2_5[$kk] = $test1
+              set fitparams2_6[$kk] = $checkdermin
+        
+              if($(flag_x[$i]) == 3) {
+                butterfly $(ax[$i]-1) err_ax_u[$i] err_ax_d[$i] 17.384 16.384 18.0
+                set nl_btfly = btfly + $(nl_x[$i]) 
+                connect nufly nl_btfly
+              } else {
+                echo ---> Source [$(name[$i])] has NOT a spectral index measure
+              }
+          } else {             # salta la sorgente se non ha spettro X
+              echo ---> skipping source ...$kk
+              set fitparams3_0[$kk] = 0
+              set fitparams3_1[$kk] = 0
+              set fitparams3_2[$kk] = 0
+              set fitparams3_3[$kk] = 0
+              set fitparams3_4[$kk] = 0
+              set fitparams3_5[$kk] = 0
+              set fitparams3_6[$kk] = 0
+              set fitparams2_0[$kk] = 0
+              set fitparams2_1[$kk] = 0
+              set fitparams2_2[$kk] = 0
+              set fitparams2_3[$kk] = 0
+              set fitparams2_4[$kk] = 0
+              set fitparams2_5[$kk] = 0
+              set fitparams2_6[$kk] = 0
+          }
+        }                     #--end do
+
+
+#---------------------------------------------------------------------------
+# rename_polfit_both
+#       Renames arrays resulting from polinomial fits for the case
+#       when BOTH fits (parabolic and cubic) have been run
+#       and parameters are in memory.
+#       Prompts for a string to be used as suffix for arrays:
+#          e.g.  a[0123]_3_$suffix, peak_3_$suffix, etc.
+#                a[0123]_2_$suffix, peak_2_$suffix, etc.
+rename_polfit_both
+
+        define mnemostr ? < Suffix : > 
+        
+        set name_$mnemostr       = name
+        set a0_3_$mnemostr       = fitparams3_0
+        set a1_3_$mnemostr       = fitparams3_1
+        set a2_3_$mnemostr       = fitparams3_2
+        set a3_3_$mnemostr       = fitparams3_3
+        set peak_3_$mnemostr     = fitparams3_4
+        set lumpeak_3_$mnemostr  = fitparams3_5
+        set checkder_3_$mnemostr = fitparams3_6
+        set a0_2_$mnemostr       = fitparams2_0
+        set a1_2_$mnemostr       = fitparams2_1
+        set a2_2_$mnemostr       = fitparams2_2
+        set a2_2_$mnemostr       = fitparams2_3
+        set peak_2_$mnemostr     = fitparams2_4
+        set lumpeak_2_$mnemostr  = fitparams2_5
+        set checkder_2_$mnemostr = fitparams2_6
+
+#---------------------------------------------------------------------------
+# print_fitparams
+print_fitparams
+
+        define filename ? { Output filename ? }
+
+        print $filename ' %8.5f  %9.6f  %9.6f  %9.6f  %7.4f  %7.4f \n' { fitparams0 fitparams1 fitparams2 fitparams3 fitparams4 fitparams5 } 
+
+
+#---------------------------------------------------------------------------
+# rename_polfit
+#       Renames arrays resulting from polinomial fits, using the output
+#       from the latest run.
+#       Prompts for a string to be used as suffix for arrays:
+#          e.g.  a[0123]_$suffix, peak_$suffix, etc.
+rename_polfit
+
+        define mnemostr ? < Suffix : > 
+        
+        set name_$mnemostr     = name
+        set a0_$mnemostr       = fitparams0
+        set a1_$mnemostr       = fitparams1
+        set a2_$mnemostr       = fitparams2
+        set a3_$mnemostr       = fitparams3
+        set peak_$mnemostr     = fitparams4
+        set lumpeak_$mnemostr  = fitparams5
+        set checkder_$mnemostr = fitparams6
+
+#---------------------------------------------------------------------------
+# plot_peaks_peak [<if-frame>]
+plot_peaks_peak 01
+
+	reset_graph
+        location 5500 31000 8500 30000
+        
+        ctype 2
+        ltype 0
+        
+        limits 11.1 19.9 39.6 48.4
+        ticksize 0.5 2.0 0.5 2.0
+        expand 1.5
+        box
+        expand 2
+        xlabel log(\\nu_{\rm peak,sync})
+        ylabel log(\\nu L_{\\nu}) 
+        
+        define howplot ? < Different samples in colors [1] or symbols [2] : >
+        if( $howplot == 1 ) { 
+           expand 3
+           ptype 4 3
+           ctype 3
+           points peak_1jy lumpeak_1jy
+           ctype 4
+           points peak_slew lumpeak_slew
+           ctype 5
+           points peak_wp lumpeak_wp
+        } 
+        if( $howplot == 2 ) { 
+           expand 3.5
+           lweight 3
+           ptype 20 0
+           points peak_1jy lumpeak_1jy
+           ptype 20 0 
+           points peak_slew lumpeak_slew
+           ptype 3 0
+           points peak_wp lumpeak_wp
+           expand 2.0
+           ptype 20 3 
+           points peak_slew lumpeak_slew
+           expand 1.8
+           ptype 3 3
+           points peak_wp lumpeak_wp
+           lweight 1
+        } 
+        
+        expand 2.0
+        relocate ( $($gx2-2000) $($gy2-2000) ) 
+        putlabel 4 @\\nu_{\rm peak,sync}
+        
+        expand 3
+        relocate ( $($gx1+3000) $($gy1+3000) )
+        putlabel 5 (c)
+        
+        relocate ( $($gx2-9000) $($gy1+6000) )
+        expand 3.0 ptype 3 0 dot
+        expand 1.8 ptype 3 3 dot
+        expand 1.5 putlabel 6 "  FSRQ"
+        
+        relocate ( $($gx2-9000) $($gy1+4000) )
+        expand 3.0 ptype 20 0 dot
+        expand 1.5 putlabel 6 "  BLL (1Jy)"
+        
+        relocate ( $($gx2-9000) $($gy1+2000) )
+        expand 3.0 ptype 20 0 dot
+        expand 2.0 ptype 20 3 dot
+        expand 1.5 putlabel 6 "  BLL (Slew)"
+        
+        draw_box 16.5 40.1 19.3 42.4
+
+#---------------------------------------------------------------------------
+# plot_peaks_radio 
+plot_peaks_radio  
+
+	reset_graph
+        # location 5500 31000 5500 31000
+        ctype 2
+        
+        location 5500 31000 8500 30000
+        
+        limits 11.1 19.9 39.6 48.4
+        limits 11.1 19.9 38.6 47.4
+        ticksize 0.5 2.0 0.5 2.0
+        expand 1.5 
+        box
+        expand 2
+        xlabel log(\\nu_{\rm peak,sync})
+        ylabel log(\\nu L_{\\nu}) 
+        
+        define howplot ? < Different samples in colors [1] or symbols [2] : >
+        if( $howplot == 1 ) { 
+           expand 3
+           ptype 4 3
+           ctype 3
+           points peak_1jy nl_radio_1jy
+           ctype 4
+           points peak_slew nl_radio_slew
+           ctype 5
+           points peak_wp nl_radio_wp
+        } 
+        
+        if( $howplot == 2 ) {
+           ctype 8
+           expand 3.5
+           ptype 4 3
+           points peak_wp nl_radio_wp
+           ctype 3 
+           expand 3.5
+           ptype 4 0
+           points peak_wp nl_radio_wp
+           
+           ctype 6
+           expand 3.1
+           ptype 20 3 
+           points peak_1jy nl_radio_1jy
+           ctype 5
+           expand 3.1
+           ptype 20 0
+           points peak_1jy nl_radio_1jy
+           
+           ctype 4
+           expand 3.5
+           ptype 3 3
+           points peak_slew nl_radio_slew
+           ctype 5
+           expand 3.5
+           ptype 3 0
+           points peak_slew nl_radio_slew
+           
+           relocate ( $($gx1+16000) $($gy2-2000) )
+           expand 3.5 ctype 8 ptype 4 3 dot ctype 3 ptype 4 0 dot 
+           expand 2.0 putlabel 6   FSRQ
+           
+           relocate ( $($gx1+16000) $($gy2-3500) )
+           expand 3.1 ctype 6 ptype 20 3 dot ctype 5 ptype 20 0 dot 
+           expand 2.0 putlabel 6   1Jy BLL
+           
+           relocate ( $($gx1+16000) $($gy2-5000) )
+           expand 3.5 ctype 4 ptype 3 3 dot ctype 5 ptype 3 0 dot 
+           expand 2.0 putlabel 6   Slew BLL
+       }
+
+#---------------------------------------------------------------------------
+# plot_peaks_gamma
+plot_peaks_gamma
+
+        # location 5500 31000 5500 31000
+	reset_graph
+        ctype 2
+        location 5500 31000 8500 30000
+	
+        
+        limits 11.1 19.9 41.6 50.4
+        ticksize 0.5 2.0 0.5 2.0
+        expand 1.5 
+        box
+        expand 2
+        xlabel log(\\nu_{\rm peak,sync})
+        ylabel log(\\nu L_{\\nu}) 
+        
+        define howplot ? < Different samples in colors [1] or symbols [2] : >
+        if( $howplot == 1 ) { 
+           expand 3
+           ptype 4 3
+           ctype 3
+           points peak_1jy nl_g_1jy
+           ctype 4
+           points peak_slew nl_g_slew
+           ctype 5
+           points peak_wp nl_g_wp
+        } 
+        if( $howplot == 2 ) { 
+           expand 3.5
+           lweight 3
+           ptype 20 0
+           points peak_1jy nl_g_1jy
+           ptype 20 0 
+           points peak_slew nl_g_slew
+           ptype 3 0
+           points peak_wp nl_g_wp
+           expand 2.0
+           ptype 20 3 
+           points peak_slew nl_g_slew
+           expand 1.8
+           ptype 3 3
+           points peak_wp nl_g_wp
+           lweight 1
+        } 
+        
+        expand 2.0
+        relocate ( $($gx2-2000) $($gy2-2000) ) 
+        putlabel 4 @\gamma-rays
+        
+        expand 3
+        relocate ( $($gx1+3000) $($gy1+3000) )
+        putlabel 5 (b)
+
+##--------------------------------------------------------------------------
+treboxes
+
+        window -2 -2 2 1
+        ctype 2
+        ltype 0
+        
+        limits 11.1 19.9 39.6 48.4
+        ticksize 0.5 2.0 0.25 1.
+        expand 1.5
+        box 1 0 0 0 
+        xlabel log(\\nu)
+        
+        expand 2
+        ptype 4 3
+        ctype 3
+        points peak_1jy lumpeak_1jy
+        ctype 4
+        points peak_slew lumpeak_slew
+        ctype 5
+        points peak_wp lumpeak_wp
+        
+        ctype 2
+        relocate ( $($gx2-1000) $($gy2-1500) )
+        expand 1.5
+        putlabel 4 [L_{peak}]
+        
+        #-------------------------------------------------------
+        
+        window -2 -2 1 1 
+        ctype 2
+        ltype 0
+        
+        limits 11.1 19.9 39.6 48.4
+        expand 1.5 
+        box 1 2 0 0
+        expand 1.5
+        xlabel log(\\nu)
+        ylabel log(\\nu L_{\\nu})
+        
+        expand 2
+        ptype 4 3
+        ctype 3
+        points peak_1jy nl_radio_1jy
+        ctype 4
+        points peak_slew nl_radio_slew
+        ctype 5
+        points peak_wp nl_radio_wp
+        
+        ctype 2
+        relocate ( $($gx2-1000) $($gy2-1500) )
+        expand 1.5
+        putlabel 4 [L_{5GHz}]
+        
+        #-------------------------------------------------------
+        
+        window -2 -2 1 2
+        ctype 2
+        ltype 0
+        
+        limits 11.1 19.9 41.6 50.4
+        expand 1.5 
+        box 0 2 0 0 
+        expand 1.5
+        ylabel log(\\nu L_{\\nu}) 
+        
+        expand 2
+        ptype 4 3
+        ctype 3
+        points peak_1jy nl_g_1jy
+        ctype 4
+        points peak_slew nl_g_slew
+        ctype 5
+        points peak_wp nl_g_wp
+        
+        ctype 2
+        relocate ( $($gx2-1000) $($gy2-1500) )
+        expand 1.5
+        putlabel 4 [L_{\gamma}]
+
+##--------------------------------------------------------------------------
+# plot_peaks_dominance
+plot_peaks_dominance
+
+        define bw ? < Black&White [1] or Color [2] : >
+        
+	reset_graph
+        location 5500 31000 8500 30000
+        
+        set gdomin1 = nl_g - nl_opt
+        set gdomin2 = nl_g - lumpeak_total
+        limits 11.1 19.9 -1.7 3.1 
+        ticksize 0 0 -1 0 
+        ctype 2 
+        expand 1.5
+        box
+        expand 2
+        xlabel log(\\nu_{peak,sync})
+         ## ylabel L_{Compton}/L_{sync}
+        ylabel \gamma-dominance
+        
+        if($bw == 1) { 
+           expand 3.0
+           ptype 4 3
+           points peak_total gdomin1 if(flag_g > 1)
+           ptype 4 0
+           points peak_total gdomin2 if(flag_g > 1)
+           ctype 3
+           lweight 3
+           pairs peak_total gdomin2 peak_total gdomin1
+           lweight 1
+        } else { 
+           ptype 4 3
+           expand 3.0
+           ctype 3 
+           points peak_total gdomin1 if(flag_g > 1)
+           ctype 5 
+           points peak_total gdomin2 if(flag_g > 1)
+           lweight 2
+           ctype 4 
+           pairs peak_total gdomin2 peak_total gdomin1
+           lweight 1
+        }
+        
+        relocate ( $($gx2 - 10500) $($gy2 - 2000) ) 
+        if($bw == 1) { 
+           expand 3.0
+           ptype 4 3
+           ctype 2 
+           dot
+           expand 1.5
+           putlabel 6 "  \gamma  over optical"
+        } else {
+           expand 3.0
+           ptype 4 3
+           ctype 3 
+           dot
+           ctype 2 
+           expand 1.5
+           putlabel 6 "  \gamma  over optical"
+        }
+        
+        relocate ( $($gx2 - 10500) $($gy2 - 3500) ) 
+        if($bw == 1) { 
+           expand 3.0
+           ptype 4 0
+           ctype 2 
+           dot
+           expand 1.5
+           putlabel 6 "  \gamma  over L_{peak}"
+        } else {
+           expand 3.0
+           ptype 4 3
+           ctype 5 
+           dot
+           ctype 2 
+           expand 1.5
+           putlabel 6 "  \gamma  over L_{peak}"
+        }
+        
+        relocate ( $($gx2 - 11250) $($gy2 - 4500) )
+        draw     ( $($gx2 - 11250) $($gy2 - 1000) )
+        draw     ( $($gx2 -   750) $($gy2 - 1000) )
+        draw     ( $($gx2 -   750) $($gy2 - 4500) )
+        draw     ( $($gx2 - 11250) $($gy2 - 4500) )
+
+#---------------------------------------------------------------------------
+# plot_peaks_both [<if-frame>] 
+#            Plots together the values from the cubic and parabolic SED fit
+plot_peaks_both 01
+
+	reset_graph
+        ctype 2
+        if($?1) {nln_frame empty}
+
+        define suffix ? < Suffix name for the set of vectors to be plotted...[wp/1jy/slew/all]: >
+
+        if('$suffix' == 'all') {
+           expand 2
+           ptype 4 3
+           
+           ctype 3
+           pairs  peak_3_1jy lumpeak_3_1jy  peak_2_1jy lumpeak_2_1jy
+           ptype 4 0
+           points peak_3_1jy lumpeak_3_1jy 
+           ptype 3 0
+           points peak_2_1jy lumpeak_2_1jy
+           
+           ctype 4
+           pairs peak_3_slew lumpeak_3_slew peak_2_slew lumpeak_2_slew
+           ptype 4 0
+           points peak_3_slew lumpeak_3_slew 
+           ptype 3 0
+           points peak_2_slew lumpeak_2_slew
+           
+           ctype 5
+           pairs peak_3_wp lumpeak_3_wp peak_2_wp lumpeak_2_wp
+           ptype 4 0
+           points peak_3_wp lumpeak_3_wp 
+           ptype 3 0
+           points peak_2_wp lumpeak_2_wp
+
+        } else {
+           define 2 $suffix
+           if('$suffix' ==  '1jy' ) { ctype 3 }
+           if('$suffix' == 'slew' ) { ctype 4 }
+           if('$suffix' ==   'wp' ) { ctype 5 }
+           pairs peak_3_$2 lumpeak_3_$2 peak_2_$2 lumpeak_2_$2
+           ptype 4 0
+           points peak_3_$2 lumpeak_3_$2 
+           ptype 3 0
+           points peak_2_$2 lumpeak_2_$2
+        }
+
+##--------------------------------------------------------------------------
+# plot_peak_alpha
+plot_peaks_alpha
+
+        define bw ? < Black&White [1] or Color [2] : >
+        
+	reset_graph
+        location 5500 31000 8500 30000
+        
+        limits 11.1 19.9 0.06 1.16
+        ltype 0
+        ctype 2 
+        expand 1.5 
+        ticksize 0 0 0.05 0.2
+        box
+        expand 2.0
+        xlabel log(\\nu_{\rm peak,sync})
+        ylabel \alpha_{12}
+        
+        set l_radio = tot_l_radio
+        set l_opt   = tot_l_opt  
+        set l_x     = tot_l_x
+        
+        set a_rx = (l_radio-l_x)/7.685
+        set a_ro = (l_radio-l_opt)/5.037
+        
+        expand 3.0
+        if($bw == 1) { 
+           ctype 2 
+           ptype 4 3 
+           points peak_total a_rx if(flag_x > 0)
+           ptype 4 0 
+           points peak_total a_ro
+        } else {
+           ptype  4  3 
+           ctype 3 
+           points peak_total a_rx if(flag_x > 0)
+           ctype 5 
+           points peak_total a_ro
+           ctype 2
+        }
+        
+        define inset ? < Draw the inset with examples of SEDs [y/n]: >
+        if(substr('$inset',0,1) == 'y') {
+        
+           #--- label ---#
+           relocate ( $($gx1 + 2000) $($gy1 + 3000) ) 
+           expand 3.0
+           if($bw == 1) { 
+              ctype 2
+              ptype 4 3 
+           } else {
+              ctype 3 
+              ptype 4 3 
+           }
+           dot
+           ctype 2
+           expand 1.2
+           putlabel 6 "  radio-X"
+           
+           #--- label ---#
+           relocate ( $($gx1 + 2000) $($gy1 + 1500) ) 
+           expand 3.0
+           if($bw == 1) { 
+              ctype 2
+              ptype 4 0 
+           } else {
+              ctype 5 
+              ptype 4 3 
+           }
+           dot
+           ctype 2
+           expand 1.2
+           putlabel 6 "  radio-optical"
+           
+           ltype 0
+           ctype 2
+           draw_box 11.6 0.10 14.4 0.25
+           
+           location  $($gx2 - 9500) $($gx2 - 1000) $($gy2 - 7500) $($gy2 - 1000)  
+           
+           limits 8.5 18.5 40.6 48.7
+           ticksize 1.0 2.0 1.0 2.0
+           expand 0.8
+           box
+           
+           define l_radio_0 (42.5)
+           define x_peak_0  (14.5)
+           seds_comp_radio 41.5 600 11.7 8.3 0.2 -6.5 1.8 0.5 
+           seds_comp_radio 45.5 600 11.7 8.3 0.2 -6.5 1.8 0.5 
+           
+           ltype 0
+           ctype 3
+           relocate  9.69 35
+           draw      9.69 55
+           relocate 14.73 35
+           draw     14.73 55
+           relocate 17.38 35
+           draw     17.38 55
+        
+        } else {
+        
+           relocate ( $($gx2 - 9500) $($gy2 - 2000) ) 
+           expand 3.0
+           if($bw == 1) { 
+              ctype 2
+              ptype 4 3 
+           } else {
+              ctype 3 
+              ptype 4 3 
+           }
+           dot
+           ctype 2
+           expand 1.2
+           putlabel 6 "  radio-X"
+           
+           relocate ( $($gx2 - 9500) $($gy2 - 3500) ) 
+           expand 3.0
+           if($bw == 1) { 
+              ctype 2
+              ptype 4 0 
+           } else {
+              ctype 5 
+              ptype 4 3 
+           }
+           dot
+           ctype 2
+           expand 1.2
+           putlabel 6 "  radio-optical"
+           
+           ltype 0
+           ctype 2
+           draw_box 16.4 0.94 19.2 1.1
+        
+        }
+        
+        # expand 3
+        # relocate ( $($gx2-3000) $($gy1+3000) )
+        # putlabel 5 (a)
+
+#---------------------------------------------------------------------------
+# x_e_gamma2
+x_e_gamma2
+
+        location 10500 25500 5000 32000
+        ctype 2
+        ltype 0
+        
+        #--- a_x ----------------------------------
+        #
+        window 1 -2 1 2
+        limits 39.6 47.4 -0.5 2.7
+        ticksize 0 0 0 0 
+        expand 1.5
+        ctype 2
+        box 0 2 0 0 
+        expand 2
+        ylabel \alpha_X
+        
+        expand 2.5
+        ptype 4 3 
+        # ctype 3
+        points nl_radio ax if(flag_x > 2)
+        ctype 5
+        ltype 2
+        relocate 35 1 draw 55 1
+        ltype 0
+        
+        #--- a_gamma ------------------------------
+        #
+        window 1 -2 1 1
+        limits 39.6 47.4 -0.5 2.7
+        ticksize 0 0 0 0 
+        expand 1.5
+        ctype 2
+        box 1 2 0 0 
+        xlabel log(\\nu L_\\nu) [@5 GHz]
+        expand 2
+        ylabel \alpha_\gamma
+        
+        expand 2.5
+        ptype 4 3 
+        # ctype 3
+        ptype 4 0 
+        points nl_radio ag if(flag_g > 2)
+        ctype 5
+        ltype 2
+        relocate 35 1 draw 55 1
+        ltype 0
+
+
+#---------------------------------------------------------------------------
+# x_e_gamma3
+x_e_gamma3
+
+        location 10500 25500 5000 32000
+        ctype 2
+        ltype 0
+        
+        #--- a_x ----------------------------------
+        #
+        window 1 -3 1 3
+        limits 39.6 47.4 -0.5 2.7
+        ticksize 0 0 0 0 
+        expand 1.5
+        ctype 2
+        box 0 2 0 0 
+        expand 2
+        ylabel \alpha_X
+        
+        expand 2.5
+        ptype 4 3 
+        # ctype 3
+        points nl_radio ax if(flag_x > 2)
+        ctype 5
+        ltype 2
+        relocate 35 1 draw 55 1
+        ltype 0
+        
+        #--- a_gamma ------------------------------
+        #
+        window 1 -3 1 2
+        limits 39.6 47.4 -0.5 2.7
+        ticksize 0 0 0 0 
+        expand 1.5
+        ctype 2
+        box 0 2 0 0 
+        expand 2
+        ylabel \alpha_\gamma
+        
+        expand 2.5
+        ptype 4 3 
+        # ctype 3
+        ptype 4 0 
+        points nl_radio ag if(flag_g > 2)
+        ctype 5
+        ltype 2
+        relocate 35 1 draw 55 1
+        ltype 0
+        
+        
+        #--- a_gamma - a_x ------------------------
+        #
+        window 1 -3 1 1
+        limits 39.6 47.4 -1.5 1.7
+        ticksize 0 0 0 0 
+        expand 1.5
+        ctype 2
+        box 1 2 0 0 
+        xlabel log(\\nu L_\\nu) [@5 GHz]
+        expand 2
+        ylabel \alpha_\gamma - \alpha_X
+        
+        expand 2.5
+        ptype 4 0 
+        # ptype 4 3 
+        # ctype 3
+        points nl_radio (ag-ax) if(flag_x > 2 && flag_g > 2)
+        expand 1.5
+        ptype 4 3 
+        points nl_radio (ag-ax) if(flag_x > 2 && flag_g > 2)
+        ctype 5
+        ltype 2
+        relocate 35 0 draw 55 0
+        ltype 0
+
+#---------------------------------------------------------------------------
+# concat_vectors   fa dei vettoroni con i tre campioni 
+#                  (chiede quale concatenare)
+concat_vectors
+
+        define base ? < Base name for the set of vectors to be concat : >
+        define 1 $base
+
+        set $1_all    = $1_1jy CONCAT $1_slew CONCAT $1_wp
+
+#---------------------------------------------------------------------------
+# concat_gf98_samples   fa dei vettoroni con i tre campioni (peak e lumpeak)
+concat_gf98_samples
+
+        set peak_all    = peak_1jy    CONCAT peak_slew    CONCAT peak_wp
+        set lumpeak_all = lumpeak_1jy CONCAT lumpeak_slew CONCAT lumpeak_wp
+        
+#---------------------------------------------------------------------------
+# boxing  <x-vector> <y-vector>
+#         
+boxing    2
+
+        vecminmax $1 min1 max1
+        vecminmax $2 min2 max2
+        
+        define min1  ?  < The minimum X : >
+        define max1  ?  < The MAXIMUM X : >
+        define step1 ?  < The STEP on x : >
+        define min2  ?  < The minimum Y : >
+        define max2  ?  < The MAXIMUM Y : >
+        define step2 ?  < The STEP on Y : >
+        
+        set xx=$min1,$max1,$step1
+        set yy=$min2,$max2,$step2
+
+        define maxdeep (1)
+        define mindeep (1)
+        image ($(dimen(xx)),$(dimen(yy))) $min1 $max1 $min2 $max2
+
+        define scale1 ($step1)
+        define scale2 ($step2)
+        define bonus1 (1.0)
+        define bonus2 (0.5)
+
+        define scale1 ? <    scale_length on X : >
+        define scale2 ? <    scale_length on Y : >
+        define bonus1 ? < inner-distance bonus : >
+        define bonus2 ? < outer-distance bonus : >
+
+        echo "----------------------------------------------"
+        echo "* the final matrix will be : "$(dimen(xx))" X "$(dimen(yy))
+        echo "----------------------------------------------"
+
+        do ix=0,$(dimen(xx)-1) {
+	  do iy=0,$(dimen(yy)-1) {
+	    echo "-----------------------------------------------------"
+	    define dum (0)
+	    do in=0,$(dimen($1)-1) {
+	      if(($1[$in]-xx[$ix]) < (1.5*$scale1) && ($2[$in]-yy[$iy]) < (1.5*$scale2)) { 
+	      define dist ((($1[$in]-xx[$ix])/$scale1)**2 + (($2[$in]-yy[$iy])/$scale2)**2) 
+		   if($dist < 0.5)                 { define dum ($dum+$bonus1) }
+		   if($dist > 0.5 && $dist < 1.0 ) { define dum ($dum+$bonus2) }
+     	    }
+	    }
+	    if($dum > $maxdeep)              {define maxdeep $dum}
+	    if($dum < $mindeep && $dum > 0 ) {define mindeep $dum}
+	    echo * component [$ix,$iy] of the Matrix is: $dum
+	    set image($ix,$iy) = $dum
+	  }
+	}
+	plot_grey
+
+#---------------------------------------------------------------------------
+# plot_grey [<shade-colour>] [<contours-colour>]
+plot_grey  02
+
+        define levstep ( ($maxdeep-$mindeep)/9. )
+        # set gl= {0.5 1 2 3 4.5 6.75 10.125 11 12.5 }
+        set gl=$mindeep,$maxdeep,$levstep
+        glevels gl
+        levels gl
+        ctype 2
+        
+        define whatbox ? {Do you want to use the "boxing" limits ? [y/n] }
+        if(substr('$whatbox',0,1) == 'y') { 
+            limits $min1 $max1 $min2 $max2 
+            ticksize 0 0 0 0
+            box 
+            define labelon ? {Do you want to put labels ? [y/n] }
+            if(substr('$labelon',0,1) == 'y') { 
+               xlabel log(\\nu)
+               ylabel log(\\nu L_\\nu)
+            }
+        }
+        
+        if($?1) { ctype $1 }
+        greyscale 60 60 25
+        if($?2) { ctype $2 }
+        contour
+
+#---------------------------------------------------------------------------
+# save_image
+#      print the currently stored image 
+#      First step : download it in a set of vectors, mimicking a matrix.
+#      Then print the matrix [ $1  (given as $1_0 $1_1 etc -- see minv) ]
+save_image
+	
+	do i=0,$(dimen(xx)-1) {
+	  set u_$i=image(xx[$i],yy)
+	}
+
+	do 1=0,9 {
+	  if ($?(u_$1)) { set u_0$1 = u_$1 }
+	}
+
+	echo -- $(dimen(xx)) vectors 'u_\#' have been created
+	set dimen(aux_matrix)= 10
+
+	set aux_matrix[0] = $min1
+	set aux_matrix[1] = $max1
+	set aux_matrix[2] = $step1
+	set aux_matrix[3] = $min2
+	set aux_matrix[4] = $max2
+	set aux_matrix[5] = $step2
+	set aux_matrix[6] = $scale1
+	set aux_matrix[7] = $scale2
+	set aux_matrix[8] = $bonus1
+	set aux_matrix[9] = $bonus2
+	echo -- the vector 'aux_matrix[10]' has been created loading
+	echo    min1,max1,step1,min2,max2,step2,scale1,scale2,bonus1,bonus2
+	echo 
+
+#---------------------------------------------------------------------------
+# matrix2file1 <root-matrix-name> <#-of-vectors>  
+matrix2file1 2
+
+	define 3 < $1_0>             # $3 e` la lista di nomi dei vettori
+	define 4 < %6.3g>            # $4 e` la lista del format
+	echo * $3
+	print { $!!3 }
+	echo * $4
+
+	define filebase ? {Base name for the set of files to be written ...}
+	define 7 $filebase
+
+	print   $7_aux '%6.3g ' < aux_matrix > 
+	write + $7_aux  \n
+	print + $7_aux '%6.3g ' < xx >   
+	write + $7_aux  \n
+	print + $7_aux '%6.3g ' < yy >   
+
+	if( $2 <= 10 ) {
+
+	   do k=1,($2-1) {
+	      define 3 <$3 $1_$k> 
+	      define 4 <$4 %6.3g>
+	      echo * [$k]
+	      echo * $3
+	      echo * $4
+	   }
+	   echo * -------------
+	   echo * PRONI !
+	   echo * $3
+	   echo * $4
+	   print '$4\n' < $3 >   
+	   echo $7_data_1.1
+	   print $7_data_1.1 '$4\n' < $3 >   
+	}
+
+	if( $2 > 10 ) {
+
+	   define parts (int($2/10))
+	   define rest  ($2-10*int($2/10))
+	   if($rest == 0) {define max (9)} else {define max ($2-1-10*$parts)}
+	   if($rest == 0) {define tot ($parts)} else {define tot ($parts+1)}
+	   echo * parts = $parts
+	   echo * max   = $max
+
+	   do 5=1,9 {
+	      define 3 <$3 $1_$5> 
+	      define 4 <$4 %6.3g>
+   	   }
+	   print '$4\n' < $3 >   
+	   print $7_data_1.$tot  '$4\n' < $3 >   
+
+	   if($tot > 2) {
+	   do 6=1,($tot-2) {
+	      echo * sei = $6
+	      define 3 < $1_$60>
+	      define 4 < %6.3g>
+
+	      do 5=1,9 {
+	         define 3 <$3 $1_$6$5> 
+	         define 4 <$4 %6.3g>
+	      }
+	      print '$4\n' < $3 >   
+	      print $7_data_$($6+1).$tot '$4\n' < $3 >   
+	   }
+	   }
+
+	   define 3 < $1_""$($tot-1)""0>
+	   define 4 < %6.3g>
+
+	   do 5=1,$max {
+	      define 3 <$3 $1_""$($tot-1)""$5> 
+	      define 4 <$4 %6.3g>
+	   }
+	   print '$4\n' < $3 >   
+	   print $7_data_""$tot"".$tot '$4\n' < $3 >   
+
+	}
+
+#---------------------------------------------------------------------------
+# matrix2file2 <root-matrix-name> <#-of-vectors>  
+matrix2file2 2
+
+	define 3 < $1_0>             # $3 e` la lista di nomi dei vettori
+	define 4 < %6.3g>            # $4 e` la lista del format
+	echo * $3
+	print { $!!3 }
+	echo * $4
+
+	define filebase ? {Base name for the set of files to be written ...}
+	define 7 $filebase
+
+	print   $7_aux '%6.3g ' < aux_matrix > 
+	write + $7_aux  \n
+	print + $7_aux '%6.3g ' < xx >   
+	write + $7_aux  \n
+	print + $7_aux '%6.3g ' < yy >   
+
+	define parts (int($2/10))
+	define rest  ($2-10*int($2/10))
+	if($rest == 0) {define max (9)} else {define max ($2-1-10*$parts)}
+	if($rest == 0) {define tot ($parts)} else {define tot ($parts+1)}
+	echo * parts = $parts
+	echo * tot   = $tot  
+	echo * max   = $max
+
+	if($tot > 1) {
+	do 6=0,($tot-2) {
+	   echo * sei = $6
+	   define 3 < $1_$60>
+	   define 4 < %6.3g>
+
+	   do 5=1,9 {
+	      define 3 <$3 $1_$6$5> 
+	      define 4 <$4 %6.3g>
+	   }
+	   print '$4\n' < $3 >   
+	   print $7_data_$($6+1).$tot '$4\n' < $3 >   
+	}
+	}
+
+	define 3 < $1_""$($tot-1)""0>
+	define 4 < %6.3g>
+
+	do 5=1,$max {
+	   define 3 <$3 $1_""$($tot-1)""$5> 
+	   define 4 <$4 %6.3g>
+	}
+	print '$4\n' < $3 >   
+	print $7_data_""$tot"".$tot '$4\n' < $3 >   
+
+
+#---------------------------------------------------------------------------
+# read_image
+read_image 
+
+	define filebase ? {Base name for the set of files to be read...}
+	define 1 $filebase
+
+	data $1_aux
+	read row daux 3 
+	read row dx   6 
+	read row dy   9 
+
+	define 2 (dimen(dx))
+	echo * $2
+
+	define parts (int($2/10))
+	define rest  ($2-10*int($2/10))
+	if($rest == 0) {define tot ($parts)} else {define tot ($parts+1)}
+	if($rest == 0) {define max (9)} else {define max ($2-1-10*$parts)}
+	echo * parts = $parts
+	echo * tot   = $tot  
+	echo * max   = $max
+
+	if( $tot > 1 ) {
+	   do 3=0,($tot-2) {
+	      data $1_data_$($3+1).$tot
+	      do 4=0,9 {
+	         read dv_$3$4 $($4+1)
+	      }
+	   }
+	}
+
+	data $1_data_""$tot"".$tot
+	do 4=0,$max {
+	   read dv_$($tot-1)$4 $($4+1)
+	}
+
+	#-------------------------------------------------------------------
+	# readimasub
+	
+	if($tot >= 1) {
+	  foreach k (0 1 2 3 4 5 6 7 8 9) {
+	     echo * $k
+	     set dv_$k = dv_0$k
+	  }
+	} else {
+	  do k=0,$max {
+	     echo * $k
+	     set dv_$k = dv_0$k
+	  }
+	} 
+
+
+	#-------------------------------------------------------------------
+	# stophere
+
+	image($(dimen(dx)),$(dimen(dy))) $(daux[0]) $(daux[1]) $(daux[3]) $(daux[4]) 
+
+	define maxdeep (1)
+	define mindeep (0.5)
+
+	do 5=0,$(dimen(dx)-1) { 
+	  do 6=0,$(dimen(dy)-1) { 
+	    echo * [$5,$6]  $(dv_$5[$6])
+	    if(dv_$5[$6] > $maxdeep)                  {define maxdeep $(dv_$5[$6])}
+	    if(dv_$5[$6] < $mindeep && dv_$5[$6] > 0) {define mindeep $(dv_$5[$6])}
+	    set image($5,$6) = dv_$5[$6]
+ 	  }
+	}
+	echo * Minimum : $mindeep
+	echo * Maximum : $maxdeep
+
+	define min1 $(daux[0])
+	define max1 $(daux[1])
+	define min2 $(daux[3])
+	define max2 $(daux[4])
+
+
+#---------------------------------------------------------------------------
+# stopheresqrt
+stopheresqrt
+
+	image($(dimen(dx)),$(dimen(dy))) $(daux[0]) $(daux[1]) $(daux[3]) $(daux[4]) 
+
+	define maxdeep (1)
+	define mindeep (0.5)
+
+	do 5=0,$(dimen(dx)-1) { 
+	  do 6=0,$(dimen(dy)-1) { 
+	    echo * [$5,$6]  $(dv_$5[$6])
+	    if(dv_$5[$6] > $maxdeep)                  {define maxdeep $(dv_$5[$6])}
+	    if(dv_$5[$6] < $mindeep && dv_$5[$6] > 0) {define mindeep $(dv_$5[$6])}
+	    set image($5,$6) = sqrt(dv_$5[$6])
+ 	  }
+	}
+	define mindeep (sqrt($mindeep))
+	define maxdeep (sqrt($maxdeep))
+	echo * Minimum : $mindeep
+	echo * Maximum : $maxdeep
+
+#---------------------------------------------------------------------------
+# write_image
+write_image
+
+	define filename ? {Name name for the set of files to be read...}
+	define 1 $filename
+
+	data $1_aux
+	read row daux 3 
+	read row dx   6 
+	read row dy   9 
+
+	image($(dimen(dx)),$(dimen(dy))) $(daux[0]) $(daux[1]) $(daux[3]) $(daux[4]) 
+	do 1=0,$(dimen(dx)-1) {
+	   set tx_$1 = 0*dy + dx[$1]
+	   print + mucca < tx_$1 dy dv_$1 >
+	}
+
+
+#---------------------------------------------------------------------------

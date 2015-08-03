@@ -1,0 +1,335 @@
+#------------------------------------------------------------------------------
+# logn_logs
+logn_logs
+
+	foreach 1 < B Rmr Xmr X > {
+	   foreach 2 < emss slew dxrbs sedentary > {
+	      data $1.$2.dat
+	      read < fx_$1_$2 1 tot_$1_$2 2 lbl_$1_$2 3 hbl_$1_$2 4 >
+	      if( '$2' == 'emss' ) {
+	         set fx_$1_$2 = fx_$1_$2 - 17.7273 + 17.7203
+	      }
+	      if( '$2' == 'slew' ) {
+	         set fx_$1_$2 = fx_$1_$2 - 17.7841 + 17.7203
+	      }
+	      foreach 3 < tot hbl lbl > {
+	         set dum1 = reverse($3_$1_$2)
+	         set dum2 = cumulate(dum1)
+	            set int_$3_$1_$2 = reverse(dum2)
+	         set lg_int_$3_$1_$2 = lg(int_$3_$1_$2)
+	      }
+	   }
+	}
+
+	window 1 1 1 1
+	location 6000 31000 5500 31000
+	ctype 2 
+	expand 1.5
+	lweight 3 
+	limits -14.4 -9.3 -4.5 0.5
+	ticksize -1 0 -1 0
+	notation -4 4 -3 3 
+	box 1 2 0 0 
+	xlabel F_{X} [erg/cm^2/s]
+	ylabel N(>F_{X}) [deg^{-2}]
+
+	ptype 4 3 
+
+	define 2 ? { Which scenario [B/Rmr/Xmr/X] : }
+	define 3 ? {     What class [tot/hbl/lbl] : }
+	define i 2
+	foreach 1 < emss slew dxrbs sedentary > {
+	   ctype $i
+	   if( '$3' == 'hbl' || '$3' == 'lbl' ) { ltype 2 }
+	   connect fx_$2_$1 lg_int_$3_$2_$1 
+	   ltype 0
+	   expand 2.5
+	   if( '$3' == 'hbl' || '$3' == 'lbl' ) { expand 1.5 }
+	   points  fx_$2_$1 lg_int_$3_$2_$1 
+	   relocate ( $($gx2 - 1000) $($gy2 - 1000*$i) ) 
+	   expand 1.5
+	   putlabel 4 $1
+	   define i $($i+1)
+	}
+
+	if( '$2' == 'B'   ) { define label "Bolometric" }
+	if( '$2' == 'Rmr' ) { define label "Radio-leading" }
+	if( '$2' == 'Xmr' ) { define label "X-ray leading" }
+	if( '$2' == 'X'   ) { define label "X-ray leading" }
+
+	relocate ( $($gx1 + 1000) $($gy1 + 1000) ) 
+	ctype 2 
+	putlabel 9 $label
+
+#------------------------------------------------------------------------------
+# logn_logs_real
+logn_logs_real
+
+	foreach 1 < B Rmr Xmr X > {
+	   foreach 2 < emss slew dxrbs sedentary > {
+	      data $1.$2.dat
+	      read < fx_$1_$2 1 tot_$1_$2 2 lbl_$1_$2 3 hbl_$1_$2 4 >
+	      if( '$2' == 'emss' ) {
+	         set fx_$1_$2 = fx_$1_$2 - 17.7273 + 17.7203
+	      }
+	      if( '$2' == 'slew' ) {
+	         set fx_$1_$2 = fx_$1_$2 - 17.7841 + 17.7203
+	      }
+	      foreach 3 < tot hbl lbl > {
+	         set $3_$1_$2 = lg($3_$1_$2)
+	      }
+	   }
+	}
+
+	window 1 1 1 1
+	location 6000 31000 5500 31000
+	ctype 2 
+	expand 1.5
+	lweight 3 
+	limits -14.4 -9.3 -4.5 0.5
+	ticksize -1 0 -1 0
+	notation -4 4 -3 3 
+	box 1 2 0 0 
+	xlabel F_{X} [erg/cm^2/s]
+	ylabel N(>F_{X}) [deg^{-2}]
+
+
+	define 2 ? { Which scenario [B/Rmr/Xmr/X] : }
+	define 3 ? {     What class [tot/hbl/lbl] : }
+	define i 2
+	ptype 4 3 
+	define punti ? { PTYPE [0..3] : }
+	foreach 1 < emss slew dxrbs sedentary > {
+	   ctype $i
+	   if( $punti == 0 ) { ltype 2 }
+	   # if( '$3' == 'hbl' || '$3' == 'lbl' ) { ltype 2 }
+	   connect fx_$2_$1 $3_$2_$1 
+	   ltype 0
+	   expand 2.5
+	   ptype 4 $punti
+	   # if( '$3' == 'hbl' || '$3' == 'lbl' ) { expand 1.5 }
+	   points  fx_$2_$1 $3_$2_$1 
+	   relocate ( $($gx2 - 1000) $($gy2 - 1000*$i) ) 
+	   expand 1.5
+	   putlabel 4 $1
+	   define i $($i+1)
+	}
+
+	if( '$2' == 'B'   ) { define label "Bolometric" }
+	if( '$2' == 'Rmr' ) { define label "Radio-leading" }
+	if( '$2' == 'Xmr' ) { define label "X-ray leading" }
+	if( '$2' == 'X'   ) { define label "X-ray leading" }
+
+	relocate ( $($gx1 + 1000) $($gy1 + 1000) ) 
+	ctype 2 
+	putlabel 9 $label
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+# logn_logs_dxrbs 
+logn_logs_dxrbs 
+
+	set fr_dxrbs= < 0.004 0.007 0.025 0.050 0.075 0.150 0.300 0.700 1.000 > 
+	set lg_fr_dxrbs= lg(fr_dxrbs)
+
+	foreach 1 < B Rmr Xmr X > {
+	   foreach 2 < tot hbl lbl > {
+	       set ns_$1_$2 = fr_dxrbs*0.0
+	   }
+	}
+
+	foreach 1 < B Rmr Xmr X > {
+	   do 2=0,8 { 
+	      data $1.dat
+	      lines $($2*19+1) $($2*19+19)
+	      read < area_$1_$2 3 tot_$1_$2 5 lbl_$1_$2 6 hbl_$1_$2 7 >
+	   }
+	}
+
+	foreach 1 < B Rmr Xmr X > {
+	   foreach 3 < tot hbl lbl > {
+	      do 2=0,8 { 
+	         # define dum $(sum($3_$1_$2/area_$1_$2))
+	         define dum $(sum($3_$1_$2))
+	         set ns_$1_$3[$2] = lg($dum)
+	      }
+	   }
+	}
+
+	window 1 1 1 1
+	location 6000 31000 5500 31000
+	ctype 2 
+	expand 1.5
+	lweight 3 
+	limits -2.6 0.1 -2.5 0.5
+	ticksize -1 0 -1 0
+	notation -4 4 -3 3 
+	box 1 2 0 0 
+	xlabel F_{R} [Jy]
+	ylabel N(>F_{R}) [deg^{-2}]
+
+	define 2 ? { Which scenario [B/Rmr/Xmr/X] : }
+	print '  %6.3f  %10.4e  %10.4e  %10.4e\n' < fr_dxrbs ns_$2_tot ns_$2_lbl ns_$2_hbl >
+	define 3 ? {     What class [tot/hbl/lbl] : }
+	define i 2
+	ptype 4 3 
+
+	if( substr('$2',0,1) == 'B' ) { define i (4) }
+	if( substr('$2',0,1) == 'R' ) { define i (3) }
+	if( substr('$2',0,1) == 'X' ) { define i (5) }
+
+	ctype $i
+	ctype 2
+
+	define punti ? { PTYPE filling : }
+	if( $punti == 1 ) { ltype 2 }
+	connect lg_fr_dxrbs ns_$2_$3
+	ltype 0
+	expand 3 
+	if( $punti == 0 ) { 
+	  ptype 4 3 
+	  ctype 1
+	  expand 2.2
+	  points lg_fr_dxrbs ns_$2_$3
+	  ptype 4 $punti
+	  ctype 2
+	  expand 3
+	  points lg_fr_dxrbs ns_$2_$3
+	}
+	if( $punti == 1 ) { 
+	  ptype 4 $punti
+	  angle 45 expand 4 lweight 4
+	  points lg_fr_dxrbs ns_$2_$3
+	  angle 0 lweight 3 
+	}
+	if( $punti > 1 ) { 
+	  ptype 4 $punti
+	  points lg_fr_dxrbs ns_$2_$3
+	}
+
+	if( '$2' == 'B'   ) { define label1 "Bolometric" }
+	if( '$2' == 'Rmr' ) { define label1 "Radio-leading" }
+	if( '$2' == 'Xmr' ) { define label1 "X-ray leading" }
+	if( '$2' == 'X'   ) { define label1 "X-ray leading" }
+
+	if( '$3' == 'tot' ) { define label2 "ALL" define i (1) }
+	if( '$3' == 'lbl' ) { define label2 "LBL" define i (2) }
+	if( '$3' == 'hbl' ) { define label2 "HBL" define i (3) }
+
+	relocate ( $($gx2 - 2000) $($gy2 - 1250*$i) ) 
+	expand 1.5
+	putlabel 4 $label1 $label2 
+
+	ptype 4 $punti
+	expand 3
+	if( $punti == 1 ) { angle 45 expand 4 }
+	relocate ( $($gx2 - 1500) $($gy2 - 1250*$i ) ) 
+	dot 
+	if( $punti == 1 ) { angle 0 }
+
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+# logn_logs_sede 
+logn_logs_sede 
+
+	set fr_sed = < 0.004 0.007 0.025 0.050 0.075 0.150 0.300 0.700 1.000 > 
+	set fr_sed = lg(fr_sed)
+	set dimen(sed_strings) = 9.s
+	set sed_strings = < 0.004 0.007 0.025 0.050 0.075 \
+			    0.150 0.300 0.700 1.000 > 
+
+	foreach 1 < B Rmr Xmr X > {
+	   foreach 2 < tot hbl > {
+	       set ns_$1_$2 = fr_sed*0.0
+	   }
+	}
+
+	foreach 1 < B Rmr Xmr X > {
+	   do 2=0,8 { 
+	      data $1.dat
+	      lines $($2*9+1) $($2*9+9)
+	      read < area_$1_$2 3 tot_$1_$2 5 hbl_$1_$2 7 >
+	   }
+	}
+
+	foreach 1 < B Rmr Xmr X > {
+	   foreach 3 < tot hbl > {
+	      do 2=0,8 { 
+	         # define dum $(sum($3_$1_$2/area_$1_$2))
+	         define dum $(sum($3_$1_$2))
+	         set ns_$1_$3[$2] = lg($dum)
+	      }
+	   }
+	}
+
+	window 1 1 1 1
+	location 6000 31000 5500 31000
+	ctype 2 
+	expand 1.5
+	lweight 3 
+	limits -3.1 0.1 -5.1 -0.9
+	ticksize -1 0 -1 0
+	notation -4 4 -3 3 
+	box 1 2 0 0 
+	xlabel F_{R} [Jy]
+	ylabel N(>F_{R}) [deg^{-2}]
+
+	define 2 ? { Which scenario [B/Rmr/Xmr/X] : }
+	# define 3 ? {     What class [tot/hbl] : }
+	define 3 "tot"
+	define i 2
+	ptype 4 3 
+
+	# define color ? { CTYPE : }
+	if( substr('$2',0,1) == 'B' ) { define i (4) }
+	if( substr('$2',0,1) == 'R' ) { define i (3) }
+	if( substr('$2',0,1) == 'X' ) { define i (5) }
+
+	ctype $i
+	ctype 2 
+
+	define punti ? { PTYPE filling : }
+	if( $punti == 1 ) { ltype 2 }
+	connect fr_sed ns_$2_$3
+	ltype 0
+	expand 3 
+	if( $punti == 0 ) { 
+	  ptype 4 3 
+	  ctype 1
+	  expand 2.2
+	  points fr_sed ns_$2_$3
+	  ptype 4 $punti
+	  ctype 2
+	  expand 3
+	  points fr_sed ns_$2_$3
+	}
+	if( $punti == 1 ) { 
+	  ptype 4 $punti
+	  angle 45 expand 4 lweight 4
+	  points fr_sed ns_$2_$3
+	  angle 0 lweight 3 
+	}
+	if( $punti > 1 ) { 
+	  ptype 4 $punti
+	  points fr_sed ns_$2_$3
+	}
+
+	if( '$2' == 'B'   ) { define label "Bolometric" }
+	if( '$2' == 'Rmr' ) { define label "Radio-leading" }
+	if( '$2' == 'Xmr' ) { define label "X-ray leading" }
+	if( '$2' == 'X'   ) { define label "X-ray leading" }
+
+	relocate ( $($gx2 - 2000) $($gy2 - 1250*$i) ) 
+	expand 1.5
+	putlabel 4 $label 
+
+	ptype 4 $punti
+	expand 3
+	if( $punti == 1 ) { angle 45 expand 4 lweight 4 }
+	relocate ( $($gx2 - 1500) $($gy2 - 1250*$i ) ) 
+	dot 
+	if( $punti == 1 ) { angle 0 lweight 3 }
+
+
+#------------------------------------------------------------------------------

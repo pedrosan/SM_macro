@@ -1,0 +1,23 @@
+# fabrizio
+fabrizio
+
+	define a1 ? { Alpha1 ?}
+	define a2 ? { Alpha2 ?}
+	define xb ? { break ? [log] }
+
+	set x = 8,20,0.1
+
+	set y = -$a1*x + ($a1 - $a2)*lg(1 + exp(2.302*(x - $xb)))
+
+	limits 7.5 20.5 y
+	expand 1.5
+	ticksize 0 0 0 0 
+	box
+
+	lweight 3 
+	ctype 3 
+	connect x y
+
+
+	
+

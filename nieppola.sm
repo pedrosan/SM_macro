@@ -1,0 +1,52 @@
+#-------------------------------------------------------------------------------
+# compare_nieppola
+compare_nieppola
+
+        reset_graph
+
+	data nieppola_nupeak.tmp
+        read < peak_niep 4 >
+        data fossati98_nupeak.tmp
+        read < peak_foss 9 >
+
+        set a = peak_niep if (peak_niep < 30  && peak_niep > 0)
+        set b = peak_foss if (peak_foss < 30  && peak_foss > 0)
+	set c = a CONCAT b
+	vecminmax c p1 p2 
+	echo "-------------------------"
+	echo "  Common objects : "$(dimen(a)) 
+	echo "  Min. nu_peak   : "$p1
+	echo "  Max. nu_peak   : "$p2
+	echo "-------------------------"
+
+        set a = peak_niep if ( peak_niep < 30  && peak_niep > 0 && peak_foss < 30  && peak_foss > 0 )
+        set b = peak_foss if ( peak_niep < 30  && peak_niep > 0 && peak_foss < 30  && peak_foss > 0 )
+	set diff = a - b 
+	vecminmax diff a b 
+	echo $a $b
+
+
+	ctype 2 
+        limits 11.8 21.8 11.8 21.8
+	box 
+        xlabel Nieppola06
+        ylabel Fossati98
+
+	ctype 4 
+	ltype 2 
+	relocate 10 10 draw 30 30 
+	ltype 1 
+	define shift $(1./1.41)
+	define shift $(1)
+	relocate 10 $(10 + $shift) draw 30 $(30 + $shift)
+	relocate 10 $(10 - $shift) draw 30 $(30 - $shift)
+	ltype 0 
+	ctype 2
+
+        ctype 3 
+	ptype 20 3 
+	points peak_niep peak_foss 
+
+	ctype 2
+
+#-------------------------------------------------------------------------------

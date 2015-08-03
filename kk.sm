@@ -1,0 +1,740 @@
+#-------------------------------------------------------------------------------
+# get_nfn_template   e1=0.1 e2=30 a1=0.6 a2=3.0 e_break=2.0 fold=1.0
+#                  : It calls 'fabrizio4'-like function
+get_nfn_template 101
+
+	echo "---------------------------------------------"
+	echo " First of all call computed_curved_nfn to get a "
+	echo " template spectrum."
+	echo " Example of good parameters for fabrizio4:"
+	echo " E_ref_1 [keV]      :  0.1 "
+	echo " E_ref_2 [keV]      : 30.0 "
+	echo " Alpha @ E_ref_1    :  0.6 "
+	echo " Alpha @ E_ref_2    :  3.0 "
+	echo " break Energy [keV] :  2.0 "
+	echo " 'folding' exponent :  1.0 "
+	echo "---------------------------------------------"
+
+        if($?1) {
+            if(substr('$1',0,2) == '-h' ){
+    	       echo "-----------------------------------------------"
+	       echo " relazione usata da Fabrizio nel paper"
+	       echo " CON aggiunto un esponente di 'fold'"
+	       echo " CON cambiata la forma dell'INPUT"
+	       echo " E' come quella implementata in XSPEC"
+	       echo " Calcolata sul range -2 < log(nu) < 2"
+    	       echo "-----------------------------------------------"
+               echo " get_nfn_template: "
+               echo " "
+               echo " USAGE: "
+               echo "  > get_nfn_template e1=0.1 e2=30 a1=0.6 a2=3.0 e_break=2.0 fold=1.0 "
+               echo "  "
+               echo "  > get_nfn_template -file "
+	       echo "      will prompt for selection of a pre-cooked set of parameters "
+               echo "  "
+               echo "  > get_nfn_template "
+	       echo "      in this case it prompts for all parameters "
+               echo " "
+               return
+	    }
+            if(substr('$1',0,2) == '-f' ){
+	       echo "-----------------------------------------------"
+	       echo " Existing pre-cooked nFn templates: "
+	       echo " "
+	       systemcall egrep fold ./NFN_TEMPLATE*.dat
+	       echo " "
+	       define cooked ? < Select one by entering its code : >
+	       data "NFN_TEMPLATE_$!cooked.dat"
+	       define argv read 1
+	       # echo "Loaded parameters: "$argv
+
+            } else {
+	       # define silentparsing 1
+               # mparsep $1 
+	       # define silentparsing 0
+	       define argv $1
+            }
+        } else {
+
+	    define e1      ? {      E_ref_1 [keV] : }
+	    define e2      ? {      E_ref_2 [keV] : }
+	    define a1      ? {    Alpha @ E_ref_1 : }
+	    define a2      ? {    Alpha @ E_ref_2 : }
+	    define e_break ? {        break [keV] : }
+	    define fold    ? { "folding" exponent : }
+	    define argv " e1=$!e1 e2=$!e2 a1=$!a1 a2=$!a2 e_break=$!e_break fold=$!fold "
+
+	}
+        # compute_curved_nfn e1=0.1 e2=30 a1=0.6 a2=3.0 e_break=2.0 fold=1.0 "
+
+	define nfn_template_parameters "$!argv"
+
+	echo "Arguments passed to compute_curved_nfn: "$argv
+
+	#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	compute_curved_nfn $argv
+	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+	set lg_nfn = lg_e + lg_f
+	vecminmax lg_nfn a b 
+
+	set lg_nfn = lg_nfn - $b
+	set lg_f   = lg_nfn - lg_e
+
+	set tmp_e local
+	set tmp_f local
+	set tmp_e = lg_e 
+	set tmp_f = -lg_nfn
+	sort < tmp_f tmp_e >
+
+	define lg_e_peak $(tmp_e[0])
+	echo "E_peak (from array) : "$lg_e_peak "--" $(10.**$lg_e_peak)
+
+	set lg_e_model = lg_e - $lg_e_peak
+	set x          = lg_e_model
+	set y          = lg_nfn
+	set i          = 1,dimen(lg_e_model)
+
+#-------------------------------------------------------------------------------
+# prepare_flaring_lc
+prepare_flaring_lc
+
+	define case ? < What test case [e.g. 1a] : >
+	define 1 $case
+	data INPUT_$1.dat
+	define Nflares read 2 4
+	define t_max   read 3 4
+	define filler  read 4 4
+
+	define base_peak read 5 4 
+	define base_nfn  read 5 5 
+
+	set off=fill($t_max,0)
+	set on =fill($t_max,1)
+
+	do 1=1,$Nflares {
+	   define flare_$1 read $(6+$1)
+
+	   #>>>>>>>>>>>>>>>>>>>>>>>>>>
+	   prepare_flare $flare_$1
+	   #<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+	   foreach 2 < filter t_evolution peak_evolution nfn_evolution > {
+	      set $2_$1 = $2
+	   }
+	   set peak_evolution_$1 = $peak_max*peak_evolution_$1 + $filler
+	   set nfn_evolution_$1  = $nfn_max*nfn_evolution_$1   + $filler
+
+	}
+
+	if( $base_peak > 0 ) {
+	   set t_evolution_0    = t_evolution_1
+	   set peak_evolution_0 = 0*t_evolution_1 + $base_peak 
+	   set nfn_evolution_0  = 0*t_evolution_1 + $base_nfn
+	   set filter_0         = 0*t_evolution_1 + 1
+	} else {
+	   set t_evolution_0    = t_evolution_1
+	   set peak_evolution_0 = 0*t_evolution_1 + 1e-15
+	   set nfn_evolution_0  = 0*t_evolution_1 + 1e-15
+	   set filter_0         = 0*t_evolution_1 + 0
+	}
+
+#-------------------------------------------------------------------------------
+# compute_full_lc  [noplot]
+#          if $1 is defined it does not plot the SED as it evolves, it only
+#          computes them.
+compute_full_lc 01
+
+	define plot (1)
+	if( $?1 ) { define plot (0) }
+
+	define dt_reb ? < dt for rebinning : >
+
+        set _lg_e = lg_e_model     if( lg_e_model >= -2 && lg_e_model <= 2 )
+	
+	set lg_xp = t_evolution_1*0 - 4.0
+	set lg_lp = t_evolution_1*0 - 4.0
+
+	ptype 4 3 
+
+	set tot_f_reb local
+	set tot_f_reb = _lg_e*0 + 1e-15
+	set dimen(reb_time) = $($t_max/$dt_reb)
+	set dimen(reb_peak) = $($t_max/$dt_reb)
+	set dimen(reb_nfn) = $($t_max/$dt_reb)
+
+	define ireb (0)
+	define reb_time (0)
+	define n_added (0)
+	define n_reb (0)
+
+	do 1=1,$t_max {
+
+	   # these two variables needed to keep track of good contributions
+	   # in each time step, or set of time steps co-added by rebinning
+	   define n (0)
+	   define n_reb ($n_reb + 1)
+
+	   set tot_f = _lg_e*0 + 1e-15
+
+	   do 2=0,$Nflares {
+	      if( filter_$2[$($1-1)] > 0 ) {
+		 define n $($n+1)
+	         set nfn_$2 = $(nfn_evolution_$2[$($1-1)])*10.0**(lg_nfn)
+		 define n_steps_shift $(int(lg(peak_evolution_$2[$($1-1)])/$lg_e_step))
+		 # echo "N_steps _shift for peak : "$n_steps_shift
+
+		 shift nfn_$2 $n_steps_shift
+		 set nfn_$2 = nfn_$2         if( lg_e_model >= -2 && lg_e_model <= 2 )
+		 set x_$2   = lg_e_model     if( lg_e_model >= -2 && lg_e_model <= 2 )
+		 
+	      } else {
+	         set nfn_$2 = 0*lg_nfn
+		 set nfn_$2 = nfn_$2         if( lg_e_model >= -2 && lg_e_model <= 2 )
+		 set x_$2   = lg_e_model     if( lg_e_model >= -2 && lg_e_model <= 2 )
+	      }
+
+	      set f_$2 = nfn_$2/10.0**x_$2
+	      set tot_f = tot_f + f_$2
+
+	      foreach 3 < x f nfn > {
+	         delete $3_$2
+	      }
+	   }
+
+	   #-----------------------------------------------------------
+	   # keeps track and computes the rebinned evolution
+	   #-----------------------------------------------------------
+	   if( $n > 0 ) {
+	      define n_added  $($n_added  + 1)
+	      define reb_time $($reb_time + $1)
+	      set tot_f_reb = tot_f_reb + tot_f
+	   } 
+	   #if( $n_reb < $dt_reb ) {
+	   #} else {
+	   #}
+
+	   if( $n_reb == $dt_reb ) {
+
+	      define ireb $($ireb + 1)
+	      if( $n_added > 0 ) { 
+	         set lg_nfn_reb = _lg_e + lg(tot_f_reb/$n_added)
+	         #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	         SUB_find_peak _lg_e lg_nfn_reb xp_reb lp_reb
+	         #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+	      }
+	      set reb_time[$ireb] = $reb_time/$n_added
+	      set reb_peak[$ireb] = $xp_reb
+	      set reb_nfn[$ireb]  = $lp_reb
+
+	      # resets counters
+	      define n_added  (0)
+	      define reb_time (0)
+	      set tot_f_reb = _lg_e*0 + 1e-15
+	      define n_reb (0)
+
+	   }
+
+
+	   #-----------------------------------------------------------
+	   # clean model case
+	   #-----------------------------------------------------------
+	   set lg_tot_nfn = _lg_e + lg(tot_f)
+
+	   if( $n > 0 ) {
+	      #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	      SUB_find_peak _lg_e lg_tot_nfn xp lp
+	      #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+	      set lg_xp[$($1-1)] = $xp
+	      set lg_lp[$($1-1)] = $lp
+
+	      if( ($1 % 10) == 0 ) {
+	         echo " Time/peak/nfn : "$(sprintf('%04d',$1)) $(sprintf('%7.4f',$xp)) $(sprintf('%7.4f',$lp)) \
+		$(sprintf('%7.4f',$(10.0**$xp))) $(sprintf('%7.4f',$(10.0**$lp)))
+	         if( $plot > 0 ) {
+	            ctype 5
+	            connect _lg_e lg_tot_nfn
+	            relocate $xp $lp dot
+	         } 
+	      }
+	   }
+
+	}
+
+#---------------------------------------------------------------------------
+# plot_summary
+plot_summary
+
+	ctype 2 
+	ltype 0 
+	lweight 3 
+	expand 1.5
+	window 1 1 1 1 
+
+	set time = t_evolution_1
+
+	#---------------
+	SUB_rescalings
+	#---------------
+
+	#--------------------------------------------------------------
+	# nFn
+	#--------------------------------------------------------------
+	window 1 -2 1 2 
+	limits 0 $t_max -0.05 1.05
+	ticksize 0 0 0 0 
+	expand 1.5
+	box 0 2 0 0 
+	ylabel \\nu F_{\\nu}
+
+	ctype 3
+	ltype 2 
+	lweight 2 
+	do 2=1,$Nflares {
+	   connect time lp$2
+	}
+	ltype 0 
+	lweight 3 
+	connect time lp
+
+	##TEMP
+	set reb_lp = (10.0**reb_nfn)/$top_lp
+	points reb_time reb_lp
+
+	ltype 0 ctype 2 expand 1.5 lweight 3
+
+	#--------------------------------------------------------------
+	# peak
+	#--------------------------------------------------------------
+	window 1 -2 1 1 
+	limits 0 $t_max -0.05 1.05
+	ticksize 0 0 0 0 
+	expand 1.5
+	box 1 2 3 0 
+	ylabel \\nu_{peak}
+	xlabel Time
+
+	ctype 4
+	ltype 2 
+	lweight 2 
+	do 2=1,$Nflares {
+	   connect time xp$2
+	}
+	ltype 0 
+	lweight 3 
+	connect time xp
+
+	##TEMP
+	set reb_xp = (10.0**reb_peak)/$scale_peak
+	points reb_time reb_xp
+
+	ltype 0 ctype 2 expand 1.5 lweight 3
+	window 1 1 1 1 
+
+#---------------------------------------------------------------------------
+# plot_xp_lp   [color=##]
+plot_xp_lp 101
+
+        if($?1) {
+            if(substr('$1',0,2) == '-h' ){
+    	       echo "-----------------------------------------------"
+               echo " plot_xp_lp: "
+               echo " "
+               echo " USAGE: "
+               echo "    > plot_xp_lp color=2 "
+               echo "  or"
+               echo "    > plot_xp_lp (in this case it draws the line in black) "
+               echo " "
+    	       echo "-----------------------------------------------"
+               return
+            } else {
+	       define silentparsing 1
+               mparsep $1 
+	       define silentparsing 0
+	       define plotcolor $color
+            }
+        } else {
+	   define plotcolor 5
+	} 
+
+	ctype 2 
+	ltype 0 
+	lweight 3 
+	window 1 1 1 1 
+
+	#--------------
+	SUB_rescalings
+	#--------------
+
+	limits -1.0 0.1 -1.0 0.1
+	ticksize -1 5 -1 5 
+	expand 1.5
+	box
+	expand 2.5
+	xlabel \\nu F_{\\nu,peak}
+	ylabel \\nu_{peak}
+
+	lweight 2
+	ltype 1 
+	grid  1 
+	ltype 0
+
+	lweight 4
+	ltype 0 
+	ctype $plotcolor
+	connect (lg(lp)) (lg(xp))
+
+#---------------------------------------------------------------------------
+# save_full_lc  [<Suffix of arrays to be written>]
+save_full_lc 01
+
+        if(!$?1) {
+           define 1 ? <* Mnemonics for output file name : >
+        }
+        define outaux $1
+ 
+        foreach _temp_ < outfilename veclist fmt > {
+           define $_temp_ local
+        }
+        define outfilename SAVE_full_lc_$1.dat
+
+	write   $outfilename "# input : INPUT_$!case.dat"
+	write + $outfilename "# SED template parameters : "$nfn_template_parameters 
+	systemcall cat INPUT_$case.dat >> $outfilename
+
+        define print_noheader 1
+	define veclist " time  lg_xp lg_lp xp lp "
+	define fmt " %10.3f    %10.5f  %10.5f    %10.5f  %10.5f\n"
+	write + $outfilename "#-------------------------------------------------------------------------------"
+	write + $outfilename "# Total flux and peak evolution "
+	write + $outfilename "#     Time    lg_xp   lg_lp    xp   lp "
+	write + $outfilename "# "
+	print + $outfilename '$!fmt' < $veclist >
+ 
+	define fmt " %10.3f   %5.1f    %10.5f  %10.5f    %10.5f  %10.5f\n"
+	do 9=1,$Nflares {
+	    define veclist "t_evolution_$9 filter_$9 peak_evolution_$9 nfn_evolution_$9 xp$9 lp$9 " 
+	    write + $outfilename "#-------------------------------------------------------------------------------"
+	    write + $outfilename "# Flare $!9"
+	    write + $outfilename "#     Time   filter       peak        nFn            xp          lp"
+	    write + $outfilename "# "
+	    print + $outfilename '$!fmt' < $veclist >
+	}
+
+	if( $base_peak > 0 ) {
+	    define 9 (0)
+	    define veclist "t_evolution_$9 filter_$9 peak_evolution_$9 nfn_evolution_$9 xp$9 lp$9 " 
+	    write + $outfilename "#-------------------------------------------------------------------------------"
+	    write + $outfilename "# Baseline Steady Component"
+	    write + $outfilename "#     Time   filter       peak        nFn            xp          lp"
+	    write + $outfilename "# "
+	    print + $outfilename '$!fmt' < $veclist >
+	}
+	write + $outfilename "#-------------------------------------------------------------------------------"
+        define print_noheader 0
+
+#---------------------------------------------------------------------------
+# load_full_lc  [<Suffix of arrays to be written>]
+load_full_lc 01
+
+        if(!$?1) {
+           define 1 ? <* Mnemonics for input file name : >
+        }
+        define inaux $1
+
+	data SAVE_full_lc_$1.dat
+
+	define Nflares   read 4 4
+	define t_max     read 5 4
+	define base_peak read 7 4 
+
+	define l1 local
+	define l2 local
+	define veclist local
+	define nfl local
+
+	define l1 $(8 + $Nflares + 4 + 1      )  
+	define l2 $(8 + $Nflares + 4 + $t_max )
+	lines $l1 $l2
+
+	define veclist " time 1 lg_xp 2 lg_lp 3 xp 4 lp 5 "
+	read < $veclist >
+
+	do 9=1,$Nflares {
+	    define l1 $(8 + $Nflares + (4 + $t_max) + 4*$9 + ($9-1)*$t_max + 1 )  
+	    define l2 $(8 + $Nflares + (4 + $t_max) + 4*$9 +     $9*$t_max     )
+	    lines $l1 $l2
+
+	    define veclist "t_evolution_$9 1 filter_$9 2 peak_evolution_$9 3 nfn_evolution_$9 4 xp$9 5 lp$9 6 " 
+	    read < $veclist >
+	}
+
+	if( $base_peak > 0 ) {
+	    define nfl $($Nflares + 1)
+	    define l1 $(8 + $Nflares + (4 + $t_max) + 4*$nfl + ($nfl-1)*$t_max + 1 )  
+	    define l2 $(8 + $Nflares + (4 + $t_max) + 4*$nfl +     $nfl*$t_max     )
+	    lines $l1 $l2
+
+	    define 9 (0)
+	    define veclist "t_evolution_$9 1 filter_$9 2 peak_evolution_$9 3 nfn_evolution_$9 4 xp$9 5 lp$9 6 " 
+	    read < $veclist >
+	}
+
+##-------------------------------------------------------------------------------
+## prepare_flare : calls 'fabrizio4'  from test_curved_models
+##    prepare_flare t_top=1500 dt_rise=100 dt_decay=150 nR=1.5 nD=1.0 fR=2.0 fD=2.0 
+##
+prepare_flare 101
+                                                                                                                                                   
+        if($?1) {
+            if(substr('$1',0,2) == '-h' ){
+               echo " prepare_flare: "
+               echo " "
+               echo " USAGE: "
+               echo "    > prepare_flare t_top=1500 dt_rise=100 dt_decay=150 nR=1.5 nD=1.0 fR=2.0 fD=2.0"
+
+               echo "  or"
+               echo "    > prepare_flare  (in this case it prompts for all parameters)"
+               echo " "
+               return
+            } else {
+               mparsep $1 
+            }
+        } else {
+
+	    define dt_rise ?  <  dT_rise : >
+	    define dt_decay ? < dT_decay : >
+
+	    define nR ? <  peak frequency rise  slope : >
+	    define nD ? <  peak frequency decay slope : >
+
+	    define fR ? < peak luminosity rise  slope : >
+	    define fD ? < peak luminosity decay slope : >
+
+	    define t_top ? < Time of flare max : >
+	}
+
+	#-------------------------------------------------------------------
+	# consistency checks
+	if( $($dt_rise+$dt_decay) > $t_max ) {
+	   echo " The rise+decay duration of the flare is longer than the "
+	   echo " maximum extension t_max of the light curve."
+	   return
+	}
+	if( $t_top < $dt_rise ) { 
+	   echo " The top of the flare is set at a time t_top that is"
+	   echo " smaller than the rise time dt_rise."
+	   return
+	}
+	#-------------------------------------------------------------------
+
+	set t_rise  = 1,$dt_rise,1
+	set t_decay = 1,$dt_decay,1
+	set peak_rise  = (( (t_rise  - $dt_rise)  + $dt_rise  )/$dt_rise)**$nR
+	set peak_decay = ((  t_decay              - $dt_decay )/-$dt_decay)**$nD
+
+	set nfn_rise   = (( (t_rise  - $dt_rise)  + $dt_rise  )/$dt_rise)**$fR
+	set nfn_decay  = ((  t_decay              - $dt_decay )/-$dt_decay)**$fD
+
+
+	# Needs defined:
+	#  t_max = duration of light curve
+	#  filler= value to use for the non-flare regions
+
+	set pre=fill($($t_top-$dt_rise),$filler)
+	set post=fill($($t_max-$t_top-$dt_decay),$filler)
+	
+	set offpre = fill($($t_top-$dt_rise),0)
+	set offpost= fill($($t_max-$t_top-$dt_decay),0)
+	set on     = fill($($dt_rise+$dt_decay),1)
+
+	set peak_evolution = pre CONCAT peak_rise CONCAT peak_decay CONCAT post
+	set nfn_evolution  = pre CONCAT nfn_rise  CONCAT nfn_decay  CONCAT post
+
+	set filter = offpre CONCAT on CONCAT offpost 
+	do 1=0,dimen(filter)-1 {
+	    if( peak_evolution[$1] > 100 || peak_evolution[$1] < 0.01 ) {
+	       set filter[$1] = 0 
+	    }
+	}
+
+	set t_evolution = 1,dimen(peak_evolution),1
+
+##---------------------------------------------------------------------------
+## SUB_rescalings
+SUB_rescalings
+
+	#--------------------------------------------------------------
+	# computes the nfn and peak values for rescaling the whole l.c.
+	#--------------------------------------------------------------
+	set xp = 10.0**lg_xp
+	set lp = 10.0**lg_lp
+
+	vecminmax xp dum top_xp
+	vecminmax lp dum top_lp
+
+	#--------------------------------------------------------------
+	# computes the nfn and peak values for rescaling the whole l.c.
+	#--------------------------------------------------------------
+	set all_peak_single= < -4 >
+	set all_nfn_single = < -4 >
+	do 2=1,$Nflares {
+	   set all_peak_single= all_peak_single CONCAT peak_evolution_$2
+	   set all_nfn_single = all_nfn_single  CONCAT nfn_evolution_$2
+	}
+	vecminmax all_peak_single dum top_peak
+	vecminmax all_nfn_single  dum top_nfn
+	
+	if( $top_xp > $top_peak ) { 
+	   define scale_peak $top_xp
+	} else {
+	   define scale_peak $top_peak
+	}
+	define scale_peak $top_xp
+
+	#--------------------------------------------------------------
+	# does actual rescaling
+	#
+	set xp = xp/$scale_peak
+	set lp = lp/$top_lp
+
+	# do 2=1,$Nflares {
+	do 2=0,$Nflares {
+	   set xp$2 = peak_evolution_$2/$scale_peak
+	   set lp$2 = nfn_evolution_$2/$top_lp
+	}
+	#--------------------------------------------------------------
+
+#---------------------------------------------------------------------------
+# SUB_find_peak  <energy array> <nfn array> <name for Epeak> <name for Lpeak>
+SUB_find_peak 4
+
+	set xx local
+	set yy local
+	
+	set xx = $1
+	set yy = -1*$2
+
+	sort < yy xx >
+
+	define $3 $(xx[0])
+	define $4 $(-1*$(yy[0]))
+
+##---------------------------------------------------------------------------
+## compute_curved_nfn  e1=0.1 e2=30 a1=0.6 a2=3.0 e_break=2.0 fold=1.0 "
+##
+##             Same of 'fabrizio4'
+##             Relazione usata da Fabrizio nel paper
+##             CON aggiunto un esponente di 'fold'
+##             CON cambiata la forma dell'INPUT
+##             E` come quella implementata in XSPEC
+##             Calcolata sul range -2 < log(nu) < 2
+##
+compute_curved_nfn 101
+
+        if($?1) {
+            if(substr('$1',0,2) == '-h' ){
+    	       echo "-----------------------------------------------"
+	       echo " relazione usata da Fabrizio nel paper"
+	       echo " CON aggiunto un esponente di 'fold'"
+	       echo " CON cambiata la forma dell'INPUT"
+	       echo " E' come quella implementata in XSPEC"
+	       echo " Calcolata sul range -2 < log(nu) < 2"
+    	       echo "-----------------------------------------------"
+               echo " compute_curved_nfn: "
+               echo " "
+               echo " USAGE: "
+               echo "    > compute_curved_nfn e1=0.1 e2=30 a1=0.6 a2=3.0 e_break=2.0 fold=1.0 "
+               echo "  or"
+               echo "    > compute_curved_nfn (in this case it prompts for all parameters)"
+               echo " "
+               return
+            } else {
+	       define silentparsing 1
+               mparsep $1 
+	       define silentparsing 0
+            }
+        } else {
+
+	    define e1      ? {      E_ref_1 [keV] : }
+	    define e2      ? {      E_ref_2 [keV] : }
+	    define a1      ? {    Alpha @ E_ref_1 : }
+	    define a2      ? {    Alpha @ E_ref_2 : }
+	    define e_break ? {        break [keV] : }
+	    define fold    ? { "folding" exponent : }
+
+	}
+
+	# little messy here.
+	define g1 $a1
+	define g2 $a2
+
+	define xb (lg($e_break))
+	define x1 (lg($e1))
+	define x2 (lg($e2))
+
+	define dum1 ( exp(2.302*($x1 - $xb)*$fold) )
+	define dum2 ( exp(2.302*($x2 - $xb)*$fold) )
+
+	define a1inf ( ($g1*$dum2*(1+$dum1)-$g2*$dum1*(1+$dum2))/($dum2-$dum1) ) 
+	define a2inf ( ($g2*(1+$dum2)-$g1*(1+$dum1))/($dum2-$dum1) ) 
+
+	define ha1inf ( ($g1*$dum2*(1+$dum1)-$g2*$dum1*(1+$dum2))/($dum2-$dum1) ) 
+	define ha2inf ( ($g2*(1+$dum2)*(1+$dum1*(1-$fold)) - $g1*(1+$dum1)*(1+$dum2*(1-$fold)))/(($dum2-$dum1)*$fold) ) 
+
+	define normdum   ( -2.302585093*$xb*$fold )
+	define normdumf  ( ($a1inf - $a2inf)*lg(1. + exp($normdum))/$fold )
+	define hnormdumf ( ($ha1inf - $ha2inf)*lg(1. + exp($normdum)) )
+
+	echo "-------------------------"
+	echo "* alpha @ -ifnty = "$a1inf
+	echo "* alpha @ +infty = "$a2inf
+
+	#
+	#  ri-calcolo "indietro" i valori alle energie di riferimento
+	#
+	define t1 ( (1 - $dum1/(1+$dum1))*$a1inf + ($dum1/(1+$dum1))*$a2inf )
+	define t2 ( (1 - $dum2/(1+$dum2))*$a1inf + ($dum2/(1+$dum2))*$a2inf )
+
+	define ht1 ( (1 - $fold*$dum1/(1+$dum1))*$ha1inf + ($fold*$dum1/(1+$dum1))*$ha2inf )
+	define ht2 ( (1 - $fold*$dum2/(1+$dum2))*$ha1inf + ($fold*$dum2/(1+$dum2))*$ha2inf )
+
+	echo "-------------------------"
+	echo "* alpha @ +infty = "$( (1-$fold)*$ha1inf + $fold*$ha2inf )  
+	echo "-------------------------"
+	echo "Indici spettrali alle E_Ref"
+	echo " "
+	echo "* alpha (@E_Ref1) = "$ht1
+	echo "* alpha (@E_Ref2) = "$ht2
+	echo "-------------------------"
+
+	# defines energy array
+	#
+	define lg_e_step (0.001)
+	set lg_e=-4.0,4.0,$lg_e_step
+	set dum = 2.302585*(lg_e - $xb)*$fold
+
+	set lg_f = -$a1inf*lg_e + ($a1inf - $a2inf)*lg(1 + exp(dum))/$fold
+	set lg_f = lg_f - $normdumf
+
+	set hlg_f = -$ha1inf*lg_e + ($ha1inf - $ha2inf)*lg(1 + exp(dum))
+	set hlg_f = hlg_f - $hnormdumf
+
+	# set dimen(xx)=$(dimen(lg_e)-1)
+	# set dimen(aa)=$(dimen(lg_e)-1)
+	# set dimen(haa)=$(dimen(lg_e)-1)
+        #
+	# do 1=0,$(dimen(lg_e)-2) {
+	#   set xx[$1]  = (lg_e[$1]+lg_e[$1+1])/2
+	#   set aa[$1]  = (lg_f[$1]-lg_f[$1+1])/(lg_e[$1+1]-lg_e[$1])
+	#   set haa[$1] = (hlg_f[$1]-hlg_f[$1+1])/(lg_e[$1+1]-lg_e[$1])
+	# }
+
+	#--------------------
+	## define xp $($xb*(($a1inf-1)/(1-$a2inf))**(1./$fold))
+	define xp $($xb + lg(($a1inf-1)/(1-$a2inf))/$fold )
+
+	echo "* E_peak = "$(10**$xp)
+
+#---------------------------------------------------------------------------

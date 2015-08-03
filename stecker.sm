@@ -1,0 +1,251 @@
+#------------------------------------------------------------------------------- 
+# tau_stecker_array <model> <z> <array log(e[TeV])> 
+#             Returns array 'abs_frac'=1/tau
+#
+#             log(e[TeV]) is an array of values for which the tau will be computed
+#             NEW and CORRECT ONE.
+tau_stecker_array 3
+
+	set tau=tau_stecker($1,$2,$3)
+	set abs_frac = 1./exp(tau)
+
+#------------------------------------------------------------------------------- 
+# tau_stecker <model> <z> <array log(e[TeV])> 
+#             log(e[TeV]) is an ARRAY
+#             transpose the a_ij "matrix".
+tau_stecker 3
+
+      foreach localvec < lg_tau tau lg_e zvec > {
+          set $localvec local
+      }
+      foreach 9 < 0 1 2 3 4 > {
+         set a_$9j local
+         set b_$9j local
+      }
+
+      if( $2 > 0.3 ) {
+	 echo "+=================================================+"
+         echo "|  WARNING: these models are not valid for z>0.3  |"
+	 echo "+=================================================+"
+	 return
+      }
+
+      define model ($1)
+      define z0    ($2)
+      set lg_e =    $3 
+      if( $model > 2 ) { set lg_e = lg_e + 2 }
+
+      # Stecker 1999: lower IIRF
+      if( $model == 1 ) {
+         set a_0j = <  1.11  1.15  0.00  0.00 > 
+         set a_1j = < -0.26 -1.24 -0.41  0.00 >
+         set a_2j = <  1.17  2.28  0.78  0.00 >
+         set a_3j = < -0.24 -0.88 -0.31  0.00 >
+         set a_4j = <  0.00  0.00  0.00  0.00 >
+      }
+
+      # Stecker 1999: higher IIRF
+      if( $model == 2 ) {
+         set a_0j = <  1.46  1.46  0.15  0.00 >
+         set a_1j = <  0.10 -1.03 -0.35  0.00 >
+         set a_2j = <  0.42  1.66  0.58  0.00 >
+         set a_3j = <  0.07 -0.56 -0.20  0.00 >
+         set a_4j = <  0.00  0.00  0.00  0.00 >
+      }
+
+      # de Jager & Stecker 2002: baseline model
+      if( $model == 3 ) {
+         set a_0j = < -5.1512   -4.4646  -3.5143   -0.80109  >
+         set a_1j = <  9.2964   16.275   10.7540    2.51610  >
+         set a_2j = < -4.8645  -12.86    -8.6982   -2.07510  >
+         set a_3j = <  1.1164    3.9795   2.747     0.66596  >
+         set a_4j = < -0.08404  -0.42147 -0.29644  -0.072889 >
+      }
+
+      # de Jager & Stecker 2002: fast-evolution model
+      if( $model == 4 ) {
+         set a_0j = <  -5.4748   -4.7036   -3.5842   -0.79882  >
+         set a_1j = <  10.444    17.114    11.173     2.58430  >
+         set a_2j = <  -5.8013  -13.733    -9.2033   -2.17670  >
+         set a_3j = <   1.4145    4.3143    2.9535    0.71046  >
+         set a_4j = <  -0.11656  -0.46363  -0.32339  -0.078903 >
+      }
+
+      set zvec = < 1 $(lg($z0)) $(lg($z0)**2.) $(lg($z0)**3.) >
+      
+      foreach 9 < 0 1 2 3 4 > {
+         define a_$9  $(sum(a_$9j*zvec))
+      }
+
+      set lg_tau = $a_0 + $a_1*lg_e + $a_2*(lg_e)**2. + $a_3*(lg_e)**3. + $a_4*(lg_e)**4.
+      set tau=10.**lg_tau
+
+      do i=0,dimen(tau)-1 {
+         if( tau[$i] > 30 ) { set tau[$i] = 30 }
+      } 
+
+      # Approximations are only valid for E>0.1 TeV
+      do 9=0,dimen(lg_tau)-1 {
+          if( lg_e[$9] <= -1 ) { set tau[$9] = 0.0 }
+      }
+
+      set $0 = tau
+
+#------------------------------------------------------------------------------- 
+# plot_tau
+plot_tau
+	
+	set e=-1,lg(50),0.01
+	define redshift ? < Redshift : >
+	define model    ? < Model    : >
+
+	ctype 2 
+	limits -1 $(lg(50)) -1 1.1 
+	ctype 4 ltype 2 
+	relocate -2 0 draw 2 0 
+	ticksize -1 0 -1 0  
+	ctype 2 ltype 0 
+	box
+	
+	xlabel Energy [TeV]
+	ylabel Optical Depth \tau
+
+	set tau=tau_stecker($model,$redshift,e)
+
+	ctype $(2+$model) 
+	connect e (lg(tau)) if( tau > 0 )
+	ctype 2 
+
+##------------------------------------------------------------------------------- 
+## tau_stecker_array_old <model> <z> <array log(e[TeV])> 
+##             log(e[TeV]) is an array of values for which the tau will be computed
+tau_stecker_array_old 3
+
+	local set tau= 0*$3
+
+	define silent_tau 1
+	do i=0,dimen($3)-1 {
+	   if( $3[$i] >= 10.5 ) { 
+	      tau_stecker $1 $2 $($3[$i])
+	      if( $tau_stecker < 20 ) { 
+	         set tau[$i] = $tau_stecker
+	      } else {
+	         set tau[$i] = 20
+	      }
+	   } else {
+	      set tau[$i] = 0
+	   }
+	}
+	define silent_tau 0
+	set abs_frac = 1./exp(tau)
+
+##------------------------------------------------------------------------------- 
+## tau_stecker_old <model> <z> <log(e[TeV])> 
+##             log(e[TeV]) is a scalar
+tau_stecker_old 3
+
+      define model ($1)
+      define z0    ($2)
+      define TeV   ($3)
+
+      set a_0 = < 1.11 -0.26 1.17 -0.24 >
+      set a_1 = < 1.15 -1.24 2.28 -0.88 >
+      set a_2 = < 0.00 -0.41 0.78 -0.31 >
+
+      set b_0 = < 1.46  0.10 0.42  0.07 >
+      set b_1 = < 1.46 -1.03 1.66 -0.56 >
+      set b_2 = < 0.15 -0.35 0.58 -0.20 >
+
+      define tau_a 0
+      define tau_b 0
+
+      if( $TeV < 10.5 ) { return }
+
+      define totsuma 0
+      define totsumb 0
+      do 1=0,3 {
+         define suma 0
+         define sumb 0
+	 do 2=0,2 {
+	    define suma ($suma + a_$2[$1]*lg($z0)**$2)
+	    define sumb ($sumb + b_$2[$1]*lg($z0)**$2)
+	 }
+	 define totsuma ($totsuma + $suma*($TeV)**$1)
+	 define totsumb ($totsumb + $sumb*($TeV)**$1)
+      }
+      define tau_a $(10.0**$totsuma)
+      define tau_b $(10.0**$totsumb)
+
+      if( $model == 1 ) { define $0 $tau_a }
+      if( $model == 2 ) { define $0 $tau_b }
+
+      if(!$?silent_tau) {
+      echo ----------------------------------------
+      echo   redshift       = $z0
+      echo   log(e[TeV])    = $TeV
+      echo   tau_stecker[$model] = $(sprintf('%7.4f',$tau_stecker))
+      echo ----------------------------------------
+      }
+
+      systemcall rm pop >& /dev/null
+      write pop $model
+      write pop $z0
+      write pop $TeV
+      if(!$?silent_tau) {
+          !a.out < pop | egrep tau_stecker
+          echo ----------------------------------------
+      } 
+
+#------------------------------------------------------------------------------- 
+# stecker_ir
+stecker_ir
+
+        set y= < 0.0000001 0.0489907 0.139841 0.103728 0.13225 0.052441 \
+                0.0949896 0.0441586 0.0989005 0.1311 0.055661 0.180091 \
+                0.24863 0.506922 0.98371 1.25994 1.19853 >
+      
+        set x = < 11.7482 11.8451 11.9445 12.0453 12.143 12.2431 12.3424 \
+                12.4409 12.5391 12.6385 12.7372 12.8363 12.9355 13.0334 \
+                13.1336 13.2325 13.3314 >
+
+
+	set lgy = lg(y)
+
+	ticksize 0 0 0 0 
+	limits x -2 0.5 
+	lweight 3
+	expand 1.5
+	box
+
+	ctype 3 
+	connect x lgy
+	ctype 2 
+
+
+#------------------------------------------------------------------------------- 
+# stecker_ir_inv
+stecker_ir_inv
+
+        set y= < 0.0000001 0.0489907 0.139841 0.103728 0.13225 0.052441 \
+                0.0949896 0.0441586 0.0989005 0.1311 0.055661 0.180091 \
+                0.24863 0.506922 0.98371 1.25994 1.19853 >
+      
+        set x = < 11.7482 11.8451 11.9445 12.0453 12.143 12.2431 12.3424 \
+                12.4409 12.5391 12.6385 12.7372 12.8363 12.9355 13.0334 \
+                13.1336 13.2325 13.3314 >
+
+	set lgy = lg(y)
+	set eir_ev = 2*lg(511e3) - x
+	set nu_ir = eir_ev + 14.384
+
+	ticksize 0 0 0 0 
+	limits nu_ir -2 0.5 
+	lweight 3
+	expand 1.5
+	box
+
+	ctype 3 
+	connect nu_ir lgy
+	ctype 2 
+
+#------------------------------------------------------------------------------- 

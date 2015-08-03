@@ -1,0 +1,926 @@
+##--------------------------------------------------------------------------
+## aiuto.gamma
+aiuto.gamma
+
+	echo  -------------------------------------------------
+	echo  * read_g_sample
+	echo  * prepare_g
+	echo  * name_gamma_gs
+	echo  * avrg_ag  <subsample-flag>
+	echo  * ifg_avrg_gamma  [<L_min>] [<L_max>]
+	echo  * if_avrg_gamma   [<which-L>] [<L_min>] [<L_max>]
+	echo  * if_avrg_gamma_sample [<which-L>] [<L_min>] [<L_max>] [<sample>]
+	echo  -------------------------------------------------
+
+##--------------------------------------------------------------------------
+## read_g_sample
+##	legge il listone del campione gamma totale e ne calcola
+##	le luminosita` GAMMA e RADIO, solamente.
+##
+read_g_sample
+
+	define quale ? {What Gamma-ray sample : short [1] or extended [2] ?}
+	if($quale == 1 ){ 
+	   data g_sample.gamma
+	   read { gname 1.s flagsam 2 flagg 3 n_g 4 ag 6 err_ag_u 7 }
+	   set err_ag_d = err_ag_u
+	   data g_sample.data
+	   read { z 2 f_radio 3 flag_radio 4 }
+	}
+	if($quale == 2 ){ 
+	   data g_sample.ext.gamma
+	   read { gname 1.s flagsam 2 flagg 3 n_g 4 ag 6 err_ag_u 7 }
+	   set err_ag_d = err_ag_u
+	   data g_sample.ext.data
+	   read { z 2 f_radio 3 flag_radio 4 }
+	}
+
+	set dimen(a_radio) = $(dimen(flag_radio))
+	do i=0,$(dimen(flag_radio)-1) {
+	   if(flag_radio[$i] == 0 ) { set a_radio[$i] =  0.0 }
+	   if(flag_radio[$i] == 1 ) { set a_radio[$i] =  0.2 }
+	   if(flag_radio[$i] == 2 ) { set a_radio[$i] =  0.0 }
+	   if(flag_radio[$i] == 3 ) { set a_radio[$i] = -0.3 }
+	}
+
+	define nu5       9.698
+	set vnu5   = 0*f_radio + $nu5
+
+	define h0          50
+	define q0          0
+	define h_100      ($h0/100.)
+	define log_c_H_0  (27.96616033 - lg($h_100))
+	set    d_l = $log_c_H_0+lg(z*(1. + 0.5*z))
+
+	set lg_f_radio  = lg(f_radio) - 23.
+	set lg_kf_radio = lg_f_radio + (a_radio-1.)*lg(1.+z)
+	set l_radio     = 1.09920986 + 2.*d_l + lg_kf_radio
+	set nl_radio    = l_radio + $nu5
+	echo --------------------------------------
+
+##--------------------------------------------------------------------------
+## prepare_g
+##	Assume che siano definiti i vettori di cui sotto, contenenti
+##	le proprieta` GAMMA, flussi, indici...
+##      1 - calcola l'indice medio delle sorgenti BLL.
+##      2 - calcola l'indice medio delle sorgenti HPQ.
+##	3 - assegna questo valore medio alle sorgenti prive di misura
+##	    dell'indice spettrale gamma.
+##	4 - calcola i flussi K-corrected e la luminosita`.
+##	5 - riassegna valore nullo a flusso e luminosita` per le
+##	    sorgenti prive di misura
+##
+prepare_g
+
+	#---------------------------------------------
+	# uses vectors: 
+	#
+	#    - gname
+	#    - flagsam
+	#    - flagg
+	#    - n_g
+	#    - ag
+	#    - err_ag_u
+	#    - err_ag_d
+	#
+	#---------------------------------------------
+
+	define nug         22.383
+	define h0          50
+	define q0          0
+	define h_100      ($h0/100.)
+	define log_c_H_0  (27.96616033 - lg($h_100))
+	set    d_l = $log_c_H_0+lg(z*(1. + 0.5*z))
+
+	#
+	# calcola l'indice spettrale medio per i BL
+	# 
+	avrg_ag 2
+
+	echo
+	echo    ------ BL Lacs ----------------------------------
+	echo    Number of valid contributions : $num
+	echo
+
+	if($num > 0) {
+	  echo    the average spectral index is : $avrg_ag_vec
+	  echo    the associated sigma is : $sigma_ag_vec
+
+	  if($num == 1) {define sigma_ag_vec  ($sigma_ag_vec/sqrt($num))  }
+	  if($num >= 2) {define sigma_ag_vec  ($sigma_ag_vec/sqrt($num-1))}
+
+	  echo    the associated sigma is : $sigma_ag_vec
+	  echo    -----------------------------------------------
+
+	  define  avrg_ag_bll   $avrg_ag_vec
+	  define  sigma_ag_bll  $sigma_ag_vec
+	} else {    # se num=0
+	  echo    There are NO contributions to the average
+	  echo    -----------------------------------------------
+	  define  avrg_ag_bll   0
+	  define  sigma_ag_bll  0
+	}
+
+	# 
+	# calcola l'indice spettrale medio per gli HPQ
+	# 
+	avrg_ag 1
+
+	echo    ------ HPQ --------------------------------------
+	echo    Number of valid contributions : $num
+	echo
+
+	if($num >0) {
+	   echo    the average spectral index is : $avrg_ag_vec
+	   echo    the associated sigma is : $sigma_ag_vec
+
+	   if($num == 1) {define sigma_ag_vec  ($sigma_ag_vec/sqrt($num))   }
+	   if($num >= 2) {define sigma_ag_vec  ($sigma_ag_vec/sqrt($num-1)) }
+
+	   echo    the associated sigma is : $sigma_ag_vec
+	   echo    -----------------------------------------------
+
+	   define  avrg_ag_hpq   $avrg_ag_vec
+	   define  sigma_ag_hpq  $sigma_ag_vec
+	} else {    # se num=0
+	  echo    There are NO contributions to the average
+	  echo    -----------------------------------------------
+	  define  avrg_ag_hpq   0
+	  define  sigma_ag_hpq  0
+	}
+
+	# 
+	# calcola l'indice spettrale medio per ALL
+	# 
+        define maxind (dimen(gname)-1)
+	define sum    (0.0)
+	define num    (0)
+	define sum2   (0.0)
+
+	do i=0,$(dimen(gname)-1) {
+	  if( flagg[$i] == 3 ) {
+             define sum  ($sum  + $(ag[$i])   )
+	     define sum2 ($sum2 + $(ag[$i])**2)
+	     define num  ($num + 1) 
+	  }
+	}
+
+	if($num > 0) {
+	   define avrg_ag_vec   ($sum/$num)
+	   define sigma_ag_vec  (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	} else {
+	   define avrg_ag_vec   (0)
+	   define sigma_ag_vec  (0)
+	} 
+
+	echo    ------ ALL --------------------------------------
+	echo    Number of valid contributions : $num
+	echo
+
+	if($num >0) {
+	   echo    the average spectral index is : $avrg_ag_vec
+	   echo    the associated sigma is : $sigma_ag_vec
+
+	   if($num == 1) {define sigma_ag_vec  ($sigma_ag_vec/sqrt($num))   }
+	   if($num >= 2) {define sigma_ag_vec  ($sigma_ag_vec/sqrt($num-1)) }
+
+	   echo    the associated sigma is : $sigma_ag_vec
+	   echo    -----------------------------------------------
+
+	   define  avrg_ag_all   $avrg_ag_vec
+	   define  sigma_ag_all  $sigma_ag_vec
+	   define  num_ag        $num
+	} else {    # se num=0
+	  echo    There are NO contributions to the average
+	  echo    -----------------------------------------------
+	  define  avrg_ag_all   0
+	  define  sigma_ag_all  0
+	}
+
+
+	#
+	# assegna l'indice medio alle sorgenti senza misura dell'indice
+	#
+	do i=0,$(dimen(gname)-1) {
+	  if($(flagg[$i]) == 3) {
+	     set ag[$i]       = ag[$i]
+	     set err_ag_u[$i] = err_ag_u[$i]
+	     set err_ag_d[$i] = err_ag_d[$i]
+          } else {
+	     if($(flagsam[$i]) == 0 ) {
+	         set ag[$i]       = $avrg_ag_all
+	         set err_ag_u[$i] = 0
+	         set err_ag_d[$i] = 0
+	     } 
+	     if($(flagsam[$i]) == 1 ) {
+	         set ag[$i]       = $avrg_ag_hpq
+	         set err_ag_u[$i] = 0
+	         set err_ag_d[$i] = 0
+	     } 
+	     if($(flagsam[$i]) == 2 ) {
+	         set ag[$i]       = $avrg_ag_bll
+	         set err_ag_u[$i] = 0
+	         set err_ag_d[$i] = 0
+	     }
+          }
+	}
+
+	#
+	# calcola i flussi K-corrected e la luminosita`.
+	#
+	set f_g     = n_g*ag*6.62e-5
+	set lg_f_g  = lg(f_g) - 29.
+	set kf_g    = n_g*ag*6.62e-5*(1+z)**(ag-1.)
+	set lg_kf_g = lg(kf_g) - 29.
+	set l_g     = 1.09920986 + 2.*d_l + lg_kf_g  
+	set nl_g    = l_g + $nug
+
+	#
+	# riassegna valore nullo a flusso e luminosita` per le
+	#  sorgenti prive di misura
+	#
+	### set dimen(f_g)      = dimen(gname)
+	###
+	do i=0,$(dimen(gname)-1) {
+	  if($(flagg[$i]) < 2) {
+	    set f_g[$i]     = 0
+	    set lg_kf_g[$i] = 0
+	    set l_g[$i]     = 0
+	    set nl_g[$i]    = 0
+	  } 
+	}
+
+	define gu "n"
+	define gu ? { Show data on screen ? }
+	if(substr('$gu',0,1) == 'y') {
+	   print {gname flagsam flagg ag nl_radio nl_g }
+	}
+
+
+##--------------------------------------------------------------------------
+## name_gamma_gs
+## 	Crea dei vettori che contengono i dati fondamentali 
+##	delle sorgenti della lista gamma:
+##	   - f kf l nl radio e gamma, e redshift
+## 
+name_gamma_gs
+
+	set gs_name        = gname
+	set gs_flagg       = flagg
+	set gs_ag          = ag   
+	set gs_err_ag_u    = err_ag_u
+	set gs_err_ag_d    = err_ag_d
+	set gs_z           = z
+	set gs_f_radio     = f_radio
+	set gs_lg_f_radio  = lg_f_radio
+	set gs_lg_kf_radio = lg_kf_radio
+	set gs_l_radio     = l_radio
+	set gs_nl_radio    = nl_radio
+	set gs_f_g         = f_g
+	set gs_lg_f_g      = lg_f_g
+	set gs_lg_kf_g     = lg_kf_g
+	set gs_l_g         = l_g
+	set gs_nl_g        = nl_g
+
+##--------------------------------------------------------------------------
+## avrg_ag  <subsample-flag>
+##	 fa la media dell'indice spettrale gamma per le sorgenti 
+##	 per le quali c'e` la misura
+##	 
+avrg_ag     1
+
+        define maxind (dimen(gname)-1)
+	define sum    (0.0)
+	define num    (0)
+	define sum2   (0.0)
+
+	do i=0,$(dimen(gname)-1) {
+	  if( flagg[$i] == 3 && flagsam[$i] == $1 ) {
+             define sum  ($sum  + $(ag[$i])   )
+	     define sum2 ($sum2 + $(ag[$i])**2)
+	     define num  ($num + 1) 
+	  }
+	}
+
+	if($num > 0) {
+	   define avrg_ag_vec   ($sum/$num)
+	   define sigma_ag_vec  (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	} else {
+	   define avrg_ag_vec   (0)
+	   define sigma_ag_vec  (0)
+	} 
+
+
+##--------------------------------------------------------------------------
+## ifg_avrg_gamma  [<L_min>] [<L_max>]
+##	Calcola la luminosita` GAMMA media delle sorgenti in un
+##	range di luminosita` gamma medesima.
+##
+ifg_avrg_gamma  02
+
+	if($?1 == 0) {
+	   define oldlmin ? {Minimum Luminosity ? }
+	   define oldlmax ? {Maximum Luminosity ? }
+	   define 1 $oldlmin
+	   define 2 $oldlmax
+	} 
+	define oldlmin $1
+	define oldlmax $2
+	define maxind (dimen(gname)-1)
+
+	#
+	#  cycle only computing values for HPQs
+	#
+	define sum  (0.0)
+	define num  (0)
+	define sum2 (0.0)
+
+	do i=0,$maxind {
+	  if( $(nl_g[$i]) > $1 && $(nl_g[$i]) < $2 && $(flagsam[$i]) == 1 && $(flagg[$i]) > 1 ) { 
+	        echo [$i] * $(gname[$i])   [L_g = $(nl_g[$i])]
+	        define sum  ($sum  + $(nl_g[$i])   )
+	        define sum2 ($sum2 + $(nl_g[$i])**2)
+	        define num  ($num + 1) 
+	  } 
+	}                     #--end do
+
+	echo 
+	echo --- HPQ: Gamma-ray Luminosity ------------------
+	echo    Number of valid contributions : $num
+
+	define avrg_hpq_nl_g   ($sum/$num)
+	define sigma_hpq_nl_g  (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	echo
+	echo    the average luminosity is : $avrg_hpq_nl_g
+	echo    the associated sigma is   : $sigma_hpq_nl_g
+	define sigma_hpq_nl_g  ($sigma_hpq_nl_g/sqrt($num-1))
+	echo    the associated sigma is : $sigma_hpq_nl_g
+
+	define sum  (0.0)
+	define num  (0)
+	define sum2 (0.0)
+
+	do i=0,$maxind {
+	  if( $(nl_g[$i]) > $1 && $(nl_g[$i]) < $2 && $(flagsam[$i]) == 1 && $(flagg[$i]) > 2 ) {
+	      define sum  ($sum  + $(ag[$i])   )
+	      define sum2 ($sum2 + $(ag[$i])**2)
+	      define num  ($num + 1) 
+	  }
+	}                     #--end do
+	
+	echo --- HPQ: alpha_g ------------------------------
+	echo    Number of valid contributions : $num
+
+	define avrg_hpq_ag   ($sum/$num)
+	define sigma_hpq_ag  (sqrt($sum2/$num - ($sum/$num)**2))
+	echo
+	echo    the average spectral index is : $avrg_hpq_ag
+	echo    the associated sigma is : $sigma_hpq_ag
+	define sigma_hpq_ag  ($sigma_hpq_ag/sqrt($num-1))
+	echo    the associated sigma is : $sigma_hpq_ag
+	echo ------------------------------------------------
+
+
+	define dummy  ? { Waiting....}
+
+	#
+	#  cycle only computing values for BLLs
+	#
+	define sum  (0.0)
+	define num  (0)
+	define sum2 (0.0)
+
+	do i=0,$maxind {
+	  if( $(nl_g[$i]) > $1 && $(nl_g[$i]) < $2 && $(flagsam[$i]) == 2 && $(flagg[$i]) > 1 ) {
+	        echo [$i] * $(gname[$i])   [L_g = $(nl_g[$i])]
+	        define sum  ($sum  + $(nl_g[$i])   )
+	        define sum2 ($sum2 + $(nl_g[$i])**2)
+	        define num  ($num + 1) 
+	  } 
+	}                     #--end do
+
+	echo 
+	echo --- BLL: Gamma-ray Luminosity  -----------------
+	echo    Number of valid contributions : $num
+
+	define avrg_bll_nl_g   ($sum/$num)
+	define sigma_bll_nl_g  (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	echo
+	echo    the average luminosity is : $avrg_bll_nl_g
+	echo    the associated sigma is   : $sigma_bll_nl_g
+	define sigma_bll_nl_g  ($sigma_bll_nl_g/sqrt($num-1))
+	echo    the associated sigma is : $sigma_bll_nl_g
+
+	define sum  (0.0)
+	define num  (0)
+	define sum2 (0.0)
+
+	do i=0,$maxind {
+	  if( $(nl_g[$i]) > $1 && $(nl_g[$i]) < $2 && $(flagsam[$i]) == 2 && $(flagg[$i]) > 2 ) {
+	      define sum  ($sum  + $(ag[$i])   )
+	      define sum2 ($sum2 + $(ag[$i])**2)
+	      define num  ($num + 1) 
+	  }
+	}                     #--end do
+	
+	echo --- BLL: alpha_g ------------------------------
+	echo    Number of valid contributions : $num
+
+	define avrg_bll_ag   ($sum/$num)
+	define sigma_bll_ag  (sqrt($sum2/$num - ($sum/$num)**2))
+	echo
+	echo    the average spectral index is : $avrg_bll_ag
+	echo    the associated sigma is : $sigma_bll_ag
+	define sigma_bll_ag  ($sigma_bll_ag/sqrt($num-1))
+	echo    the associated sigma is : $sigma_bll_ag
+	echo ------------------------------------------------
+
+
+	define dummy  ? { Waiting....}
+
+	#
+	#  cycle computing values for all blazars
+	#
+	define sum  (0.0)
+	define num  (0)
+	define sum2 (0.0)
+
+	do i=0,$maxind {
+	  if( $(nl_g[$i]) > $1 && $(nl_g[$i]) < $2 && $(flagg[$i]) > 1 ) {
+	        echo [$i] * $(gname[$i])   [L_g = $(nl_g[$i])]
+	        define sum  ($sum  + $(nl_g[$i])   )
+	        define sum2 ($sum2 + $(nl_g[$i])**2)
+	        define num  ($num + 1) 
+	  } 
+	}                     #--end do
+
+	echo 
+	echo --- ALL: Gamma-ray Luminosity  -----------------
+	echo    Number of valid contributions : $num
+
+	define avrg_all_nl_g   ($sum/$num)
+	define sigma_all_nl_g  (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	echo
+	echo    the average luminosity is : $avrg_all_nl_g
+	echo    the associated sigma is   : $sigma_all_nl_g
+	define sigma_all_nl_g  ($sigma_all_nl_g/sqrt($num-1))
+	echo    the associated sigma is : $sigma_all_nl_g
+
+	define sum  (0.0)
+	define num  (0)
+	define sum2 (0.0)
+
+	do i=0,$maxind {
+	  if( $(nl_g[$i]) > $1 && $(nl_g[$i]) < $2 && $(flagg[$i]) > 2 ) {
+	      define sum  ($sum  + $(ag[$i])   )
+	      define sum2 ($sum2 + $(ag[$i])**2)
+	      define num  ($num + 1) 
+	  }
+	}                     #--end do
+	
+	echo --- ALL: alpha_g ------------------------------
+	echo    Number of valid contributions : $num
+
+	define avrg_all_ag   ($sum/$num)
+	define sigma_all_ag  (sqrt($sum2/$num - ($sum/$num)**2))
+	echo
+	echo    the average spectral index is : $avrg_all_ag
+	echo    the associated sigma is : $sigma_all_ag
+	define sigma_all_ag  ($sigma_all_ag/sqrt($num-1))
+	echo    the associated sigma is : $sigma_all_ag
+	echo ------------------------------------------------
+
+
+##--------------------------------------------------------------------------
+## if_avrg_gamma [<which-L>] [<L_min>] [<L_max>]
+##	Calcola luminosita` ed indice spettrale Gamma per le due 
+##	sottoclasse (BLL ed HPQ) ed anche per il totale blazaresco.
+##
+if_avrg_gamma  03
+
+	if($?1 == 0) {
+	   define oldband ? {Give me the band [radio/mm/opt/x] ?}
+	   define oldlmin ? {Minimum Luminosity ? }
+	   define oldlmax ? {Maximum Luminosity ? }
+	   define 1 $oldband
+	   define 2 $oldlmin
+	   define 3 $oldlmax
+	} 
+	define oldband $1
+	define oldlmin $2
+	define oldlmax $3
+	define maxind (dimen(gname)-1)
+
+	#------------------------------------------------------------
+	#  cycle only computing values for HPQs
+	#------------------------------------------------------------
+	#
+	define sum  (0.0)
+	define num  (0)
+	define sum2 (0.0)
+
+	do i=0,$maxind {
+	  if( $(nl_$!1[$i]) > $2 && $(nl_$!1[$i]) < $3 && $(flagsam[$i]) == 1 && $(flagg[$i]) > 1) { 
+	        echo [$i] * $(gname[$i])   [L_g = $(nl_g[$i])]
+	        define sum  ($sum  + $(nl_g[$i])   )
+	        define sum2 ($sum2 + $(nl_g[$i])**2)
+	        define num  ($num + 1) 
+	  } 
+	}                     #--end do
+
+	echo 
+	echo --- HPQ: Gamma-ray Luminosity ------------------
+	echo    Number of valid contributions : $num
+
+	define avrg_hpq_nl_g   ($sum/$num)
+	define sigma_hpq_nl_g  (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	echo
+	echo    the average luminosity is : $avrg_hpq_nl_g
+	echo    the associated sigma is   : $sigma_hpq_nl_g
+	define sigma_hpq_nl_g  ($sigma_hpq_nl_g/sqrt($num-1))
+	echo    the associated sigma is : $sigma_hpq_nl_g
+
+	define sum  (0.0)
+	define num  (0)
+	define sum2 (0.0)
+
+	do i=0,$maxind {
+	  if( $(nl_$!1[$i]) > $2 && $(nl_$!1[$i]) < $3 && $(flagsam[$i]) == 1 && $(flagg[$i]) > 2) { 
+	      define sum  ($sum  + $(ag[$i])   )
+	      define sum2 ($sum2 + $(ag[$i])**2)
+	      define num  ($num + 1) 
+	  }
+	}                     #--end do
+	
+	echo --- HPQ: alpha_g ------------------------------
+	echo    Number of valid contributions : $num
+
+	define avrg_hpq_ag   ($sum/$num)
+	define sigma_hpq_ag  (sqrt($sum2/$num - ($sum/$num)**2))
+	echo
+	echo    the average spectral index is : $avrg_hpq_ag
+	echo    the associated sigma is : $sigma_hpq_ag
+	define sigma_hpq_ag  ($sigma_hpq_ag/sqrt($num-1))
+	echo    the associated sigma is : $sigma_hpq_ag
+	echo ------------------------------------------------
+
+
+	define dummy  ? { Waiting....}
+
+	#------------------------------------------------------------
+	#  cycle only computing values for BLLs
+	#------------------------------------------------------------
+	#
+	define sum  (0.0)
+	define num  (0)
+	define sum2 (0.0)
+
+	do i=0,$maxind {
+	  if( $(nl_$!1[$i]) > $2 && $(nl_$!1[$i]) < $3 && $(flagsam[$i]) == 2 && $(flagg[$i]) > 1) { 
+	        echo [$i] * $(gname[$i])   [L_g = $(nl_g[$i])]
+	        define sum  ($sum  + $(nl_g[$i])   )
+	        define sum2 ($sum2 + $(nl_g[$i])**2)
+	        define num  ($num + 1) 
+	  } 
+	}                     #--end do
+
+	echo 
+	echo --- BLL: Gamma-ray Luminosity  -----------------
+	echo    Number of valid contributions : $num
+
+	define avrg_bll_nl_g   ($sum/$num)
+	define sigma_bll_nl_g  (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	echo
+	echo    the average luminosity is : $avrg_bll_nl_g
+	echo    the associated sigma is   : $sigma_bll_nl_g
+	define sigma_bll_nl_g  ($sigma_bll_nl_g/sqrt($num-1))
+	echo    the associated sigma is : $sigma_bll_nl_g
+
+	define sum  (0.0)
+	define num  (0)
+	define sum2 (0.0)
+
+	do i=0,$maxind {
+	  if( $(nl_$!1[$i]) > $2 && $(nl_$!1[$i]) < $3 && $(flagsam[$i]) == 2 && $(flagg[$i]) > 2) { 
+	      define sum  ($sum  + $(ag[$i])   )
+	      define sum2 ($sum2 + $(ag[$i])**2)
+	      define num  ($num + 1) 
+	  }
+	}                     #--end do
+	
+	echo --- BLL: alpha_g ------------------------------
+	echo    Number of valid contributions : $num
+
+	define avrg_bll_ag   ($sum/$num)
+	define sigma_bll_ag  (sqrt($sum2/$num - ($sum/$num)**2))
+	echo
+	echo    the average spectral index is : $avrg_bll_ag
+	echo    the associated sigma is : $sigma_bll_ag
+	define sigma_bll_ag  ($sigma_bll_ag/sqrt($num-1))
+	echo    the associated sigma is : $sigma_bll_ag
+	echo ------------------------------------------------
+
+
+	define dummy  ? { Waiting....}
+
+	#------------------------------------------------------------
+	#  cycle computing values for all blazars
+	#------------------------------------------------------------
+	#
+	define sum  (0.0)
+	define num  (0)
+	define sum2 (0.0)
+
+	do i=0,$maxind {
+	  if( $(nl_$!1[$i]) > $2 && $(nl_$!1[$i]) < $3 && $(flagg[$i]) > 1) { 
+	        echo [$i] * $(gname[$i])   [L_g = $(nl_g[$i])]
+	        define sum  ($sum  + $(nl_g[$i])   )
+	        define sum2 ($sum2 + $(nl_g[$i])**2)
+	        define num  ($num + 1) 
+	  } 
+	}                     #--end do
+
+	echo 
+	echo --- ALL: Gamma-ray Luminosity  -----------------
+	echo    Number of valid contributions : $num
+
+	define avrg_all_nl_g   ($sum/$num)
+	define sigma_all_nl_g  (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	echo
+	echo    the average luminosity is : $avrg_all_nl_g
+	echo    the associated sigma is   : $sigma_all_nl_g
+	define sigma_all_nl_g  ($sigma_all_nl_g/sqrt($num-1))
+	echo    the associated sigma is : $sigma_all_nl_g
+
+	define sum  (0.0)
+	define num  (0)
+	define sum2 (0.0)
+
+	do i=0,$maxind {
+	  if( $(nl_$!1[$i]) > $2 && $(nl_$!1[$i]) < $3 && $(flagg[$i]) > 2) { 
+	      define sum  ($sum  + $(ag[$i])   )
+	      define sum2 ($sum2 + $(ag[$i])**2)
+	      define num  ($num + 1) 
+	  }
+	}                     #--end do
+	
+	echo --- ALL: alpha_g ------------------------------
+	echo    Number of valid contributions : $num
+
+	define avrg_all_ag   ($sum/$num)
+	define sigma_all_ag  (sqrt($sum2/$num - ($sum/$num)**2))
+	echo
+	echo    the average spectral index is : $avrg_all_ag
+	echo    the associated sigma is : $sigma_all_ag
+	define sigma_all_ag  ($sigma_all_ag/sqrt($num-1))
+	echo    the associated sigma is : $sigma_all_ag
+	echo ------------------------------------------------
+
+
+##--------------------------------------------------------------------------
+## if_avrg_gamma_sample [<which-L>] [<L_min>] [<L_max>] [<sample>]
+##	Calcola luminosita` e indice spettrale medio Gamma per
+##	una sottoclasse di blazars che gli si dice.
+##
+if_avrg_gamma_sample  04
+
+	#
+	# le variabili in output sono:
+	# - $avrg_nl_g_$!whow
+	# - $sigma_nl_g_$!whow
+	# - $avrg_ag_$!whow
+	# - $sigma_ag_$!whow 
+	#
+	
+	if($?1 == 0) {
+	   define oldband ? {Give me the band ? [radio/mm/opt/x]}
+	   define oldlmin ? {Minimum Luminosity ? }
+	   define oldlmax ? {Maximum Luminosity ? }
+	   define oldsamp ? {Kind of Blazar ? [ALL=0/hpq=1/bll=2]}
+	   define 1 $oldband
+	   define 2 $oldlmin
+	   define 3 $oldlmax
+	   if ($oldsamp == 1 ) { define 4 (1) }
+	   if ($oldsamp == 2 ) { define 4 (2) }
+	   if ($oldsamp == 0 ) { define 4 (0) }
+	} 
+	define oldband $1
+	define oldlmin $2
+	define oldlmax $3
+	define oldsamp $4
+
+	if ($oldsamp == 1) { 
+		  define who  HPQ 
+		  define whow hpq
+		  define 4    2 
+		  }
+	if ($oldsamp == 2) { 
+		  define who  BLL 
+		  define whow bll
+		  define 4    1 
+		  }
+	if ($oldsamp == 0) { 
+		  define who  ALL 
+		  define whow all
+		  define 4    3 
+		  }
+	echo sample-code is $4 for sample $who
+	define maxind (dimen(gname)-1)
+
+	#------------------------------------------------------------
+	#  cycle computing values 
+	#------------------------------------------------------------
+	# e vai con la luminosita` gamma
+	#------------------------------------------------------------
+	#
+	define sum  (0.0)
+	define num  (0)
+	define sum2 (0.0)
+
+	do i=0,$maxind {
+	  if( nl_$1[$i] > $2 && nl_$1[$i] < $3 && flagsam[$i] != $4 && flagg[$i] > 1) { 
+	      echo [$i] * $(gname[$i])   [L_g = $(nl_g[$i])]
+	      define sum  ($sum  + $(nl_g[$i])   )
+	      define sum2 ($sum2 + $(nl_g[$i])**2)
+	      define num  ($num + 1) 
+	  } 
+	}                     #--end do
+
+	echo 
+	echo --- $who: Gamma-ray Luminosity ------------------
+	echo    Number of valid contributions : $num
+
+	if($num > 0) {
+	   define avrg_nl_g_$!whow   ($sum/$num)
+	   define sigma_nl_g_$!whow  (sqrt(abs($sum2/$num - ($sum/$num)**2)))
+	   echo
+	   echo    the average luminosity is : $avrg_nl_g_$!whow
+	   echo    the associated sigma is   : $sigma_nl_g_$!whow
+      if($num == 1){define sigma_nl_g_$!whow ($sigma_nl_g_$!whow/sqrt($num))}
+      if($num >= 2){define sigma_nl_g_$!whow ($sigma_nl_g_$!whow/sqrt($num-1))}
+	   echo    the associated sigma is : $sigma_nl_g_$!whow
+	   echo
+	} else {
+	   echo    There are NO contributions to the average
+	   echo -----------------------------------------------
+	   define avrg_nl_g_$!whow  (0)
+	   define sigma_nl_g_$!whow (0)
+	}
+	define num_g ($num)
+
+	#------------------------------------------------------------
+	# e vai con l'indice spettrale gamma
+	#------------------------------------------------------------
+	#
+	define sum  (0.0)
+	define num  (0)
+	define sum2 (0.0)
+
+	do i=0,$maxind {
+	  if( nl_$1[$i] > $2 && nl_$1[$i] < $3 && flagsam[$i] != $4 && flagg[$i] > 2) { 
+	      define sum  ($sum  + $(ag[$i])   )
+	      define sum2 ($sum2 + $(ag[$i])**2)
+	      define num  ($num + 1) 
+	  }
+	}                     #--end do
+	
+	echo --- $who: alpha_g ------------------------------
+	echo    Number of valid contributions : $num
+
+	if($num > 0) {
+	   define avrg_ag_$!whow   ($sum/$num)
+	   define sigma_ag_$!whow  (sqrt($sum2/$num - ($sum/$num)**2))
+	   echo
+	   echo    the average spectral index is : $avrg_ag_$!whow
+	   echo    the associated sigma is : $sigma_ag_$!whow
+	if($num == 1){define sigma_ag_$!whow  ($sigma_ag_$!whow/sqrt($num))}
+	if($num >= 2){define sigma_ag_$!whow  ($sigma_ag_$!whow/sqrt($num-1))}
+	   echo    the associated sigma is : $sigma_ag_$!whow
+	   echo ------------------------------------------------
+	} else {
+	   echo    There are NO contributions to the average
+	   echo -----------------------------------------------
+	   define avrg_ag_$!whow  (0)
+	   define sigma_ag_$!whow (0)
+	}
+
+	define num_ag          $num
+	define avrg_nl_g_vec   $avrg_nl_g_$!whow
+	define sigma_nl_g_vec  $sigma_nl_g_$!whow
+	define avrg_ag_vec     $avrg_ag_$!whow
+	define sigma_ag_vec    $sigma_ag_$!whow 
+
+	echo   * <L_g>     = $avrg_nl_g_vec  
+	echo   * sigma_L_g = $sigma_nl_g_vec 
+	echo   * <a_g>     = $avrg_ag_vec    
+	echo   * sigma_a_g = $sigma_ag_vec   
+	echo -----------------------------------------------
+
+##--------------------------------------------------------------------------
+## g_nln_all
+g_nln_all
+
+	nln_frame empty
+
+	define maxind (dimen(f_radio)-1)
+
+	do i=0,$maxind {
+	  define color ($i - 6*INT($i/6.)+2)
+	  ctype $color 
+
+	if($(flagx[$i]) > 0 ) {
+	if($(flagg[$i]) > 1 ) {
+
+      if( $(mir[$i]) < 0.01 ) {
+	  set vnu= < $nu5 $numm  $nuopt $nux $nug >
+	  set vnl= < $(nl_radio[$i]) $(nl_mm[$i]) $(nl_opt[$i]) $(nl_x[$i]) $(nl_g[$i]) >
+      } else {
+	  set vnu= < $nu5 $numm  $nuir $nuopt $nux $nug >
+	  set vnl= < $(nl_radio[$i]) $(nl_mm[$i]) $(nl_ir[$i]) $(nl_opt[$i]) $(nl_x[$i]) $(nl_g[$i]) >
+      }
+
+	  echo $(nl_g[$i])
+	  points  vnu vnl
+	  connect vnu vnl 
+
+	  if($(flagx[$i]) == 3) {
+	     butterfly $(ax[$i]-1) err_ax_u[$i] err_ax_d[$i] 17.384 16.384 18.0
+	     set nl_btfly = btfly + $(nl_x[$i]) 
+	     connect nufly nl_btfly
+	  } else {
+	        echo ***> Source [$(name[$i])] has NOT an X-ray spectral index 
+          }
+
+	  if($(flagg[$i]) == 3) {
+	     butterfly $(ag[$i]-1) err_ag_u[$i] err_ag_d[$i] 22.384 22.000 24.0
+	     set nl_btfly = btfly + $(nl_g[$i]) 
+	     connect nufly nl_btfly
+	  } else {
+	     echo ***> Source [$(name[$i])] has NOT a Gamma-ray spectral index 
+	  } 
+	
+	} else { 
+
+          if( $(mir[$i]) < 0.01 ) {
+	    set vnu= < $nu5 $numm  $nuopt $nux >
+	    set vnl=< $(nl_radio[$i]) $(nl_mm[$i]) $(nl_opt[$i]) $(nl_x[$i]) >
+          } else {
+	    set vnu= < $nu5 $numm  $nuir $nuopt $nux >
+	    set vnl= < $(nl_radio[$i]) $(nl_mm[$i]) $(nl_ir[$i]) $(nl_opt[$i]) $(nl_x[$i]) >
+          }
+	
+	  points  vnu vnl
+	  connect vnu vnl 
+
+	  if($(flagx[$i]) == 3) {
+	     butterfly $(ax[$i]-1) err_ax_u[$i] err_ax_d[$i] 17.384 16.384 18.0
+	     set nl_btfly = btfly + $(nl_x[$i]) 
+	     connect nufly nl_btfly
+	  } else {
+	        echo ***> Source [$(name[$i])] has NOT an X-ray spectral index 
+          }
+
+	  }                   #--end if of the Gamma-ray check
+	  } else {            #--end if of the f_x check
+
+	if($(flagg[$i]) > 1 ) {
+
+        if( $(mir[$i]) < 0.01 ) {
+	  set vnu= < $nu5 $numm  $nuopt $nug >
+	  set vnl=< $(nl_radio[$i]) $(nl_mm[$i]) $(nl_opt[$i]) $(nl_g[$i]) >
+        } else {
+	  set vnu= < $nu5 $numm  $nuir $nuopt $nug >
+	  set vnl= < $(nl_radio[$i]) $(nl_mm[$i]) $(nl_ir[$i]) $(nl_opt[$i]) $(nl_g[$i]) >
+        }
+
+	  echo $(nl_g[$i])
+	  points  vnu vnl
+	  connect vnu vnl 
+
+	  if($(flagg[$i]) == 3) {
+	     butterfly $(ag[$i]-1) err_ag_u[$i] err_ag_d[$i] 22.384 22.000 24.0
+	     set nl_btfly = btfly + $(nl_g[$i]) 
+	     connect nufly nl_btfly
+	  } else {
+	     echo ***> Source [$(name[$i])] has NOT a Gamma-ray spectral index 
+	  } 
+	
+	} else { 
+
+          if( $(mir[$i]) < 0.01 ) {
+	    set vnu= < $nu5 $numm  $nuopt >
+	    set vnl=< $(nl_radio[$i]) $(nl_mm[$i]) $(nl_opt[$i]) >
+          } else {
+	    set vnu= < $nu5 $numm  $nuir $nuopt >
+	    set vnl= < $(nl_radio[$i]) $(nl_mm[$i]) $(nl_ir[$i]) $(nl_opt[$i])>
+          }
+	
+	  points  vnu vnl
+	  connect vnu vnl 
+
+	}                   #--end if of the Gamma-ray check
+	}                   #--end if of the f_x check
+	}                   #--end do
+	    
+
+##--------------------------------------------------------------------------

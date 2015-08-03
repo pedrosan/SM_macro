@@ -1,0 +1,67 @@
+#---------------------------------------------------------------------------
+# read_sally
+read_sally
+
+	data sally_all.dat
+	read {name 1.s z 2 fr 3 mo 4 fxband 5 }
+	#
+	# X are in 0.1-2.4 band units of 10^-12
+	#
+	# radio are in milliJy
+	#
+
+	set fx = fxband/9.013   # converte a monocromatico ad 1 keV (muJy)
+	set fr = fr/1000.       # con il fattore che corrisponde ad
+	set lgfx = lg(fx)       # un indice spettrale 1.2 tra 0.1-2.4 keV
+	set lgfr = lg(fr)
+
+	do i=0,$(dimen(z)-1) {
+	   if(z[$i] < 4) {set z[$i] = z[$i]} else {set z[$i] = 0.16 }
+	}
+
+	set ratio_xr = lg(fx/fr) - 6.
+	set a_rx     = ratio_xr/7.685
+
+	define ax (1.2)
+	define ar (0.0)
+
+	set lgkfx = lgfx + ($ax - 1)*lg(1+z)
+	set lgkfr = lgfr + ($ar - 1)*lg(1+z)
+
+	set ratio_kxr = lgkfx - lgkfr - 6.
+	set a_krx     = ratio_kxr/7.685
+	
+#---------------------------------------------------------------------------
+# read_complete
+read_complete
+
+	data sally_complete.dat
+	read {name 1.s z 2 f_radio 3 mopt 4 f_x 5 }
+	#
+	# X are monochromatic @ 1keV, in nanoJy
+	#
+	# radio are CORE, in milliJy
+	#
+
+	set f_x     = f_x/1000.
+	set f_radio = f_radio/1000. 
+	set lg_f_x     = lg(f_x)
+	set lg_f_radio = lg(f_r)
+
+	do i=0,$(dimen(z)-1) {
+	   if(z[$i] < 4) {set z[$i] = z[$i]} else {set z[$i] = 0.16 }
+	}
+
+	set ratio_xr = lg(f_x/f_radio) - 6.
+	set a_rx     = ratio_xr/7.685
+
+	define a_x     (1.2)
+	define a_radio (0.0)
+
+	set lg_kf_x     = lg_f_x     + ($a_x - 1)*lg(1+z)
+	set lg_kf_radio = lg_f_radio + ($a_radio - 1)*lg(1+z)
+
+	set ratio_kxr = lg_kf_x - lg_kf_radio - 6.
+	set a_krx     = ratio_kxr/7.685
+	
+#---------------------------------------------------------------------------

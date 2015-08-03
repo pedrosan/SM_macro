@@ -1,0 +1,695 @@
+#---------------------------------------------------------------------------
+# ratio 	Plotta i counts ed il rapporto, usando 
+#		il valore delle variabili in memoria,
+#		(i.e. potrebbero essere rebinnate)
+ratio 
+
+
+	define color ? {what colour ? }
+
+	location 5500 32000 5500 31500
+
+	set err_1226 = sqrt(cts_1226)
+	set err_2155 = sqrt(cts_2155)
+
+	set ratio     = cts_2155/cts_1226
+	set err_ratio = (cts_2155/cts_1226)*sqrt(1./cts_2155+1./cts_1226)
+
+	window 1 -3 1 3
+	ctype 2
+	expand 1.5
+	limits -1 0.5 cts_2155
+	ticksize -1 5 0 0
+	box 0 2 0 0 
+	ylabel {\oe 2155}
+
+	ctype $color
+	points energy cts_2155
+	error_y energy cts_2155 err_2155
+
+	window 1 -3 1 2
+	ctype 2
+	expand 1.5
+	limits -1 0.5 cts_1226
+	ticksize -1 5 0 0 
+	box 0 2 0 0 
+	ylabel {\oe 3c273}
+
+	ctype $color
+	points energy cts_1226
+	error_y energy cts_1226 err_1226
+
+	window 1 -3 1 1
+	ctype 2
+	expand 1.5
+	limits -1 0.5  ratio
+	ticksize -1 5 0.25 1.0
+	box 1 2 0 0
+	xlabel {\oe Energy} ({\oe keV})
+	ylabel {\oe ratio} 
+
+	ctype $color
+	points energy ratio
+	error_y energy ratio err_ratio
+	ctype 2
+
+#---------------------------------------------------------------------------
+# ratio2	Plotta i counts ed il rapporto, usando 
+#		il valore delle variabili in memoria,
+#		(i.e. potrebbero essere rebinnate)
+#		Chiede il range dei limits di plot.
+ratio2
+
+	location 5500 32000 5500 31500
+
+	define _xmin    ? {Minimum Energy : }
+	define _xmax    ? {Maximum Energy : }
+	define ratiomin ? {Minimum Ratio : }
+	define ratiomax ? {Maximum Ratio : }
+	define min1226  ? {Minimum for 3c273 : }
+	define max1226  ? {Maximum for 3c273 : }
+	define min2155  ? {Minimum for 2155 : }
+	define max2155  ? {Maximum for 2155 : }
+
+	define xmin     (lg($_xmin))
+	define xmax     (lg($_xmax))
+
+	erase
+
+	set err_1226 = sqrt(cts_1226)
+	set err_2155 = sqrt(cts_2155)
+
+	set ratio     = cts_2155/cts_1226
+	set err_ratio = (cts_2155/cts_1226)*sqrt(1./cts_2155+1./cts_1226)
+
+	window 1 -3 1 3
+	expand 1.5
+	limits $xmin $xmax $min2155 $max2155
+	ticksize -1 5 0 0
+	box 0 2 0 0 
+	ylabel {\oe 2155}
+	points energy cts_2155
+	error_y energy cts_2155 err_2155
+
+	window 1 -3 1 2
+	expand 1.5
+	limits $xmin $xmax $min1226 $max1226
+	ticksize -1 5 0 0 
+	box 0 2 0 0 
+	ylabel {\oe 3c273}
+
+	points energy cts_1226
+	error_y energy cts_1226 err_1226
+
+	window 1 -3 1 1
+	expand 1.5
+	limits $xmin $xmax $ratiomin $ratiomax
+	ticksize -1 5 0.25 1.0
+	box 1 2 0 0
+	xlabel {\oe Energy} ({\oe keV})
+	ylabel {\oe ratio} 
+
+	points energy ratio
+	error_y energy ratio err_ratio
+
+	ctype 2
+
+#---------------------------------------------------------------------------
+# ratiolog 	Plotta i counts ed il rapporto in scala LOGARITMICA, 
+#		usando il valore delle variabili in memoria,
+#		(i.e. potrebbero essere rebinnate)
+ratiolog 
+
+	define color ? {what colour ? }
+
+	location 5500 32000 5500 31500
+
+	set ratio     = cts_2155/cts_1226
+	set err_ratio = (cts_2155/cts_1226)*sqrt(1./cts_2155+1./cts_1226)
+	set lg_err_ratio = 0.43*err_ratio/ratio
+	set lg_ratio     = lg(ratio)
+
+	set err_1226 = sqrt(cts_1226)
+	set lg_cts_1226 = lg(cts_1226)
+	set lg_err_1226 = 0.43*err_1226/cts_1226
+
+	set err_2155 = sqrt(cts_2155)
+	set lg_cts_2155 = lg(cts_2155)
+	set lg_err_2155 = 0.43*err_2155/cts_2155
+
+	window 1 -3 1 3
+	ctype 2
+	expand 1.5
+	limits -1 0.63 lg_cts_2155
+	ticksize -1 5 -1 5
+	box 0 2 0 0 
+	ylabel {\oe 2155}
+
+	ctype $color 
+	points energy lg_cts_2155
+	error_y energy lg_cts_2155 lg_err_2155
+
+	window 1 -3 1 2
+	ctype 2
+	expand 1.5
+	limits -1 0.63 lg_cts_1226
+	ticksize -1 5 -1 5
+	box 0 2 0 0 
+	ylabel {\oe 3c273}
+
+	ctype $color
+	points energy lg_cts_1226
+	error_y energy lg_cts_1226 lg_err_1226
+
+	window 1 -3 1 1
+	ctype 2
+	expand 1.5
+	limits -1 0.63 lg_ratio
+	ticksize -1 5 -1 5
+	box 1 2 0 0
+	xlabel {\oe Energy} ({\oe keV})
+	ylabel {\oe ratio} 
+
+	ctype $color
+	points energy lg_ratio
+	error_y energy lg_ratio lg_err_ratio
+	ctype 2
+
+#---------------------------------------------------------------------------
+# ratiolog2 	Plotta i counts ed il rapporto in scala LOGARITMICA
+#		usando il valore delle variabili in memoria,
+#		(i.e. potrebbero essere rebinnate)
+#		Chiede il range dei limits di plot.
+ratiolog2 
+
+	location 5500 32000 5500 31500
+
+	define _xmin     ? {Minimum Energy : }
+	define _xmax     ? {Maximum Energy : }
+	define _ratiomin ? {Minimum Ratio : }
+	define _ratiomax ? {Maximum Ratio : }
+	define _min1226  ? {Minimum for 3c273 : }
+	define _max1226  ? {Maximum for 3c273 : }
+	define _min2155  ? {Minimum for 2155 : }
+	define _max2155  ? {Maximum for 2155 : }
+
+	define xmin     (lg($_xmin))
+	define xmax     (lg($_xmax))
+	define ratiomin (lg($_ratiomin))
+	define ratiomax (lg($_ratiomax))
+	define min1226  (lg($_min1226))
+	define max1226  (lg($_max1226))
+	define min2155  (lg($_min2155))
+	define max2155  (lg($_max2155))
+
+	erase
+
+	set ratio     = cts_2155/cts_1226
+	set err_ratio = (cts_2155/cts_1226)*sqrt(1./cts_2155+1./cts_1226)
+	set lg_err_ratio = 0.43*err_ratio/ratio
+	set lg_ratio     = lg(ratio)
+
+	set err_1226 = sqrt(cts_1226)
+	set lg_cts_1226 = lg(cts_1226)
+	set lg_err_1226 = 0.43*err_1226/cts_226
+
+	set err_2155 = sqrt(cts_2155)
+	set lg_cts_2155 = lg(cts_2155)
+	set lg_err_2155 = 0.43*err_2155/cts_2155
+
+	window 1 -3 1 3
+	expand 1.5
+	limits $xmin $xmax $min2155 $max2155
+	ticksize -1 5 -1 5
+	box 0 2 0 0 
+	ylabel {\oe 2155}
+	points energy lg_cts_2155
+	error_y energy lg_cts_2155 lg_err_2155
+
+	window 1 -3 1 2
+	expand 1.5
+	limits $xmin $xmax $min1226 $max1226
+	ticksize -1 5 -1 5
+	box 0 2 0 0 
+	ylabel {\oe 3c273}
+
+	points energy lg_cts_1226
+	error_y energy lg_cts_1226 lg_err_1226
+
+	window 1 -3 1 1
+	expand 1.5
+	limits $xmin $xmax $ratiomin $ratiomax
+	ticksize -1 5 -1 5
+	box 1 2 0 0
+	xlabel {\oe Energy} ({\oe keV})
+	ylabel {\oe ratio} 
+
+	points energy lg_ratio
+	error_y energy lg_ratio lg_err_ratio
+
+#---------------------------------------------------------------------------
+# only_ratiolog	Plotta i counts ed il rapporto in scala LOGARITMICA, 
+#		usando il valore delle variabili in memoria,
+#		(i.e. potrebbero essere rebinnate)
+only_ratiolog 
+
+	if($?color){
+	  echo   Colour already defined, right. 
+   	}else{
+	  define color ? {what colour ? }
+   	}
+
+	location 5500 32000 8500 28500
+
+	set ratio     = cts_2155/cts_1226
+	set err_ratio = (cts_2155/cts_1226)*sqrt(1./cts_2155+1./cts_1226)
+	set lg_err_ratio = 0.43*err_ratio/ratio
+	set lg_ratio     = lg(ratio)
+
+	set err_1226 = sqrt(cts_1226)
+	set lg_cts_1226 = lg(cts_1226)
+	set lg_err_1226 = 0.43*err_1226/cts_1226
+
+	set err_2155 = sqrt(cts_2155)
+	set lg_cts_2155 = lg(cts_2155)
+	set lg_err_2155 = 0.43*err_2155/cts_2155
+
+	ctype 2
+	expand 1.5
+	limits -1 0.63 -0.39 0.9
+	ticksize -1 5 -1 5
+	box 1 2 0 0
+	ylabel {\oe ratio} 
+
+	ctype $color
+	points energy lg_ratio
+	error_y energy lg_ratio lg_err_ratio
+
+	lweight 1
+	ctype 4
+	ltype 1
+	grid
+	ltype 0
+	ctype 2
+
+	toplabel "S/N>$!sn_min"
+
+#---------------------------------------------------------------------------
+# sn 	produce due vettori di conteggi rebinnati ad un certo valore 
+#       del rapporto segnale-rumore (senza background).
+#	Chiede quale spettro "governi" il rebinning e rebinna
+#	l'altro parallelamente.
+#	Prima di eseguire RILEGGE SEMPRE i file originali ("readdata").
+sn
+	readdata
+
+	set err_1226  = sqrt(cts_1226)
+	set err_2155  = sqrt(cts_2155)
+	set ratio     =  cts_2155/cts_1226
+	set err_ratio = (cts_2155/cts_1226)*sqrt(1./cts_2155+1./cts_1226)
+
+	set sn_1226  = cts_1226/err_1226
+	set sn_2155  = cts_2155/err_2155
+	set sn_ratio = ratio/err_ratio
+
+	print '  %10f  %10f  %10f  %10f \n' {energy2 sn_1226 sn_2155 sn_ratio}
+
+	define name  {2155}
+	define other {1226}
+	define name   ? {what source is gonna lead the rebinning ? }
+	define other  ? {the other source name is... ?}
+	define sn_min ? {minimum required S/N : }
+
+	define maxindex (dimen(cts_2155))
+	set dimen(tmp_reb_2155) = $maxindex
+	set dimen(tmp_reb_1226) = $maxindex
+	set dimen(tmp_en_low)   = $maxindex
+	set dimen(tmp_en_high)  = $maxindex
+	define maxindex (dimen(cts_2155)-1)
+
+	define cts_dum (0.0)
+	define sn_dum  (0.0)
+	define reb_index (0)
+	define flag      (0)
+	set flag = 0
+
+	set cts_dum = 0
+	set reb_index = 0
+	echo "maxindex = "$maxindex
+
+	set tmp_en_low[0]  = energy1[0] 
+	echo $(tmp_en_low[0])
+
+	do i=0,$maxindex {
+	   set cts_dum = cts_dum + $(cts_$!name[$i])
+	   set sn_dum  = sqrt(cts_dum)
+	   echo "[$!i]: counts and S/N are :" $(cts_dum)" --- " $(sn_dum)
+	   set tmp_reb_$!other[$(reb_index)] = tmp_reb_$!other[$(reb_index)]+$(cts_$!other[$i])
+
+	   if ($(sn_dum) > $sn_min) {
+	       if ($(reb_index) < $maxindex ) {
+		  set tmp_en_low[$(reb_index)+1] = energy1[$i+1]
+	       }
+	       set  tmp_en_high[$(reb_index)] = energy2[$i] 
+	       set tmp_reb_$!name[$(reb_index)] = $(cts_dum)
+	       echo "Closing new bin ($!new_bin_number)"
+	       echo "Its definitive S/N is : " $(sn_dum)
+	       echo "Its (higher) energy limit is : " $(energy2[$i])
+	       if ($(reb_index) < $maxindex ) {
+	          set reb_index = reb_index + 1
+	          define new_bin_number ($(reb_index)+1)
+	          echo \n
+	          echo "----- Opening new bin ("$new_bin_number")-----"
+	       }
+	       set cts_dum = 0
+	       if ($(reb_index) == $maxindex) {set flag = 3} 
+           }
+	   if ($i == $maxindex && $(flag) == 0 ) { 
+	       echo "  "
+	       echo "  ...ending and closing this last bin even though"
+	       echo "  not achieved the required S/N ratio. "
+	       echo "  index is : " $(reb_index)
+	       set   tmp_en_low[$(reb_index)+1] = tmp_en_low[$(reb_index)]
+	       set  tmp_en_high[$(reb_index)] = energy2[$i] 
+	       set tmp_reb_$!name[$(reb_index)] = $(cts_dum)
+           }
+	}
+
+	define new_maxindex ($(reb_index)+1)
+	 # echo $new_maxindex
+	set   dimen(en_low) = $new_maxindex
+	set  dimen(en_high) = $new_maxindex
+	set dimen(cts_2155) = $new_maxindex
+	set dimen(cts_1226) = $new_maxindex
+
+	define new_maxindex ($(reb_index))
+	do j=0,$new_maxindex {
+	   set   en_low[$j] =   tmp_en_low[$j]
+	   set  en_high[$j] =  tmp_en_high[$j]
+	   set cts_1226[$j] = tmp_reb_1226[$j]
+	   set cts_2155[$j] = tmp_reb_2155[$j]
+	}
+
+	set err_1226 = sqrt(cts_1226)
+	set err_2155 = sqrt(cts_2155)
+	set  sn_1226 = sqrt(cts_1226)
+	set  sn_2155 = sqrt(cts_2155)
+
+	set ratio     = cts_2155/cts_1226
+	set err_ratio = (cts_2155/cts_1226)*sqrt(1./cts_2155+1./cts_1226)
+	set sn_ratio = ratio/err_ratio
+
+	set energy = lg((en_low+en_high)/2.)
+	echo "---------------------------------------------------------------"
+	echo "           WRITING output to file rebin.$!sn_min.output,"
+	echo "       listing new energy bins and counts and S/N and ratio"
+	echo "---------------------------------------------------------------"
+	print rebin.$!sn_min.output ' %10.4e %10.4e  %7d %7.3f  %7d %7.3f  %6.3f   %6.3f \n' {en_low en_high cts_1226 sn_1226 cts_2155 sn_2155 ratio err_ratio}
+
+#---------------------------------------------------------------------------
+# toplabel 1
+toplabel 1
+
+	define topx ($gx1+200)
+	define topy ($gy2+500)
+
+	expand 1.5
+	ctype 2
+
+	relocate ($topx $topy)	
+	putlabel 6 {\rm $1}
+
+#---------------------------------------------------------------------------
+# waporatio  calcola e disegna (su only_ratiolog) una power-law
+#            con assorbimento ed edge 
+waporatio
+
+	echo "-----------------------------------------------------"
+	define check_erase "n"
+	define check_erase ? {Delete previous diagram and redraw ratio ?} 
+	if(substr('$check_erase',0,1) == 'y') { erase only_ratiolog }
+
+	define alpha ? {Spectral index ?}
+	define norm  ? {Normalization ?}
+	define e_min ? {Minimum energy ?}
+	define e_max ? {Maximum energy ?}
+	delete pl
+	delete pl_abs
+	delete pl_edge
+	delete pl_abs_edge
+
+	set lg_kev=(lg($e_min)),(lg($e_max)),0.01
+	set kev = 10.**lg_kev
+	set pl = lg($norm) - $alpha*lg_kev
+	
+	echo "-----------------------------------------------------"
+	define check_wabs  "y"
+	define check_wabs ? {Take into account neutral ISM absorption (y/n)? }
+	if(substr('$check_wabs',0,1) == 'y') { 
+	    wabs 
+	    set pl_abs      = pl - gal_abs
+	}
+	echo "-----------------------------------------------------"
+	define check_edge  "y"
+	define check_edge ? {Take into account absorption edge (y/n)?}
+	if(substr('$check_edge',0,1) == 'y') { 
+	    edge
+	    set pl_edge     = pl - edge
+	}
+
+	if(substr('$check_wabs',0,1)== 'y' && substr('$check_edge',0,1)== 'y'){
+	    set pl_abs_edge = pl_abs - edge 
+	}
+
+	 # expand 1.5
+	 # ctype 2
+	 # ltype 0
+	 # limits lg_kev pl
+	 # ticksize -1 5 -1 5
+	 # box
+	 # xlabel Energy [keV]
+
+	waporatioplot
+
+#---------------------------------------------------------------------------
+# waporatioplot  ridisegna il plot della power-law+wabs+edge
+waporatioplot
+
+	ltype 0
+	ctype 7
+	connect lg_kev pl
+
+	lweight 3
+	define test (is_set(pl_abs_edge,3)) 
+	if ($test == 1) { 
+		 	 ltype 2
+			 ctype 3
+			 connect lg_kev pl_abs_edge
+			 lweight 1
+			 ctype 2
+			 ltype 0
+			 return
+			 }
+
+	define test (is_set(pl_abs,3)) 
+	if ($test == 1) { 
+			 ltype 2
+			 ctype 4
+			 connect lg_kev pl_abs 
+			 lweight 1
+			 ctype 2
+			 ltype 0
+			 return
+			 }
+
+	define test (is_set(pl_edge,3)) 
+	if ($test == 1) { 
+		 	 ltype 2
+			 ctype 7
+			 connect lg_kev pl_edge
+			 lweight 1
+			 ctype 2
+			 ltype 0
+			 return
+			 }
+
+
+#---------------------------------------------------------------------------
+# wabs 101    calcola il tau da assorbimento neutro di ISM
+wabs 101	
+
+	echo "-----------------------------------------------------"
+	echo - You called the WABS function....
+	echo - Got energies vector having $(dimen(lg_kev)) components
+	echo - and ranging from $(kev[0]) to $(kev[$(dimen(kev)-1)])
+
+	if($?1){
+	   define n_h $1
+   	}else{
+	   define n_h   ? {Nh (in units of 10^20) ?}
+   	}
+
+	set dimen(sigma) = $(dimen(lg_kev))
+
+	data morr_par.dat
+	read {e 1 a 2 b 3 c 4}
+
+	echo - Computing the absorbed fraction....wait...
+	do i=0,$(dimen(sigma)-1) {
+	 cycle
+	   #do j=0,13 {
+	   #  if( kev[$i] < e[$j] ) {
+	   #  set sigma[$i] = (a[$j]+b[$j]*kev[$i]+c[$j]*kev[$i]**2.)/kev[$i]**3
+	   #  echo at energy = $(kev[$i]) the sigma is $(sigma[$i])
+ 	   #  }
+	   #}
+	}
+	set tau = $n_h*sigma*1.e-4
+	set gal_abs= 0.43429*tau
+
+cycle
+	  do j=0,13 {
+	     if( kev[$i] < e[$j] ) {
+	     set sigma[$i] = (a[$j]+b[$j]*kev[$i]+c[$j]*kev[$i]**2.)/kev[$i]**3
+	     return
+ 	     }
+	  }
+
+#---------------------------------------------------------------------------
+# edge 102     calcola un edge
+edge 102	
+
+	echo "-----------------------------------------------------"
+	echo - You called the EDGE function....
+	echo - Got energies vector having $(dimen(lg_kev)) components
+	echo - and ranging from $(kev[0]) to $(kev[$(dimen(kev)-1)])
+
+	set dimen(edge) = $(dimen(lg_kev))
+
+	if($?1 && $?2){
+	   define edge_e   $1
+	   define edge_tau $2
+   	}else{
+	   define  edge_e   ? {Edge energy [keV] ?} 
+	   define  edge_tau ? {Absorption depth at Edge [tau] ?} 
+   	}
+
+	do i=0,$(dimen(sigma)-1) {
+	   if( kev[$i] < $edge_e ) {
+	      set edge[$i] = 1
+ 	   } else {
+	      set edge[$i] = exp($edge_tau*((kev[$i]/$edge_e)**-3))         
+ 	   } 
+	}
+	set edge=0.43429*lg(edge)
+
+#---------------------------------------------------------------------------
+# wapo2	   calcola e plotta il rapporto tra due power-law
+#	   assorbite (ciascuna con il suo Nh) e con edge
+#	   (ciascuna con il suo bravo edge), e plotta contro
+# 	   il consueto "only_ratiolog".
+wapo2
+
+	echo "-----------------------------------------------------"
+	define check_erase "n"
+	define check_erase ? {Delete previous diagram and redraw ratio ?} 
+	if(substr('$check_erase',0,1) == 'y') { erase only_ratiolog }
+
+	define norm  ? {Normalization ?}
+	define e_min ? {Minimum energy ?}
+	define e_max ? {Maximum energy ?}
+	set lg_kev=(lg($e_min)),(lg($e_max)),0.01
+	set kev = 10.**lg_kev
+
+	#---------------------------------------------
+	echo >-<>-<>-<>-<>-<>-<>-<>-<>-<>-<>-<>-<>-<>-<>-<
+	echo - Preparing first spectrum
+	echo -
+	if($?alpha_1)    {define alpha    ($alpha_1)   }
+	if($?n_h_1)      {define n_h      ($n_h_1)     }
+	if($?edge_e_1)   {define edge_e   ($edge_e_1)  }
+	if($?edge_tau_1) {define edge_tau ($edge_tau_1)}
+	subwapo2
+	set pl_1 = pl
+	define alpha_1    ($alpha)
+	define n_h_1      ($n_h)
+	define edge_e_1   ($edge_e)
+	define edge_tau_1 ($edge_tau)
+
+	define test (is_set(pl,3)) 
+	if ($test == 1) { set spectrum_1 = pl }
+	define test (is_set(pl_edge,3)) 
+	if ($test == 1) { set spectrum_1 = pl_edge }
+	define test (is_set(pl_abs,3)) 
+	if ($test == 1) { set spectrum_1 = pl_abs }
+	define test (is_set(pl_abs_edge,3)) 
+	if ($test == 1) { set spectrum_1 = pl_abs_edge }
+	delete pl
+	delete pl_abs
+	delete pl_edge
+	delete pl_abs_edge
+
+	#---------------------------------------------
+	define norm (1.0)
+	echo >-<>-<>-<>-<>-<>-<>-<>-<>-<>-<>-<>-<>-<>-<>-<
+	echo - Preparing second spectrum
+	echo -
+	if($?alpha_2)    {define alpha    ($alpha_2)   }
+	if($?n_h_2)      {define n_h      ($n_h_2)     }
+	if($?edge_e_2)   {define edge_e   ($edge_e_2)  }
+	if($?edge_tau_2) {define edge_tau ($edge_tau_2)}
+	subwapo2 
+	set pl_2 = pl
+	define alpha_2    ($alpha)
+	define n_h_2      ($n_h)
+	define edge_e_2   ($edge_e)
+	define edge_tau_2 ($edge_tau)
+
+	define test (is_set(pl,3)) 
+	if ($test == 1) { set spectrum_2 = pl }
+	define test (is_set(pl_edge,3)) 
+	if ($test == 1) { set spectrum_2 = pl_edge }
+	define test (is_set(pl_abs,3)) 
+	if ($test == 1) { set spectrum_2 = pl_abs }
+	define test (is_set(pl_abs_edge,3)) 
+	if ($test == 1) { set spectrum_2 = pl_abs_edge }
+	delete pl
+	delete pl_abs
+	delete pl_edge
+	delete pl_abs_edge
+
+	set spectra_ratio = spectrum_1 - spectrum_2
+
+	lweight 3
+	ltype 0
+	ctype 3
+	connect lg_kev spectra_ratio
+	ctype 2
+	lweight 1
+
+
+subwapo2
+	define alpha ? {Spectral index ?}
+
+	set pl = lg($norm) - $alpha*lg_kev
+	
+	echo "-----------------------------------------------------"
+	define check_wabs  "y"
+	define check_wabs ? {Take into account neutral ISM absorption (y/n)? }
+	if(substr('$check_wabs',0,1) == 'y') { 
+	    wabs 
+	    set pl_abs      = pl - gal_abs
+	}
+	echo "-----------------------------------------------------"
+	define check_edge  "y"
+	define check_edge ? {Take into account absorption edge (y/n)?}
+	if(substr('$check_edge',0,1) == 'y') { 
+	    edge
+	    set pl_edge     = pl - edge
+	}
+
+	if(substr('$check_wabs',0,1)== 'y' && substr('$check_edge',0,1)== 'y'){
+	    set pl_abs_edge = pl_abs - edge 
+	}
+
+#---------------------------------------------------------------------------

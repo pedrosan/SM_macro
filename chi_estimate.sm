@@ -1,0 +1,27 @@
+# trucco
+trucco  8
+
+	define y1   $1
+	define y2   $5
+	define con1 $2
+	define con2 $6
+	define t1   $3
+	define t2   $7
+	define sc1  $4
+	define sc2  $8
+
+	define ybest ? { best fit chi^2 ? }
+	define y ($ybest+2.3)
+		
+	define t   ( $t1 + ($t2-$t1)/(sqrt($y1)-sqrt($y2))*(sqrt($y1)-sqrt($y)))
+	define con ( $con1 + ($con2-$con1)/(sqrt($y1)-sqrt($y2))*(sqrt($y1)-sqrt($y)))
+	define sc  ( $sc1 + ($sc2-$sc1)/(sqrt($y1)-sqrt($y2))*(sqrt($y1)-sqrt($y)))
+
+	echo ------------------------------
+	echo  tau   = $t
+	echo  cons  = $con
+	echo  scale = $sc
+	echo ------------------------------
+
+
+

@@ -1,0 +1,818 @@
+###############################################################################
+#---------------------------------------------------------------------------
+## setup_linear
+setup_linear
+
+        define flag_need_x0 (1)
+
+##---------------------------------------------------------------------------
+# init_linear
+init_linear
+
+	echo "-----------------------------------------------"
+	echo "*** Model is: Linear Fit (in log-log space) ***"
+	echo "    Give initial guess for parameters: "
+
+	if($linorlogx == 1) { 
+	   define var0 ? <                           Y value [@x=$(10**($x0))]: >
+	}
+	if($linorlogy == 1) { 
+	   define var0 $(lg($var0))
+	}
+	define var1  ? <                                   Slope : >
+
+	set parvec = < $var0 $var1 >
+
+##---------------------------------------------------------------------------
+## exit_linear
+exit_linear
+
+	if($linorlogy == 1) { 
+	    define p0 (10**$(parvec[0]))
+	}
+
+	set ydum = func_$testfunc(xdum,parvec)
+	set xdum = xdum*$xs + $x0
+
+	echo "-------------------------------------------------------------" 
+	echo "*** Model is: CONSTANT + Straight line (for ???-??? data) ***" 
+	echo " " 
+	if($linorlogx == 1) { 
+	   echo " - Y value    : "$p0" [@x="$(10**$x0)"]"
+	} else {
+	   echo " - Y value    : "$p0" [@x="$x0"]"
+	}
+	echo " - Slope      : "$(parvec[1])
+	echo "-------------------------------------------------------------"
+	echo " Chi^2 = "$_newchi" / "$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------"
+
+##---------------------------------------------------------------------------
+## func_linear 2       : f(x,a)
+func_linear 2
+
+	set $0 =  $2[0] + $2[1]*$1
+
+##---------------------------------------------------------------------------
+## der_linear 3   : df(x,a,j)
+der_linear 3
+
+	if($3 == 0) { 
+	   set $0 = 1 + 0*$1
+	}
+
+	if($3 == 1) { 
+	   set $0 = $1
+	}
+
+################################################################################
+#-------------------------------------------------------------------------------
+# test_pl_cutoff
+test_pl_cutoff 101
+
+        if($?1) {
+            if(substr('$1',0,2) == '-h' ){
+               echo "-----------------------------------------------"
+               echo " pl_cutoff: "
+               echo " "
+               echo " USAGE: "
+               echo "    > pl_cutoff K=2e-10 g=3.1 efold=4.3 "
+               echo "  or"
+               echo "    > pl_cutoff (in this case it draws the line in black) "
+               echo " "
+               echo "-----------------------------------------------"
+               return
+            } else {
+               # define silentparsing 1
+	       echo $1
+               mparsep $1
+               define silentparsing 0
+            }
+        }
+
+	echo $K
+	echo $g
+	echo $efold
+	set lg_eee = $(lg(0.3)),$(lg(10.5)),0.01
+	define lgK $(lg($K))
+	#define g (2.1)
+	#define efold (4.3)
+
+	set lg_fff = $lgK - ($g-2)*lg_eee - 0.4343*(10.**lg_eee/4.3)
+
+	connect lg_eee lg_fff
+
+##-------------------------------------------------------------------------------
+## setup_pl_cutoff
+setup_pl_cutoff
+
+        define flag_need_x0 (1)
+
+#-------------------------------------------------------------------------------
+# init_pl_cutoff
+init_pl_cutoff
+
+	echo "--------------------------------------------------------------------"
+	echo "*** Model is: POWER LAW + EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "    Give initial guess for parameters: "
+
+	define var0 ? < Normalization (linear value)   : >
+	define var1 ? < Power Law Photon Index [Gamma] : > 
+	define var2 ? < Cutoff Energy (linear value)   : >
+	
+	define var0 (lg($var0))
+	define var2 ($var2/10.0**$x0)
+
+	set parvec = < $var0 $var1 $var2 >
+	
+##-------------------------------------------------------------------------------
+## exit_pl_cutoff
+exit_pl_cutoff
+
+	set ydum = func_$testfunc(xdum,parvec)
+	set xdum = xdum*$xs + $x0
+
+	set parvec[0] = 10.0**$(parvec[0])
+	set parvec[2] = parvec[2]*10.0**$x0
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+	define var2 $(parvec[2])
+
+	echo "--------------------------------------------------------------------" 
+	echo "*** Model is: POWER LAW + EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "  "
+	echo "  - Normalization                  : "$(sprintf('%9.3e',$(parvec[0])))"  ["$(sprintf('%7.3f',$(lg(parvec[0]))))"]"
+	echo "  - Power Law Photon Index [Gamma] : "$(sprintf('%6.3f',$(parvec[1])))
+	echo "  - Cutoff Energy                  : "$(sprintf('%9.3e',$(parvec[2])))"  ["$(sprintf('%7.3f',$(lg(parvec[2]))))"]"
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 = "$_newchi" / "$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+##-------------------------------------------------------------------------------
+## func_pl_cutoff 2  f(x,a)
+func_pl_cutoff 2
+
+        set $0 =  $2[0] - ($2[1]-2)*$1 - 0.4343*10.0**$1/$2[2]
+
+##---------------------------------------------------------------------------
+## der_pl_cutoff 3   : df(x,a,j)
+der_pl_cutoff 3
+
+	if($3 == 0) { 
+	   set $0 = 1.0 + 0.0*$1
+	}
+
+	if($3 == 1) { 
+	   set $0 = -1.0*$1
+	}
+
+	if($3 == 2) { 
+	   set $0 = 0.4343*10.0**($1)/($3*$3)
+	}
+
+################################################################################
+##-------------------------------------------------------------------------------
+## setup_new_pl_cutoff
+setup_new_pl_cutoff
+
+        define flag_need_x0 (1)
+
+##-------------------------------------------------------------------------------
+# init_new_pl_cutoff
+init_new_pl_cutoff
+
+	echo "--------------------------------------------------------------------"
+	echo "*** Model is: POWER LAW + EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "    Give initial guess for parameters: "
+
+	define var0 ? < Normalization (linear value)   : >
+	define var1 ? < Power Law Photon Index [Gamma] : > 
+	define var2 ? < Cutoff Energy (linear value)   : >
+	
+	define var0 (lg($var0))
+	define var2 ($var2/10.0**$x0)
+
+	set parvec = < $var0 $var1 $var2 >
+
+##-------------------------------------------------------------------------------
+## exit_new_pl_cutoff
+exit_new_pl_cutoff
+
+	set ydum = func_$testfunc(xdum,parvec)
+	set xdum = xdum*$xs + $x0
+
+	set parvec[0] = 10.0**$(parvec[0])
+	set parvec[2] = parvec[2]*10.0**$x0
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+	define var2 $(parvec[2])
+
+	echo "--------------------------------------------------------------------"
+	echo "*** Model is: POWER LAW + EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "  "
+	echo "  - Normalization                  : "$(sprintf('%9.3e',$(parvec[0])))"  ["$(sprintf('%7.3f',$(lg(parvec[0]))))"]"
+	echo "  - Power Law Photon Index [Gamma] : "$(sprintf('%6.3f',$(parvec[1])))
+	echo "  - Cutoff Energy                  : "$(sprintf('%9.3e',$(parvec[2])))"  ["$(sprintf('%7.3f',$(lg(parvec[2]))))"]"
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 = "$_newchi" / "$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+##-------------------------------------------------------------------------------
+## func_new_pl_cutoff 2  f(x,a)
+func_new_pl_cutoff 2
+
+        set $0 =  $2[0] - $2[1]*$1 - 0.4343*(10.0**$1)/$2[2]
+
+##---------------------------------------------------------------------------
+## der_new_pl_cutoff 3   : df(x,a,j)
+der_new_pl_cutoff 3
+
+	if($3 == 0) { 
+	   set $0 = 1.0 + 0.0*$1
+	}
+
+	if($3 == 1) { 
+	   set $0 = -1.0*$1
+	}
+
+	if($3 == 2) { 
+	   set $0 = 0.4343*(10.0**$1)/($2[2]*$2[2])
+	}
+
+################################################################################
+##-------------------------------------------------------------------------------
+## setup_pl_superexp
+setup_pl_superexp
+
+        define flag_need_x0 (1)
+
+##-------------------------------------------------------------------------------
+# init_pl_superexp
+init_pl_superexp
+
+	echo "-----------------------------------------------------------------------------" 
+	echo "*** Model is: POWER LAW + MODIFIED EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "    Give initial guess for parameters: "
+
+	define var0 ? < Normalization (LINEAR value) : >
+	define var1 ? < Power Law Photon Index       : > 
+	define var2 ? < Cutoff Energy (LINEAR value) : >
+	define var3 ? < Superexp. coefficient        : >
+	
+	define var0 (lg($var0))
+	define var2 (lg($var2) - $x0)
+
+	set parvec = < $var0 $var1 $var2 $var3 >
+
+	# define cx_extra (2.0)
+	# define cx_extra (1.0)
+	define cx_extra ? < extra CX in exponent [1|2]   :  >
+	
+##-------------------------------------------------------------------------------
+## exit_pl_superexp
+exit_pl_superexp
+
+	set ydum = func_$testfunc(xdum,parvec)
+	set xdum = xdum*$xs + $x0
+
+	set parvec[0] = 10.0**(parvec[0])
+	set parvec[2] = 10.0**(parvec[2])*10.0**$x0
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+	define var2 $(parvec[2])
+	define var3 $(parvec[3])
+
+	echo "-----------------------------------------------------------------------------" 
+	echo "*** Model is: POWER LAW + MODIFIED EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "  "
+	echo "  - Normalization                : "$(sprintf('%9.3e',$(parvec[0])))"  ["$(sprintf('%7.3f',$(lg(parvec[0]))))"]"
+	echo "  - Power Law Photon Index [p]   : "$(sprintf('%6.3f',$(parvec[1])))
+	echo "  - Cutoff Energy                : "$(sprintf('%9.3e',$(parvec[2])))"  ["$(sprintf('%7.3f',$(lg(parvec[2]))))"]"
+	echo "  - Superexp. coefficient        : "$(sprintf('%6.4f',$(1.00001*parvec[3] + 1.0e-5)))
+	echo "  "
+	echo "  - extra CX in exponent         : "$(sprintf('%3.1f',$(1.00001*$cx_extra + 1.0e-5)))
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 = "$_newchi" / "$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+	# GF AD HOC
+	define g3p $( (-1.0*parvec[1]/$cx_extra)**(1/parvec[3])*parvec[2] )
+	echo " \gamma_{3p} peak = "$(sprintf('%9.3e',$g3p))"  ["$(sprintf('%7.3f',$(lg($g3p))))"]"
+	echo "-------------------------------------------------------------" 
+
+##-------------------------------------------------------------------------------
+## func_pl_superexp 2  f(x,a)
+func_pl_superexp 2
+
+        set $0 =  $2[0] - $2[1]*$1 - 0.4343*($cx_extra/$2[3])*10.0**(($1 - $2[2])*$2[3])
+
+##---------------------------------------------------------------------------
+## der_pl_superexp 3   : df(x,a,j)
+der_pl_superexp 3
+
+	if($3 == 0) { 
+	   set $0 = 1.0 + 0*$1
+	}
+
+	if($3 == 1) { 
+	   set $0 = -1.0*$1
+	}
+
+	if($3 == 2) { 
+	   set $0 = $cx_extra*10.0**(($1 - $2[2])*$2[3])
+	}
+
+	if($3 == 3) { 
+	   set $0 = ($cx_extra/$2[3])*10.0**(($1 - $2[2])*$2[3])*( 0.4343/$2[3] - ($1 - $2[2]) )
+	}
+
+################################################################################
+##-------------------------------------------------------------------------------
+## setup_fixedpl_superexp
+setup_fixedpl_superexp
+
+        define flag_need_x0 (1)
+
+##-------------------------------------------------------------------------------
+# init_fixedpl_superexp
+init_fixedpl_superexp
+
+	echo "-------------------------------------------------------------------------------------" 
+	echo "*** Model is: (FIXED) POWER LAW + MODIFIED EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "    Give initial guess for parameters: "
+
+	define var0 ? < Normalization (LINEAR value) : >
+	define idx  ? < Power Law Photon Index       : > 
+	define var1 ? < Cutoff Energy (LINEAR value) : >
+	define var2 ? < Superexp. coefficient        : >
+	
+	define var0 (lg($var0))
+	define var1 (lg($var1) - $x0)
+
+	set parvec = < $var0 $var1 $var2 >
+
+	# define cx_extra (2.0)
+	# define cx_extra (1.0)
+	define cx_extra ? < extra CX in exponent [1|2]   :  >
+	
+##-------------------------------------------------------------------------------
+## exit_fixedpl_superexp
+exit_fixedpl_superexp
+
+	set ydum = func_$testfunc(xdum,parvec)
+	set xdum = xdum*$xs + $x0
+
+	set parvec[0] = 10.0**(parvec[0])
+	set parvec[1] = 10.0**(parvec[1])*10.0**$x0
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+	define var2 $(parvec[2])
+
+	echo "-------------------------------------------------------------------------------------" 
+	echo "*** Model is: (FIXED) POWER LAW + MODIFIED EXPONENTIAL CUTOFF (for LOG-LOG data) *** "
+	echo "  "
+	echo "  - Normalization                : "$(sprintf('%9.3e',$(parvec[0])))"  ["$(sprintf('%7.3f',$(lg(parvec[0]))))"]"
+        echo "  - Power Law Photon Index [p]   : "$(sprintf('%6.3f',$idx))
+	echo "  - Cutoff Energy                : "$(sprintf('%9.3e',$(parvec[1])))"  ["$(sprintf('%7.3f',$(lg(parvec[1]))))"]"
+	echo "  - Superexp. coefficient        : "$(sprintf('%6.4f',$(1.00001*parvec[2] + 1.0e-5)))
+	echo "  "
+	echo "  - extra CX in exponent         : "$(sprintf('%3.1f',$(1.00001*$cx_extra + 1.0e-5)))
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 = "$_newchi" / "$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+	# GF AD HOC
+	define g3p $( (-1.0*$idx/$cx_extra)**(1/parvec[2])*parvec[1] )
+	echo " \gamma_{3p} peak = "$(sprintf('%9.3e',$g3p))"  ["$(sprintf('%7.3f',$(lg($g3p))))"]"
+	echo "-------------------------------------------------------------" 
+
+##-------------------------------------------------------------------------------
+## func_fixedpl_superexp 2  f(x,a)
+func_fixedpl_superexp 2
+
+        set $0 =  $2[0] - $idx*$1 - 0.4343*($cx_extra/$2[2])*10.0**(($1 - $2[1])*$2[2])
+
+##---------------------------------------------------------------------------
+## der_fixedpl_superexp 3   : df(x,a,j)
+der_fixedpl_superexp 3
+
+	if($3 == 0) { 
+	   set $0 = 1.0 + 0*$1
+	}
+
+	if($3 == 1) { 
+	   set $0 = $cx_extra*10.0**(($1 - $2[1])*$2[2])
+	}
+
+	if($3 == 2) { 
+	   set $0 = ($cx_extra/$2[2])*10.0**(($1 - $2[1])*$2[2])*( 0.4343/$2[2] - ($1 - $2[1]) )
+	}
+
+################################################################################
+##-------------------------------------------------------------------------------
+## setup_ff_linear
+setup_ff_linear
+
+        define flag_need_x0 (1)
+
+##-------------------------------------------------------------------------------
+# init_ff_linear
+init_ff_linear
+
+	echo "-----------------------------------------------------------" 
+	echo "*** Model is: LINEAR (e.g. Power Law for LOG-LOG data) *** "
+	echo "    Give initial guess for parameters: "
+
+	define var0 ? < Normalization   : >
+	define var1 ? < Slope           : >
+	
+	set parvec = < $var0 $var1 >
+	
+##-------------------------------------------------------------------------------
+## exit_ff_linear
+exit_ff_linear
+
+	set ydum = func_$testfunc(xdum,parvec)
+	set xdum = xdum*$xs + $x0
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+
+	echo "-----------------------------------------------------------"
+	echo "*** Model is: LINEAR (e.g. Power Law for LOG-LOG data) *** "
+	echo "  "
+	echo "  - Normalization                  : "$(parvec[0])
+	echo "  - Slope                          : "$(parvec[1])
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 = "$_newchi" / "$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+##-------------------------------------------------------------------------------
+## func_ff_linear 2  f(x,a)
+func_ff_linear 2
+
+        set $0 =  $2[0] + $2[1]*$1 
+
+##---------------------------------------------------------------------------
+## der_ff_linear 3   : df(x,a,j)
+der_ff_linear 3
+
+	if($3 == 0) { 
+	   set $0 = 1
+	}
+
+	if($3 == 1) { 
+	   set $0 = $1
+	}
+
+################################################################################
+##-------------------------------------------------------------------------------
+## setup_parabola
+setup_parabola
+
+        define flag_need_x0 (1)
+
+##-------------------------------------------------------------------------------
+# init_parabola
+init_parabola
+
+	echo "-----------------------------------------"
+	echo "*** Model is: PARABOLA                ***"
+	echo "    Give initial guess for parameters: "
+
+	define var0 ? < Normalization (a) : >
+	define var1 ? < cx. for x     (b) : >
+	define var2 ? < cx. for x^2   (c) : >
+
+	set parvec = < $var0 $var1 $var2 >
+	
+##-------------------------------------------------------------------------------
+## exit_parabola
+exit_parabola
+
+	set ydum = func_$testfunc(xdum,parvec)
+	set xdum = xdum*$xs + $x0
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+	define var2 $(parvec[2])
+
+	echo "-----------------------------------------"
+	echo "*** Model is: PARABOLA                ***"
+	echo "  "
+	echo "  - Normalization (a) : "$(parvec[0])
+	echo "  - cx. for x     (b) : "$(parvec[1])
+	echo "  - cx. for x^2   (c) : "$(parvec[2])
+	echo "  "
+	echo " Peak is at x = "$(-0.5*parvec[1]/parvec[2])
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 = "$_newchi" / "$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+##-------------------------------------------------------------------------------
+## func_parabola 2  f(x,a)
+func_parabola 2
+
+        set $0 =  $2[0] + $2[1]*$1 + $2[2]*$1**2.0
+
+##---------------------------------------------------------------------------
+## der_parabola 3   : df(x,a,j)
+der_parabola 3
+
+	if($3 == 0) { 
+	   set $0 = 1
+	}
+
+	if($3 == 1) { 
+	   set $0 = $1
+	}
+
+	if($3 == 2) { 
+           set $0 = $1**2.0
+	}
+
+################################################################################
+##-------------------------------------------------------------------------------
+## setup_poly_3rd
+setup_poly_3rd
+
+        define flag_need_x0 (1)
+
+##-------------------------------------------------------------------------------
+# init_poly_3rd
+init_poly_3rd
+
+	echo "------------------------------------------"
+	echo "*** Model is: 3-RD DEGREE POLYNOMIAL *** "
+	echo "    Give initial guess for parameters: "
+
+	define var0 ? < Normalization (a) : >
+	define var1 ? < cx. for x     (b) : >
+	define var2 ? < cx. for x^2   (c) : >
+	define var3 ? < cx. for x^3   (d) : >
+
+	set parvec = < $var0 $var1 $var2 $var3 >
+	
+##-------------------------------------------------------------------------------
+## exit_poly_3rd
+exit_poly_3rd
+
+	set ydum = func_$testfunc(xdum,parvec)
+	set xdum = xdum*$xs + $x0
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+	define var2 $(parvec[2])
+	define var3 $(parvec[3])
+
+	echo "-----------------------------------------"
+	echo "*** Model is: 3-RD DEGREE POLYNOMIAL ***"
+	echo "  "
+	echo "  - Normalization (a) : "$(parvec[0])
+	echo "  - cx. for x     (b) : "$(parvec[1])
+	echo "  - cx. for x^2   (c) : "$(parvec[2])
+	echo "  - cx. for x^3   (d) : "$(parvec[3])
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 = "$_newchi" / "$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+##-------------------------------------------------------------------------------
+## func_poly_3rd 2  f(x,a)
+func_poly_3rd 2
+
+        set $0 =  $2[0] + $2[1]*$1 + $2[2]*$1**2.0 + $2[3]*$1**3.0 
+
+##---------------------------------------------------------------------------
+## der_poly_3rd 3   : df(x,a,j)
+der_poly_3rd 3
+
+	if($3 == 0) { 
+	   set $0 = 1
+	}
+
+	if($3 == 1) { 
+	   set $0 = $1
+	}
+
+	if($3 == 2) { 
+           set $0 = $1**2.0
+	}
+
+	if($3 == 3) {
+           set $0 = $1**3.0
+	}
+
+################################################################################
+##-------------------------------------------------------------------------------
+## setup_poly_4th
+setup_poly_4th
+
+        define flag_need_x0 (1)
+
+##-------------------------------------------------------------------------------
+# init_poly_4th
+init_poly_4th
+
+	echo "------------------------------------------"
+	echo "*** Model is: 4-TH DEGREE POLYNOMIAL *** "
+	echo "    Give initial guess for parameters: "
+
+	define var0 ? < Normalization (a) : >
+	define var1 ? < cx. for x     (b) : >
+	define var2 ? < cx. for x^2   (c) : >
+	define var3 ? < cx. for x^3   (d) : >
+	define var4 ? < cx. for x^4   (e) : >
+
+	set parvec = < $var0 $var1 $var2 $var3 $var4 >
+	
+##-------------------------------------------------------------------------------
+## exit_poly_4th
+exit_poly_4th
+
+	set ydum = func_$testfunc(xdum,parvec)
+	set xdum = xdum*$xs + $x0
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+	define var2 $(parvec[2])
+	define var3 $(parvec[3])
+	define var4 $(parvec[4])
+
+	echo "-----------------------------------------"
+	echo "*** Model is: 4-TH DEGREE POLYNOMIAL ***"
+	echo "  "
+	echo "  - Normalization (a) : "$(parvec[0])
+	echo "  - cx. for x     (b) : "$(parvec[1])
+	echo "  - cx. for x^2   (c) : "$(parvec[2])
+	echo "  - cx. for x^3   (d) : "$(parvec[3])
+	echo "  - cx. for x^4   (e) : "$(parvec[4])
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 = "$_newchi" / "$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+##-------------------------------------------------------------------------------
+## func_poly_4th 2  f(x,a)
+func_poly_4th 2
+
+        set $0 =  $2[0] + $2[1]*$1 + $2[2]*$1**2.0 + $2[3]*$1**3.0  + $2[4]*$1**4.0 
+
+##---------------------------------------------------------------------------
+## der_poly_4th 3   : df(x,a,j)
+der_poly_4th 3
+
+	if($3 == 0) { 
+	   set $0 = 1
+	}
+
+	if($3 == 1) { 
+	   set $0 = $1
+	}
+
+	if($3 == 2) { 
+           set $0 = $1**2.0
+	}
+
+	if($3 == 3) {
+           set $0 = $1**3.0
+	}
+
+	if($3 == 4) {
+           set $0 = $1**4.0
+	}
+
+################################################################################
+##-------------------------------------------------------------------------------
+## setup_gaussian
+setup_gaussian
+
+        define flag_need_x0 (0)
+
+##-------------------------------------------------------------------------------
+# init_gaussian
+init_gaussian
+
+	echo "-----------------------------------------"
+	echo "*** Model is: Gaussian                ***"
+	echo "    Give initial guess for parameters: "
+
+	define var0 ? < Normalization F(<x>) : >
+	define var1 ? < Mean            <x>  : >
+	define var2 ? < Sigma                : >
+
+	set parvec = < $var0 $var1 $var2 >
+	
+##-------------------------------------------------------------------------------
+## exit_gaussian
+exit_gaussian
+
+	set ydum = func_$testfunc(xdum,parvec)
+	set xdum = xdum*$xs + $x0
+
+	define var0 $(parvec[0])
+	define var1 $(parvec[1])
+	define var2 $(parvec[2])
+
+	echo "-----------------------------------------"
+	echo "*** Model is: Gaussian                ***"
+	echo "  "
+	echo "  - Normalization F(<x>) : "$(parvec[0])
+	echo "  - Mean            <x>  : "$(parvec[1])
+	echo "  - Sigma                : "$(parvec[2])
+
+	echo "-------------------------------------------------------------" 
+	echo " Chi^2 = "$_newchi" / "$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-------------------------------------------------------------" 
+
+##-------------------------------------------------------------------------------
+## func_gaussian 2  f(x,a)
+func_gaussian 2
+
+        set $0 =  $2[0]*exp( -0.5*(($1-$2[1])/$2[2])**2.0 )
+
+##---------------------------------------------------------------------------
+## der_gaussian 3   : df(x,a,j)
+der_gaussian 3
+
+	if($3 == 0) { 
+	   set $0 = func_gaussian($1,$2)/$2[0]
+	}
+
+	if($3 == 1) { 
+	   set $0 = func_gaussian($1,$2)*($1-$2[1])/$2[2]**2.0
+	}
+
+	if($3 == 2) { 
+	   set $0 = func_gaussian($1,$2)*($1-$2[1])**2.0/$2[2]**3.0
+	}
+
+###############################################################################
+##-------------------------------------------------------------------------------
+## setup_cons_pl
+setup_cons_pl
+
+        define flag_need_x0 (1)
+
+##-------------------------------------------------------------------------------
+# init_cons_pl
+init_cons_pl
+
+	echo "---------------------------------------------------------"
+	echo "*** Model is: CONSTANT + PowerLaw (for LIN-LIN data) *** "
+	echo "    Give initial guess for parameters: "
+
+	define var0  ? <          Constant Baseline  :>
+	define var1  ? <          Y value    [@x=$x0]:> 
+	define var2  ? <          PowerLaw Exponent  :>
+
+	set parvec = < $var0 $var1 $var2 >
+
+##---------------------------------------------------------------------------
+## exit_cons_pl
+exit_cons_pl
+
+	set ydum = func_$testfunc(xdum,parvec)
+	set xdum = xdum*$xs + $x0
+
+	echo "---------------------------------------------------------"
+	echo "*** Model is: CONSTANT + PowerLaw (for LIN-LIN data) *** "
+	echo "  "
+	echo "  - Constant Baseline : "$(parvec[0])
+	echo "  - Y value           : "$(parvec[1])" [@x="$x0"]"
+	echo "  - PowerLaw Exponent : "$(sprintf('%6.3f',$(parvec[2])))
+	echo "------------------------------------------------------------- "
+	echo " Chi^2 = "$_newchi" / "$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "------------------------------------------------------------- "
+
+##---------------------------------------------------------------------------
+## func_cons_pl 2       : f(x,a)
+func_cons_pl 2
+
+	set $0 =  $2[0] + $2[1]*$1**$2[2]
+
+##---------------------------------------------------------------------------
+## der_cons_pl 3   : df(x,a,j)
+der_cons_pl 3
+
+	if($3 == 0) { 
+	   set $0 = 1 + 0*$1
+	}
+
+	if($3 == 1) { 
+	   set $0 = $1**$2[2]
+	}
+
+	if($3 == 2) { 
+	   set $0 = $2[1]*ln($1)*($1**$2[2])
+	}
+
+###############################################################################
+#************************************************************************
+#** WARNING 
+#**   myload macro 'matrix' before to proceed.                         **
+#**   It is needed to load the macros necessary for matrix handling    **
+#**                                                                    ** 
+#************************************************************************

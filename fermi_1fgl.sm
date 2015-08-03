@@ -1,0 +1,988 @@
+--------------------------------------------------------------------------------
+# read_1fgl
+read_1fgl
+
+        data 1FGL_Tab1_positions.dat
+	read < signif 2 ra 3 dec 4 semimaj68 7 semimin68 8 semimaj95 10 semimin95 11 >
+
+	set err_pos68 = (semimaj68 + semimin68)/2.
+	set err_pos95 = (semimaj95 + semimin95)/2.
+
+        data 1FGL_Tab2_fluxes_basic.dat
+	read < signif 2 variab_idx 3 flags 4 gamma_g 5 err_gamma_g 6 curv_idx 7 >
+	read < f_photons 8 err_f_photons 9 flag_ul_f_photons 10 f_energy 11 err_f_energy 12 flag_ul_f_energy 13 >
+	read < e_pivot 14 f_photons_pivot 15 err_f_photons_pivot 16 > 
+
+	set alpha_g     = gamma_g - 1 
+	set err_alpha_g = err_gamma_g
+
+	# converting flux from ph/cm2/s/MeV to erg/cm2/s/Hz
+	set f_pivot = e_pivot*f_photons_pivot*1.602e-6/2.418e20    ### 6.626e-27
+	set f_1GeV  = f_pivot*(1000/e_pivot)**(1.0-gamma_g)
+	set nf_1GeV = f_1GeV*2.418e23
+
+        data 1FGL_Tab3_fluxes_5bands.dat
+	read < f_b1  8 err_f_b1  9 flag_ul_b1 10 sqrtTS_b1 11 >
+	read < f_b2 12 err_f_b2 13 flag_ul_b2 14 sqrtTS_b2 15 >
+	read < f_b3 16 err_f_b3 17 flag_ul_b3 18 sqrtTS_b3 19 >
+	read < f_b4 20 err_f_b4 21 flag_ul_b4 22 sqrtTS_b4 23 >
+	read < f_b5 24 err_f_b5 25 flag_ul_b5 26 sqrtTS_b5 27 >
+	foreach 9 < 1 2 3 4 5 > {
+	   set lg_f_b$9 = lg(f_b$9)
+	}
+
+	#------------------------------------------------------------
+	set flag_ul_btot3 = f_b1*0
+	do 8=3,5 { set flag_ul_btot3 = flag_ul_btot3 + flag_ul_b$8 }
+	set flag_ul_btot5 = f_b1*0
+	do 8=1,5 { set flag_ul_btot5 = flag_ul_btot5 + flag_ul_b$8 }
+
+	set f_btot3 = f_b1*0
+	set f_btot5 = f_b1*0
+	set flag_df_over_f = int(err_f_photons/f_photons + 0.5)
+	foreach 8 < 1 2 3 4 5 > {
+	   set flag_df_b$8 = int(err_f_b$8/f_b$8 + 0.5)
+	}
+	do 8=3,5 { set f_btot3 = f_btot3 + f_b$8 - 2.0*flag_df_b$8*err_f_b$8 }
+	do 8=1,5 { set f_btot5 = f_btot5 + f_b$8 - 2.0*flag_df_b$8*err_f_b$8 }
+
+        #data 1FGL_Tab4_fluxes_peak.dat
+
+        data 1FGL_Tab5_associations.dat
+	read < class_str 8.s flag_0fgl 9 flag_agile 10 flag_egret 11 assoc1_str 12.s >  
+
+	## set classn = flag_0fgl*0 - 1
+	assign_classn class_str assoc1_str
+	set classn = temp_classn
+
+##------------------------------------------------------------------------------
+## assign_classn <class_str> <assoc1_str>
+assign_classn 2
+
+	set dimen(temp_classn) = dimen($1)
+	do 9=0,dimen($1)-1 {
+           define dumcl  "$($1[$9])"
+           define dumass "$($2[$9])"
+
+	   if( substr('$dumcl',0,3) == 'PSR' || substr('$dumcl',0,3) == 'psr' ) { set temp_classn[$9] = -2 }
+	   if( substr('$dumcl',0,3) == 'HXB' || substr('$dumcl',0,3) == 'hxb' ) { set temp_classn[$9] = -2 }
+	   if( substr('$dumcl',0,3) == 'SPP' || substr('$dumcl',0,3) == 'spp' ) { set temp_classn[$9] = -2 }
+	   if( substr('$dumcl',0,3) == 'MQO' || substr('$dumcl',0,3) == 'mqo' ) { set temp_classn[$9] = -2 }
+	   if( substr('$dumcl',0,3) == 'SNR' || substr('$dumcl',0,3) == 'snr' ) { set temp_classn[$9] = -2 }
+
+	   if( substr('$dumcl',0,3) == 'GLC' || substr('$dumcl',0,3) == 'glc' ) { set temp_classn[$9] =  3.5 }
+	   if( substr('$dumcl',0,3) == 'GAL' || substr('$dumcl',0,3) == 'gal' ) { set temp_classn[$9] =  3   }
+	   if( substr('$dumcl',0,3) == 'SBG' || substr('$dumcl',0,3) == 'sbg' ) { set temp_classn[$9] =  3   }
+	   if( substr('$dumcl',0,2) == 'AG'  || substr('$dumcl',0,2) == 'ag'  ) { set temp_classn[$9] =  2   }
+	   if( substr('$dumcl',0,3) == 'BZB' || substr('$dumcl',0,3) == 'bzb' ) { set temp_classn[$9] =  1   }
+	   if( substr('$dumcl',0,3) == 'BZQ' || substr('$dumcl',0,3) == 'bzq' ) { set temp_classn[$9] =  2   }
+	   if( substr('$dumcl',0,3) == 'BZU' || substr('$dumcl',0,3) == 'bzu' ) { set temp_classn[$9] =  4   }
+
+	   if( substr('$dumass',0,3) == 'Cen' ) { set temp_classn[$9] =  3.5 }
+	   if( substr('$dumass',0,3) == 'M_8' ) { set temp_classn[$9] =  3.5 }
+	   if( substr('$dumass',0,3) == 'NGC' ) { set temp_classn[$9] =  3.5 }
+	   if( substr('$dumass',1,2) == 'MC'  ) { set temp_classn[$9] =  3.5 }
+	}
+	#----------------------------------------
+        # egrep -i 'bzb|bzq|bzu|agn|agu|gal|sbg'
+	#
+        #    23 agn
+        #     2 AGN
+        #    59 agu
+	#
+        #   291 bzb
+        #     1 BZB
+        #   278 bzq
+	#
+        #     2 GAL
+        #     2 SBG
+        #     7 glc
+        #     1 GLC
+	#
+        #     2 HXB
+        #     1 MQO
+        #    52 PSR
+        #     4 SNR
+        #    18 spp
+	#
+        #   708 XXX
+	#----------------------------------------
+
+#--------------------------------------------------------------------------------
+# select_agn
+select_agn
+
+	#--------------------
+	# GAL  classn =  3 
+	# SBG  classn =  3 
+	#
+	# AG   classn =  2 
+	# BZB  classn =  1 
+	# BZQ  classn =  2 
+	# BZU  classn =  4 
+	#--------------------
+	# local set filter = classn
+	define filter "classn >= 1"
+	define filter "classn == 1 || classn == 2 || classn == 4 "
+
+	foreach 8 < signif semimaj68 semimin68 semimaj95 semimin95 err_pos68 err_pos95 \
+	            variab_idx flags gamma_g err_gamma_g curv_idx \
+		    alpha_g err_alpha_g \
+	            f_btot3 flag_ul_btot3 f_btot5 flag_ul_btot5 \
+		    f_photons err_f_photons flag_ul_f_photons f_energy err_f_energy flag_ul_f_energy \
+	            e_pivot f_photons_pivot err_f_photons_pivot f_pivot f_1GeV nf_1GeV \
+	            classn class_str flag_0fgl flag_agile flag_egret > {
+	   set agn1_$8 = $8  if( $filter )
+	}
+
+	foreach 8 < lg_f_b f_b err_f_b flag_ul_b sqrtTS_b > {
+	   foreach 9 < 1 2 3 4 5 > {
+	      # set agn1_$8$9 = $8$9  if( filter >= 1 )
+	      set agn1_$8$9 = $8$9  if( $filter )
+	   }
+	}
+
+	# some statistics
+	set dummy local
+
+	echo "------------------------------------------------------------"
+	echo " AGN sample composition "
+	echo " "
+	set dummy = agn1_classn  if( agn1_classn == 1 ) 
+	echo " BL Lacs  : " $(dimen(dummy))
+	set dummy = agn1_classn  if( agn1_classn == 2 ) 
+	echo " FSRQ     : " $(dimen(dummy))
+	set dummy = agn1_classn  if( agn1_classn == 3 ) 
+	echo " Galaxies : " $(dimen(dummy))
+	set dummy = agn1_classn  if( agn1_classn == 4 ) 
+	echo " Unknown  : " $(dimen(dummy))
+
+	set how_many_bands = 5 - agn1_flag_ul_b1
+	foreach 9 < 2 3 4 5 > { set how_many_bands = how_many_bands - agn1_flag_ul_b$9 }
+
+	echo "------------------------------------------------------------"
+	echo " Some statistics on 5-band fluxes "
+	echo "        OK    U.L. "
+	echo "   #1 : "$(dimen(agn1_signif) - sum(agn1_flag_ul_b1))   $(sum(agn1_flag_ul_b1))
+	echo "   #2 : "$(dimen(agn1_signif) - sum(agn1_flag_ul_b2))   $(sum(agn1_flag_ul_b2))
+	echo "   #3 : "$(dimen(agn1_signif) - sum(agn1_flag_ul_b3))   $(sum(agn1_flag_ul_b3))
+	echo "   #4 : "$(dimen(agn1_signif) - sum(agn1_flag_ul_b4))   $(sum(agn1_flag_ul_b4))
+	echo "   #5 : "$(dimen(agn1_signif) - sum(agn1_flag_ul_b5))   $(sum(agn1_flag_ul_b5))
+	echo "------------------------------------------------------------"
+
+	do 9=1,5 {
+	   set dummy = agn1_flag_ul_b1   if( how_many_bands == $9 ) 
+	   echo "  "$9" band(s) : "$(dimen(dummy))
+	}
+	echo "------------------------------------------------------------"
+	set dummy = agn1_curv_idx   if( agn1_curv_idx >= 11.34 )
+	echo "  curved spec. : "$(dimen(dummy))
+	echo "------------------------------------------------------------"
+
+dummy_agn
+
+	#foreach 8 < z_mix flag_z fr_mix flag_fr \
+	#           fo_mix lg_fo_mix fo_avrg lg_fo_avrg flag_fo aro_mix aro_avrg > {
+	#    set agn1_$8  = $8
+	#}
+
+	set agn1_d_l_vec = agn1_z_mix*0.0
+	echo " Computing luminosity distances: it can take a while"
+	do 9=0,dimen(agn1_z_mix)-1 {
+	   define test_z $(agn1_z_mix[$9])
+	   if( $test_z == 0 || $test_z > 100 ) {
+	      define lumdist 100
+	   } else {
+              systemcall cosmo_calculator.py $test_z | egrep -v Age >! /tmp/lumdist
+              data "/tmp/lumdist"
+              define lumdist read 1 3 
+	   }
+	   set agn1_d_l_vec[$9] = $lumdist
+	}
+
+	set agn1_gamma_fudge = abs(agn1_alpha_g-1)
+	# set agn1_lg_nf_1GeV_fudge = lg(agn1_nf_1GeV) + agn1_gamma_fudge
+
+	set agn1_lg_nl_1GeV = lg(4*3.1415) + 2*agn1_d_l_vec + lg(agn1_nf_1GeV)
+	# set agn1_lg_nl_1GeV_fudge = lg(4*3.1415) + 2*agn1_d_l_vec + agn1_lg_nf_1GeV
+
+	set agn1_lg_nl_radio = lg(4*3.1415) + 2*agn1_d_l_vec + lg(agn1_fr_mix) + lg(5e9)
+
+#--------------------------------------------------------------------------------
+# read_agn1_more_data : run only after having select for AGN from the 1FGL list
+read_agn1_more_data
+
+	# F_radio CGRaBS is at 8.4 GHz in mJy
+	# F_radio FFSS   is at 1.4 GHz in mJy
+	# F_radio BZCAT  is at ?.? GHz in mJy
+	# F_radio MW_all is at ?.? GHz in L_nu  ????
+
+	######################################################
+	# BZCAT & CGRABS
+	#
+	data "AGN_vs_bzcat_ELL++_and_cgrabs_ELL.dat"
+	read < z_class_str 2.s z_assoc1_str 3.s z_bzcat 6 mag_bzcat 7 fr_bzcat 8 z_cgrabs 10 >
+
+	set fr_bzcat = fr_bzcat*1e-26
+
+	######################################################
+	# CGRABS radio and optical
+	#
+	data "AGN_vs_cgrabs_ELL+_with_radio_and_Rmag.dat"
+	read < fr_cgrabs 2 mag_cgrabs 3 >
+
+	set fr_cgrabs = fr_cgrabs*1e-26
+
+	######################################################
+	# MW all
+	#
+ 	# data "AGN_vs_MWC_ELL+.dat"
+ 	# read < z_mwc 6 >
+
+	######################################################
+	# FFSS
+	#
+ 	data "AGN_vs_FFSS_ELL+.dat"
+ 	read < z_ffss 6 fr_ffss 8 mag_ffss 7 >
+
+	set fr_ffss = fr_ffss*1e-26
+
+	######################################################
+	
+	# some manipulations of optical band data
+	#
+	foreach 7 < cgrabs bzcat ffss > {
+           set flag_fo_$7 = 0*mag_$7 + 1
+           do 9=0,dimen(mag_$7)-1 {
+              if( mag_$7[$9] == 0 ) { 
+                 set mag_$7[$9]     = 100.0 
+                 set flag_fo_$7[$9] = 0
+              }
+	      if( z_$7[$9] == 0 ) { set z_$7[$9] = 777.0 }
+           }
+	}
+
+	# assuming V band  log(nu) = 14.732
+	set lg_fo_bzcat = lg(3480.0) - 23 - 0.4*mag_bzcat   
+	set fo_bzcat = 10.0**lg_fo_bzcat
+
+	# log(nu) = 14.632
+	set lg_fo_cgrabs = lg(3010.0) - 23 - 0.4*mag_cgrabs 
+	set fo_cgrabs = 10.0**lg_fo_cgrabs
+
+	# 6200-6700 \AA, 6450==> 4.65e13 ==> 13.667
+	set lg_fo_ffss  = -19.526 - 0.4*mag_ffss    
+	set fo_ffss = 10.0**lg_fo_ffss
+
+	foreach 7 < cgrabs bzcat ffss > {
+	   echo " F_radio   "$7" : "$(dimen(fr_$7))
+	   echo " F_optical "$7" : "$(dimen(fo_$7))
+	}
+	######################################################
+	data "AGN_vs_MW_all_ELL+_clean.dat"
+ 	read < z_mwa 8 fr_mwa 9 >
+
+	######################################################
+	# F_RADIO
+	set fr_mix  = fr_bzcat*0 + 1
+	set flag_fr = fr_bzcat*0 
+	do 9=0,dimen(z_bzcat)-1 {
+	   if( fr_bzcat[$9] > 0 && fr_cgrabs[$9] > 0 && fr_ffss[$9] > 0 ) {
+	      set fr_mix[$9] = fr_cgrabs[$9]
+	   } else {
+	      if( fr_bzcat[$9]  > 0.0 ) { set fr_mix[$9] = fr_bzcat[$9]  }
+	      if( fr_cgrabs[$9] > 0.0 ) { set fr_mix[$9] = fr_cgrabs[$9] }
+	    # if( fr_mwa[$9]    > 0.0 ) { set fr_mix[$9] = fr_mwa[$9]    }
+	      if( fr_ffss[$9]   > 0.0 ) { set fr_mix[$9] = fr_ffss[$9]   }
+	      # FLAG
+	      if( fr_cgrabs[$9] > 0.0 ) { set flag_fr[$9] = flag_fr[$9] + 1  }
+	      if( fr_bzcat[$9]  > 0.0 ) { set flag_fr[$9] = flag_fr[$9] + 2  }
+	    # if( fr_mwa[$9]    > 0.0 ) { set flag_fr[$9] = flag_fr[$9] + 4  }
+	      if( fr_ffss[$9]   > 0.0 ) { set flag_fr[$9] = flag_fr[$9] + 8  }
+	   }
+	}
+
+	######################################################
+	# F_OPTICAL
+	set fo_mix  = fo_bzcat*0 + 1
+	set flag_fo = fo_bzcat*0 
+	do 9=0,dimen(z_bzcat)-1 {
+	   if( flag_fo_bzcat[$9] > 0 && flag_fo_cgrabs[$9] > 0 && flag_fo_ffss[$9] > 0 ) {
+	      set fo_mix[$9] = fo_cgrabs[$9]
+	   } else {
+	      if( flag_fo_bzcat[$9]  > 0 ) { set fo_mix[$9]  = fo_bzcat[$9]  }
+	      if( flag_fo_cgrabs[$9] > 0 ) { set fo_mix[$9]  = fo_cgrabs[$9] }
+	    # if( flag_fo_mwa[$9]    > 0 ) { set fo_mix[$9]  = fo_mwa[$9]    }
+	      if( flag_fo_ffss[$9]   > 0 ) { set fo_mix[$9]  = fo_ffss[$9]   }
+	      # FLAG
+	      if( flag_fo_cgrabs[$9] > 0 ) { set flag_fo[$9] = flag_fo[$9] + 1  }
+	      if( flag_fo_bzcat[$9]  > 0 ) { set flag_fo[$9] = flag_fo[$9] + 2  }
+	    # if( flag_fo_mwa[$9]    > 0 ) { set flag_fo[$9] = flag_fo[$9] + 4  }
+	      if( flag_fo_ffss[$9]   > 0 ) { set flag_fo[$9] = flag_fo[$9] + 8  }
+	   }
+	}
+	#help flag_fo_bzcat
+        #help flag_fo_cgrabs
+        #help flag_fo_ffss
+
+	set lg_fo_mix = lg(fo_mix)
+
+	set sweight = flag_fo_cgrabs + flag_fo_bzcat + flag_fo_ffss + 0.0001
+	set lg_fo_avrg = (lg_fo_cgrabs*flag_fo_cgrabs + lg_fo_bzcat*flag_fo_bzcat + lg_fo_ffss*flag_fo_ffss)/sweight
+	set fo_avrg = 10.0**lg_fo_avrg
+
+	######################################################
+	# REDSHIFT
+	set z_mix  = z_bzcat*0 + 999
+	set flag_z = z_bzcat*0 
+	do 9=0,dimen(z_bzcat)-1 {
+	   # if( z_bzcat[$9] < 100 && z_cgrabs[$9] < 100 && z_mwa[$9] < 100 ) {
+	   #   set z_mix[$9] = z_cgrabs[$9]
+	   #} else {
+	      if( z_bzcat[$9]  < 100 ) { set z_mix[$9] = z_bzcat[$9]  }
+	      if( z_mwa[$9]    < 100 ) { set z_mix[$9] = z_mwa[$9]    }
+	      if( z_cgrabs[$9] < 100 ) { set z_mix[$9] = z_cgrabs[$9] }
+	      if( z_ffss[$9]   < 100 ) { set z_mix[$9] = z_ffss[$9]   }
+	      # FLAG
+	      if( z_bzcat[$9]  < 100 ) { set flag_z[$9] = flag_z[$9] + 2  }
+	      if( z_mwa[$9]    < 100 ) { set flag_z[$9] = flag_z[$9] + 4  }
+	      if( z_cgrabs[$9] < 100 ) { set flag_z[$9] = flag_z[$9] + 1  }
+	      if( z_ffss[$9]   < 100 ) { set flag_z[$9] = flag_z[$9] + 8  }
+	   #}
+	}
+	set dummy local
+	set dummy0=z_bzcat  if( z_bzcat  == 777.0 )
+	set dummy1=z_bzcat  if( z_bzcat  < 100 )
+	echo " BZCAT  : "$(dimen(dummy1))  $(dimen(dummy0))
+	#
+	set dummy0=z_cgrabs if( z_cgrabs == 777.0 )
+	set dummy1=z_cgrabs if( z_cgrabs < 100 )
+	echo " CGRaBS : "$(dimen(dummy1))  $(dimen(dummy0))
+	#
+	set dummy0=z_mwa    if( z_mwa    == 777.0 )
+	set dummy1=z_mwa    if( z_mwa    < 100 )
+	echo " MW all : "$(dimen(dummy1))  $(dimen(dummy0))
+	#
+	set dummy0=z_ffss   if( z_ffss   == 777.0 )
+	set dummy1=z_ffss   if( z_ffss   < 100 )
+	echo " FFSS   : "$(dimen(dummy1))  $(dimen(dummy0))
+	#
+	set dummy0=z_mix    if( z_mix == 777.0 )
+	set dummy1=z_mix    if( z_mix < 100 )
+	echo " MIX    : "$(dimen(dummy1))  $(dimen(dummy0))
+
+	######################################################
+	set aro_mix  = (lg(fr_mix) - lg_fo_mix)/5.037
+	set aro_avrg = (lg(fr_mix) - lg_fo_avrg)/5.037
+
+	######################################################
+	assign_classn z_class_str z_assoc1_str
+	set z_classn = temp_classn
+	define filter "z_classn == 1 || z_classn == 2 || z_classn == 4 "
+
+	foreach 8 < z_bzcat z_cgrabs z_ffss z_mwa z_mix flag_z \
+	            fr_cgrabs fr_bzcat fr_ffss fr_mix flag_fr \
+		    fo_cgrabs fo_bzcat fo_ffss fo_mix flag_fo fo_avrg \
+		    lg_fo_cgrabs lg_fo_bzcat lg_fo_ffss lg_fo_mix lg_fo_avrg \
+		    aro_mix aro_avrg > {
+	    set $8 = $8  if( $filter )
+	}
+
+	foreach 8 < z_mix flag_z fr_mix flag_fr \
+	           fo_mix lg_fo_mix fo_avrg lg_fo_avrg flag_fo aro_mix aro_avrg > {
+	    set agn1_$8  = $8
+	}
+
+	set agn1_d_l_vec = agn1_z_mix*0.0
+	echo " Computing luminosity distances: it can take a while"
+	do 9=0,dimen(agn1_z_mix)-1 {
+	   define test_z $(agn1_z_mix[$9])
+	   if( $test_z == 0 || $test_z > 100 ) {
+	      define lumdist 100
+	   } else {
+              systemcall cosmo_calculator.py $test_z | egrep -v Age >! /tmp/lumdist
+              data "/tmp/lumdist"
+              define lumdist read 1 3 
+	   }
+	   set agn1_d_l_vec[$9] = $lumdist
+	}
+
+	set agn1_gamma_fudge = abs(agn1_alpha_g-1)
+	# set agn1_lg_nf_1GeV_fudge = lg(agn1_nf_1GeV) + agn1_gamma_fudge
+
+	set agn1_lg_nl_1GeV = lg(4*3.1415) + 2*agn1_d_l_vec + lg(agn1_nf_1GeV)
+	# set agn1_lg_nl_1GeV_fudge = lg(4*3.1415) + 2*agn1_d_l_vec + agn1_lg_nf_1GeV
+
+	set agn1_lg_nl_radio = lg(4*3.1415) + 2*agn1_d_l_vec + lg(agn1_fr_mix) + lg(5e9)
+
+
+#--------------------------------------------------------------------------------
+# ag_vs_l1gev
+ag_vs_l1gev
+
+	reset_graph
+
+	expand 1.5 
+	ctype 2 
+	limits 41.6 49.6 0.1 2.1 
+	# ticksize -1 0 0 0 
+	ticksize 0.25 1 0 0 
+	box 1 2 4 0 
+	ticksize 0.25 1 0 0 
+	box 4 4 1 4 
+
+	expand 2.0 
+	# xlabel \\nu L_{1GeV}
+	xlabel log(\\nu L_{1GeV})
+	ylabel \alpha_\gamma
+
+	define yn_fudge ? < Fudge Gamma Luminosity [1|0] : >
+	define yn_kcorr ? < K-correct Gamma flux   [1|0] : >
+	set tmp_GeV = agn1_lg_nl_1GeV + $yn_fudge*agn1_gamma_fudge + $yn_kcorr*(agn1_alpha_g-1)*lg(1+agn1_z_mix)
+	# set tmp_GeV = agn1_lg_nl_1GeV + $yn_fudge*agn1_gamma_fudge
+
+	# expand 2.0 
+	# ptype 4 0 
+	# ctype 3 points tmp_GeV agn1_alpha_g  if(agn1_classn == 2 )
+	# ctype 5 points tmp_GeV agn1_alpha_g  if(agn1_classn == 1 )
+
+        set dummy = agn1_alpha_g  if( agn1_classn == 1 && agn1_flag_z > 0 )
+	echo " #FSRQ = "$(dimen(dummy))
+        set dummy = agn1_alpha_g  if( agn1_classn == 2 && agn1_flag_z > 0 )
+	echo " #BLL  = "$(dimen(dummy))
+
+	define whatcoding ? < Code by class or redshift [1|2] : >
+
+	if( $whatcoding == 1 ) { 
+
+           expand 2.5 
+           ptype 4 0 
+           ctype 3 points tmp_GeV agn1_alpha_g  if( agn1_classn == 2 && agn1_flag_z > 0 )
+           angle 45
+           ctype 5 points tmp_GeV agn1_alpha_g  if( agn1_classn == 1 && agn1_flag_z > 0 )
+           angle 0
+           
+           ptype 20 3
+           expand 1.25
+           ctype 3 points tmp_GeV agn1_alpha_g  if( agn1_classn == 2 && agn1_flag_z > 0 )
+           expand 2.0
+           ctype 2
+
+	} else {
+
+           expand 2.5 
+           ptype 4 0 ctype 2           points tmp_GeV agn1_alpha_g  if( agn1_flag_z > 0 && agn1_z_mix <  0.3 )
+           ptype 3 3 ctype 3           points tmp_GeV agn1_alpha_g  if( agn1_flag_z > 0 && agn1_z_mix >= 0.3 && agn1_z_mix < 0.8 )
+           ptype 4 0 ctype 5           points tmp_GeV agn1_alpha_g  if( agn1_flag_z > 0 && agn1_z_mix >= 0.8 && agn1_z_mix < 1.5 )
+           ptype 8 1 ctype forestgreen points tmp_GeV agn1_alpha_g  if( agn1_flag_z > 0 && agn1_z_mix >= 1.5 && agn1_z_mix < 2.0 )
+           ptype 4 0 ctype orange      points tmp_GeV agn1_alpha_g  if( agn1_flag_z > 0 && agn1_z_mix >= 2.0 && agn1_z_mix < 3.0 )
+           ptype 3 3 ctype 2           points tmp_GeV agn1_alpha_g  if( agn1_flag_z > 0 && agn1_z_mix >= 3.0 )
+
+	}
+
+	#------------------------------------------------------------
+	# Detection threshold lines
+	#------------------------------------------------------------
+        set test_ag = 0.2,2.0,0.01
+        set test_ag = test_ag + 0.001
+        set lg_flim_3mo = -9.85 + 1.666*(abs(test_ag+1 - 1.1))**0.58 - 0.666*lg(0.1)
+        set flim_3mo = 10.0**lg_flim_3mo
+
+	set test_gg = test_ag + 1
+	# exp 0.62  / T=1
+	set flim_1yr = -10.05 + 1.62*(abs(test_gg - 0.9))**0.62 - 0.666*lg(1.0) 
+	set flim_1yr = 10.0**flim_1yr 
+	
+        set flim_3mo_1   = 1.602e-12*(1e8*flim_3mo)*test_ag/(test_ag - 1)*(1 - 10.0**(2*(1-test_ag)))
+        set flim_3mo_2   = 4.806e-12*(1e8*flim_3mo)*test_ag/(test_ag - 1)*(1 - 33.0**(1-test_ag))/3.**test_ag
+
+        set flim_1yr_1   = 1.602e-12*(1e8*flim_1yr)*test_ag/(test_ag - 1)*(1 - 10.0**(2*(1-test_ag)))
+        set flim_1yr_2   = 4.806e-12*(1e8*flim_1yr)*test_ag/(test_ag - 1)*(1 - 33.0**(1-test_ag))/3.**test_ag
+
+        set test_z_list = < 0.1 0.3 1.0 1.5 2.0 3.0 > 
+        set test_z_list = < 0.3 0.8 1.5 2.0 3.0 > 
+        set test_z_list = < 0.3 1.0 > 
+        foreach test_z test_z_list {
+           systemcall cosmo_calculator.py $test_z | egrep -v Age >! /tmp/lumdist
+           data "/tmp/lumdist"
+           define lumdist read 1 3 
+           echo " D_L["$test_z"] = "$lumdist
+
+           set flim_3mo_1b   = flim_3mo_1
+           set flim_3mo_2b   = flim_3mo_2*(1+$test_z)**(test_ag-1)
+           set flim_1yr_1b   = flim_1yr_1
+           set flim_1yr_2b   = flim_1yr_2*(1+$test_z)**(test_ag-1)
+           set lg_llim_3mo_1 = lg(4.*3.1415) + 2*$lumdist + lg(flim_3mo_1b)
+           set lg_llim_3mo_2 = lg(4.*3.1415) + 2*$lumdist + lg(flim_3mo_2b)
+           set lg_llim_1yr_1 = lg(4.*3.1415) + 2*$lumdist + lg(flim_1yr_1b)
+           set lg_llim_1yr_2 = lg(4.*3.1415) + 2*$lumdist + lg(flim_1yr_2b)
+
+           #ctype 6 
+           #ltype 1 connect lg_llim_3mo_1 test_ag
+           #ltype 2 connect lg_llim_3mo_2 test_ag
+           ctype 4 
+           ctype forestgreen
+           # ltype 1 connect lg_llim_1yr_1 test_ag
+           ltype 2 connect lg_llim_1yr_2 test_ag
+        }
+	ctype 2 
+	ltype 0
+	#------------------------------------------------------------
+ 
+	# ctype 4 
+	# relocate 43.23 1.082 dot   # 1FGL_J1202.9+6032  agn  but in simbad BLL
+	# relocate 43.87 1.115 dot   # 1FGL_J2314.1+1444  agu  but in simbad BLL
+	# relocate 45.69 1.669 dot   # 1FGL_J0114.4+1327  bzb   but in simbad FSRQ
+	# # relocate 42.44 1.491 dot   # 1FGL_J0924.2+2812
+	# # relocate 43.95 1.216 dot   # 1FGL_J1108.3+0210  agn?
+	# ctype 2 
+
+        set a=agn1_lg_nl_1GeV
+        set b=agn1_alpha_g
+        set c=agn1_signif
+        set d=agn1_classn
+        set e=agn1_z_mix
+        set f=agn1_flag_z
+
+	sort < a b c d e f >
+	
+#--------------------------------------------------------------------------------
+# aro_vs_lg
+aro_vs_lg
+
+	reset_graph
+
+	expand 1.5 
+	ctype 2 
+	# limits -0.2 1.1 41.6 49.6
+	limits 41.6 49.6 -0.2 1.1
+	ticksize  0 0 -1 0 
+	ticksize  0 0 0.25 1
+	ticksize  0.25 1 0 0 
+	box
+	# box 1 2 0 4
+	# ticksize  0 0 0.25 1
+	# ticksize  0.25 1 0 0
+	# box 4 4 4 2
+
+	expand 2.0 
+	ylabel \alpha_{RO}
+	# ylabel \\nu L_{1GeV}
+	xlabel log(\\nu L_{1GeV})
+
+	define yn_fudge ? < Fudge Gamma Luminosity [1|0] : >
+	define yn_kcorr ? < K-correct Gamma flux   [1|0] : >
+	set tmp_GeV = agn1_lg_nl_1GeV + $yn_fudge*agn1_gamma_fudge + $yn_kcorr*(agn1_alpha_g-1)*lg(1+agn1_z_mix)
+	# set tmp_GeV = agn1_lg_nl_1GeV + $yn_fudge*agn1_gamma_fudge
+
+	define which_aro ? < Which alpha_RO [avrg|mix] : >
+	# expand 2.0 
+	# ptype 4 0 
+	# ctype 3 points agn1_aro_$which_aro tmp_GeV  if( agn1_classn == 2 && agn1_flag_fo > 0 )
+	# ctype 5 points agn1_aro_$which_aro tmp_GeV  if( agn1_classn == 1 && agn1_flag_fo > 0 )
+	# ctype 2
+
+	expand 2.5 
+	ptype 4 0 
+	ctype 3 points tmp_GeV agn1_aro_$which_aro if( agn1_classn == 2 && agn1_flag_fo > 0 )
+	angle 45
+	ctype 5 points tmp_GeV agn1_aro_$which_aro if( agn1_classn == 1 && agn1_flag_fo > 0 )
+	angle 0
+
+	ptype 20 3
+	expand 1.25
+	lweight 2 
+	ctype 3 points tmp_GeV agn1_aro_$which_aro if( agn1_classn == 2 && agn1_flag_fo > 0 )
+	expand 2.0
+	lweight 3
+	ctype 2
+
+	#ctype 4 
+	#relocate 43.23 1.082 dot   # 1FGL_J1202.9+6032  agn  but in simbad BLL
+	#relocate 43.87 1.115 dot   # 1FGL_J2314.1+1444  agu  but in simbad BLL
+	#relocate 45.69 1.669 dot   # 1FGL_J0114.4+1327  bzb   but in simbad FSRQ
+	## relocate 42.44 1.491 dot   # 1FGL_J0924.2+2812
+	## relocate 43.95 1.216 dot   # 1FGL_J1108.3+0210  agn?
+
+        #set a=agn1_lg_nl_1GeV
+        #set b=agn1_alpha_g
+        #set c=agn1_signif
+        #set d=agn1_classn
+        #set e=agn1_z_mix
+
+	#sort < a b c d e >
+	
+#--------------------------------------------------------------------------------
+# ag_vs_aro
+ag_vs_aro
+
+	reset_graph
+
+	expand 1.5 
+	ctype 2 
+	limits -0.2 1.1 0.1 2.1 
+	ticksize  0 0 0 0 
+	box 
+
+	expand 2.0 
+	xlabel \alpha_{RO}
+	ylabel \alpha_\gamma
+
+	define which_aro ? < Which alpha_RO [avrg|mix] : >
+	expand 2.5 
+	ptype 4 0 
+	ctype 3 points agn1_aro_$which_aro agn1_alpha_g  if( agn1_classn == 2 && agn1_flag_fo > 0 )
+	angle 45
+	ctype 5 points agn1_aro_$which_aro agn1_alpha_g  if( agn1_classn == 1 && agn1_flag_fo > 0 )
+	angle 0
+
+	ptype 20 3
+	expand 0.75
+	lweight 2 
+	ctype 3 points agn1_aro_$which_aro agn1_alpha_g  if( agn1_classn == 2 && agn1_flag_fo > 0 )
+	expand 2.0
+	lweight 3
+	ctype 2
+
+	#ctype 4 
+	#relocate 43.23 1.082 dot   # 1FGL_J1202.9+6032  agn  but in simbad BLL
+	#relocate 43.87 1.115 dot   # 1FGL_J2314.1+1444  agu  but in simbad BLL
+	#relocate 45.69 1.669 dot   # 1FGL_J0114.4+1327  bzb   but in simbad FSRQ
+	## relocate 42.44 1.491 dot   # 1FGL_J0924.2+2812
+	## relocate 43.95 1.216 dot   # 1FGL_J1108.3+0210  agn?
+
+        #set a=agn1_lg_nl_1GeV
+        #set b=agn1_alpha_g
+        #set c=agn1_signif
+        #set d=agn1_classn
+        #set e=agn1_z_mix
+
+	#sort < a b c d e >
+	
+#--------------------------------------------------------------------------------
+# lr_vs_lg
+lr_vs_lg
+
+        reset_graph
+
+        #ticksize -1 0 -1 0 
+        ticksize 0.25 1 0.25 1 
+        limits 43.2 49.8 40.2 46.5
+        limits 41.0 49.0 38.0 46.5
+        box
+        expand 2
+        xlabel log(\\nu L_{1GeV}) [erg/s]
+        ylabel log(\\nu L_{radio}) [erg/s]
+        expand 1.5
+
+	define yn_fudge ? < Fudge Gamma Luminosity [1|0] : >
+	define yn_kcorr ? < K-correct Gamma flux   [1|0] : >
+	set tmp_GeV = agn1_lg_nl_1GeV + $yn_fudge*agn1_gamma_fudge + $yn_kcorr*(agn1_alpha_g-1)*lg(1+agn1_z_mix)
+
+	#define yn_fudge ? < Fudge Gamma Luminosity [1|0] : >
+	#set tmp_GeV = agn1_lg_nl_1GeV + $yn_fudge*agn1_gamma_fudge
+
+	expand 2.0 
+	ptype 4 0 
+	ctype 3 points tmp_GeV  agn1_lg_nl_radio  if(agn1_classn == 2 )
+	ctype 5 points tmp_GeV  agn1_lg_nl_radio  if(agn1_classn == 1 )
+	ctype 2 
+
+#--------------------------------------------------------------------------------
+# fr_vs_fg
+fr_vs_fg
+
+        reset_graph
+
+        #ticksize -1 0 -1 0 
+        ticksize 0.25 1 0.25 1 
+	limits -13.75 -8.75 -16.25 -11.25
+        box
+        expand 2
+        xlabel log(\\nu F_{1GeV}) [erg/s]
+        ylabel log(\\nu F_{radio}) [erg/s]
+        expand 1.5
+
+        ctype 4 
+        ltype 2
+        relocate $($fx1+0) $($fy1+0)  draw $($fx1+6) $($fy1+6)
+        relocate $($fx1+1) $($fy1+0)  draw $($fx1+7) $($fy1+6)
+        relocate $($fx1-1) $($fy1+0)  draw $($fx1+5) $($fy1+6)
+        ltype 0
+        ctype 2 
+
+	expand 2.0 
+	ptype 4 0 
+	define yn_fudge ? < Fudge Gamma flux     [1|0] : >
+	define yn_kcorr ? < K-correct Gamma flux [1|0] : >
+	set tmp_GeV = lg(agn1_nf_1GeV) + $yn_fudge*agn1_gamma_fudge + $yn_kcorr*(agn1_alpha_g-1)*lg(1+agn1_z_mix)
+
+	#define yn_fudge ? < Fudge Gamma Flux [1|0] : >
+	#set tmp_GeV = lg(agn1_nf_1GeV) + $yn_fudge*agn1_gamma_fudge
+
+	ctype 3 
+	ptype 3 0 
+	points tmp_GeV (lg(agn1_fr_mix)+lg(5e9))  if(agn1_classn == 2 )
+	ctype 5 
+	ptype 4 0 
+	points tmp_GeV (lg(agn1_fr_mix)+lg(5e9))  if(agn1_classn == 1 )
+	ctype 2 
+
+#--------------------------------------------------------------------------------
+# g2r_vs_z
+g2r_vs_z
+
+        reset_graph
+
+	define yn_fudge ? < Fudge Gamma flux     [1|0] : >
+	define yn_kcorr ? < K-correct Gamma flux [1|0] : >
+	set tmp_GeV = lg(agn1_nf_1GeV) + $yn_fudge*agn1_gamma_fudge + $yn_kcorr*(agn1_alpha_g-1)*lg(1+agn1_z_mix)
+
+	#define yn_fudge ? < Fudge Gamma Flux [1|0] : >
+	#set tmp_GeV = lg(agn1_nf_1GeV) + $yn_fudge*agn1_gamma_fudge
+
+	# set GeV = agn1_lg_nf_1GeV_fudge
+	# set GeV = lg(agn1_nf_1GeV)
+	# set g2r = lg(agn1_nf_1GeV) - (lg(agn1_fr_mix)+lg(5e9)) 
+	# set g2r = tmp_GeV+(agn1_alpha_g-1)*lg(1+agn1_z_mix) - (lg(agn1_fr_mix)+lg(5e9)) 
+	set g2r = tmp_GeV - (lg(agn1_fr_mix)+lg(5e9)) 
+
+        # limits 0.01 5. -1 3.5 
+        # ticksize 0 0 0 0 
+        limits $(lg(0.03)) $(lg(6.)) -0.5 4.5
+        ticksize -1 0 0 0 
+        ctype 2 
+        box
+        xlabel redshift
+        ylabel log(\\nu L_{BLR}/\\nu L_{radio})
+
+	expand 2.0 
+	ptype 4 0 
+	ctype 3 points (lg(agn1_z_mix)) g2r   if( agn1_classn == 2 && flag_z > 0 && agn1_flag_fr > 0 )
+	ctype 5 points (lg(agn1_z_mix)) g2r   if( agn1_classn == 1 && flag_z > 0 && agn1_flag_fr > 0 )
+	ctype 2 
+	set g2r_fsrq= g2r   if( agn1_classn == 2 && flag_z > 0 && agn1_flag_fr > 0 )
+	set g2r_bll = g2r   if( agn1_classn == 1 && flag_z > 0 && agn1_flag_fr > 0 )
+	echo $(dimen(g2r_fsrq))
+	echo $(dimen(g2r_bll))
+
+#--------------------------------------------------------------------------------
+# histo_g2r (formerly histo_fr_vs_fg)
+histo_g2r
+
+        reset_graph
+
+        define zmin ? < Z min : > 
+        define zmax ? < Z max : >
+
+	define yn_fudge ? < Fudge Gamma flux     [1|0] : >
+	define yn_kcorr ? < K-correct Gamma flux [1|0] : >
+	set tmp_GeV = lg(agn1_nf_1GeV) + $yn_fudge*agn1_gamma_fudge + $yn_kcorr*(agn1_alpha_g-1)*lg(1+agn1_z_mix)
+
+	# set g2r = lg(agn1_nf_1GeV) - (lg(agn1_fr_mix)+lg(5e9)) 
+	# set g2r = tmp_GeV+(agn1_alpha_g-1)*lg(1+agn1_z_mix) - (lg(agn1_fr_mix)+lg(5e9)) 
+	set g2r = tmp_GeV - (lg(agn1_fr_mix)+lg(5e9)) 
+
+	define alpha_r ? < Radio spectral index : >
+	define Lorentz ? < Lorentz factor       : >
+	set g2r = g2r + ($alpha_r - agn1_alpha_g)*lg($Lorentz)
+
+	set g2r_fsrq = g2r  if( agn1_classn == 2 && agn1_z_mix >= $zmin && agn1_z_mix <= $zmax && flag_z > 0 && agn1_flag_fr > 0 )
+	set g2r_bll  = g2r  if( agn1_classn == 1 && agn1_z_mix >= $zmin && agn1_z_mix <= $zmax && flag_z > 0 && agn1_flag_fr > 0 )
+
+        stats g2r_fsrq a b c 
+        echo " FSRQ : "$a $b "("$(dimen(g2r_fsrq))")"
+        stats g2r_bll  a b c 
+        echo " BLL  : "$a $b "("$(dimen(g2r_bll))")"
+
+        define hxstep ? < histogram step : >
+
+	define g2r_min (-5)
+	define g2r_max ( 5)
+        set hx=$g2r_min-0.5*$hxstep,$g2r_max+0.5*$hxstep,$hxstep
+        foreach 8 < 'fsrq' 'bll' > {
+           set hy_$8 = histogram(g2r_$8:hx)
+           echo "  "$8" : "$(sum(hy_$8))
+        }
+
+	define xmin (-0.5)
+	define xmax (4.5)
+
+	set hy_all = hy_fsrq CONCAT hy_bll
+
+        #----------------------------------------
+        # normalize the histograms?
+        define normhisto ? < Normalize histograms [1|0] : >
+        if( $normhisto ) {
+            foreach 8 < 'fsrq' 'bll' > { set hy_$8 =hy_$8/$(sum(hy_$8)) }
+	    set hy_all = hy_fsrq CONCAT hy_bll
+            limits $xmin $xmax -0.02 0.41
+            limits $xmin $xmax hy_all
+            define lab_y "P(x)\Delta x"
+        } else {
+            #limits $xmin $xmax -4 39
+            limits $xmin $xmax hy_all
+            define lab_y "N"
+        }
+
+        ticksize $hxstep 1 0 0 
+	# limits -4 4 -5 100
+        box 1 2 0 0 
+        expand 2
+        xlabel log(\\nu L_{1GeV}/\\nu L_{radio}) 
+        ylabel $lab_y
+        expand 1.5
+
+        local define dx (($fx2-$fx1)/400.)
+        local define dy (($fy2-$fy1)/400.)
+
+        ctype 3 histogram (hx-1.0*$dx) (hy_fsrq-1.0*$dy)
+        ctype 5 histogram (hx+1.0*$dx) (hy_bll+1.0*$dy)
+        #GF# ctype 4 histogram (hx-1.0*$dx) (hy_gal-1.0*$dy)
+        ctype 2
+
+#--------------------------------------------------------------------------------
+# histo_golden_ratio
+histo_golden_ratio
+
+        reset_graph
+
+        define zmin ? < Z min : > 
+        define zmax ? < Z max : >
+
+	set blr2r = agn1_fr_mix*0.0
+	set g2bol = agn1_fr_mix*0.0
+
+	define blr2r_fsrq (50.)
+	define blr2r_bll  (5.0)
+	define g2bol_fsrq (5.0)
+	define g2bol_bll  (5.0)
+
+	define Lorentz ? < Lorentz factor       : >
+	define rad_eff ? < Radiative Efficiency : >
+
+	do 9=0,dimen(blr2r)-1 {
+	   if( agn1_classn[$9] == 1 ) { 
+	       set blr2r[$9] = $blr2r_bll  
+	       set g2bol[$9] = $g2bol_bll 
+	   }
+	   if( agn1_classn[$9] == 2 ) { 
+	       set blr2r[$9] = $blr2r_fsrq
+	       set g2bol[$9] = $g2bol_fsrq
+	   }
+	}
+
+	define yn_fudge ? < Fudge Gamma flux     [1|0] : >
+	define yn_kcorr ? < K-correct Gamma flux [1|0] : >
+	set tmp_GeV = lg(agn1_nf_1GeV) + $yn_fudge*agn1_gamma_fudge + $yn_kcorr*(agn1_alpha_g-1)*lg(1+agn1_z_mix)
+
+	#define yn_fudge ? < Fudge Gamma Luminosity [1|0] : >
+	#set tmp_GeV = lg(agn1_nf_1GeV) + $yn_fudge*agn1_gamma_fudge
+
+	set g2r = tmp_GeV - (lg(agn1_fr_mix)+lg(5e9)) 
+
+	set golden = lg( $rad_eff*($Lorentz**2.0)*(blr2r)/(g2bol*10.0**g2r) )
+
+	set golden_fsrq = golden  if( agn1_classn == 2 && agn1_z_mix >= $zmin && agn1_z_mix <= $zmax && agn1_flag_z > 0 && agn1_flag_fr > 0 )
+	set golden_bll  = golden  if( agn1_classn == 1 && agn1_z_mix >= $zmin && agn1_z_mix <= $zmax && agn1_flag_z > 0 && agn1_flag_fr > 0 )
+
+        stats golden_fsrq a b c 
+        echo " FSRQ : "$a $b "("$(dimen(golden_fsrq))")"
+        stats golden_bll  a b c 
+        echo " BLL  : "$a $b "("$(dimen(golden_bll))")"
+
+        define hxstep ? < histogram step : >
+
+	define golden_min (-5)
+	define golden_max ( 5)
+        set hx=$golden_min-0.5*$hxstep,$golden_max+0.5*$hxstep,$hxstep
+        foreach 8 < 'fsrq' 'bll' > {
+           set hy_$8 = histogram(golden_$8:hx)
+           echo "  "$8" : "$(sum(hy_$8))
+        }
+
+	define xmin (-3.0)
+	define xmax ( 3.0)
+
+	set hy_all = hy_fsrq CONCAT hy_bll
+
+        #----------------------------------------
+        # normalize the histograms?
+        define normhisto ? < Normalize histograms [1|0] : >
+        if( $normhisto ) {
+            foreach 8 < 'fsrq' 'bll' > { set hy_$8 =hy_$8/$(sum(hy_$8)) }
+	    set hy_all = hy_fsrq CONCAT hy_bll
+            limits $xmin $xmax -0.02 0.41
+            limits $xmin $xmax hy_all
+            define lab_y "P(x)\Delta x"
+        } else {
+            #limits $xmin $xmax -4 39
+            limits $xmin $xmax hy_all
+            define lab_y "N"
+        }
+
+        ticksize $hxstep 1 0 0 
+        box 1 2 0 0 
+        expand 2
+        # xlabel log(\\nu L_{1GeV}/\\nu L_{radio}) 
+        xlabel log(P_{BLR}/P_{kin}) 
+        ylabel $lab_y
+        expand 1.5
+
+        local define dx (($fx2-$fx1)/400.)
+        local define dy (($fy2-$fy1)/400.)
+
+        ctype 3 histogram (hx-1.0*$dx) (hy_fsrq-1.0*$dy)
+        ctype 5 histogram (hx+1.0*$dx) (hy_bll+1.0*$dy)
+        #GF# ctype 4 histogram (hx-1.0*$dx) (hy_gal-1.0*$dy)
+        ctype 2
+
+#--------------------------------------------------------------------------------
+# fsum_vs_fphot
+fsum_vs_fphot
+
+	erase expand 1.5 ctype 2 limits -9.5 -8 -9.5 -8. ticksize -1 0 -1 0 box
+	xlabel F_{photons}
+	ylabel \sum_{i=3,5} F_i
+	ctype 6 relocate -10 -10 draw -7 -7
+	ctype 2 expand 0.75 points (lg(agn1_f_photons)) (lg(agn1_f_btot3))
+	ctype 3 expand 0.75 points (lg(agn1_f_photons)) (lg(agn1_f_btot3))   if( agn1_flag_ul_btot3 == 3 )
+	ctype 5 expand 0.75 points (lg(agn1_f_photons)) (lg(agn1_f_btot3))   if( agn1_flag_ul_btot3 == 2 )
+	ctype 4 expand 0.75 points (lg(agn1_f_photons)) (lg(agn1_f_btot3))   if( agn1_flag_ul_btot3 == 1 )
+
+	set dummy local
+	echo "------------------------------------------------------------"
+	echo " Sources with given number of upper limits in bands 3-5 "
+	do 8=0,3 {
+	    set dummy = agn1_f_btot3  if( agn1_flag_ul_btot3 == $8 )
+	    echo "  "$8"  "$(dimen(dummy))
+	}
+	echo "------------------------------------------------------------"
+
+	ctype 2 expand 1.50
+	relocate ( $gx1 $($gy2+750) )
+	putlabel 6 only AGN
+
+#--------------------------------------------------------------------------------
+# g2r_vs_aro : uses g2r values as computed by the histo_g2r program
+g2r_vs_aro
+
+        reset_graph
+
+	ticksize 0 0 0 0 
+	limits 1.0 0.0 -1.25 3.25 
+	ctype 2 
+	box
+	expand 2.0
+	xlabel \alpha_{RO}
+	ylabel log(\\nu L_{1GeV}/\\nu L_{radio}) 
+	expand 1.5
+        
+	ctype 3 
+	ptype 3 0 
+	points agn1_aro_mix g2r if(flag_z > 0 && agn1_flag_fr > 0 && agn1_classn == 2 )
+        ctype 5 
+	ptype 4 0 
+	points agn1_aro_mix g2r if(flag_z > 0 && agn1_flag_fr > 0 && agn1_classn == 1 )
+
+#--------------------------------------------------------------------------------

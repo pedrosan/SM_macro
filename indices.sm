@@ -1,0 +1,412 @@
+indices   	
+		location 7000 31000 7000 31000
+		window 1 1 1 1
+		lweight 3
+		
+		data alpha.dat
+		lines 7 10
+		
+		define check ? { LECS: Nh-Free or Nh-Galactic ? [1/2] }
+		if ($check == 1) {
+		   read  { a_l_best 1 a_l_low 2 a_l_high 3 }
+		} else {
+		   define check ? { LECS Nh-Galactic: up to 4 keV or 3 keV ? [1/2] }
+		   if ($check == 1) {
+		      read  { a_l_best 4 a_l_low 5 a_l_high 6 }
+		   } else {
+		      read  { a_l_best 7 a_l_low 8 a_l_high 9 }
+		   }
+		}
+		
+		lines 14 17
+		read  { a_m_best 1 a_m_low 2 a_m_high 3 }
+		
+		lines 21 24
+		define check ? { PDS: Grandi or Pian  [1/2] ?}
+		
+		if ($check == 1) {
+		 read  { a_p_best 1 a_p_low 2 a_p_high 3 }
+		} else {
+		 read  { a_p_best 4 a_p_low 5 a_p_high 6 }
+		}
+		
+		set a_l_up = a_l_high - a_l_best 
+		set a_l_dw = a_l_best - a_l_low
+		
+		set a_m_up = a_m_high - a_m_best 
+		set a_m_dw = a_m_best - a_m_low
+		
+		set a_p_up = a_p_high - a_p_best 
+		set a_p_dw = a_p_best - a_p_low
+		
+		set peso_l = 1./((a_l_up + a_l_dw)/2.)**2
+		set peso_m = 1./((a_m_up + a_m_dw)/2.)**2
+		set peso_p = 1./((a_p_up + a_p_dw)/2.)**2
+		
+		set dummy_m = { 0.5 1.5 2.5 3.5 }
+		set dummy_l = dummy_m - 0.15
+		set dummy_p = dummy_m + 0.15
+		
+		limits   0   4  1.39  1.85
+		ticksize 0.1 1  0.02  0.1
+		
+		define TeX_strings 1
+		
+		expand 2.5
+		box 3 2 3 0 
+		ylabel \Gamma
+		
+		ltype 2 
+		relocate 1. 1.39
+		draw     1. 1.85
+		
+		ltype 2 
+		relocate 2. 1.39
+		draw     2. 1.85
+		
+		ltype 2 
+		relocate 3. 1.39
+		draw     3. 1.85
+		
+		ltype 0
+		
+		relocate ( $(1.*($gx2-$gx1)/8 + $gx1) 5500 )
+		putlabel 5 A
+		
+		relocate ( $(3.*($gx2-$gx1)/8 + $gx1) 5500 )
+		putlabel 5 B
+		
+		relocate ( $(5.*($gx2-$gx1)/8 + $gx1) 5500 )
+		putlabel 5 C
+		
+		relocate ( $(7.*($gx2-$gx1)/8 + $gx1) 5500 )
+		putlabel 5 D
+		
+		
+		ptype 4 3 
+		expand 3.5
+		points   dummy_l a_l_best 
+		expand 2.5
+		errorbar dummy_l a_l_best a_l_up 2
+		errorbar dummy_l a_l_best a_l_dw 4
+		
+		ptype 4 3
+		expand 3.5
+		points   dummy_m a_m_best 
+		expand 2.5
+		errorbar dummy_m a_m_best a_m_up 2
+		errorbar dummy_m a_m_best a_m_dw 4
+		ptype 4 3
+		ctype 1
+		expand 2.9
+		points   dummy_m a_m_best 
+		ctype 2
+		
+		ptype 3 3 
+		expand 3.5
+		points   dummy_p a_p_best 
+		expand 2.5
+		errorbar dummy_p a_p_best a_p_up 2
+		errorbar dummy_p a_p_best a_p_dw 4
+		
+		stats2 a_l_best peso_l mean_l sigma_l kurt_l
+		stats2 a_m_best peso_m mean_m sigma_m kurt_m
+		stats2 a_p_best peso_p mean_p sigma_p kurt_p
+		
+		echo *---------------------------
+		echo  LECS = $mean_l +/- $sigma_l
+		echo  MECS = $mean_m +/- $sigma_m
+		echo  PDS  = $mean_p +/- $sigma_p
+		echo *---------------------------
+		
+indicesD  	
+		location 7000 31000 7000 31000
+		window 1 1 1 1
+		lweight 3
+		
+		data alpha2.dat
+		lines 7 12
+		
+		define check ? { LECS Nh-Galactic: up to 4 keV or 3 keV ? [1/2] }
+		if ($check == 1) {
+		  read  { a_l_best 1 a_l_low 2 a_l_high 3 }
+		} else {
+		  read  { a_l_best 4 a_l_low 5 a_l_high 6 }
+		}
+		
+		lines 16 21
+		read  { a_m_best 1 a_m_low 2 a_m_high 3 }
+		
+		lines 25 28
+		define check ? { PDS: Grandi or Pian  [1/2] ?}
+		
+		if ($check == 1) {
+		 read  { a_p_best 1 a_p_low 2 a_p_high 3 }
+		} else {
+		 read  { a_p_best 4 a_p_low 5 a_p_high 6 }
+		}
+		
+		set a_l_up = a_l_high - a_l_best 
+		set a_l_dw = a_l_best - a_l_low
+		
+		set a_m_up = a_m_high - a_m_best 
+		set a_m_dw = a_m_best - a_m_low
+		
+		set a_p_up = a_p_high - a_p_best 
+		set a_p_dw = a_p_best - a_p_low
+		
+		set peso_l = 1./((a_l_up + a_l_dw)/2.)**2
+		set peso_m = 1./((a_m_up + a_m_dw)/2.)**2
+		set peso_p = 1./((a_p_up + a_p_dw)/2.)**2
+		
+		set dummy_m = { 0.5 1.5 2.5 3.5 4.5 }
+		set dummy_p = dummy_m + 0.15
+		set dummy_m = { 0.5 1.5 2.5 3.5 4.3 4.7 }
+		set dummy_l = dummy_m - 0.15
+		
+		limits   0   5  1.39  1.85
+		ticksize 0.1 1  0.02  0.1
+		
+		define TeX_strings 1
+		
+		expand 2.5
+		box 3 2 3 0 
+		ylabel \Gamma
+		
+		ltype 2 
+		relocate 1. 1.39
+		draw     1. 1.85
+		
+		ltype 2 
+		relocate 2. 1.39
+		draw     2. 1.85
+		
+		ltype 2 
+		relocate 3. 1.39
+		draw     3. 1.85
+		
+		ltype 1 
+		relocate 4. 1.39
+		draw     4. 1.85
+		
+		ltype 0
+		
+		relocate ( $(1.*($gx2-$gx1)/10 + $gx1) 5500 )
+		putlabel 5 A
+		
+		relocate ( $(3.*($gx2-$gx1)/10 + $gx1) 5500 )
+		putlabel 5 B
+		
+		relocate ( $(5.*($gx2-$gx1)/10 + $gx1) 5500 )
+		putlabel 5 C
+		
+		relocate ( $(7.*($gx2-$gx1)/10 + $gx1) 5500 )
+		putlabel 5 D
+		
+		expand 1.5
+		relocate ( $(8.3*($gx2-$gx1)/10 + $gx1) 5800 )
+		putlabel 5 D
+		relocate ( $(8.3*($gx2-$gx1)/10 + $gx1) 4800 )
+		putlabel 5 low
+		relocate ( $(9.7*($gx2-$gx1)/10 + $gx1) 5800 )
+		putlabel 5 D
+		relocate ( $(9.7*($gx2-$gx1)/10 + $gx1) 4800 )
+		putlabel 5 high
+		
+		ptype 4 3 
+		expand 3.5
+		points   dummy_l a_l_best 
+		expand 2.5
+		errorbar dummy_l a_l_best a_l_up 2
+		errorbar dummy_l a_l_best a_l_dw 4
+		
+		ptype 4 3
+		expand 3.5
+		points   dummy_m a_m_best 
+		expand 2.5
+		errorbar dummy_m a_m_best a_m_up 2
+		errorbar dummy_m a_m_best a_m_dw 4
+		ptype 4 3
+		ctype 1
+		expand 2.9
+		points   dummy_m a_m_best 
+		ctype 2
+		
+		ptype 3 3 
+		expand 3.5
+		points   dummy_p a_p_best 
+		expand 2.5
+		errorbar dummy_p a_p_best a_p_up 2
+		errorbar dummy_p a_p_best a_p_dw 4
+		
+		stats2 a_l_best peso_l mean_l sigma_l kurt_l
+		stats2 a_m_best peso_m mean_m sigma_m kurt_m
+		stats2 a_p_best peso_p mean_p sigma_p kurt_p
+		
+		echo *---------------------------
+		echo  LECS = $mean_l +/- $sigma_l
+		echo  MECS = $mean_m +/- $sigma_m
+		echo  PDS  = $mean_p +/- $sigma_p
+		echo *---------------------------
+		
+indices_av	
+		location 7000 31000 7000 31000
+		window 1 1 1 1
+		lweight 3
+		
+		data alpha.dat
+		lines 7 10
+		
+		define check ? { LECS: Nh-Free or Nh-Galactic ? [1/2] }
+		if ($check == 1) {
+		   read  { a_l_best 1 a_l_low 2 a_l_high 3 }
+		} else {
+		   define check ? { LECS Nh-Galactic: up to 4 keV or 3 keV ? [1/2] }
+		   if ($check == 1) {
+		      read  { a_l_best 4 a_l_low 5 a_l_high 6 }
+		   } else {
+		      read  { a_l_best 7 a_l_low 8 a_l_high 9 }
+		   }
+		}
+		
+		lines 14 17
+		read  { a_m_best 1 a_m_low 2 a_m_high 3 }
+		
+		lines 21 24 
+		define check ? { PDS: Bigs o Paian  [1/2] ?}
+		if ($check == 1) {
+		 read  { a_p_best 1 a_p_low 2 a_p_high 3 }
+		} else {
+		 read  { a_p_best 4 a_p_low 5 a_p_high 6 }
+		}
+		
+		set a_l_up = a_l_high - a_l_best 
+		set a_l_dw = a_l_best - a_l_low
+		
+		set a_m_up = a_m_high - a_m_best 
+		set a_m_dw = a_m_best - a_m_low
+		
+		set a_p_up = a_p_high - a_p_best 
+		set a_p_dw = a_p_best - a_p_low
+		
+		set peso_l = 1./((a_l_up + a_l_dw)/2.)**2
+		set peso_m = 1./((a_m_up + a_m_dw)/2.)**2
+		set peso_p = 1./((a_p_up + a_p_dw)/2.)**2
+		
+		set dummy_m = { 0.5 1.5 2.5 3.5 4.5 5.5 }
+		set dummy_l = dummy_m - 0.15
+		set dummy_p = dummy_m + 0.15
+		
+		limits   0   6  1.39  1.85
+		ticksize 0.1 1  0.02  0.1
+		
+		define TeX_strings 1
+		
+		expand 2.5
+		box 3 2 3 0 
+		ylabel \Gamma
+		
+		ltype 2 
+		relocate 1. 1.39
+		draw     1. 1.85
+		
+		ltype 2 
+		relocate 2. 1.39
+		draw     2. 1.85
+		
+		ltype 2 
+		relocate 3. 1.39
+		draw     3. 1.85
+		
+		ltype 2 
+		relocate 4. 1.39
+		draw     4. 1.85
+		
+		ltype 0
+		
+		relocate ( $(1.*($gx2-$gx1)/(2*$fx2) + $gx1) 5500 )
+		putlabel 5 A
+		
+		relocate ( $(3.*($gx2-$gx1)/(2*$fx2) + $gx1) 5500 )
+		putlabel 5 B
+		
+		relocate ( $(5.*($gx2-$gx1)/(2*$fx2) + $gx1) 5500 )
+		putlabel 5 C
+		
+		relocate ( $(7.*($gx2-$gx1)/(2*$fx2) + $gx1) 5500 )
+		putlabel 5 D
+		
+		set prop_l1 = ((a_l_up + a_l_dw)/2)**2
+		set prop_l2 = cumulate(prop_l1)
+		set prop_l2 = sqrt(prop_l2)/4
+		define err_l $(prop_l2[3])
+		
+		set prop_m1 = ((a_m_up + a_m_dw)/2)**2
+		set prop_m2 = cumulate(prop_m1)
+		set prop_m2 = sqrt(prop_m2)/4
+		define err_m $(prop_m2[3])
+		
+		set prop_p1 = ((a_p_up + a_p_dw)/2)**2
+		set prop_p2 = cumulate(prop_p1)
+		set prop_p2 = sqrt(prop_p2)/4
+		define err_p $(prop_p2[3])
+		
+		define what ? {Simple or Weighted average ? [1/2] }
+		if($what == 1) {
+		  stats  a_l_best mean_l sigma_l kurt_l
+		  stats  a_m_best mean_m sigma_m kurt_m
+		  stats  a_p_best mean_p sigma_p kurt_p
+		} else {
+		  stats2 a_l_best peso_l mean_l sigma_l kurt_l
+		  stats2 a_m_best peso_m mean_m sigma_m kurt_m
+		  stats2 a_p_best peso_p mean_p sigma_p kurt_p
+		}
+		
+		echo *-----------------------------------------------
+		echo *
+		echo * <mean> +/- sigma  [propagated error]
+		echo *
+		echo  LECS = $mean_l +/- $sigma_l  [$err_l]
+		echo  MECS = $mean_m +/- $sigma_m  [$err_m]
+		echo  PDS  = $mean_p +/- $sigma_p  [$err_p]
+		echo *-----------------------------------------------
+		
+		set a_l_best = a_l_best concat < $mean_l >  concat < $mean_l >
+		set a_l_up   = a_l_up   concat < $sigma_l > concat < $err_l >
+		set a_l_dw   = a_l_dw   concat < $sigma_l > concat < $err_l >
+		
+		set a_m_best = a_m_best concat < $mean_m >  concat < $mean_m >
+		set a_m_up   = a_m_up   concat < $sigma_m > concat < $err_m >
+		set a_m_dw   = a_m_dw   concat < $sigma_m > concat < $err_m >
+		
+		set a_p_best = a_p_best concat < $mean_p >  concat < $mean_p >
+		set a_p_up   = a_p_up   concat < $sigma_p > concat < $err_p >
+		set a_p_dw   = a_p_dw   concat < $sigma_p > concat < $err_p >
+		
+		ptype 4 3 
+		expand 3.5
+		points   dummy_l a_l_best 
+		expand 2.5
+		errorbar dummy_l a_l_best a_l_up 2
+		errorbar dummy_l a_l_best a_l_dw 4
+		
+		ptype 4 3
+		expand 3.5
+		points   dummy_m a_m_best 
+		expand 2.5
+		errorbar dummy_m a_m_best a_m_up 2
+		errorbar dummy_m a_m_best a_m_dw 4
+		ptype 4 3
+		ctype 1
+		expand 2.9
+		points   dummy_m a_m_best 
+		ctype 2
+		
+		ptype 3 3 
+		expand 3.5
+		points   dummy_p a_p_best 
+		expand 2.5
+		errorbar dummy_p a_p_best a_p_up 2
+		errorbar dummy_p a_p_best a_p_dw 4
+		
+		

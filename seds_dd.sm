@@ -1,0 +1,574 @@
+#---------------------------------------------------------------------------
+# seds_comp_exp_dd 1	: distanza tra picchi costante 
+##         	  arg[1]=L_radio
+# 
+#   THIS IS THE ONLY REALLY CORRECT MACRO TO COMPUTE/DRAW SEDs.
+# 
+seds_comp_exp_dd 09
+
+	set dimen(pname) = 13.s
+	set pname = < tau \
+		      x_junct \
+		      alpha_s \
+		      alpha_h \
+		      Krx \
+		      distanza_0 \
+		      eta_d \
+		      l_radio_0_d \
+		      rho_RG \
+		      x_peak_0 \
+		      eta1 \
+		      eta2 \
+		      l_radio_0 >
+
+	if( !$?1 ) {
+	  echo  Required input parameters are:
+	  print '  %12s \n' { pname }
+	  return
+	}
+
+	if( $(is_vector(pvals)) == 1 ) {
+	  echo --------------------------------------------
+	  echo   Stored values are: 
+	  print '  %12s %10.3f \n' { pname pvals }
+	}
+
+        #	set pvals = < 2258 \
+        #     	              10.72   \
+        #		       0.499  \
+        #		       0.60   \
+        #		      -6.496  \
+        #		       8.1605 \
+        #		      -0.482  \
+        #		      43.198  \
+        #		       3.196  \
+        #		      15.513  \
+        #		       1.05   \
+        #		       1.55   \
+        #		      43.0    >
+        #
+        #                Davide                     MY-old 
+        #  'tau'         2000.0     500.0   1.0d6   2000.0
+        #  'x_junct'       11.7     10.7    12.3      11.7
+        #  'alpha_s'        0.2     -0.2     0.5       0.2
+        #  'alpha_h'        0.6      0.6     0.6       0.6
+        #  'Krx'           -6.5     -7.5    -6.0      -6.5
+        #  'distanza_0'     8.7      8.0     9.0       8.7
+        #  'eta_d'         -0.4     -1.0     0.0       0.0*
+        #  'l_radio_0_d'   43.0     42.0    43.5       0.0*
+        #  'rho_RG'         3.5      2.5     4.5       3.5
+        #  'x_peak_0'      16.5     15.5    17.0      14.5
+        #  'eta1'           1.2      1.0     2.5       1.8
+        #  'eta2'           0.4      0.2     1.6       0.5
+        #  'l_radio_0'     43.0     43.0    43.0      42.5
+        #
+        # set dd_pvals=<2000 11.7 0.2 0.6 -6.5 8.3 -0.4 43.0 3.5 14.3 1.2 0.4 43.0 >
+        # set my_pvals=<2000 11.7 0.2 0.6 -6.5 8.3  0.0 40.0 3.5 14.5 1.8 0.5 42.5 >
+        #
+        # set dd_pvals=<2000 11.7 0.2 0.6 -6.5 8.7 -0.4 43.0 3.5 14.3 1.2 0.4 43.0 >
+        # set my_pvals=<2000 11.7 0.2 0.6 -6.5 8.7  0.0 40.0 3.5 14.5 1.8 0.5 42.5 >
+
+
+	if($?1 == 0) {
+	   define l_radio  ? { Luminosity ? }
+	} else {
+	   define l_radio  $1
+	}
+
+	ltype 0
+	ctype 2
+	expand 1.5
+	lweight 3	
+
+	#-------------------------------------------------------
+	#
+	define tau         $(pvals[0])
+	define x_junct     $(pvals[1])
+	define alpha_s     $(pvals[2])
+	define alpha_h     $(pvals[3])
+	define K           $(pvals[4]) 
+	define distanza_0  $(pvals[5])
+	define eta_d       $(pvals[6])
+	define l_radio_0_d $(pvals[7])
+	define rho_RG      $(pvals[8])
+	define x_peak_0    $(pvals[9])
+	define eta1        $(pvals[10])
+	define eta2        $(pvals[11])
+	define l_radio_0   $(pvals[12])
+
+	# define alpha_h    (0.6)
+	# define l_radio_0 (43.0)	
+	# define x_peak_0  (14.3)
+
+	define beta  (1.0 - $alpha_s)
+	echo alpha_s = $alpha_s
+	echo l_radio = $l_radio
+
+	if( $l_radio < $l_radio_0 ) {
+	  define eta  $eta1
+	}
+	if( $l_radio >= $l_radio_0 ) {
+	  define eta  $eta2
+	}
+	echo eta = $eta
+	 
+	if( $eta1 == 0 ) { 
+	   define c ( $l_radio - $l_radio_0 )
+	   define c ( $l_radio - 42.2 )
+	   define x_peak ( 0.2*$c**2. - 1.2*$c + 15.0 - 0.0125*$c**3. )
+	} else {
+	   define x_peak ( $x_peak_0 - $eta*($l_radio - $l_radio_0) )
+	}
+
+	define sigma ( sqrt(2*($x_peak - $x_junct)/$beta) )
+
+	echo      >-------------------------------- 
+	echo      > x_peak  :   $x_peak
+
+	define l_5_sync  $l_radio
+	define l_peak   ( $beta*($x_junct - 9.698) + $l_radio + 0.5*$beta*($x_peak - $x_junct) )
+
+	if( $l_radio < $l_radio_0_d ) {
+	  define peak_dist ( $distanza_0 + $eta_d*($l_radio - $l_radio_0_d) )
+	  define l_peak_g  ( $l_peak )
+	}
+	if( $l_radio >= $l_radio_0_d ) {
+	  define peak_dist ( $distanza_0 )
+	  define l_peak_g  ( $l_5_sync + $rho_RG )
+	}
+	#
+	#---------------------------------------------
+
+        define damper (1.0)
+        if ( $x_peak <= 14.736 ) {
+           define damper (2.0 - 10.0**((14.736 - $x_peak)/$tau) )
+        }
+	define l_opt_sync  ( ($l_peak-((14.736-$x_peak)/$sigma)**2.)*$damper )
+
+        define damper (1.0)
+        if ($x_peak <= 17.384 ) { 
+           define damper (2.0 - 10.0**((17.384 - $x_peak)/$tau))
+        } 
+	define l_1kev_sync ( ($l_peak-((17.383-$x_peak)/$sigma)**2.)*$damper )
+	define l_1kev_comp ( $l_5_sync + $K + 7.685 )
+	define l_1kev_sc   ( 40.0 + lg(10.0**($l_1kev_sync - 40.0) + 10.0**($l_1kev_comp - 40.0)) )
+
+	# echo " defining fake l_20kev "
+	# define l_20kev $l_1kev_sc
+
+        define l_opt_comp ( $l_1kev_comp + (1.0 - $alpha_h)*(14.736 - 17.383) )
+        define l_opt_sc   ( 40.0 + lg(10.0**($l_opt_sync - 40.0) + 10.0**($l_opt_comp - 40.0)) )
+
+	echo      > L_5GHz        = $l_5_sync
+	echo      > L_opt_sync    = $l_opt_sync
+	echo      > L_opt         = $l_opt_sc
+	echo      > L_sync (1keV) = $l_1kev_sync
+	echo      > L_comp (1keV) = $l_1kev_comp
+	echo      > L_tot  (1keV) = $l_1kev_sc
+	echo      >-------------------------------- 
+
+	define ratio ( $l_1kev_sc - $l_5_sync - 7.685 )
+	define alrx  ( $ratio/7.685/-1 )
+	define alro  ( ($l_opt_sc - $l_5_sync - 5.037)/5.037/-1 )
+	define alox  ( (($l_1kev_sc - 17.383) - ($l_opt_sc - 14.735))/(14.735-17.383) )
+	echo      > X-R ratio     = $ratio
+	echo      > alpha_RX      = $alrx
+	echo      > alpha_RO      = $alro
+	echo      > alpha_OX      = $alox
+
+	#------------------------------------------
+	# drawing SEDS
+	#
+	define first_x  9.0
+	define last_x  27.1
+	define step_x   0.1
+	set x = $first_x,$last_x,$step_x
+	define numero $(dimen(x))
+	define pippo  $($numero - 1)
+
+	set dimen(damper) = $numero
+	define xref ($x_peak + $peak_dist)
+
+	do i=0,$pippo {
+	   if (x[$i] <= $x_peak) {
+	      set damper[$i]=1.0 
+	   } else {
+	      set damper[$i] = 2.0 - 10.0**((x[$i] - $x_peak)/$tau) 
+           }
+	}
+
+	set l_s_1   = $beta*(x - 9.698) + $l_5_sync
+	set l_s_2   = ( $l_peak - ((x - $x_peak)/$sigma)**2.0 )*damper
+	set l_c     = $l_1kev_comp + (1.0 - $alpha_h)*(x - 17.383)
+	set l_c_cut = $l_1kev_comp + (1.0 - $alpha_h)*(x - 17.383)*(1.0 - 10.0**((x-$xref)/3.0))	
+	set l_sc     = 40.0 + lg(10.0**(l_s_2 - 40.0) + 10.0**(l_c - 40.0))
+	set l_sc_cut = 40.0 + lg(10.0**(l_s_2 - 40.0) + 10.0**(l_c_cut - 40.0))
+
+	#---- Bump Gamma ----
+	define x_peak_g ( $x_peak + $peak_dist )
+
+        echo      > x_peak_gamma = $x_peak_g
+        echo      > L_peak_gamma = $l_peak_g
+
+	set l_gamma =  $l_peak_g - ((x - $x_peak_g)/$sigma)**2.0
+	set l_sc_g  = 40.0 + lg(10.0**(l_sc_cut - 40.0) + 10.0**(l_gamma - 40.0)) 	
+
+	define l_egret_1 ( $l_1kev_comp + (1.0-$alpha_h)*(22.383-17.383)*(1.0-10.0**((22.383-22.0)/2.0)))	
+	define l_egret_2 ( $l_peak_g - ((22.383-$x_peak_g)/$sigma)**2.0 )
+	define l_egret_t ( 40.0 + lg(10.0**($l_egret_1-40.0)+10.0**($l_egret_2-40.0)))
+
+	define l_tev_1   ( $l_1kev_comp + (1.0-$alpha_h)*(26.082-17.383)*(1.0-10.0**((26.082-22.0)/2.0)))	
+	define l_tev_2   ( $l_peak_g - ((26.082-$x_peak_g)/$sigma)**2.0 )
+	define l_tev_t   ( 40.0 + lg(10.0**($l_tev_1-40.0)+10.0**($l_tev_2-40.0)) )
+
+	define ratio_rg  ($l_egret_t-$l_5_sync-12.685)
+	define alrg      (($l_egret_t-$l_5_sync-12.685)/12.685/-1)
+
+	define ratio_rtev ($l_tev_t-$l_5_sync-16.384)
+	define alrtev     (($l_tev_t-$l_5_sync-16.384)/16.384/-1)
+	echo      >-------------------------------- 
+
+	#--------------------
+	#
+	set dimen(nulnu) = $numero 
+	do i=0,$pippo {
+	   if (x[$i] <= $x_junct) {
+	      	set nulnu[$i] = l_s_1[$i] 
+	   } else {
+		set nulnu[$i] = l_sc_g[$i] 
+           }
+	}
+
+	echo Plotting SED
+
+	if (ratio > -5.5) { ctype 3 } else { ctype 5 } 
+	ctype $color
+	# expand 2.5
+	if ( $?lt ) { ltype $lt } else { ltype 3 }
+	lweight 3
+	connect x nulnu
+	lweight 2
+	# connect x l_sc_cut
+
+#---------------------------------------------------------------------------
+# new_seds_comp_exp_dd 1	: distanza tra picchi costante 
+##         	  arg[1]=L_radio
+# USAGE: 
+#    > new_seds_comp_exp_dd lr=41.2 color=3 tau=2000 model=gf1
+#
+#   THIS IS THE ONLY REALLY CORRECT MACRO TO COMPUTE/DRAW SEDs.
+#     JUST COPIED AND EDITED 
+# 
+new_seds_comp_exp_dd 101
+
+	fullgsave
+
+        if($?1) {
+            if(substr('$1',0,2) == '-h' ){
+               echo " new_seds_comp_exp_dd: "
+               echo " "
+               echo " USAGE: "
+               echo "    > new_seds_comp_exp_dd lr=10 tau=2000 model=gf1 color=2 "
+               echo "  or"
+               echo "    > new_seds_comp_exp_dd  (in this case it prompts for parameters)"
+               echo " "
+	       echo "                 Davide                     MY-old  "
+	       echo "   'tau'         2000.0     500.0   1.0d6   2000.0 "
+	       echo "   'x_junct'       11.7     10.7    12.3      11.7 "
+	       echo "   'alpha_s'        0.2     -0.2     0.5       0.2 "
+	       echo "   'alpha_h'        0.6      0.6     0.6       0.6 "
+	       echo "   'Krx'           -6.5     -7.5    -6.0      -6.5 "
+	       echo "   'distanza_0'     8.7      8.0     9.0       8.7 "
+	       echo "   'eta_d'         -0.4     -1.0     0.0       0.0* "
+	       echo "   'l_radio_0_d'   43.0     42.0    43.5       0.0* "
+	       echo "   'rho_RG'         3.5      2.5     4.5       3.5 "
+	       echo "   'x_peak_0'      16.5     15.5    17.0      14.5 "
+	       echo "   'eta1'           1.2      1.0     2.5       1.8 "
+	       echo "   'eta2'           0.4      0.2     1.6       0.5 "
+	       echo "   'l_radio_0'     43.0     43.0    43.0      42.5 "
+	       echo " "
+               return
+            } else {
+               mparsep $1
+            }
+        } else {
+	    echo " No arguments.  Quitting... "
+	    return
+	}
+
+	set dimen(pname) = 13.s
+	set pname = < tau \
+		      x_junct \
+		      alpha_s \
+		      alpha_h \
+		      Krx \
+		      distanza_0 \
+		      eta_d \
+		      l_radio_0_d \
+		      rho_RG \
+		      x_peak_0 \
+		      eta1 \
+		      eta2 \
+		      l_radio_0 >
+
+	if( !$?1 ) {
+	   echo  Required input parameters are:
+	   print '  %12s \n' { pname }
+	   return
+	}
+
+        set pvals_dd0 = < 2000  11.7  0.2  0.6  -6.5  8.3  -0.4  43.0  3.5  14.3  1.2  0.4  43.0 >
+        set pvals_dd1 = <  500  10.7 -0.2  0.6  -7.5  8.0  -1.0  42.0  2.5  15.5  1.0  0.2  43.0 >
+        set pvals_dd2 = < 2000  11.7  0.2  0.6  -6.5  8.7  -0.4  43.0  3.5  16.5  1.2  0.4  43.0 >
+        set pvals_gf1 = < 2000  11.7  0.2  0.6  -6.5  8.3   0.0  40.0  3.5  14.5  1.8  0.5  42.5 >
+        set pvals_gf2 = <  500  11.7  0.2  0.6  -6.75 8.3   0.0  40.0  3.5  14.5  1.8  0.5  42.5 >
+
+	if( $(is_vector(pvals)) == 1 ) {
+	  echo --------------------------------------------
+	  echo   Stored values are: 
+	  print '  %12s %10.3f  %10.3f  %10.3f  %10.3f  %10.3f\n' { pname pvals_dd0 pvals_dd1 pvals_dd2 pvals_gf1 pvals_gf2 }
+	}
+
+	if( $?model == 0 ) { 
+	   define pick_pvals ? < What do you want to use [0|1|2|3] : >
+	} else {
+	   define pick_pvals "$!model"
+	}
+
+	define 7 $(substr('$pick_pvals',0,3))
+	echo $7
+	if( substr('$7',0,3) == 'dd0' ) { set pvals = pvals_$7 }
+	if( substr('$7',0,3) == 'dd1' ) { set pvals = pvals_$7 }
+	if( substr('$7',0,3) == 'dd2' ) { set pvals = pvals_$7 }
+	if( substr('$7',0,3) == 'gf1' ) { set pvals = pvals_$7 }
+	if( substr('$7',0,3) == 'gf2' ) { set pvals = pvals_$7 }
+
+	echo " Check the chosen model parameters : "
+	print  '  %12s %10.3f\n' < pname pvals >
+
+	#	set pvals = < 2258 \
+	#     	              10.72   \
+	#		       0.499  \
+	#		       0.60   \
+	#		      -6.496  \
+	#		       8.1605 \
+	#		      -0.482  \
+	#		      43.198  \
+	#		       3.196  \
+	#		      15.513  \
+	#		       1.05   \
+	#		       1.55   \
+	#		      43.0    >
+	#
+	#                Davide                     MY-old 
+	#  'tau'         2000.0     500.0   1.0d6   2000.0
+	#  'x_junct'       11.7     10.7    12.3      11.7
+	#  'alpha_s'        0.2     -0.2     0.5       0.2
+	#  'alpha_h'        0.6      0.6     0.6       0.6
+	#  'Krx'           -6.5     -7.5    -6.0      -6.5
+	#  'distanza_0'     8.7      8.0     9.0       8.7
+	#  'eta_d'         -0.4     -1.0     0.0       0.0*
+	#  'l_radio_0_d'   43.0     42.0    43.5       0.0*
+	#  'rho_RG'         3.5      2.5     4.5       3.5
+	#  'x_peak_0'      16.5     15.5    17.0      14.5
+	#  'eta1'           1.2      1.0     2.5       1.8
+	#  'eta2'           0.4      0.2     1.6       0.5
+	#  'l_radio_0'     43.0     43.0    43.0      42.5
+	#
+	# set dd_pvals=<2000 11.7 0.2 0.6 -6.5 8.3 -0.4 43.0 3.5 14.3 1.2 0.4 43.0 >
+	# set my_pvals=<2000 11.7 0.2 0.6 -6.5 8.3  0.0 40.0 3.5 14.5 1.8 0.5 42.5 >
+	#
+	# set dd_pvals=<2000 11.7 0.2 0.6 -6.5 8.7 -0.4 43.0 3.5 14.3 1.2 0.4 43.0 >
+	# set my_pvals=<2000 11.7 0.2 0.6 -6.5 8.7  0.0 40.0 3.5 14.5 1.8 0.5 42.5 >
+
+	## echo "lr= "$lr
+	define l_radio $lr
+
+	# if($lr < 30) {
+	#    define l_radio  ? { Luminosity ? }
+	# } else {
+	#    define l_radio  $1
+	# }
+
+	ltype 0
+	ctype 2
+	## expand 1.5
+	lweight 3	
+
+	#-------------------------------------------------------
+	#
+	# define tau         $(pvals[0])
+	define x_junct     $(pvals[1])
+	define alpha_s     $(pvals[2])
+	define alpha_h     $(pvals[3])
+	define K           $(pvals[4]) 
+	define distanza_0  $(pvals[5])
+	define eta_d       $(pvals[6])
+	define l_radio_0_d $(pvals[7])
+	define rho_RG      $(pvals[8])
+	define x_peak_0    $(pvals[9])
+	define eta1        $(pvals[10])
+	define eta2        $(pvals[11])
+	define l_radio_0   $(pvals[12])
+
+	## define tau ? < tau : >
+
+	# define alpha_h    (0.6)
+	# define l_radio_0 (43.0)	
+	# define x_peak_0  (14.3)
+
+	define beta  (1.0 - $alpha_s)
+	echo alpha_s = $alpha_s
+	echo l_radio = $l_radio
+
+	if( $l_radio < $l_radio_0 ) {
+	  define eta  $eta1
+	}
+	if( $l_radio >= $l_radio_0 ) {
+	  define eta  $eta2
+	}
+	echo eta = $eta
+	 
+	if( $eta1 == 0 ) { 
+	   define c ( $l_radio - $l_radio_0 )
+	   define c ( $l_radio - 42.2 )
+	   define x_peak ( 0.2*$c**2. - 1.2*$c + 15.0 - 0.0125*$c**3. )
+	} else {
+	   define x_peak ( $x_peak_0 - $eta*($l_radio - $l_radio_0) )
+	}
+
+	define sigma ( sqrt(2*($x_peak - $x_junct)/$beta) )
+
+	echo      >-------------------------------- 
+	echo      > x_peak  :   $x_peak
+
+	define l_5_sync  $l_radio
+	define l_peak   ( $beta*($x_junct - 9.698) + $l_radio + 0.5*$beta*($x_peak - $x_junct) )
+
+	if( $l_radio < $l_radio_0_d ) {
+	  define peak_dist ( $distanza_0 + $eta_d*($l_radio - $l_radio_0_d) )
+	  define l_peak_g  ( $l_peak )
+	}
+	if( $l_radio >= $l_radio_0_d ) {
+	  define peak_dist ( $distanza_0 )
+	  define l_peak_g  ( $l_5_sync + $rho_RG )
+	}
+	#
+	#---------------------------------------------
+
+        define damper (1.0)
+        if ( $x_peak <= 14.736 ) {
+           define damper (2.0 - 10.0**((14.736 - $x_peak)/$tau) )
+        }
+	define l_opt_sync  ( ($l_peak-((14.736-$x_peak)/$sigma)**2.)*$damper )
+
+        define damper (1.0)
+        if ($x_peak <= 17.384 ) { 
+           define damper (2.0 - 10.0**((17.384 - $x_peak)/$tau))
+        } 
+	define l_1kev_sync ( ($l_peak-((17.383-$x_peak)/$sigma)**2.)*$damper )
+	define l_1kev_comp ( $l_5_sync + $K + 7.685 )
+	define l_1kev_sc   ( 40.0 + lg(10.0**($l_1kev_sync - 40.0) + 10.0**($l_1kev_comp - 40.0)) )
+
+	# echo " defining fake l_20kev "
+	# define l_20kev $l_1kev_sc
+
+        define l_opt_comp ( $l_1kev_comp + (1.0 - $alpha_h)*(14.736 - 17.383) )
+        define l_opt_sc   ( 40.0 + lg(10.0**($l_opt_sync - 40.0) + 10.0**($l_opt_comp - 40.0)) )
+
+	echo      > L_5GHz        = $l_5_sync
+	echo      > L_opt_sync    = $l_opt_sync
+	echo      > L_opt         = $l_opt_sc
+	echo      > L_sync (1keV) = $l_1kev_sync
+	echo      > L_comp (1keV) = $l_1kev_comp
+	echo      > L_tot  (1keV) = $l_1kev_sc
+	echo      >-------------------------------- 
+
+	define ratio ( $l_1kev_sc - $l_5_sync - 7.685 )
+	define alrx  ( $ratio/7.685/-1 )
+	define alro  ( ($l_opt_sc - $l_5_sync - 5.037)/5.037/-1 )
+	define alox  ( (($l_1kev_sc - 17.383) - ($l_opt_sc - 14.735))/(14.735-17.383) )
+	echo      > X-R ratio     = $ratio
+	echo      > alpha_RX      = $alrx
+	echo      > alpha_RO      = $alro
+	echo      > alpha_OX      = $alox
+
+	#------------------------------------------
+	# drawing SEDS
+	#
+	define first_x  9.0
+	define last_x  27.1
+	define step_x   0.1
+	set x = $first_x,$last_x,$step_x
+	define numero $(dimen(x))
+	define pippo  $($numero - 1)
+
+	set dimen(damper) = $numero
+	define xref ($x_peak + $peak_dist)
+
+	do i=0,$pippo {
+	   if (x[$i] <= $x_peak) {
+	      set damper[$i]=1.0 
+	   } else {
+	      set damper[$i] = 2.0 - 10.0**((x[$i] - $x_peak)/$tau) 
+           }
+	}
+
+	set l_s_1   = $beta*(x - 9.698) + $l_5_sync
+	set l_s_2   = ( $l_peak - ((x - $x_peak)/$sigma)**2.0 )*damper
+	set l_c     = $l_1kev_comp + (1.0 - $alpha_h)*(x - 17.383)
+	set l_c_cut = $l_1kev_comp + (1.0 - $alpha_h)*(x - 17.383)*(1.0 - 10.0**((x-$xref)/3.0))	
+	set l_sc     = 40.0 + lg(10.0**(l_s_2 - 40.0) + 10.0**(l_c - 40.0))
+	set l_sc_cut = 40.0 + lg(10.0**(l_s_2 - 40.0) + 10.0**(l_c_cut - 40.0))
+
+	#---- Bump Gamma ----
+	define x_peak_g ( $x_peak + $peak_dist )
+
+        echo      > x_peak_gamma = $x_peak_g
+        echo      > L_peak_gamma = $l_peak_g
+
+	set l_gamma =  $l_peak_g - ((x - $x_peak_g)/$sigma)**2.0
+	set l_sc_g  = 40.0 + lg(10.0**(l_sc_cut - 40.0) + 10.0**(l_gamma - 40.0)) 	
+
+	define l_egret_1 ( $l_1kev_comp + (1.0-$alpha_h)*(22.383-17.383)*(1.0-10.0**((22.383-22.0)/2.0)))	
+	define l_egret_2 ( $l_peak_g - ((22.383-$x_peak_g)/$sigma)**2.0 )
+	define l_egret_t ( 40.0 + lg(10.0**($l_egret_1-40.0)+10.0**($l_egret_2-40.0)))
+
+	define l_tev_1   ( $l_1kev_comp + (1.0-$alpha_h)*(26.082-17.383)*(1.0-10.0**((26.082-22.0)/2.0)))	
+	define l_tev_2   ( $l_peak_g - ((26.082-$x_peak_g)/$sigma)**2.0 )
+	define l_tev_t   ( 40.0 + lg(10.0**($l_tev_1-40.0)+10.0**($l_tev_2-40.0)) )
+
+	define ratio_rg  ($l_egret_t-$l_5_sync-12.685)
+	define alrg      (($l_egret_t-$l_5_sync-12.685)/12.685/-1)
+
+	define ratio_rtev ($l_tev_t-$l_5_sync-16.384)
+	define alrtev     (($l_tev_t-$l_5_sync-16.384)/16.384/-1)
+	echo      >-------------------------------- 
+
+	#--------------------
+	#
+	set dimen(nulnu) = $numero 
+	do i=0,$pippo {
+	   if (x[$i] <= $x_junct) {
+	      	set nulnu[$i] = l_s_1[$i] 
+	   } else {
+		set nulnu[$i] = l_sc_g[$i] 
+           }
+	}
+
+	echo " Plotting SED "
+
+	if( $ratio > -5.5 ) { ctype 3 } else { ctype 5 } 
+	ctype $color
+
+	# define lt 2
+	## expand 2.5
+	if ( $?lt ) { ltype $lt } else { ltype 3 }
+	lweight 3
+	connect x nulnu
+	lweight 2
+	# connect x l_sc_cut
+
+	fullgrestore
+
+#---------------------------------------------------------------------------

@@ -1,0 +1,388 @@
+#---------------------------------------------------------------------------
+# curfit 08
+curfit 08
+
+    if(!$(is_macro(mdeclare_rect))) {
+       echo "WARNING: this macro REQUIRES matrix.sm"
+       return
+    }
+
+    # if('$1' == '-h' || '$1' == '?' || '$1' == '-help') {
+    if( !$?1 ) {
+       echo "*****************************************************************"
+       echo "  INPUTS"
+       echo "  [1] X     : array, for independent variable"
+       echo "  [2] Y     : array, for dependent variable"
+       echo "  [3] sigmaY: array, sigma for dependent variable"
+       echo "  [4] mode  : determines method of weighting least=squares fit"
+       echo "              | +1 weight = 1/sigmay**2"
+       echo "              |  0 weight = 1 [no weight]"
+       echo "              | -1 weight = 1/y"
+       echo "  [5] a     : array of parameters"
+       echo "  [6] deltaa: array of increments for parameters a"
+       echo "  [7] sigmaa: array of sigma for parameters a"
+       echo "  [8] flambda: proportion of gradient search included"
+       echo "      ycalc : array of calculated values of Y"
+       echo "      chisq : chi square for fit"
+       echo "  "
+       echo "  REQUIRED ROUTINES (?maybe?)"
+       echo "   functn(x,i,a)"
+       echo "      | evaluates the fitting function for the i-th term"
+       echo "   der_functn(x,i,a,deltaa,nterms,deriv)"
+       echo "      | evaluates the derivatives of the fitting function"
+       echo "      | for the i-th term with respect to each parameter"
+       echo "   matinv(array,nterms,det)"
+       echo "      | inverts a symmetric 2-dimensional matrix of degree nterms"
+       echo "      | and calculates its determinant"
+       echo "*****************************************************************"
+       return
+    }
+
+    set _x        = $1
+    set _y        = $2
+    set _sigmay   = $3
+    define mode     $4
+    set _a        = $5
+    set _deltaa   = $6
+    set _sigmaa   = $7
+    define flambda  $8
+
+    define npts    $(dimen($1))
+    define nterms  $(dimen(_a))
+    define nfree   ($npts - $nterms)
+
+    set _aux = _x*0
+
+    #----------------------------------------------
+    # evaluate weights
+    #
+    if( $mode ==  1 ) { set _weight = 0*_x + 1/_sigmay/_sigmay }
+    if( $mode ==  0 ) { set _weight = 1 }
+    if( $mode == -1 ) { set _weight = 0*_x + 1/_y }
+
+    #----------------------------------------------
+    # evaluate _alpha and _beta matrices
+    #
+    set dimen(_b)    = $nterms
+    set dimen(_beta) = $nterms
+    set _b    = 0*_a
+    set _beta = 0*_a
+
+    mdeclare_rect   _dyda  $nterms $npts
+    mdeclare_square _alpha $nterms
+    mdeclare_square _array $nterms
+    msetnum  _alpha 0
+    msetnum  _array 0
+
+    #----------------------------------------------
+    # define values of the vector of the derivatives of the 
+    # fitting function with respect to the model parameters
+    #  _dyda_$j = derivative of model function with respect to j-th parameter
+    #
+    set _ycalc  = func_$testfunc(_x,_a)
+
+    do j=0,$($nterms-1) {
+       set _dyda_$j = der_$testfunc(_x,_a,$j)
+    }
+
+    do j=0,$($nterms-1) { 
+       set _aux = _weight*(_y-_ycalc)*_dyda_$j
+       set _beta[$j]= sum(_aux)
+    }
+
+    do j=0,$($nterms-1) { 
+      do k=0,$j {
+	 set _aux = _weight*_dyda_$j*_dyda_$k
+         set _alpha_$j[$k] = sum(_aux)
+      }
+    }
+
+    #----------------------------------------------
+    # symmetrizza la matrice _alpha
+    #
+    do j=0,$($nterms-1) { 
+       do k=0,$j {
+	  set _alpha_$k[$j] = _alpha_$j[$k]
+       }
+    }
+
+    #----------------------------------------------
+    # evaluate chisq at starting point
+    #
+    set _ycalc  = func_$testfunc(_x,_a)
+
+    set _oldchivec = _weight*(_y - _ycalc)**2.
+    define _oldchi $(sum(_oldchivec))
+    define _newchi ($_oldchi + 10)
+
+    if( $chatter == 1 ) { echo " * Chi^2 at starting point: "$_oldchi }
+
+    #----------------------------------------------
+    # invert modified curvature matrix to find new parameters
+    #
+    while { $_oldchi < $_newchi } {
+       if( $chatter == 1 ) {  echo " old Chi^2 = "$_oldchi"   vs.  new Chi^2 = "$_newchi }
+
+       do j=0,$($nterms-1) { 
+          do k=0,$j {
+	     set _array_$j[$k] = _alpha_$j[$k]/sqrt(_alpha_$j[$j]*_alpha_$k[$k])
+          }
+          set _array_$j[$j] = 1. + $flambda
+       }
+
+       minv _array
+
+       do j=0,$($nterms-1) {
+          set _b[$j] = _a[$j] 
+             do k=0,$($nterms-1) {
+	        set _b[$j] = _b[$j] + _beta[$k]*_array_$j[$k]/sqrt(_alpha_$j[$j]*_alpha_$k[$k])
+             }
+       }
+
+       #----------------------------------------------
+       # if chisq increased, increase flambda and try again
+       #
+       set _ycalc = func_$testfunc(_x,_b)
+
+       set _newchivec = _weight*(_y - _ycalc)**2.
+       define _newchi $(sum(_newchivec))
+
+       if( $_newchi > $_oldchi ) {
+          define flambda (10.0*$flambda)
+          if( $chatter == 1 ) {  echo " worse fit ==> Increasing flambda" }
+       }
+
+    }  # while
+
+    #----------------------------------------------
+    # evaluate parameters and uncertainties
+    #
+    if( $_newchi <= $_oldchi ) {
+       define flambda (0.1*$flambda)
+       if( $chatter == 1 ) { echo " better fit ==> Decreasing flambda" }
+       set _a = _b
+       do j=0,$($nterms-1) {
+          set _sigmaa[$j] = sqrt(_array_$j[$j]/_alpha_$j[$j])
+       }
+    }
+
+################################################################################
+##---------------------------------------------------------------------------
+## prepare_data_for_fit  {tailored to work with flux-flux X/TeV type of arrays}
+prepare_data_for_fit
+
+	define dum "n"
+	define dum ? < Use named arrays [if yes, give suffix]: >
+	if( substr('$dum',0,1) == 'n' && strlen('$dum') == 1 ) { 
+	   echo ">>> Using standard names. "
+	} else {
+	   echo ">>> Using renamed arrays : *_"$dum
+	   foreach 1 < xtt rt ert rx erx nx > {
+	      set  $1 = $1_$dum
+	   }
+	}
+
+	if( !$?1 ) { 
+	   define xtt1 ? < Start Time : >
+	   define xtt2 ? <  Stop Time : >
+	} else {
+	   define xtt1 $1
+	   define xtt2 $2
+	}
+
+	if( abs($xtt1) < 2000 ) { define xtt1 $($xtt1*1000) }
+	if( abs($xtt2) < 2000 ) { define xtt2 $($xtt2*1000) }
+
+	foreach var < rx erx rt ert xtt > {
+	    set _$var local
+	}
+	set fitx = rx   if( xtt > $xtt1 && xtt <= $xtt2  && rx > 0.01) 
+	set fity = rt   if( xtt > $xtt1 && xtt <= $xtt2  && rx > 0.01) 
+	set fitw = ert  if( xtt > $xtt1 && xtt <= $xtt2  && rx > 0.01) 
+
+	define whaterr 1
+	define whaterr ? < Use actual errors [1] or fake [any \#]: >
+
+#---------------------------------------------------------------------------
+# main_fit 01 : define outside of this routine the following arrays: 
+#                        fitx, fity, fitw 
+#               It assumes that "fity" has to be POSITIVE [WHY/WHERE?]
+main_fit 01
+
+	define chatter 1
+
+	if( $?1 ) { 
+	   define itercheck $1
+	} else {
+	   define itercheck 10
+	}
+
+	echo "-------------------------------------------------------------"
+	echo " *** DATA Section ***"
+	define end "dummy"
+	#define end ? { Suffix of vectors [NOT USED]: }
+	define 1 $end
+
+        #define flag_preparedata ? < Prepare data or data-ready [1|2] : >
+        #if( $flag_preparedata == 1 ) {
+        #    prepare_data_for_fit
+        #} else {
+        #    echo " * Going ahead assuming arrays fitx, fity, fitw are defined... "
+        #}
+
+	echo "-------------------------------------------------------------"
+	define testfunc  ? {                          Test Function Name : }
+
+	setup_$testfunc
+
+	prepare_data_arrays
+
+	init_$testfunc
+
+	set parstep  = parvec/10.0
+	set parsigma = 0.0*parvec
+
+	define flambda (0.0001)
+	define conv    (10.0)
+	define iter    (0)
+
+	while { $conv > 0.1 } {
+
+	    define iter ($iter+1)
+	    echo "======== Main_Fit iteration ["$iter"] ...calling 'curfit' "
+
+	    curfit pass_x pass_y pass_w 1 parvec parstep parsigma $flambda
+
+	    set pass_x   = _x
+	    set pass_y   = _y
+	    set pass_w   = _sigmay
+	    set parvec   = _a
+	    set parstep  = _deltaa
+	    set parsigma = _sigmaa
+
+	    if( $chatter == 1 ) { 
+               echo "   old Chi^2 = "$_oldchi"   vs.  new Chi^2 = "$_newchi 
+	      #echo "   Old Chi^2 = "$_oldchi
+	      #echo "   New Chi^2 = "$_newchi
+	    }
+
+	    define conv ($_oldchi-$_newchi)
+	    #GF: wouldn't it better to define this in relative terms?
+
+	    if( $(int($iter/$itercheck)*$itercheck) == $iter ) { 
+	       print { _a }
+	       echo "=== current Chi^2 : "$_newchi" ==="
+	       define goahead ? { Ten steps done, go ahead ? [y/n] }
+	       if( substr('$goahead',0,1) == 'n' ) {
+		   define conv (0.01)
+	       }
+	    }
+	}
+
+	echo "-----------------------------------------"
+	echo " Chi^2 = "$_newchi" / "$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "-----------------------------------------"
+	print '  %14.7f\n' { _a}
+	echo "-----------------------------------------"
+
+        set model_y    = func_$testfunc(_x,_a)
+        set chisq_dev  = (pass_y - model_y)**2.0/pass_w**2.0
+        set delchi_dev = chisq_dev*(pass_y - model_y)/abs(pass_y - model_y)
+        set sigma_dev  = sqrt(chisq_dev)*(pass_y - model_y)/abs(pass_y - model_y)
+
+	#----------------------------------------
+	# CLEANING
+	#----------------------------------------
+	foreach var { _a _b _aux _newchivec _oldchivec _x _y _sigmay _weight _deltaa _sigmaa _ycalc } {
+	   delete $var
+	}
+
+	do n=0,$($nterms-1) {
+	   delete _alpha_$n
+	   delete _array_$n
+	   delete _dyda_$n
+	}
+	#----------------------------------------
+
+        exit_$testfunc
+
+        page
+
+	define drawornot ? { Draw "fit" [2-8 == color/ or 0] }
+	if( $drawornot >= 2 ) { 
+	    ctype $drawornot
+	    lweight 3
+	    ltype 0
+	    connect xdum ydum
+	    ctype 2 
+	    ltype 0 
+	}
+
+#---------------------------------------------------------------------------
+# prepare_data_arrays
+prepare_data_arrays
+
+	echo " "
+	echo " * Assuming arrays fitx, fity, fitw are already defined. "
+
+	define whaterr 1
+	define whaterr 0.01  #GF: AD HOC!
+
+	define min_x              ? {                          min. X (as plotted) : }
+	define max_x              ? {                          MAX. X (as plotted) : }
+        define flag_need_log_of_x ? {          Need to convert X data to log [0|1] : } 
+        define flag_need_log_of_y ? {          Need to convert Y data to log [0|1] : } 
+	define whaterr            ? {       Use actual errors [1] or fake [any \#] : }
+	if( $whaterr == 1 ) {
+	   define syst            ? { Systematic error to be added to Y-data [0-1] : }
+	}
+
+	set pass_x = fitx      if( fitx >= $min_x && fitx <= $max_x )
+	set pass_y = fity      if( fitx >= $min_x && fitx <= $max_x )
+	set pass_w = fitw      if( fitx >= $min_x && fitx <= $max_x )
+	sort < pass_x pass_y pass_w >
+
+        if( $whaterr == 1 ) { set pass_w = (1 + $syst)*pass_w } 
+        if( $whaterr != 1 ) { set pass_w = 0.0*pass_y + $whaterr }
+
+        if( $flag_need_log_of_x == 1 ) {
+           set pass_x = lg(pass_x)
+	} 
+        if( $flag_need_log_of_y == 1 ) {
+           set pass_w = (lg(pass_y+pass_w) - lg(pass_y-pass_w))/2.
+           set pass_y = lg(pass_y)
+	} 
+
+	if( $flag_need_x0 == 1 ) { 
+           define x0_candidate $(($min_x+$max_x)/2.0)
+           echo             "             middle-point of the X-range is : "$x0_candidate
+           define x0 ?     {                                 Reference X : }
+	} else {
+           define x0 (0.0)
+	}
+           
+        define xs (1)
+	# define xs ?     { Scale to rescale X values : }
+	# NOTE : XS needs to be SERIOUSLY re-visited 
+
+	#--------------------------------------------------
+	# preparing dummy-x array for plotting purposes
+	#--------------------------------------------------
+	define pass_x_min $(pass_x[0])
+	define pass_x_max $(pass_x[$(dimen(pass_x)-1)])
+	define xstart $pass_x_min
+	define xend   $pass_x_max
+	if( $flag_need_x0 == 1 ) {
+	   if( $x0 < $pass_x_min ) { define xstart $x0 } 
+	   if( $x0 > $pass_x_max ) { define xend   $x0 } 
+	}
+
+	define xstep ( ($xend - $xstart)/100.)
+	set xdum = $($xstart - 0.05*($xend-$xstart)),$($xend + 0.05*($xend-$xstart)),$xstep
+	set xdum = $xstart,$xend,$xstep
+	#--------------------------------------------------
+
+	set pass_x = (pass_x - $x0)/$xs
+	set xdum   = (xdum   - $x0)/$xs
+
+#---------------------------------------------------------------------------

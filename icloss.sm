@@ -1,0 +1,105 @@
+#-------------------------------------------------------------------------------
+# icloss
+icloss
+
+	reset_graph
+
+	#-----------------------------------------------------------
+        # defines physical constants 
+        define mec2    8.1871111059e-7
+        define emc2    8.1871111059e-7
+        define sigmaT  6.6524e-25
+        define c       2.99792e10
+        define pi      3.1415
+        define hplanck 6.626176e-27
+
+	#-----------------------------------------------------------
+	# adjusts location
+	location 5500 30000 8500 28000
+
+	data icloss.dat
+	read < gg 1 xx 2 f_ic 3 >
+
+	# auxiliary array for later filtering
+	set nn = 1,dimen(gg),1
+
+	set all_lg_gg   = lg(gg)
+	set all_lg_xx   = lg(xx)
+	set all_lg_f_ic = lg(f_ic)
+
+	vecminmax all_lg_gg  lg_g1  lg_g2
+	echo " log(gamma-1) : "$lg_g1 $lg_g2
+
+	vecminmax all_lg_xx  lg_x1  lg_x2
+	echo " log(xx)      : "$lg_x1 $lg_x2
+
+	set lg_gg = all_lg_gg   if( all_lg_xx == $lg_x1 )
+
+	define Ngg (dimen(lg_gg))
+	define Nxx (dimen(all_lg_xx)/$Ngg)
+
+	echo " N_gg = "$Ngg
+	echo " N_xx = "$Nxx
+
+	define fac_gg $( 10.0**(($lg_g2 - $lg_g1)/($Ngg - 1)) )
+	define fac_xx $( 10.0**(($lg_x2 - $lg_x1)/($Nxx - 1)) )
+
+	echo " Factor for gamma array  : " $(sprintf('%8.5f',$fac_gg))
+	# echo " Factor for photon array : " $(sprintf('%8.5f',$fac_xx))
+
+	define pickgamma ? < Choice of log(gamma) : >
+
+	define ig $( 1 + int(($pickgamma - $lg_g1)/lg($fac_gg)) - 1 )   
+	# The '-1' is because arrays are 0-based
+
+	echo " Index for "$pickgamma" is "$ig 
+	echo "   Check... lg(gamma["$ig"]) = "$(lg_gg[$ig])
+
+	define l1 $( 200*$ig + 1) 
+	define l2 $( 200*($ig+1) )
+
+	set lg_xx_p   = all_lg_xx     if( nn <= $Nxx ) 
+	set lg_f_ic_p = all_lg_f_ic   if( nn >= $l1 && nn <= $l2 )
+
+	set lg_f_ic_p = lg_f_ic_p - lg_xx_p - lg($sigmaT*$c)
+
+	# cheat to normalize the value to sigmaT*c at low frequency
+	set lg_f_ic_p = lg_f_ic_p - $(lg_f_ic_p[0])
+
+	limits lg_xx_p  -15.1 1.1 
+	ticksize 0 0 0 0
+	box 1 2 3 0 
+	xlabel log(E_{ph})  [keV]
+	ylabel log(F_{IC}/(\sigma_T c)) 
+
+	connect lg_xx_p lg_f_ic_p
+
+	relocate ( $($gx1+1000) $($gy1+2000) ) 
+	putlabel 6 log(\gamma) = $pickgamma
+
+	#-----------------------------------------------------------
+	# top axis with photon energies in units of mec2
+	limits $($fx1 - lg(511.)) $($fx2 - lg(511.)) -15.1 1.1
+	ticksize 0 0 0 0
+	box 3 3 1 3
+	relocate ( $(0.5*($gx1+$gx2)) $($gy2+2500) ) 
+	putlabel 5 log(x)
+
+	#-----------------------------------------------------------
+	# marks the 1/gamma value
+	ctype 3 
+	ltype 2 
+	relocate $(lg(0.75) - $pickgamma)  $fy1 
+	draw     $(lg(0.75) - $pickgamma)  $fy2 
+	ltype 0
+	ctype 2 
+
+	#-----------------------------------------------------------
+	# x-axis with photon frequencies
+	location 5500 30000 4000 5000
+	limits $($fx1 + 17.384 ) $($fx2  + 17.384 ) -15.1 1.1
+	ticksize 0 0 0 0
+	box 1 3 4 3 
+	xlabel log(\\nu) [Hz]
+
+#-------------------------------------------------------------------------------

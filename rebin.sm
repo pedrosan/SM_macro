@@ -1,0 +1,71 @@
+#-------------------------------------------------------------------------------	
+# rebin_y_by  <array to rebin>  <rebinning factor>
+rebin_y_by 2
+
+	define rebinby $2
+        define newdim $(int(dimen($1)/$rebinby))
+
+	#-----------------------------------------------------------
+        set pop_$1 local
+
+        set dimen(reb_$1) = $newdim
+	# echo $newdim
+        set pop_$1 = $1
+
+        if( $rebinby == 1 ) {
+
+           set reb_$1 = $1
+
+        } else {
+
+           define k (-1)
+           do i=0,$newdim-1 {
+              set reb_$1[$i] = 0.0
+              do j=1,$rebinby {
+                 define k $( $k + 1 )
+                 set reb_$1[$i] = reb_$1[$i] + pop_$1[$k]
+              }
+           }
+
+        }
+	set reb_$1 = reb_$1  ##/$rebinby
+
+#-------------------------------------------------------------------------------	
+# rebin_x_by  <x_low> <x_high> <rebinning factor>
+rebin_x_by 3
+
+	define rebinby $3
+        define newdim $(int(dimen($1)/$rebinby))
+
+	#-----------------------------------------------------------
+        set pop_$1 local
+        set pop_$2 local
+
+        set dimen(reb_$1) = $newdim
+        set dimen(reb_$2) = $newdim
+
+        set pop_$1 = $1
+        set pop_$2 = $2
+
+        if( $rebinby == 1 ) {
+
+           set reb_$1 = $1
+           set reb_$2 = $2
+
+        } else {
+
+           set reb_$1[0] = $1[0]
+           define k (-1)
+           do i=0,$newdim-1 {
+           if( $i > 0 ) {
+                 set reb_$1[$i] = reb_$2[$i-1]
+           }
+              do j=1,$rebinby {
+                 define k $( $k + 1 )
+                 set reb_$2[$i] = pop_$2[$k]
+              }
+           }
+
+	}
+
+#-------------------------------------------------------------------------------	

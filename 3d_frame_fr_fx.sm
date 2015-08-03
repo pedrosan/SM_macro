@@ -1,0 +1,243 @@
+# initialize
+initialize
+
+	macro read "/usr/local/lib/sm/macro/surfaces"
+        overload surface   1
+        overload viewpoint 1
+                                                                                                                                                                                   
+#-------------------------------------------------------------------------------
+# mythin 
+mythin 2 
+
+	set _i local
+	set _zero local
+	set _in local
+	set _in=$1
+	define im local
+	define im $(dimen(_in)-1)
+	set _i=0,int($im/$2),1
+	set _i=$2*_i
+
+	set _zero=_in[_i]
+	set _zero=_zero CONCAT < $(_in[$im]) >
+	set $0=_zero
+
+#-------------------------------------------------------------------------------
+# frame_fr_fx
+frame_fr_fx
+
+	reset_graph
+
+	define fr_min (6.e-4)
+	define fr_max (10)
+	define fx_min (6.e-4)
+	define fx_max (10)
+
+	expand 1.5 
+	limits $(lg($fr_min)) $(lg($fr_max)) $(lg($fx_min)) $(lg($fx_max)) 
+	ticksize -1 0 -1 0 
+	box
+
+	expand 2.0 
+	xlabel "F_{radio} [Jy]"
+        ylabel "F_X [\mu Jy]"
+
+	ltype 2 
+	foreach arx < 0.38 0.78 1.13 > {
+	   define rr1 (-4)
+	   define rr2 ( 2)
+	   relocate $rr1 $( $rr1 - 7.685*$arx + 6 )
+	   draw     $rr2 $( $rr2 - 7.685*$arx + 6 )
+	    
+	}
+	ltype 0 
+
+#-------------------------------------------------------------------------------
+# frame_fr_fx_3d [<elevation>] [<azimuth>] [<distance>]
+frame_fr_fx_3d 03
+
+        if(!$?1) {
+          define oldtheta    ? < elevation angle : >
+          define oldphi      ? < azimuthal angle : >
+          define olddistance ? < distance        : >
+          define 1 $oldtheta
+          define 2 $oldphi
+          define 3 $olddistance
+	}
+	#---------------------------------------
+	define fr_min (6.e-4)
+	define fr_max (10)
+	define fx_min (6.e-4)
+	define fx_max (10)
+
+	define Lo_x $(lg($fr_min))
+	define Hi_x $(lg($fr_max))
+	define Lo_y $(lg($fx_min))
+	define Hi_y $(lg($fx_max))
+	define Lo_z $(lg(1.0))
+	define Hi_z $(lg(2.0e3))
+
+	viewpoint $1 $2 $3
+
+        if($2 > 0 && $2 < 90) {
+           set prof=abs(px*sin($2)+py*cos($2))
+           vecminmax prof profmin profmax
+           set expprof= 1-(prof-$profmin)*0.5/($profmax-$profmin)
+        }
+
+        expand 1.5
+        ctype 2
+	lweight 3 
+	ticksize -1 0 -1 0 
+        box3
+	label3 x log(F_R)
+	label3 y log(F_X)
+	label3 z log(N)
+
+        if($2<90 && $2>-90) { axis3 x $Lo_x $Hi_y $Lo_z $Hi_x $Hi_y $Lo_z 0 2 } 
+        if($2>90 || $2<-91) { axis3 x $Lo_x $Lo_y $Lo_z $Hi_x $Lo_y $Lo_z 0 3 }
+        if($2 > 0)          { axis3 y $Hi_x $Lo_y $Lo_z $Hi_x $Hi_y $Lo_z 0 3 }
+        if($2 < 0)          { axis3 y $Lo_x $Lo_y $Lo_z $Lo_x $Hi_y $Lo_z 0 2 }
+
+	ltype 2 
+	foreach arx < 0.38 0.75 1.13 > {
+	   define rr1 (-4)
+	   define rr2 ( 2)
+	   set _rr=$rr1,$rr2,0.01
+	   set _xx= _rr - 7.685*$arx + 6.
+	   set rr = _rr   if( _rr >= $Lo_x && _rr <= $Hi_x && _xx >= $Lo_y && _xx <= $Hi_y )
+	   set xx = _xx   if( _rr >= $Lo_x && _rr <= $Hi_x && _xx >= $Lo_y && _xx <= $Hi_y )
+	   set zz = 0*xx
+	   projection rr xx zz l1 l2 
+	   connect l1 l2 
+	}
+	ltype 0
+
+        define gurg ? < Do you want to draw the projection [y/n] : >
+
+	foreach name < slew emss xbrex ffss dxrb > {
+	   SUB_prepare_sample $name
+
+           ctype $scolor
+           expand 1.8
+           ptype 4 3 
+           points p1 p2
+           expand 1.5
+           
+           if(substr('$gurg',0,1) == 'y') {
+	      define thinby (20)
+	      set al=mythin(d1,$thinby)
+	      set ah=mythin(p1,$thinby)
+	      set bl=mythin(d2,$thinby)
+	      set bh=mythin(p2,$thinby)
+
+              expand 0.8
+	      ctype $scolor
+              ltype 1
+              pairs al bl ah bh
+           
+              ltype 0
+              ctype $scolor
+	      lweight 4 
+              connect d1 d2
+              ctype 2
+           }
+	}
+	
+## SUB_prepare_sample [<sample name>]
+SUB_prepare_sample 01 
+
+	#---------------------------------------
+	define nstar  (1)
+
+	if( $?1 ) {
+	   define survey $1
+	} else {
+	   define survey ? < survey [ffss/dxrbs/emss/xbrex] : >
+	}
+
+	if( substr('$survey',0,2) == 'ff' ) {
+	   define fr_lim (0.035)
+	   define fx_lim (0.003)
+	   define n0     (590)
+	   define area   (10000)
+	   define scolor (3)
+	}
+	if( substr('$survey',0,2) == 'dx' ) {
+	   define fr_lim (0.075)
+	   define fx_lim (0.016)
+	   define n0     (165)
+	   define area   (5000)
+	   define scolor (5)
+	}
+	if( substr('$survey',0,2) == 'xb' ) {
+	   define fr_lim (0.005)
+	   define fx_lim (0.125)
+	   define n0     ( 55)
+	   define area   (3200)
+	   define scolor (4)
+	}
+	if( substr('$survey',0,2) == 'em' ) {
+	   define fr_lim (0.002)
+	   define fx_lim (0.060)
+	   define n0     ( 40)
+	   define area   (700)
+	   define scolor (6)
+	}
+	if( substr('$survey',0,2) == 'sl' ) {
+	   define fr_lim (0.003)
+	   define fx_lim (0.550)
+	   define n0     ( 48)
+	   define area   (35000)
+	   define scolor (7)
+	}
+
+	define range $( 0.666*lg($n0/$nstar) )
+
+	#---------------------------------------
+	define fr_0 (1.0)
+	define fx_0 (1.0)
+	define ar   (0.5)
+	define ax   (0.75)
+
+	foreach 9 < fr_lim fx_lim fr_0 fx_0 > {
+	   define lg_$9 $(lg($$9))
+	}
+
+	set rgrid=$lg_fr_lim,$lg_fr_lim+$range,0.01
+	set xgrid=$lg_fx_lim,$lg_fx_lim+$range,0.01
+
+	set r4x = xgrid*0 + $lg_fr_lim
+	set x4r = rgrid*0 + $lg_fx_lim
+
+	set px = r4x CONCAT rgrid
+	set py = xgrid CONCAT x4r
+
+	define pz0 ( -1 ) 
+	set pz = $pz0 - $ar*px - $ax*py + lg($area/1000)
+	projection px py pz p1 p2
+
+        set dz = 0*pz + $Lo_z
+        projection px py dz d1 d2
+	
+dummy
+	expand 1.5 
+	limits $(lg($fr_min)) $(lg($fr_max)) $(lg($fx_min)) $(lg($fx_max)) 
+	ticksize -1 0 -1 0 
+	box
+
+	expand 2.0 
+	xlabel "F_{radio} [Jy]"
+        ylabel "F_X [\mu Jy]"
+
+	ltype 2 
+	foreach arx < 0.38 0.75 1.05 > {
+	   define rr1 (-4)
+	   define rr2 ( 2)
+	   relocate $rr1 $( $rr1 - 7.685*$arx + 6 )
+	   draw     $rr2 $( $rr2 - 7.685*$arx + 6 )
+	    
+	}
+	ltype 0 
+
+#-------------------------------------------------------------------------------

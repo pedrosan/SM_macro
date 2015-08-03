@@ -1,0 +1,1960 @@
+#---------------------------------------------------------------------------
+# help.aas
+help.aas
+
+	echo " -----------------------------------------"
+	#echo " * plot_peaks 01"
+	#echo " * plot_peaks_radio  "
+	#echo " * plot_peaks_gamma"
+	#echo " *"
+	#echo " * treboxes"
+	#echo " * dominance"
+	echo " * alpha_peak"
+	echo " * alpha_peak_ox"
+	echo " *"
+	#echo " * tre_d"
+	#echo " * tre_d2"
+	#echo " * "
+	#echo " * tre_d3   scala ROSSO-GIALLO"
+	#echo " * tre_d4   scala ROSSO-BLUE (?)"
+	echo " * tre_d5   colormap in 5 intervals "
+	echo " * tre_d6   colormap in 5 intervals "
+	#echo " * lum_a12_peak "
+	echo " -----------------------------------------"
+
+	# echo " * stop "
+
+
+#---------------------------------------------------------------------------
+# plot_peaks [<if-frame>]   (OBSOLETED by plot_peaks_both from "polfit.sm")
+plot_peaks_OLD 01
+
+	echo "--------------------------------------------------"
+	echo "   NOTE: "
+	echo "   please use plot_peaks_both from \"polfit.sm\" "
+	echo "   Quitting ..."
+	echo "--------------------------------------------------"
+	return
+	## ctype 2
+	## if($?1) {nln_frame empty}
+
+	# define suffix ? {Suffix name for the set of vectors to be plotted...}
+	# define 1 $suffix
+
+	location 5500 31000 8500 30000
+
+	ctype 2
+	ltype 0
+	
+	limits 11.1 19.9 43.1 48.4
+	ticksize 0.5 2.0 0.5 2.0
+	expand 1.5
+	box
+	expand 2
+	xlabel log(\\nu_{\rm peak,sync})
+	ylabel log(\\nu L_{\\nu}) 
+
+        ctype 8
+        expand 3.5
+        ptype 4 3
+        points peak_wp lumpeak_wp
+        ctype 3 
+        expand 3.5
+        ptype 4 0
+        points peak_wp lumpeak_wp
+        
+        ctype 6
+        expand 3.1
+        ptype 20 3 
+        points peak_1jy lumpeak_1jy
+        ctype 5
+        expand 3.1
+        ptype 20 0
+        points peak_1jy lumpeak_1jy
+        
+        ctype 4
+        expand 3.5
+        ptype 3 3
+        points peak_slew lumpeak_slew
+        ctype 5
+        expand 3.5
+        ptype 3 0
+        points peak_slew lumpeak_slew
+        
+        relocate ( $($gx1+16000) $($gy2-2000) )
+        expand 3.5 ctype 8 ptype 4 3 dot ctype 3 ptype 4 0 dot 
+        expand 2.0 putlabel 6   FSRQ
+        
+        relocate ( $($gx1+16000) $($gy2-3500) )
+        expand 3.1 ctype 6 ptype 20 3 dot ctype 5 ptype 20 0 dot 
+        expand 2.0 putlabel 6   1Jy BLL
+        
+        relocate ( $($gx1+16000) $($gy2-5000) )
+        expand 3.5 ctype 4 ptype 3 3 dot ctype 5 ptype 3 0 dot 
+        expand 2.0 putlabel 6   Slew BLL
+        
+        ctype 2
+        relocate ( $($gx1+15000) $gy2 )
+        draw     ( $($gx1+15000)  $($gy2-6500) )
+        draw     ( $gx2 $($gy2-6500) ) 
+
+#---------------------------------------------------------------------------
+# plot_peaks_radio   (OBSOLETED by plot_peaks_radio from "polfit.sm")
+plot_peaks_radio_OLD
+
+	echo "--------------------------------------------------"
+	echo "   NOTE: "
+	echo "   please use plot_peaks_radio from \"polfit.sm\" "
+	echo "   Quitting ..."
+	echo "--------------------------------------------------"
+
+	# location 5500 31000 5500 31000
+	ctype 2
+
+	location 5500 31000 8500 30000
+
+	lweight 2
+	limits 11.1 19.9 39.6 48.4
+	ticksize 0.5 2.0 0.5 2.0
+	expand 1.5 
+	box
+	expand 2
+	xlabel log(\\nu_{\rm peak,sync})
+	ylabel log(\\nu L_{\\nu}) 
+
+        ctype 8
+        expand 3.5
+        ptype 4 3
+        points peak_wp nl_radio_wp
+        ctype 3 
+        expand 3.5
+        ptype 4 0
+        points peak_wp nl_radio_wp
+        
+        ctype 6
+        expand 3.1
+        ptype 20 3 
+        points peak_1jy nl_radio_1jy
+        ctype 5
+        expand 3.1
+        ptype 20 0
+        points peak_1jy nl_radio_1jy
+        
+        ctype 4
+        expand 3.5
+        ptype 3 3
+        points peak_slew nl_radio_slew
+        ctype 5
+        expand 3.5
+        ptype 3 0
+        points peak_slew nl_radio_slew
+        
+        relocate ( $($gx1+16000) $($gy2-2000) )
+        expand 3.5 ctype 8 ptype 4 3 dot ctype 3 ptype 4 0 dot 
+        expand 2.0 putlabel 6   FSRQ
+        
+        relocate ( $($gx1+16000) $($gy2-3500) )
+        expand 3.1 ctype 6 ptype 20 3 dot ctype 5 ptype 20 0 dot 
+        expand 2.0 putlabel 6   1Jy BLL
+        
+        relocate ( $($gx1+16000) $($gy2-5000) )
+        expand 3.5 ctype 4 ptype 3 3 dot ctype 5 ptype 3 0 dot 
+        expand 2.0 putlabel 6   Slew BLL
+
+
+#---------------------------------------------------------------------------
+# plot_peaks_gamma    (OBSOLETED by plot_peaks_gamma from "polfit.sm")
+plot_peaks_gamma_OLD
+
+	echo "--------------------------------------------------"
+	echo "   NOTE: "
+	echo "   please use plot_peaks_gamma from \"polfit.sm\" "
+	echo "   Quitting ..."
+	echo "--------------------------------------------------"
+
+	# location 5500 31000 5500 31000
+	ctype 2
+
+	location 5500 31000 8500 30000
+
+	limits 11.1 19.9 41.6 50.4
+	ticksize 0.5 2.0 0.5 2.0
+	expand 1.5 
+	box
+	expand 2
+	xlabel log(\\nu_{\rm peak,sync})
+	ylabel log(\\nu L_{\\nu}) 
+
+	define howplot ? {different samples in colors [1] or symbols [2] ?}
+	if( $howplot == 1 ) { 
+	   expand 3
+	   ptype 4 3
+	   ctype 3
+	   points peak_1jy nl_g_1jy
+	   ctype 4
+	   points peak_slew nl_g_slew
+	   ctype 5
+	   points peak_wp nl_g_wp
+	} 
+	if( $howplot == 2 ) { 
+	   expand 3.5
+	   lweight 2
+	   ptype 20 0
+	   points peak_1jy nl_g_1jy
+	   ptype 20 0 
+	   points peak_slew nl_g_slew
+	   ptype 3 0
+	   points peak_wp nl_g_wp
+	   expand 2.0
+	   ptype 20 3 
+	   points peak_slew nl_g_slew
+	   expand 1.8
+	   ptype 3 3
+	   points peak_wp nl_g_wp
+	   lweight 1
+	} 
+
+	expand 2.0
+	relocate ( $($gx2-2000) $($gy2-2000) ) 
+	putlabel 4 @\gamma-rays
+
+	expand 3
+	relocate ( $($gx1+3000) $($gy1+3000) )
+	putlabel 5 (b)
+
+##--------------------------------------------------------------------------
+## treboxes    (OBSOLETED by treboxes from "polfit.sm")
+treboxes_OLD
+
+	echo "--------------------------------------------------"
+	echo "   NOTE: "
+	echo "   please use treboxes from \"polfit.sm\" "
+	echo "   Quitting ..."
+	echo "--------------------------------------------------"
+
+	window -2 -2 2 1
+	ctype 2
+	ltype 0
+
+	limits 11.1 19.9 39.6 48.4
+	ticksize 0.5 2.0 0.25 1.
+	expand 1.5
+	box 1 0 0 0 
+	xlabel log(\\nu)
+
+	expand 2
+	ptype 4 3
+	ctype 3
+	points peak_1jy lumpeak_1jy
+	ctype 4
+	points peak_slew lumpeak_slew
+	ctype 5
+	points peak_wp lumpeak_wp
+
+	ctype 2
+	relocate ( $($gx2-1000) $($gy2-1500) )
+	expand 1.5
+	putlabel 4 [L_{peak}]
+
+	#-------------------------------------------------------
+
+	window -2 -2 1 1 
+	ctype 2
+	ltype 0
+
+	limits 11.1 19.9 39.6 48.4
+	expand 1.5 
+	box 1 2 0 0
+	expand 1.5
+	xlabel log(\\nu)
+	ylabel log(\\nu L_{\\nu})
+
+	expand 2
+	ptype 4 3
+	ctype 3
+	points peak_1jy nl_radio_1jy
+	ctype 4
+	points peak_slew nl_radio_slew
+	ctype 5
+	points peak_wp nl_radio_wp
+
+	ctype 2
+	relocate ( $($gx2-1000) $($gy2-1500) )
+	expand 1.5
+	putlabel 4 [L_{5GHz}]
+
+	#-------------------------------------------------------
+
+	window -2 -2 1 2
+	ctype 2
+	ltype 0
+
+	limits 11.1 19.9 41.6 50.4
+	expand 1.5 
+	box 0 2 0 0 
+	expand 1.5
+	ylabel log(\\nu L_{\\nu}) 
+
+	expand 2
+	ptype 4 3
+	ctype 3
+	points peak_1jy nl_g_1jy
+	ctype 4
+	points peak_slew nl_g_slew
+	ctype 5
+	points peak_wp nl_g_wp
+
+	ctype 2
+	relocate ( $($gx2-1000) $($gy2-1500) )
+	expand 1.5
+	putlabel 4 [L_{\gamma}]
+
+##--------------------------------------------------------------------------
+## dominance  (OBSOLETED by plot_peaks_dominance from "polfit.sm")
+dominance_OLD
+
+	echo "-------------------------------------------------------"
+	echo "   NOTE: "
+	echo "   please use plot_peaks_dominance from \"polfit.sm\" "
+	echo "   Quitting ..."
+	echo "-------------------------------------------------------"
+
+	define bw ? { Black&White [1] or Color [2] ?}
+
+	location 5500 31000 8500 30000
+
+	set gdomin1 = nl_g - nl_opt
+	set gdomin2 = nl_g - lumpeak_total
+	limits 11.1 19.9 -1.7 3.1 
+	ticksize 0 0 -1 0 
+	ctype 2 
+	expand 1.5
+	box
+	expand 2
+	xlabel log(\\nu_{peak,sync})
+	 ## ylabel L_{Compton}/L_{sync}
+	ylabel \gamma-dominance
+
+	if($bw == 1) { 
+	   expand 3.0
+	   ptype 4 3
+	   points peak_total gdomin1 if(flag_g > 1)
+	   ptype 4 0
+	   points peak_total gdomin2 if(flag_g > 1)
+	   ctype 3
+	   lweight 3
+	   pairs peak_total gdomin2 peak_total gdomin1
+	   lweight 1
+	} else { 
+	   ptype 4 3
+	   expand 3.0
+	   ctype 3 
+	   points peak_total gdomin1 if(flag_g > 1)
+	   ctype 5 
+	   points peak_total gdomin2 if(flag_g > 1)
+	   lweight 2
+	   ctype 4 
+	   pairs peak_total gdomin2 peak_total gdomin1
+	   lweight 1
+	}
+
+	relocate ( $($gx2 - 10500) $($gy2 - 2000) ) 
+	if($bw == 1) { 
+	   expand 3.0
+	   ptype 4 3
+	   ctype 2 
+	   dot
+	   expand 1.5
+	   putlabel 6 "  \gamma  over optical"
+	} else {
+	   expand 3.0
+	   ptype 4 3
+	   ctype 3 
+	   dot
+	   ctype 2 
+	   expand 1.5
+	   putlabel 6 "  \gamma  over optical"
+	}
+
+	relocate ( $($gx2 - 10500) $($gy2 - 3500) ) 
+	if($bw == 1) { 
+	   expand 3.0
+	   ptype 4 0
+	   ctype 2 
+	   dot
+	   expand 1.5
+	   putlabel 6 "  \gamma  over L_{peak}"
+	} else {
+	   expand 3.0
+	   ptype 4 3
+	   ctype 5 
+	   dot
+	   ctype 2 
+	   expand 1.5
+	   putlabel 6 "  \gamma  over L_{peak}"
+	}
+
+	# draw_box 15.75 2.1 19.30 2.83
+	relocate ( $($gx2 - 11250) $($gy2 - 4500) )
+	draw     ( $($gx2 - 11250) $($gy2 - 1000) )
+	draw     ( $($gx2 -   750) $($gy2 - 1000) )
+	draw     ( $($gx2 -   750) $($gy2 - 4500) )
+	draw     ( $($gx2 - 11250) $($gy2 - 4500) )
+
+
+	# expand 3
+	# relocate ( $($gx2-3000) $($gy1+3000) )
+	# putlabel 5 (a)
+
+##--------------------------------------------------------------------------
+## alpha_peak
+alpha_peak
+
+	define bw ?    <               Black&White [1] or Color [2] : >
+
+	location 5500 31000 8500 30000
+	limits 11.1 19.9 0.06 1.16
+
+	ltype 0
+	ctype 2 
+	expand 1.5 
+	ticksize 0 0 0.05 0.2
+	box
+	expand 2.0
+	xlabel log(\\nu_{\rm peak,sync})
+	ylabel \alpha_{12}
+
+	set l_radio = tot_l_radio
+	set l_opt   = tot_l_opt  
+	set l_x     = tot_l_x
+	set flag_x  = tot_flag_x
+
+	set a_rx = (l_radio-l_x)/7.685
+	set a_ro = (l_radio-l_opt)/5.037
+	set tot_a_rx = a_rx
+	set tot_a_ro = a_ro
+
+	expand 3.0
+	if($bw == 1) { 
+	   ctype 2 
+	   ptype 4 3 
+	   points tot_peak a_rx if(flag_x > 0)
+	   ptype 4 0 
+	   points tot_peak a_ro
+	} else {
+	   ptype  4  3 
+	   ctype 8 
+	   points tot_peak a_rx if(flag_x > 0)
+	   ptype  4  0
+	   ctype 3 
+	   points tot_peak a_rx if(flag_x > 0)
+	   ptype 4 3 
+	   ctype 6 
+	   points tot_peak a_ro
+	   ptype 4 0 
+	   ctype 5 
+	   points tot_peak a_ro
+	   ctype 2
+	}
+
+	define inset ? < Draw the inset with examples of SEDs [y|n] : >
+	if(substr('$inset',0,1) == 'y') {
+
+           relocate ( $($gx1 + 2000) $($gy1 + 3000) ) 
+           expand 3.0
+           if($bw == 1) { 
+              ctype 2
+              ptype 4 3 
+           } else {
+              ptype 4 3 
+              ctype 8 
+              dot 
+              ptype 4 0 
+              ctype 3 
+              dot 
+           }
+           ctype 2
+           expand 1.2
+           putlabel 6 "  radio-X"
+           
+           relocate ( $($gx1 + 2000) $($gy1 + 1500) ) 
+           expand 3.0
+           if($bw == 1) { 
+              ctype 2
+              ptype 4 0 
+           } else {
+              ptype 4 3 
+              ctype 6 
+              dot
+              ptype 4 0 
+              ctype 5 
+              dot
+           }
+           ctype 2
+           expand 1.2
+           putlabel 6 "  radio-optical"
+           
+           ltype 0
+           ctype 2
+           draw_box 11.6 0.10 14.4 0.25
+           
+           location  $($gx2 - 9500) $($gx2 - 1000) $($gy2 - 7500) $($gy2 - 1000)  
+           
+           limits 8.5 18.5 40.6 48.7
+           ticksize 1.0 2.0 1.0 2.0
+           expand 0.8
+           box
+           ## xlabel log(\\nu_{\rm peak,sync})
+           ## ylabel log(\\nu L_{\\nu}) 
+           
+           define l_radio_0 (42.5)
+           define x_peak_0  (14.5)
+           seds_comp_radio 41.5 600 11.7 8.3 0.2 -6.5 1.8 0.5 
+           seds_comp_radio 45.5 600 11.7 8.3 0.2 -6.5 1.8 0.5 
+           
+           ltype 0
+           ctype 3
+           relocate  9.69 35
+           draw      9.69 55
+           relocate 14.73 35
+           draw     14.73 55
+           relocate 17.38 35
+           draw     17.38 55
+
+	} else {
+
+           relocate ( $($gx2 - 9500) $($gy2 - 2000) ) 
+           expand 3.0
+           if($bw == 1) { 
+              ctype 2 ptype 4 3 dot 
+           } else {
+              ctype 8 ptype 4 3 dot
+              ctype 3 ptype 4 0 dot
+           }
+           ctype 2
+           expand 1.2
+           putlabel 6 "  radio-X"
+           
+           relocate ( $($gx2 - 9500) $($gy2 - 3500) ) 
+           expand 3.0
+           if($bw == 1) { 
+              ctype 2 ptype 4 0 dot
+           } else {
+              ctype 6 ptype 4 3 dot
+              ctype 5 ptype 4 0 dot
+           }
+           ctype 2
+           expand 1.2
+           putlabel 6 "  radio-optical"
+           
+           ltype 0
+           ctype 2
+           draw_box 16.4 0.94 19.2 1.1
+
+	}
+
+	location 5500 31000 8500 30000
+	limits 11.1 19.9 0.06 1.16
+
+#--------------------------------------------------------------------------
+# plot_peak_arorx
+plot_peak_arorx
+
+	reset_graph
+
+	set l_radio = tot_l_radio
+	set l_opt   = tot_l_opt  
+	set l_x     = tot_l_x
+	set flag_x  = tot_flag_x
+
+	set a_rx_tot = (l_radio-l_x)/7.685
+	set a_ro_tot = (l_radio-l_opt)/5.037
+	set a_rx_tot   = a_rx_tot
+	set a_ro_tot   = a_ro_tot
+	set a_rorx_tot = a_rx_tot + a_ro_tot
+
+	foreach 9 < wp 1jy slew > {
+	   set a_rx_$9   = (l_radio_$9 - l_x_$9)/7.685
+	   set a_ro_$9   = (l_radio_$9 - l_opt_$9)/5.037
+	   set a_rorx_$9 = a_rx_$9 + a_ro_$9
+	}
+
+	limits 0.41 1.95 11.5 19.1
+	box
+	expand 2.0
+	xlabel \alpha_{RX}+\alpha_{RO}
+	ylabel \\nu_{peak}
+	expand 1.5
+
+        echo " Different samples in ... "
+	echo "  [0] no distinction "
+	echo "  [1] colors "
+	echo "  [2] symbols"
+        define howplot ? < .... option [0|1|2] : >
+
+        if( $howplot == 0 ) { 
+	   points a_rorx_tot peak_tot   if( tot_flag_x > 0 )
+	} 
+
+        if( $howplot == 1 ) { 
+           expand 3
+           ptype 4 3
+           ctype 3
+           points a_rorx_1jy  peak_1jy  
+           ctype 4
+           points a_rorx_slew peak_slew 
+           ctype 5
+           points a_rorx_wp   peak_wp 
+        } 
+        
+        if( $howplot == 2 ) {
+           ctype 8
+           expand 3.5
+           ptype 4 3
+           points a_rorx_wp   peak_wp 
+           ctype 3 
+           expand 3.5
+           ptype 4 0
+           points a_rorx_wp   peak_wp   if( check_x_wp > 0 )
+           
+           ctype 6
+           expand 3.1
+           ptype 20 3 
+           points a_rorx_1jy  peak_1jy  
+           ctype 5
+           expand 3.1
+           ptype 20 0
+           points a_rorx_1jy  peak_1jy  if( check_x_1jy > 0 )
+           
+           ctype 4
+           expand 3.5
+           ptype 3 3
+           points a_rorx_slew peak_slew 
+           ctype 5
+           expand 3.5
+           ptype 3 0
+           points a_rorx_slew peak_slew if( check_x_slew > 0 )
+           
+           relocate ( $($gx1+16000) $($gy2-2000) )
+           expand 3.5 ctype 8 ptype 4 3 dot ctype 3 ptype 4 0 dot 
+           expand 2.0 putlabel 6   FSRQ
+           
+           relocate ( $($gx1+16000) $($gy2-3500) )
+           expand 3.1 ctype 6 ptype 20 3 dot ctype 5 ptype 20 0 dot 
+           expand 2.0 putlabel 6   1Jy BLL
+           
+           relocate ( $($gx1+16000) $($gy2-5000) )
+           expand 3.5 ctype 4 ptype 3 3 dot ctype 5 ptype 3 0 dot 
+           expand 2.0 putlabel 6   Slew BLL
+       }
+
+       set dum_rxro =0.5,1.9,0.01
+       set dum_xp1 = 20.9 -8.7*sqrt((dum_rxro -0.46)/1.3)
+       set dum_xp3 = 21.4 -8.7*sqrt((dum_rxro -0.54)/1.3)
+       set dum_xp2 = 0.5*(dum_xp1 + dum_xp3 )
+       ctype 2 ltype 2 
+       foreach 9 < 1 2 3 > {
+          connect dum_rxro dum_xp$9
+       }
+       ltype 0 
+
+##--------------------------------------------------------------------------
+## alpha_peak_ox
+alpha_peak_ox
+
+	#
+	# reads/uses L_radio, L_opt, L_x, nu_peak and "flag_x" ("check_x" would be better)
+	#
+
+	define bw ? < Black&White [1] or Color [2] : >
+
+	location 5500 31000 8500 30000
+
+	lweight 2
+	limits 11.1 19.9 0.06 1.81
+	ltype 0
+	ctype 2 
+	expand 1.5 
+	ticksize 0 0 0.05 0.2
+	box
+	expand 2.0
+	xlabel log(\\nu_{\rm peak,sync})
+	ylabel \alpha_{12}
+
+	set l_radio = tot_l_radio
+	set l_opt   = tot_l_opt  
+	set l_x     = tot_l_x
+	set flag_x  = tot_flag_x
+
+	set a_rx = (l_radio-l_x)/7.685
+	set a_ro = (l_radio-l_opt)/5.037
+	set a_ox = (l_opt-l_x)/2.648
+
+	expand 3.0
+	if($bw == 1) { 
+	   ctype 2 
+	   ptype 4 3 
+	   points tot_peak a_rx if(flag_x > 0)
+	   ptype 4 0 
+	   points tot_peak a_ox if(flag_x > 0)
+	   ptype 4 1 
+	   points tot_peak a_ox if(flag_x > 0)
+	   ptype 4 0 
+	   points tot_peak a_ro
+	} else {
+	   ptype  4  3 
+	   ctype 8 points tot_peak a_rx if(flag_x > 0)
+	   ctype 4 points tot_peak a_ox if(flag_x > 0)
+	   ctype 6 points tot_peak a_ro
+
+	   ptype  4  0 
+	   ctype 3 points tot_peak a_rx if(flag_x > 0)
+	   ctype 5 points tot_peak a_ox if(flag_x > 0)
+	   ctype 5 points tot_peak a_ro
+	   ctype 2
+	}
+
+
+	relocate ( $($gx2 - 9500) $($gy2 - 2000) ) 
+	expand 3.0
+	if($bw == 1) { 
+	   ctype 2
+	   ptype 4 0 
+	   dot
+	   ptype 4 1 
+	   dot
+	} else {
+    	   ctype 4 
+	   ptype 4 3 
+	   dot
+    	   ctype 5 
+	   ptype 4 0 
+	   dot
+	}
+	ctype 2
+	expand 1.2
+	putlabel 6 "  optical-X"
+
+	relocate ( $($gx2 - 9500) $($gy2 - 3500) ) 
+	expand 3.0
+	if($bw == 1) { 
+	   ctype 2
+	   ptype 4 3 
+	} else {
+    	   ctype 8 
+	   ptype 4 3 
+	   dot
+    	   ctype 3 
+	   ptype 4 0 
+	   dot 
+	}
+	ctype 2
+	expand 1.2
+	putlabel 6 "  radio-X"
+
+	relocate ( $($gx2 - 9500) $($gy2 - 5000) ) 
+	expand 3.0
+	if($bw == 1) { 
+	   ctype 2
+	   ptype 4 0 
+	} else {
+    	   ctype 6 
+	   ptype 4 3 
+	   dot
+    	   ctype 5 
+	   ptype 4 0 
+	   dot
+	}
+	ctype 2
+	expand 1.2
+	putlabel 6 "  radio-optical"
+
+	ltype 0
+	ctype 2
+	# draw_box 16.4 0.94 19.2 1.1
+
+
+#---------------------------------------------------------------------------
+# tre_d : color-color plot with colors coded on peak frequency 
+#         in DISCRETE interval.  It also plot a labels-box with ranges.
+#         There seems to be some problem with colors, though.
+tre_d
+
+	set l_radio = tot_l_radio
+	set l_opt   = tot_l_opt  
+	set l_x     = tot_l_x
+
+	set a_rx = (l_radio-l_x)/7.685
+	set a_ro = (l_radio-l_opt)/5.037
+	set a_ox = (l_opt-l_x)/2.648
+
+	set sep={13.08 14.17 15.38 16.38}
+
+	define v1 ? < Vector 1 [rx,ox,ro] : >
+	define v2 ? < Vector 2 [rx,ox,ro] : >
+	if('$v1' == 'rx') { define xmin 0.3 
+			    define xmax 1.1 }
+	if('$v1' == 'ro') { define xmin 0.05
+			    define xmax 0.9 }
+	if('$v1' == 'ox') { define xmin 0.5 
+			    define xmax 1.8 }
+	if('$v2' == 'rx') { define ymin 0.3 
+			    define ymax 1.1 }
+	if('$v2' == 'ro') { define ymin 0.05
+			    define ymax 0.9 }
+	if('$v2' == 'ox') { define ymin 0.5 
+			    define ymax 1.8 }
+	if('$v1' == 'rx') { define lab_x <\alpha_{RX}> }
+	if('$v1' == 'ro') { define lab_x <\alpha_{RO}> }
+	if('$v1' == 'ox') { define lab_x <\alpha_{OX}> }
+	if('$v2' == 'rx') { define lab_y <\alpha_{RX}> }
+	if('$v2' == 'ro') { define lab_y <\alpha_{RO}> }
+	if('$v2' == 'ox') { define lab_y <\alpha_{OX}> }
+
+	location 6000 31000 6000 31000 
+	
+	lweight 3
+	ltype 0
+	ctype 2 
+	expand 1.5 
+	limits 0.3 1.1 0.5 1.8
+	limits $xmin $xmax $ymin $ymax
+	ticksize 0 0 0.05 0.2
+	box
+	expand 2.0
+	xlabel $lab_x
+	ylabel $lab_y
+
+	set picco = peak_total
+
+	expand 3.0
+	ptype 4 3 ctype 15 
+	points a_$v1 a_$v2 if(picco>$(sep[3]) && picco>10)
+	ptype 4 0 ctype 5 
+	points a_$v1 a_$v2 if(picco>$(sep[3]) && picco>10)
+
+	ptype 4 3 ctype 16 
+	points a_$v1 a_$v2 if(picco>$(sep[2]) && picco<=$(sep[3])  && picco>10)
+	ptype 4 0 ctype 5 
+	points a_$v1 a_$v2 if(picco>$(sep[2]) && picco<=$(sep[3])  && picco>10)
+
+	ptype 4 3 ctype 14 
+	points a_$v1 a_$v2 if(picco>$(sep[1]) && picco<=$(sep[2])  && picco>10)
+	ptype 4 0 ctype 15 
+	points a_$v1 a_$v2 if(picco>$(sep[1]) && picco<=$(sep[2])  && picco>10)
+
+	ptype 4 3 ctype 8 
+	points a_$v1 a_$v2 if(picco>$(sep[0]) && picco<=$(sep[1])  && picco>10)
+	ptype 4 0 ctype 3 
+	points a_$v1 a_$v2 if(picco>$(sep[0]) && picco<=$(sep[1])  && picco>10)
+
+	ptype 4 3 ctype 3 
+	points a_$v1 a_$v2 if(picco<=$(sep[0]) && picco>10)
+	ptype 4 0 ctype 2 
+	points a_$v1 a_$v2 if(picco<=$(sep[0]) && picco>10)
+
+	relocate ( $($gx1+1500) $($gy2-1500) ) 
+	expand 3 ptype 4 3 ctype 15 dot
+	expand 3 ptype 4 0 ctype  5 dot
+	expand 1.2 ctype 2 putlabel 6   >0.1 keV
+
+	relocate ( $($gx1+1500) $($gy2-3000) ) 
+	expand 3 ptype 4 3 ctype 16 dot
+	expand 3 ptype 4 0 ctype  5 dot
+	expand 1.2 ctype 2 putlabel 6   0.01 - 0.1 keV
+
+	relocate ( $($gx1+1500) $($gy2-4500) ) 
+	expand 3 ptype 4 3 ctype 14 dot
+	expand 3 ptype 4 0 ctype 15 dot
+	expand 1.2 ctype 2 putlabel 6   2.2 \mu m - 0.01 keV 
+
+	relocate ( $($gx1+1500) $($gy2-6000) ) 
+	expand 3 ptype 4 3 ctype 8 dot
+	expand 3 ptype 4 0 ctype 3 dot
+	expand 1.2 ctype 2 putlabel 6   25 \mu m - 2.2 \mu m
+
+	relocate ( $($gx1+1500) $($gy2-7500) ) 
+	expand 3 ptype 4 3 ctype 3 dot
+	expand 3 ptype 4 0 ctype 2 dot
+	expand 1.2 ctype 2 putlabel 6   < 25 \mu m 
+
+	relocate (  $($gx1+1000) $($gy2-8000) )
+	draw     ( $($gx1+12000) $($gy2-8000) )
+	draw     ( $($gx1+12000) $($gy2-1000) )
+	draw     (  $($gx1+1000) $($gy2-1000) )
+	draw     (  $($gx1+1000) $($gy2-8000) )
+
+
+##---------------------------------------------------------------------------
+## tre_d2 : color-color plot with colors code on peak frequency [POSSIBLY BROKEN !!!]
+##          OBSOLETE
+tre_d2
+
+	data "/home/gfossati/Science/Blazars/Seds/samples_data/alt_total_sample.polfit.dat"
+	read peak_total 9
+
+	set l_radio = tot_l_radio
+	set l_opt   = tot_l_opt  
+	set l_x     = tot_l_x
+
+	set a_rx = (l_radio-l_x)/7.685
+	set a_ro = (l_radio-l_opt)/5.037
+	set a_ox = (l_opt-l_x)/2.648
+
+	set sep={13.08 14.17 15.38 16.38}
+
+	define v1 ? {Vector 1 [rx,ox,ro] ?}
+	define v2 ? {Vector 1 [rx,ox,ro] ?}
+	if('$v1' == 'rx') { define xmin 0.3 
+			    define xmax 1.1 }
+	if('$v1' == 'ro') { define xmin 0.05
+			    define xmax 0.9 }
+	if('$v1' == 'ox') { define xmin 0.5 
+			    define xmax 1.8 }
+	if('$v2' == 'rx') { define ymin 0.3 
+			    define ymax 1.1 }
+	if('$v2' == 'ro') { define ymin 0.05
+			    define ymax 0.9 }
+	if('$v2' == 'ox') { define ymin 0.5 
+			    define ymax 1.8 }
+	if('$v1' == 'rx') { define lab_x <\alpha_{RX}> }
+	if('$v1' == 'ro') { define lab_x <\alpha_{RO}> }
+	if('$v1' == 'ox') { define lab_x <\alpha_{OX}> }
+	if('$v2' == 'rx') { define lab_y <\alpha_{RX}> }
+	if('$v2' == 'ro') { define lab_y <\alpha_{RO}> }
+	if('$v2' == 'ox') { define lab_y <\alpha_{OX}> }
+
+	location 6000 31000 6000 31000 
+	
+	lweight 2
+	ltype 0
+	ctype 2 
+	expand 1.5 
+	limits 0.3 1.1 0.5 1.8
+	limits $xmin $xmax $ymin $ymax
+	ticksize 0 0 0.05 0.2
+	box
+	expand 2.0
+	xlabel $lab_x
+	ylabel $lab_y
+
+	local set colours = CTYPE()
+	local set cnames = CTYPE(STRING)
+
+	set picco = peak_total
+	sort < picco a_$v1 a_$v2 >
+
+	local set c1dum = 0,255,2  ctype = 255 + 256*c1dum
+
+	expand 3.0
+	ptype 4 3 
+
+	do i=0,125 {
+	   if(picco[$i] > 10) {  
+	   relocate $(a_$v1[$i]) $(a_$v2[$i]) 
+	   ctype $i
+	   dot 
+	}
+	}
+
+	expand 1.1
+	ptype 4 3 
+
+	location 6000 31000 31000 32500
+	box 0 0 0 0
+
+	do i=0,255,2 {
+	   relocate ( $(7000 + 23000*($i/255.)) 28500) 
+	   expand 10
+	   ctype $($i/2.)
+	   dot 
+	}
+	expand 1.5 
+	location 6000 31000 6000 31000 
+
+	define i y
+	define i ? {Restore colourmap? }
+	if('$i' != 'n') {
+	   ctype = colours  ctype = cnames
+	}
+	ctype 0
+
+##---------------------------------------------------------------------------
+## tre_d3 : color-color plot with colors code on peak frequency 
+##          'heat' colormap hardcoded.
+## NOTE: it is basically made OBSOLETE by tre_d5 and tre_d6
+tre_d3
+
+	data "/home/gfossati/Science/Blazars/Seds/samples_data/alt_total_sample.polfit.dat"
+	read peak_total 9
+
+	set l_radio = tot_l_radio
+	set l_opt   = tot_l_opt  
+	set l_x     = tot_l_x
+
+	set a_rx = (l_radio-l_x)/7.685
+	set a_ro = (l_radio-l_opt)/5.037
+	set a_ox = (l_opt-l_x)/2.648
+
+	set sep={13.08 14.17 15.38 16.38}
+
+	define v1 ? {Vector 1 [rx,ox,ro] ?}
+	define v2 ? {Vector 1 [rx,ox,ro] ?}
+	if('$v1' == 'rx') { define xmin 0.3 
+			    define xmax 1.1 }
+	if('$v1' == 'ro') { define xmin 0.05
+			    define xmax 0.9 }
+	if('$v1' == 'ox') { define xmin 0.5 
+			    define xmax 1.8 }
+	if('$v2' == 'rx') { define ymin 0.3 
+			    define ymax 1.1 }
+	if('$v2' == 'ro') { define ymin 0.05
+			    define ymax 0.9 }
+	if('$v2' == 'ox') { define ymin 0.5 
+			    define ymax 1.8 }
+	if('$v1' == 'rx') { define lab_x <\alpha_{RX}> }
+	if('$v1' == 'ro') { define lab_x <\alpha_{RO}> }
+	if('$v1' == 'ox') { define lab_x <\alpha_{OX}> }
+	if('$v2' == 'rx') { define lab_y <\alpha_{RX}> }
+	if('$v2' == 'ro') { define lab_y <\alpha_{RO}> }
+	if('$v2' == 'ox') { define lab_y <\alpha_{OX}> }
+
+	location 6000 31000 6000 30000 
+	
+	lweight 2
+	ltype 0
+	ctype 2 
+	expand 1.5 
+	limits 0.3 1.1 0.5 1.8
+	limits $xmin $xmax $ymin $ymax
+	ticksize 0 0 0.05 0.2
+	box
+	expand 2.0
+	xlabel $lab_x
+	ylabel $lab_y
+
+	local set colours = CTYPE()
+	local set cnames = CTYPE(STRING)
+
+	set picco = peak_total
+	sort < picco a_$v1 a_$v2 >
+
+	#----------------------------------------------------------- 
+	# preparing colormap
+	#
+	define cstep (7.0/255)
+	local set c2dum=11.5,18.5,$cstep ctype=255+256*((c2dum-11.5)/7.)*255
+	help c2dum
+	#----------------------------------------------------------- 
+
+	expand 3.0
+	ptype 4 3 
+
+	define ii 0
+
+	do i=0,125 {
+	   if(picco[$i] > 10) {  
+	   relocate $(a_$v1[$i]) $(a_$v2[$i]) 
+	   # echo sorgente    : $i   [$(picco[$i])]
+	   # echo comincia da : $ii
+	   do j=$ii,$(dimen(c2dum)-2) {
+	      if(picco[$i] >= c2dum[$j] && picco[$i] < c2dum[$($j+1)] ) { 
+	      define ii $j
+	      ctype $j
+	      }               # if
+	   dot 
+	   }                  # do-j
+	}                     # if
+	}                     # do-i
+
+	expand 1.1
+	ptype 4 3 
+
+	location 6000 31000 30000 31500
+	limits $(11.5-$cstep) $(18.5+$cstep) 0 1
+
+	do i=0,$(dimen(c2dum)-1)  {
+	   ctype $i
+	   set bx = < $(c2dum[$i]-$cstep/2) $(c2dum[$i]+$cstep/2) $(c2dum[$i]+$cstep/2) $(c2dum[$i]-$cstep/2) $(c2dum[$i]-$cstep/2) > 
+	   set by = < 0 0 1 1 0 >
+	   # relocate $(c2dum[$i]) 0.5 
+	   # expand 4
+	   # dot 
+	   shade 5 bx by 
+	}
+
+	define i y
+	define i ? {Restore colourmap? }
+	if('$i' != 'n') {
+	   ctype = colours  ctype = cnames
+	}
+	ctype 2
+	ticksize 0.5 1.0 0 0
+	box 0 3 1 3
+
+	ctype 0
+
+
+##---------------------------------------------------------------------------
+## tre_d4 : color-color plot with colors code on peak frequency 
+##          'RED-GREEN-BLUE' colormap hardcoded.
+## NOTE: it is basically made OBSOLETE by tre_d5 and tre_d6
+tre_d4
+
+	data "/home/gfossati/Science/Blazars/Seds/samples_data/alt_total_sample.polfit.dat"
+	read peak_total 9
+
+	set l_radio = tot_l_radio
+	set l_opt   = tot_l_opt  
+	set l_x     = tot_l_x
+
+	set a_rx = (l_radio-l_x)/7.685
+	set a_ro = (l_radio-l_opt)/5.037
+	set a_ox = (l_opt-l_x)/2.648
+
+	define v1 ? {Vector 1 [rx,ox,ro] ?}
+	define v2 ? {Vector 2 [rx,ox,ro] ?}
+	if('$v1' == 'rx') { define xmin 0.3 
+			    define xmax 1.1 }
+	if('$v1' == 'ro') { define xmin 0.05
+			    define xmax 0.9 }
+	if('$v1' == 'ox') { define xmin 0.5 
+			    define xmax 1.8 }
+	if('$v2' == 'rx') { define ymin 0.3 
+			    define ymax 1.1 }
+	if('$v2' == 'ro') { define ymin 0.05
+			    define ymax 0.9 }
+	if('$v2' == 'ox') { define ymin 0.5 
+			    define ymax 1.8 }
+	if('$v1' == 'rx') { define lab_x <\alpha_{RX}> }
+	if('$v1' == 'ro') { define lab_x <\alpha_{RO}> }
+	if('$v1' == 'ox') { define lab_x <\alpha_{OX}> }
+	if('$v2' == 'rx') { define lab_y <\alpha_{RX}> }
+	if('$v2' == 'ro') { define lab_y <\alpha_{RO}> }
+	if('$v2' == 'ox') { define lab_y <\alpha_{OX}> }
+
+	location 6000 31000 6000 29000 
+	
+	lweight 2
+	ltype 0
+	ctype 2 
+	expand 1.5 
+	limits 0.3 1.1 0.5 1.8
+	limits $xmin $xmax $ymin $ymax
+	ticksize 0 0 0.05 0.2
+	box
+	expand 2.0
+	xlabel $lab_x
+	ylabel $lab_y
+
+	local set colours = CTYPE()
+	local set cnames = CTYPE(STRING)
+
+	set picco = peak_total
+	sort < picco a_$v1 a_$v2 >
+
+	#----------------------------------------------------------- 
+	# preparing colormap
+	#
+	set sep={ 12.0 13.5 14.7 18.5 }
+
+	define dnu1   $($(sep[1])-$(sep[0]))
+	define dnu2   $($(sep[2])-$(sep[1]))
+	define dnu3   $($(sep[3])-$(sep[2]))
+	define cstep1 ($dnu1/86)
+	define cstep2 ($dnu2/85)
+	define cstep3 ($dnu3/85)
+
+	echo $dnu1 $dnu2 $dnu3
+
+	set cdum1=$($(sep[0])+$cstep1),$(sep[1]),$cstep1 
+	set cdum2=$($(sep[1])+$cstep2),$(sep[2]),$cstep2 
+	set cdum3=$($(sep[2])+$cstep3),$(sep[3]),$cstep3 
+
+	set c1r = 0*cdum1 + 255
+	set c1g = int(255*((cdum1-$(sep[0]))/$dnu1))
+	set c1b = 0*cdum1
+
+	set c2r = int(255*(($(sep[2])-cdum2)/$dnu2))
+	set c2g = 0*cdum2 + 255
+	set c2b = 0*cdum2
+
+	set c3r = 0*cdum3 
+	set c3g = int(255*(($(sep[3]) - cdum3)/$dnu3))
+	set c3b = int(255*((cdum3 - $(sep[2]))/$dnu3))
+
+	set ctr = c1r CONCAT c2r CONCAT c3r
+	set ctg = c1g CONCAT c2g CONCAT c3g
+	set ctb = c1b CONCAT c2b CONCAT c3b
+
+	set color1 = 255 + 256*int(255*((cdum1-$(sep[0]))/$dnu1))
+	set color2 = int(255*(($(sep[2])-cdum2)/$dnu2)) + 256*255
+	set color3 = 256*255*int(($(sep[3])-cdum3)/$dnu3) + 256*256*int(255*((cdum3-$(sep[2]))/$dnu3))
+
+	set cdum     = cdum1  CONCAT cdum2  CONCAT cdum3 
+	set colortot = color1 CONCAT color2 CONCAT color3 
+
+	set colortot = ctr +256*ctg + 256*256*ctb
+	#----------------------------------------------------------- 
+
+	ctype = colortot 
+
+	expand 3.0
+	ptype 4 3 
+
+	define ii 0
+
+	do i=0,125 {
+	   if(picco[$i] > 10) {  
+	   relocate $(a_$v1[$i]) $(a_$v2[$i]) 
+	   # echo sorgente    : $i   [$(picco[$i])]
+	   # echo comincia da : $ii
+	   do j=$ii,$(dimen(cdum)-2) {
+	      if(picco[$i] >= cdum[$j] && picco[$i] < cdum[$($j+1)] ) { 
+	      define ii $j
+	      ctype $j
+	      }               # if
+	      dot 
+	   }                  # do-j
+	}                     # if
+	}                     # do-i
+
+	expand 1.1
+	ptype 4 3 
+
+	location 6000 31000 30000 31500
+	limits $(sep[0]) $(sep[3]) 0 1
+
+	ctype 0
+	set bx = < $(sep[0]) $((cdum[1]+cdum[0])/2.) $((cdum[1]+cdum[0])/2.) $(sep[0]) $(sep[0]) >
+	set by = < 0 0 1 1 0 >
+	shade 5 bx by 
+
+	do i=1,$(dimen(colortot)-2)  {
+	   ctype $i
+	   define x1 $((cdum[$i]+cdum[$i-1])/2.)
+	   define x2 $((cdum[$i]+cdum[$i+1])/2.)
+	   set bx = < $x1 $x2 $x2 $x1 $x1 >
+	   shade 5 bx by 
+	}
+
+	ctype $(dimen(colortot)-1)
+	set bx = < $((cdum[254]+cdum[255])/2.) $(sep[3]) $(sep[3]) $((cdum[254]+cdum[255])/2.) $((cdum[254]+cdum[255])/2.) >
+	shade 5 bx by 
+
+	define i y
+	define i ? {Restore colourmap? }
+	if('$i' != 'n') {
+	   ctype = colours  ctype = cnames
+	}
+	ctype 2
+	ticksize 0.5 1.0 0 0
+	box 0 3 1 3
+
+	ctype 0
+
+#---------------------------------------------------------------------------
+# showpalette 	: 
+showpalette
+
+	print '%4.1f  %3g  %3g  %3g \n' {sep r g b}
+
+#---------------------------------------------------------------------------
+# palette1 	: normal rainbow
+palette1
+
+	set sep = { 12.0 13.1 14.9 15.1 17.0 18.5 }
+	set   r = {   45  255  255    0    0    0 }
+	set   g = {    0    0  255  255    0    0 }
+	set   b = {    0    0    0    0  255  110 }
+
+	print '%4.1f  %3g  %3g  %3g \n' {sep r g b}
+
+#---------------------------------------------------------------------------
+# palette2 	: red and blue enhanced	
+palette2
+
+	set sep = { 12.0 13.1 14.9 15.1 17.0 18.5 }
+	set   r = {   45  255  230    0    0    0 }
+	set   g = {    0    0  240  255    0    0 }
+	set   b = {    0    0   35  255  255  110 }
+
+	print '%4.1f  %3g  %3g  %3g \n' {sep r g b}
+
+
+#---------------------------------------------------------------------------
+# palette3 	: red and blue enhanced	(tweaked for printing)
+palette3
+
+	set sep = { 12.0 13.1 14.6 15.0 18.0 18.5 }
+	set   r = {   45  255  230  150   50   10 }
+	set   g = {    0    0  240  255   72    0 }
+	set   b = {    0    0   35  255  155  115 }
+
+	print '%4.1f  %3g  %3g  %3g \n' {sep r g b}
+
+
+#---------------------------------------------------------------------------
+# tre_d5 : color-color plot with palette coded on peak frequency
+#          Uses one of the macro defining the colormap, e.g. palette2, palette3
+# made OBSOLETE by tre_d6
+tre_d5
+
+	data "/home/gfossati/Science/Blazars/Seds/samples_data/alt_total_sample.polfit.dat"
+	read peak_total 9
+
+	palette2
+
+	set l_radio = tot_l_radio
+	set l_opt   = tot_l_opt  
+	set l_x     = tot_l_x
+
+	set a_rx = (l_radio-l_x)/7.685
+	set a_ro = (l_radio-l_opt)/5.037
+	set a_ox = (l_opt-l_x)/2.648
+
+	define v1 ? < Vector 1 [rx,ox,ro] : >
+	define v2 ? < Vector 2 [rx,ox,ro] : >
+	if('$v1' == 'rx') { define xmin 0.3 
+			    define xmax 1.1 }
+	if('$v1' == 'ro') { define xmin 0.05
+			    define xmax 0.9 }
+	if('$v1' == 'ox') { define xmin 0.5 
+			    define xmax 1.8 }
+	if('$v2' == 'rx') { define ymin 0.3 
+			    define ymax 1.1 }
+	if('$v2' == 'ro') { define ymin 0.05
+			    define ymax 0.9 }
+	if('$v2' == 'ox') { define ymin 0.5 
+			    define ymax 1.8 }
+	if('$v1' == 'rx') { define lab_x <\alpha_{RX}> }
+	if('$v1' == 'ro') { define lab_x <\alpha_{RO}> }
+	if('$v1' == 'ox') { define lab_x <\alpha_{OX}> }
+	if('$v2' == 'rx') { define lab_y <\alpha_{RX}> }
+	if('$v2' == 'ro') { define lab_y <\alpha_{RO}> }
+	if('$v2' == 'ox') { define lab_y <\alpha_{OX}> }
+
+	location 6000 31000 5000 29000 
+	
+	lweight 3
+	ltype 0
+	ctype 2 
+	expand 1.5 
+	limits 0.3 1.1 0.5 1.8
+	limits $xmin $xmax $ymin $ymax
+	ticksize 0 0 0.05 0.2
+	box
+	expand 2.0
+	xlabel $lab_x
+	ylabel $lab_y
+
+	local set colours = CTYPE()
+	local set cnames = CTYPE(STRING)
+
+	set picco = peak_total
+	sort < picco a_$v1 a_$v2 >
+
+	#----------------------------------------------------------- 
+	# preparing colormap
+	#
+	# set sep = { 12.0 13.1 14.9 15.1 17.0 18.5 }
+	# set   r = {   45  255  230    0    0    0 }
+	# set   g = {    0    0  240  255    0    0 }
+	# set   b = {    0    0   35  255  255  110 }
+	# this looks like palette2
+
+	define dnu1   $($(sep[1])-$(sep[0]))
+	define dnu2   $($(sep[2])-$(sep[1]))
+	define dnu3   $($(sep[3])-$(sep[2]))
+	define dnu4   $($(sep[4])-$(sep[3]))
+	define dnu5   $($(sep[5])-$(sep[4]))
+	define cstep1 ($dnu1/52)
+	define cstep2 ($dnu2/51)
+	define cstep3 ($dnu3/51)
+	define cstep4 ($dnu4/51)
+	define cstep5 ($dnu5/51)
+
+	echo $dnu1 $dnu2 $dnu3 $dnu4 $dnu5
+
+	set cdum1=$($(sep[0])+$cstep1),$(sep[1]),$cstep1 
+	set cdum2=$($(sep[1])+$cstep2),$(sep[2]),$cstep2 
+	set cdum3=$($(sep[2])+$cstep3),$(sep[3]),$cstep3 
+	set cdum4=$($(sep[3])+$cstep4),$(sep[4]),$cstep4 
+	set cdum5=$($(sep[4])+$cstep5),$(sep[5]),$cstep5 
+
+	set c1r = int((r[0]-r[1])*(( $(sep[1]) - cdum1 )/$dnu1)) + r[1]
+	set c1g = int((g[0]-g[1])*(( $(sep[1]) - cdum1 )/$dnu1)) + g[1]
+	set c1b = int((b[0]-b[1])*(( $(sep[1]) - cdum1 )/$dnu1)) + b[1]
+
+	set c2r = int((r[1]-r[2])*(( $(sep[2]) - cdum2 )/$dnu2)) + r[2]
+	set c2g = int((g[1]-g[2])*(( $(sep[2]) - cdum2 )/$dnu2)) + g[2]
+	set c2b = int((b[1]-b[2])*(( $(sep[2]) - cdum2 )/$dnu2)) + b[2]
+
+	set c3r = int((r[2]-r[3])*(( $(sep[3]) - cdum3 )/$dnu3)) + r[3]
+	set c3g = int((g[2]-g[3])*(( $(sep[3]) - cdum3 )/$dnu3)) + g[3]
+	set c3b = int((b[2]-b[3])*(( $(sep[3]) - cdum3 )/$dnu3)) + b[3]
+
+	set c4r = int((r[3]-r[4])*(( $(sep[4]) - cdum4 )/$dnu4)) + r[4]
+	set c4g = int((g[3]-g[4])*(( $(sep[4]) - cdum4 )/$dnu4)) + g[4]
+	set c4b = int((b[3]-b[4])*(( $(sep[4]) - cdum4 )/$dnu4)) + b[4]
+
+	set c5r = int((r[4]-r[5])*(( $(sep[5]) - cdum5 )/$dnu5)) + r[5]
+	set c5g = int((g[4]-g[5])*(( $(sep[5]) - cdum5 )/$dnu5)) + g[5]
+	set c5b = int((b[4]-b[5])*(( $(sep[5]) - cdum5 )/$dnu5)) + b[5]
+
+	# set c1r = int(105*(( $(sep[1]) - cdum1 )/$dnu1)) + 150
+	# set c1g = int(255*(( cdum1 - $(sep[0]) )/$dnu1))
+	# set c1b = int(120*(( cdum1 - $(sep[0]) )/$dnu1))
+
+	# set c2r = int(150*(( $(sep[2]) - cdum2 )/$dnu2))
+	# set c2g = 0*cdum2 + 255 
+	# set c2b = int(135*(( cdum2 - $(sep[1]) )/$dnu2)) + 120
+
+	# set c3r = 0*cdum3 
+	# set c3g = int(255*(( $(sep[3]) - cdum3 )/$dnu3))
+	# set c3b = 0*cdum3 + 255
+
+	# set c4r = 0*cdum4 
+	# set c4g = 0*cdum4
+	# set c4b = int(105*(( $(sep[4]) - cdum4 )/$dnu4)) + 150
+
+	set ctr = c1r concat c2r concat c3r concat c4r concat c5r
+	set ctg = c1g concat c2g concat c3g concat c4g concat c5g
+	set ctb = c1b concat c2b concat c3b concat c4b concat c5b
+	set cdum = cdum1 concat cdum2 concat cdum3 concat cdum4 concat cdum5
+
+	set colortot = ctr +256*ctg + 256*256*ctb
+	#----------------------------------------------------------- 
+	
+	ctype = colortot 
+
+	expand 3.0
+	ptype 4 3 
+
+	define ii 0
+
+	do i=0,125 {
+	   if(picco[$i] > 10) {  
+	   relocate $(a_$v1[$i]) $(a_$v2[$i]) 
+	   do j=$ii,$(dimen(cdum)-2) {
+	      if(picco[$i] >= cdum[$j] && picco[$i] < cdum[$($j+1)] ) { 
+	      define ii $j
+	      ctype $j
+	      }               # if
+	      dot 
+	   }                  # do-j
+	}                     # if
+	}                     # do-i
+
+	expand 1.1
+	ptype 4 3 
+
+	define nn ($(dimen(sep)-1))
+	location 6000 31000 30000 31500
+	limits $(sep[0]) $(sep[$nn]) 0 1
+
+	ctype 0
+	set bx = < $(sep[0]) $((cdum[1]+cdum[0])/2.) $((cdum[1]+cdum[0])/2.) $(sep[0]) $(sep[0]) >
+	set by = < 0 0 1 1 0 >
+	shade 5 bx by 
+
+	do i=1,$(dimen(colortot)-2)  {
+	   ctype $i
+	   define x1 $((cdum[$i]+cdum[$i-1])/2.)
+	   define x2 $((cdum[$i]+cdum[$i+1])/2.)
+	   set bx = < $x1 $x2 $x2 $x1 $x1 >
+	   shade 5 bx by 
+	}
+
+	ctype $(dimen(colortot)-1)
+	set bx = < $((cdum[254]+cdum[255])/2.) $(sep[$nn]) $(sep[$nn]) $((cdum[254]+cdum[255])/2.) $((cdum[254]+cdum[255])/2.) >
+	shade 5 bx by 
+
+	define i y
+	define i ? {Restore colourmap? }
+	if('$i' != 'n') {
+	   ctype = colours  ctype = cnames
+	}
+	ctype 2
+	ticksize 0.5 1.0 0 0
+	box 0 3 1 3
+	relocate (18500 29500)
+	putlabel 5 log(\\nu)
+
+	ctype 0
+	window 1 1 1 1
+	location 6000 31000 6000 31000 
+
+
+#---------------------------------------------------------------------------
+# tre_d6 : color-color plot with palette coded on peak frequency 
+#          It can also plot Luminosity (radio,X) vs. color
+#          Uses one of the macro defining the colormap, e.g. palette2, palette3
+#
+# NOTE: it is identical but BETTER than 'tre_d5', completely superseding it.
+tre_d6
+
+	data "/home/gfossati/Science/Blazars/Seds/samples_data/alt_total_sample.polfit.dat"
+	read peak_total 9
+
+	palette3
+
+	set l_radio = tot_l_radio
+	set l_opt   = tot_l_opt  
+	set l_x     = tot_l_x
+
+	set a_rx = (l_radio-l_x)/7.685
+	set a_ro = (l_radio-l_opt)/5.037
+	set a_ox = (l_opt-l_x)/2.648
+	set a_rorx = a_rx + a_ro 
+
+	define v1 ? < Vector 1 [rx|ox|ro|rorx|lr|lx] : >
+	define v2 ? < Vector 2 [rx|ox|ro|rorx]       : >
+	if('$v1' == 'lr')   { define xmin 29.5
+			      define xmax 37.5 }
+	if('$v1' == 'lx')   { define xmin 24.5
+			      define xmax 31,5 }
+	if('$v1' == 'rx')   { define xmin 0.3 
+			      define xmax 1.1 }
+	if('$v1' == 'ro')   { define xmin 0.05
+			      define xmax 0.9 }
+	if('$v1' == 'ox')   { define xmin 0.5 
+			      define xmax 1.8 }
+	if('$v1' == 'rorx') { define xmin 0.45 
+			      define xmax 1.95 }
+	if('$v2' == 'rx')   { define ymin 0.3 
+			      define ymax 1.1 }
+	if('$v2' == 'ro')   { define ymin 0.05
+			      define ymax 0.9 }
+	if('$v2' == 'ox')   { define ymin 0.5 
+			      define ymax 1.8 }
+	if('$v2' == 'rorx') { define ymin 0.45 
+			      define ymax 1.95 }
+	if('$v1' == 'lr')   { define lab_x <L_{5GHz}> 
+			      set a_lr = l_radio      }
+	if('$v1' == 'lx')   { define lab_x <L_{1keV}>
+			      set a_lx = l_x          }
+	if('$v1' == 'rx')   { define lab_x <\alpha_{RX}> }
+	if('$v1' == 'ro')   { define lab_x <\alpha_{RO}> }
+	if('$v1' == 'ox')   { define lab_x <\alpha_{OX}> }
+	if('$v1' == 'rorx') { define lab_x <\alpha_{RO} + \alpha_{RX}> }
+	if('$v2' == 'rx')   { define lab_y <\alpha_{RX}> }
+	if('$v2' == 'ro')   { define lab_y <\alpha_{RO}> }
+	if('$v2' == 'ox')   { define lab_y <\alpha_{OX}> }
+	if('$v2' == 'rorx') { define lab_y <\alpha_{RO} + \alpha_{RX}> }
+
+	location 6000 31000 5000 29000 
+	
+	lweight 3
+	ltype 0
+	ctype 2 
+	expand 1.5 
+	limits $xmin $xmax $ymin $ymax
+	ticksize 0 0 0.05 0.2
+	box
+	expand 2.0
+	xlabel $lab_x
+	ylabel $lab_y
+
+	local set colours = CTYPE()
+	local set cnames = CTYPE(STRING)
+
+	set picco = peak_total
+	sort < picco a_$v1 a_$v2 >
+
+	#----------------------------------------------------------- 
+	# preparing colormap
+	#
+	# set sep = { 12.0 13.1 14.9 15.1 17.0 18.5 }
+	# set   r = {   45  255  230    0    0    0 }
+	# set   g = {    0    0  240  255    0    0 }
+	# set   b = {    0    0   35  255  255  110 }
+
+	define dnu1   $($(sep[1])-$(sep[0]))
+	define dnu2   $($(sep[2])-$(sep[1]))
+	define dnu3   $($(sep[3])-$(sep[2]))
+	define dnu4   $($(sep[4])-$(sep[3]))
+	define dnu5   $($(sep[5])-$(sep[4]))
+	define cstep1 ($dnu1/52)
+	define cstep2 ($dnu2/51)
+	define cstep3 ($dnu3/51)
+	define cstep4 ($dnu4/51)
+	define cstep5 ($dnu5/51)
+
+	echo $dnu1 $dnu2 $dnu3 $dnu4 $dnu5
+
+	set cdum1=$($(sep[0])+$cstep1),$(sep[1]),$cstep1 
+	set cdum2=$($(sep[1])+$cstep2),$(sep[2]),$cstep2 
+	set cdum3=$($(sep[2])+$cstep3),$(sep[3]),$cstep3 
+	set cdum4=$($(sep[3])+$cstep4),$(sep[4]),$cstep4 
+	set cdum5=$($(sep[4])+$cstep5),$(sep[5]),$cstep5 
+
+	set c1r = int((r[0]-r[1])*(( $(sep[1]) - cdum1 )/$dnu1)) + r[1]
+	set c1g = int((g[0]-g[1])*(( $(sep[1]) - cdum1 )/$dnu1)) + g[1]
+	set c1b = int((b[0]-b[1])*(( $(sep[1]) - cdum1 )/$dnu1)) + b[1]
+
+	set c2r = int((r[1]-r[2])*(( $(sep[2]) - cdum2 )/$dnu2)) + r[2]
+	set c2g = int((g[1]-g[2])*(( $(sep[2]) - cdum2 )/$dnu2)) + g[2]
+	set c2b = int((b[1]-b[2])*(( $(sep[2]) - cdum2 )/$dnu2)) + b[2]
+
+	set c3r = int((r[2]-r[3])*(( $(sep[3]) - cdum3 )/$dnu3)) + r[3]
+	set c3g = int((g[2]-g[3])*(( $(sep[3]) - cdum3 )/$dnu3)) + g[3]
+	set c3b = int((b[2]-b[3])*(( $(sep[3]) - cdum3 )/$dnu3)) + b[3]
+
+	set c4r = int((r[3]-r[4])*(( $(sep[4]) - cdum4 )/$dnu4)) + r[4]
+	set c4g = int((g[3]-g[4])*(( $(sep[4]) - cdum4 )/$dnu4)) + g[4]
+	set c4b = int((b[3]-b[4])*(( $(sep[4]) - cdum4 )/$dnu4)) + b[4]
+
+	set c5r = int((r[4]-r[5])*(( $(sep[5]) - cdum5 )/$dnu5)) + r[5]
+	set c5g = int((g[4]-g[5])*(( $(sep[5]) - cdum5 )/$dnu5)) + g[5]
+	set c5b = int((b[4]-b[5])*(( $(sep[5]) - cdum5 )/$dnu5)) + b[5]
+
+	# set c1r = int(105*(( $(sep[1]) - cdum1 )/$dnu1)) + 150
+	# set c1g = int(255*(( cdum1 - $(sep[0]) )/$dnu1))
+	# set c1b = int(120*(( cdum1 - $(sep[0]) )/$dnu1))
+
+	# set c2r = int(150*(( $(sep[2]) - cdum2 )/$dnu2))
+	# set c2g = 0*cdum2 + 255 
+	# set c2b = int(135*(( cdum2 - $(sep[1]) )/$dnu2)) + 120
+
+	# set c3r = 0*cdum3 
+	# set c3g = int(255*(( $(sep[3]) - cdum3 )/$dnu3))
+	# set c3b = 0*cdum3 + 255
+
+	# set c4r = 0*cdum4 
+	# set c4g = 0*cdum4
+	# set c4b = int(105*(( $(sep[4]) - cdum4 )/$dnu4)) + 150
+
+	set ctr  = c1r   CONCAT c2r   CONCAT c3r   CONCAT c4r   CONCAT c5r
+	set ctg  = c1g   CONCAT c2g   CONCAT c3g   CONCAT c4g   CONCAT c5g
+	set ctb  = c1b   CONCAT c2b   CONCAT c3b   CONCAT c4b   CONCAT c5b
+	set cdum = cdum1 CONCAT cdum2 CONCAT cdum3 CONCAT cdum4 CONCAT cdum5
+
+	set colortot = ctr +256*ctg + 256*256*ctb
+	#----------------------------------------------------------- 
+
+	ctype = colortot 
+
+	expand 3.0
+	ptype 4 3 
+
+	define ii 0
+
+	do i=0,125 {
+	   if(picco[$i] > 10) {  
+	   relocate $(a_$v1[$i]) $(a_$v2[$i]) 
+	   do j=$ii,$(dimen(cdum)-2) {
+	      if(picco[$i] >= cdum[$j] && picco[$i] < cdum[$($j+1)] ) { 
+	      define ii $j
+	      ctype $j
+	      }               # if
+	      dot 
+	   }                  # do-j
+	}                     # if
+	}                     # do-i
+
+	expand 1.1
+	ptype 4 3 
+
+	define nn ($(dimen(sep)-1))
+	location 6000 31000 30000 31500
+	limits $(sep[0]) $(sep[$nn]) 0 1
+
+	ctype 0
+	set bx = < $(sep[0]) $((cdum[1]+cdum[0])/2.) $((cdum[1]+cdum[0])/2.) $(sep[0]) $(sep[0]) >
+	set by = < 0 0 1 1 0 >
+	shade 5 bx by 
+
+	do i=1,$(dimen(colortot)-2)  {
+	   ctype $i
+	   define x1 $((cdum[$i]+cdum[$i-1])/2.)
+	   define x2 $((cdum[$i]+cdum[$i+1])/2.)
+	   set bx = < $x1 $x2 $x2 $x1 $x1 >
+	   shade 5 bx by 
+	}
+
+	ctype $(dimen(colortot)-1)
+	set bx = < $((cdum[254]+cdum[255])/2.) $(sep[$nn]) $(sep[$nn]) $((cdum[254]+cdum[255])/2.) $((cdum[254]+cdum[255])/2.) >
+	shade 5 bx by 
+
+	define i y
+	define i ? {Restore colourmap? }
+	if('$i' != 'n') {
+	   ctype = colours  ctype = cnames
+	}
+	ctype 2
+	ticksize 0.5 1.0 0 0
+	box 0 3 1 3
+	relocate (18500 29500)
+	putlabel 5 log(\\nu)
+
+	ctype 0
+	window 1 1 1 1
+	location 6000 31000 6000 31000 
+
+
+stop
+
+	relocate ( $($gx1+1500) $($gy2-1500) ) 
+	expand 3 ptype 4 3 ctype 15 dot
+	expand 3 ptype 4 0 ctype  5 dot
+	expand 1.2 ctype 2 putlabel 6   >0.1 keV
+
+	relocate ( $($gx1+1500) $($gy2-3000) ) 
+	expand 3 ptype 4 3 ctype 16 dot
+	expand 3 ptype 4 0 ctype  5 dot
+	expand 1.2 ctype 2 putlabel 6   0.01 - 0.1 keV
+
+	relocate ( $($gx1+1500) $($gy2-4500) ) 
+	expand 3 ptype 4 3 ctype 14 dot
+	expand 3 ptype 4 0 ctype 15 dot
+	expand 1.2 ctype 2 putlabel 6   2.2 \mu m - 0.01 keV 
+
+	relocate ( $($gx1+1500) $($gy2-6000) ) 
+	expand 3 ptype 4 3 ctype 8 dot
+	expand 3 ptype 4 0 ctype 3 dot
+	expand 1.2 ctype 2 putlabel 6   25 \mu m - 2.2 \mu m
+
+	relocate ( $($gx1+1500) $($gy2-7500) ) 
+	expand 3 ptype 4 3 ctype 3 dot
+	expand 3 ptype 4 0 ctype 2 dot
+	expand 1.2 ctype 2 putlabel 6   < 25 \mu m 
+
+	relocate (  $($gx1+1000) $($gy2-8000) )
+	draw     ( $($gx1+12000) $($gy2-8000) )
+	draw     ( $($gx1+12000) $($gy2-1000) )
+	draw     (  $($gx1+1000) $($gy2-1000) )
+	draw     (  $($gx1+1000) $($gy2-8000) )
+
+	define i y
+	define i ? {Restore colourmap? }
+	if('$i' != 'n') {
+	   ctype = colours  ctype = cnames
+	}
+	ctype 0
+
+just_colored_dots  3
+
+	# palette3
+	# palette2
+	palette1
+	local set colours = CTYPE()
+	local set cnames = CTYPE(STRING)
+
+	echo $1 $2 $3
+	# print < $1 $2 $3 >
+
+	define v1 $1
+	define v2 $2
+	set picco = $3   if( test_aro >= 0.0 )
+	set a_$v1 = $1   if( test_aro >= 0.0 )
+	set a_$v2 = $2   if( test_aro >= 0.0 )
+
+	sort < picco a_$v1 a_$v2 >
+
+	#----------------------------------------------------------- 
+	# preparing colormap
+	#
+	# set sep = { 12.0 13.1 14.9 15.1 17.0 18.5 }
+	# set   r = {   45  255  230    0    0    0 }
+	# set   g = {    0    0  240  255    0    0 }
+	# set   b = {    0    0   35  255  255  110 }
+
+	define dnu1   $($(sep[1])-$(sep[0]))
+	define dnu2   $($(sep[2])-$(sep[1]))
+	define dnu3   $($(sep[3])-$(sep[2]))
+	define dnu4   $($(sep[4])-$(sep[3]))
+	define dnu5   $($(sep[5])-$(sep[4]))
+	define cstep1 ($dnu1/52)
+	define cstep2 ($dnu2/51)
+	define cstep3 ($dnu3/51)
+	define cstep4 ($dnu4/51)
+	define cstep5 ($dnu5/51)
+
+	echo $dnu1 $dnu2 $dnu3 $dnu4 $dnu5
+
+	set cdum1=$($(sep[0])+$cstep1),$(sep[1]),$cstep1 
+	set cdum2=$($(sep[1])+$cstep2),$(sep[2]),$cstep2 
+	set cdum3=$($(sep[2])+$cstep3),$(sep[3]),$cstep3 
+	set cdum4=$($(sep[3])+$cstep4),$(sep[4]),$cstep4 
+	set cdum5=$($(sep[4])+$cstep5),$(sep[5]),$cstep5 
+
+	set c1r = int((r[0]-r[1])*(( $(sep[1]) - cdum1 )/$dnu1)) + r[1]
+	set c1g = int((g[0]-g[1])*(( $(sep[1]) - cdum1 )/$dnu1)) + g[1]
+	set c1b = int((b[0]-b[1])*(( $(sep[1]) - cdum1 )/$dnu1)) + b[1]
+
+	set c2r = int((r[1]-r[2])*(( $(sep[2]) - cdum2 )/$dnu2)) + r[2]
+	set c2g = int((g[1]-g[2])*(( $(sep[2]) - cdum2 )/$dnu2)) + g[2]
+	set c2b = int((b[1]-b[2])*(( $(sep[2]) - cdum2 )/$dnu2)) + b[2]
+
+	set c3r = int((r[2]-r[3])*(( $(sep[3]) - cdum3 )/$dnu3)) + r[3]
+	set c3g = int((g[2]-g[3])*(( $(sep[3]) - cdum3 )/$dnu3)) + g[3]
+	set c3b = int((b[2]-b[3])*(( $(sep[3]) - cdum3 )/$dnu3)) + b[3]
+
+	set c4r = int((r[3]-r[4])*(( $(sep[4]) - cdum4 )/$dnu4)) + r[4]
+	set c4g = int((g[3]-g[4])*(( $(sep[4]) - cdum4 )/$dnu4)) + g[4]
+	set c4b = int((b[3]-b[4])*(( $(sep[4]) - cdum4 )/$dnu4)) + b[4]
+
+	set c5r = int((r[4]-r[5])*(( $(sep[5]) - cdum5 )/$dnu5)) + r[5]
+	set c5g = int((g[4]-g[5])*(( $(sep[5]) - cdum5 )/$dnu5)) + g[5]
+	set c5b = int((b[4]-b[5])*(( $(sep[5]) - cdum5 )/$dnu5)) + b[5]
+
+	# set c1r = int(105*(( $(sep[1]) - cdum1 )/$dnu1)) + 150
+	# set c1g = int(255*(( cdum1 - $(sep[0]) )/$dnu1))
+	# set c1b = int(120*(( cdum1 - $(sep[0]) )/$dnu1))
+
+	# set c2r = int(150*(( $(sep[2]) - cdum2 )/$dnu2))
+	# set c2g = 0*cdum2 + 255 
+	# set c2b = int(135*(( cdum2 - $(sep[1]) )/$dnu2)) + 120
+
+	# set c3r = 0*cdum3 
+	# set c3g = int(255*(( $(sep[3]) - cdum3 )/$dnu3))
+	# set c3b = 0*cdum3 + 255
+
+	# set c4r = 0*cdum4 
+	# set c4g = 0*cdum4
+	# set c4b = int(105*(( $(sep[4]) - cdum4 )/$dnu4)) + 150
+
+	set ctr  = c1r   CONCAT c2r   CONCAT c3r   CONCAT c4r   CONCAT c5r
+	set ctg  = c1g   CONCAT c2g   CONCAT c3g   CONCAT c4g   CONCAT c5g
+	set ctb  = c1b   CONCAT c2b   CONCAT c3b   CONCAT c4b   CONCAT c5b
+	set cdum = cdum1 CONCAT cdum2 CONCAT cdum3 CONCAT cdum4 CONCAT cdum5
+
+	set colortot = ctr +256*ctg + 256*256*ctb
+	#----------------------------------------------------------- 
+
+	ctype = colortot 
+
+	expand 3.0
+	ptype 4 3 
+
+	define ii 0
+
+	do i=0,dimen(picco)-1 {
+	   if(picco[$i] > 10) {
+	   relocate $(a_$v1[$i]) $(a_$v2[$i]) 
+	   do j=$ii,$(dimen(cdum)-2) {
+	      if(picco[$i] >= cdum[$j] && picco[$i] < cdum[$($j+1)] ) { 
+	         define ii $j
+	         ctype $j
+	      }               # if
+	      dot 
+	   }                  # do-j
+	   }                  # if
+	}                     # do-i
+
+	define i y
+	define i ? {Restore colourmap? }
+	if('$i' != 'n') {
+	   ctype = colours  ctype = cnames
+	}
+	ctype 0
+
+##---------------------------------------------------------------------------
+## lum_a12_peak : NOT SURE ABOUT IT
+lum_a12_peak
+
+	set l_radio = tot_l_radio
+	set l_opt   = tot_l_opt  
+	set l_x     = tot_l_x
+
+	set a_rx = (l_radio-l_x)/7.685
+	set a_ro = (l_radio-l_opt)/5.037
+	set a_ox = (l_opt-l_x)/2.648
+
+	set sep={13.08 14.17 15.38 16.38}
+
+	define v1 ? < Vector L  [radio,opt,x] : >
+	define v2 ? < Vector index [rx,ox,ro] : >
+	if('$v1' == 'radio') { define xmin 29.5 
+			       define xmax 37.5 }
+	if('$v1' == 'opt')   { define xmin 28.5
+			       define xmax 34.5 }
+	if('$v1' == 'x')     { define xmin 24.5
+			       define xmax 31.5 }
+	if('$v2' == 'rx') { define ymin 0.3 
+			    define ymax 1.1 }
+	if('$v2' == 'ro') { define ymin 0.05
+			    define ymax 0.9 }
+	if('$v2' == 'ox') { define ymin 0.5 
+			    define ymax 1.8 }
+	if('$v1' == 'radio') { define lab_x <L_{5GHz}> }
+	if('$v1' == 'opt')   { define lab_x <L_{5500\AA}> }
+	if('$v1' == 'x')     { define lab_x <L_{1keV}> }
+	if('$v2' == 'rx') { define lab_y <\alpha_{RX}> }
+	if('$v2' == 'ro') { define lab_y <\alpha_{RO}> }
+	if('$v2' == 'ox') { define lab_y <\alpha_{OX}> }
+
+	location 6000 31000 6000 31000 
+	
+	lweight 2
+	ltype 0
+	ctype 2 
+	expand 1.5 
+	limits $xmin $xmax $ymin $ymax
+	ticksize 0.25 1.0 0.05 0.2
+	box
+	expand 2.0
+	xlabel $lab_x
+	ylabel $lab_y
+
+	set picco = peak_total
+
+	expand 3.0
+	ptype 4 3 ctype 15 
+	points l_$v1 a_$v2 if(picco>$(sep[3]) && picco>10)
+	ptype 4 0 ctype 5 
+	points l_$v1 a_$v2 if(picco>$(sep[3]) && picco>10)
+
+	ptype 4 3 ctype 16 
+	points l_$v1 a_$v2 if(picco>$(sep[2]) && picco<=$(sep[3])  && picco>10)
+	ptype 4 0 ctype 5 
+	points l_$v1 a_$v2 if(picco>$(sep[2]) && picco<=$(sep[3])  && picco>10)
+
+	ptype 4 3 ctype 14 
+	points l_$v1 a_$v2 if(picco>$(sep[1]) && picco<=$(sep[2])  && picco>10)
+	ptype 4 0 ctype 15 
+	points l_$v1 a_$v2 if(picco>$(sep[1]) && picco<=$(sep[2])  && picco>10)
+
+	ptype 4 3 ctype 8 
+	points l_$v1 a_$v2 if(picco>$(sep[0]) && picco<=$(sep[1])  && picco>10)
+	ptype 4 0 ctype 3 
+	points l_$v1 a_$v2 if(picco>$(sep[0]) && picco<=$(sep[1])  && picco>10)
+
+	ptype 4 3 ctype 3 
+	points l_$v1 a_$v2 if(picco<=$(sep[0]) && picco>10)
+	ptype 4 0 ctype 2 
+	points l_$v1 a_$v2 if(picco<=$(sep[0]) && picco>10)
+
+	relocate ( $($gx1+1500) $($gy2-1500) ) 
+	expand 3 ptype 4 3 ctype 15 dot
+	expand 3 ptype 4 0 ctype  5 dot
+	expand 1.2 ctype 2 putlabel 6   >0.1 keV
+
+	relocate ( $($gx1+1500) $($gy2-3000) ) 
+	expand 3 ptype 4 3 ctype 16 dot
+	expand 3 ptype 4 0 ctype  5 dot
+	expand 1.2 ctype 2 putlabel 6   0.01 - 0.1 keV
+
+	relocate ( $($gx1+1500) $($gy2-4500) ) 
+	expand 3 ptype 4 3 ctype 14 dot
+	expand 3 ptype 4 0 ctype 15 dot
+	expand 1.2 ctype 2 putlabel 6   2.2 \mu m - 0.01 keV 
+
+	relocate ( $($gx1+1500) $($gy2-6000) ) 
+	expand 3 ptype 4 3 ctype 8 dot
+	expand 3 ptype 4 0 ctype 3 dot
+	expand 1.2 ctype 2 putlabel 6   25 \mu m - 2.2 \mu m
+
+	relocate ( $($gx1+1500) $($gy2-7500) ) 
+	expand 3 ptype 4 3 ctype 3 dot
+	expand 3 ptype 4 0 ctype 2 dot
+	expand 1.2 ctype 2 putlabel 6   < 25 \mu m 
+
+	relocate (  $($gx1+1000) $($gy2-8000) )
+	draw     ( $($gx1+12000) $($gy2-8000) )
+	draw     ( $($gx1+12000) $($gy2-1000) )
+	draw     (  $($gx1+1000) $($gy2-1000) )
+	draw     (  $($gx1+1000) $($gy2-8000) )
+
+#---------------------------------------------------------------------------

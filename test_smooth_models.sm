@@ -1,0 +1,414 @@
+#---------------------------------------------------------------------------
+# picco
+picco
+	
+	location 7000 30000 6000 31000
+	window 1 1 1 1
+	ctype 2 
+	lweight 2
+	ltype 0
+
+	data fort.30
+	read { e 2 mo 3 eemo 4 }
+	data fort.31
+	read aux 1 
+
+	define e_break ( lg($(aux[0])) )
+	define e_peak  ( lg($(aux[1])) )
+
+
+	#--------------------------
+	window 1 -2  1  1 
+
+	ticksize -1 0 -1 0 
+	limits (lg(e)) (lg(eemo))
+	box  1 2 0 0 
+
+	ctype 4 
+	ltype 2 
+	lweight 1 
+	relocate $e_break -10
+	draw $e_break 10
+	relocate $e_peak -10
+	draw $e_peak 10
+	ltype 0
+	ctype 2 
+	lweight 2
+
+	relocate 0 0
+
+	ptype 4 1 
+	ctype 3 
+
+	lweight 4
+	  expand 5.0
+	    angle 45 
+	      dot
+	    angle 0 
+	  expand 1.5
+	lweight 2
+
+	ctype 5 
+	lweight 3
+	connect (lg(e)) (lg(eemo))
+	lweight 2
+
+	ctype 2 
+	lweight 2
+	ltype 0
+
+	#----------------
+	window 1 -2  1  2 
+
+	ticksize -1 0 -1 0 
+	limits (lg(e)) (lg(mo))
+	box 0 2 0 0  
+
+	ctype 4 
+	ltype 2 
+	lweight 1 
+	relocate $e_break -10
+	draw $e_break 10
+	relocate $e_peak -10
+	draw $e_peak 10
+	ltype 0
+	ctype 2 
+	lweight 2
+
+	relocate 0 0
+
+	ptype 4 1 
+	ctype 3 
+
+	lweight 4
+	  expand 5.0
+	    angle 45 
+	      dot
+	    angle 0 
+	  expand 1.5
+	lweight 2
+
+	ctype 5 
+	lweight 3
+	connect (lg(e)) (lg(mo))
+	lweight 2
+
+	ctype 2 
+	lweight 2
+	ltype 0
+
+
+
+#---------------------------------------------------------------------------
+# powpar
+powpar
+
+	location 7000 30000 6000 31000
+	window 1 1 1 1
+	ctype 2 
+	lweight 2
+	ltype 0
+
+	set x=-2,4,0.01
+
+	define g1 ? {gamma ? }
+	define eb ? {E_break ? [keV] }
+	define ep ? {E_peak  ? [keV] }
+
+	define a1  ( 2 - $g1 )
+	define x1  ( lg($eb) )
+	define x2  ( lg($ep) )
+	define csi ( $a1/($x2-$x1) )
+
+	set dum1 = -0.5*$csi*x**2
+        set dum2 = ($csi*$x2 - 2.)*x
+        set dum3 = $csi*$x1*(0.5*$x1 - $x2) + 0.*x
+        set dum4 = $a1*$x1  + 0.*x
+
+	set eemo  = $a1*x
+	set eemo1 = $a1*x
+	set eemo2 = dum1 + dum2 + dum3 + dum4
+
+	do 1=0,$(dimen(x)-1) {
+           if ( x <= $x1 ) {
+	      set eemo[$1] = eemo1[$1]
+	   } else { 
+	      set eemo[$1] = eemo2[$1]
+	   }
+	}
+
+           if ( x .le. x1 ) then 
+             photar(i) = de/exp(2.302585093*param(1)*x)
+           else 
+             dum1 = -0.5d0*csi*x**2.d0
+             dum2 = (csi*x2 - 2.d0)*x
+             dum3 = csi*x1*(0.5d0*x1 - x2)
+             dum4 = index*x1
+             ! photar(i) = de*10.d0**(dum1+dum2+dum3+dum4)
+             photar(i) = de*exp(2.302585093*(dum1+dum2+dum3+dum4))
+
+	set emo  = eemo - x 
+	set mo   = emo - x 
+
+	ticksize -1 0 -1 0
+	ctype 2 
+	limits x eemo
+	box 
+
+	ctype 3 
+	connect x eemo
+
+	ctype 4 
+	ltype 2 
+	lweight 1 
+	relocate $($xb-$tt) -10
+	draw $($xb-$tt) +10
+	relocate $xb -10
+	draw $xb 10
+	relocate $($xb+$tt) -10
+	draw $($xb+$tt) +10
+
+	relocate 0 -10 
+	draw 0 10
+	ltype 0
+	ctype 2 
+	lweight 2
+
+
+#---------------------------------------------------------------------------
+# join
+join
+
+	location 7000 30000 6000 31000
+	window 1 1 1 1
+	ctype 2 
+	lweight 2
+	ltype 0
+
+	set x=-2,4,0.01
+
+	define g1 ? {gamma_1 ? }
+	define g2 ? {gamma_2 ? }
+	define e1 ? {E_break 1 ? [keV] }
+	# define eb ? {E_break 2 ? [keV] }
+	define e2 ? {E_break 2 ? [keV] }
+
+	define a1 ( 2 - $g1 )
+	define a2 ( 2 - $g2 )
+	define x1 ( lg($e1) )
+	# define xb ( lg($eb) )
+	define x2 ( lg($e2) )
+
+	# define x2 ($xb + $xb - $x1)
+	define xb ( ($x1 + $x2)/2. )
+
+	set eemo1 = $a1*x
+	set eemo2 = ($a1 - $a2)/($x1 - $x2)*(x - $x1)**2 + $a1*(x - $x1) + $a1*$x1
+	set eemo3 = $a2*(x - $x2) + 0.5*($a1 + $a2)*($x2 - $x1) + $a1*$x1
+
+	ticksize -1 0 -1 0
+	limits -1 2 eemo1
+	box
+
+	ctype 4 
+	ltype 2 
+	lweight 1 
+	relocate $x1 -10
+	draw $x1 10
+	relocate $xb -10
+	draw $xb 10
+	relocate $x2 -10
+	draw $x2 10
+	ltype 0
+	ctype 2 
+	lweight 2
+
+	ctype 3 
+	connect x eemo1 
+	connect x eemo2 
+	connect x eemo3 
+	ctype 2 
+
+
+stop
+
+	do 1=0,$(dimen(x)-1) {
+	   if( x[$1] > $x1 && x[$1] < $x2 ) {
+	      set eemo[$1] = 
+ 	   } else {
+	      
+	   }
+	}
+
+arco 4 
+
+	# $1 = x1	
+	# $2 = x2	
+	# $3 = 	
+	# $4 = 	
+
+	
+
+#---------------------------------------------------------------------------
+# smooth
+smooth
+	
+	location 7000 30000 6000 31000
+	window 1 1 1 1
+	ctype 2 
+	lweight 2
+	ltype 0
+
+	define g1 ? {gamma_1 ? }
+	define g2 ? {gamma_2 ? }
+	define eb ? {E_break ? [keV] }
+	define tt ? {Length scale ? [decades] }
+
+	define a1 ( 2 - $g1 )
+	define a2 ( 2 - $g2 )
+	define xb ( lg($eb) )
+
+	set x=-2,4,0.01
+	set fac=(x-$xb)/$tt
+
+	set csi1 = exp(-fac)/(1 + exp(-fac)) 
+	set csi2 = exp(fac)/(1 + exp(fac)) 
+
+	set lg_f1 = $a1*x + lg(csi1)
+	set lg_f2 = lg(csi2) + ($a1-$a2)*$xb + $a2*x
+
+	set lg_f = lg(10.**lg_f1 + 10.**lg_f2)
+
+	set eemo = lg_f 
+	set emo  = eemo - x  
+	set mo   = emo - x
+
+	ticksize -1 0 -1 0
+	ctype 2 
+	limits x eemo
+	box 
+
+	ctype 3 
+	connect x eemo
+
+	ctype 4 
+	ltype 2 
+	lweight 1 
+	relocate $($xb-$tt) -10
+	draw $($xb-$tt) +10
+	relocate $xb -10
+	draw $xb 10
+	relocate $($xb+$tt) -10
+	draw $($xb+$tt) +10
+
+	relocate 0 -10 
+	draw 0 10
+	ltype 0
+	ctype 2 
+	lweight 2
+
+	relocate 0 0
+	ptype 4 1 
+	ctype 3 
+
+	lweight 4
+	  expand 5.0
+	    angle 45 
+	      dot
+	    angle 0 
+	  expand 1.5
+	lweight 2
+
+	ctype 2 
+
+#---------------------------------------------------------------------------
+# smoothh
+smoothh
+	
+	location 7000 30000 6000 31000
+	window 1 1 1 1
+	ctype 2 
+	lweight 2
+	ltype 0
+
+	define g1 ? {gamma_1 ? }
+	define g2 ? {gamma_2 ? }
+	define eb ? {E_break ? [keV] }
+	define tt ? {Length scale ? [decades] }
+
+	define a1 ( 2 - $g1 )
+	define a2 ( 2 - $g2 )
+	define xb ( lg($eb) )
+	define xj ( $xb + 3*$tt )
+	define x2 ( $xb + 6*$tt )
+
+	echo $a1 $a2 $xb $xj $x2
+
+	set x=-2,4,0.01
+	vecminmax x a b
+	echo $a $b
+
+	set lg_f   = $a1*x 
+
+	set lg_f11 = $a1*x 
+
+	set lg_f12 = $a1*x + 0.424*($xb - x)/$tt
+	vecminmax lg_f12 a b
+	echo $a $b
+
+	set lg_f21 = $a2*x + 0.424*(x - $x2)/$tt + ($a2 - $a1)*$xj
+	vecminmax lg_f21 a b
+	echo $a $b
+
+	set lg_f22 = $a2*x + ($a2 - $a1)*$xj 
+	vecminmax lg_f22 a b
+	echo $a $b
+
+	set boh=lg_f22-lg_f11
+	vecminmax boh a b
+	echo "bah : " $a $b
+
+	do 1=0,$(dimen(x)-1) {
+	   echo $1
+	   if( x[$1] < $xb ) { 
+	     set lg_f = lg_f11[$1]
+	   }
+	   if( x[$1] >= $xb && x[$1] < $xj ) { 
+	     set lg_f = lg_f12[$1]
+	   }
+	   if( x[$1] >= $xj && x[$1] < $x2 ) { 
+	     set lg_f = lg_f21[$1]
+	   }
+	   if( x[$1] >= $x2 ) { 
+	     set lg_f = lg_f22[$1]
+	   }
+	}
+
+	set eemo = lg_f 
+	set emo  = eemo - x  
+	set mo   = emo - x
+
+	ticksize -1 0 -1 0
+	ctype 2 
+	limits x eemo
+	box 
+
+	ctype 3 
+	connect x eemo
+
+gugu
+
+	ctype 4 
+	ltype 2 
+	lweight 1 
+	relocate $($xb-$tt) -10
+	draw $($xb-$tt) +10
+	relocate $xb -10
+	draw $xb 10
+	relocate $($xb+$tt) -10
+	draw $($xb+$tt) +10
+	ltype 0
+	ctype 2 
+	lweight 2
+
+#---------------------------------------------------------------------------

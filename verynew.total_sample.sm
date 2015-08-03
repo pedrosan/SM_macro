@@ -1,0 +1,390 @@
+##--------------------------------------------------------------------------
+## help.total_sample
+help.total_sample
+
+        echo "   * total_sample "
+        echo "   * name_back "
+        echo "   * total_sample_iras "
+        echo "   * name_back_iras "
+
+#---------------------------------------------------------------------------
+# load_gf98_sample :  (calls "total_sample")
+#            loads from scratch wp, 1jy, slew_red (i.e. non-duplicates of 1jy)
+#            using the macros in verynew.read_samples
+load_gf98_sample
+
+	total_sample
+
+#---------------------------------------------------------------------------
+# total_sample :
+#            loads from scratch wp, 1jy, slew_red (i.e. non-duplicates of 1jy)
+#            using the macros in verynew.read_samples
+total_sample
+
+        if(!$(is_macro(read_wp))) {
+	  echo " "
+          echo "WARNING: "
+	  echo "this macro REQUIRES 'read_wp' included in verynew.read_samples.sm"
+	  echo "Quitting... "
+	  echo " "
+          return
+        }
+
+	set arrays_list = < name z d_l flag_g flag_x flag_ax flag_z flagsam \
+	                    check_mm check_ir check_opt check_x check_g \
+	                    ax err_ax_u err_ax_d \
+	                    ag err_ag_u err_ag_d \
+	                    f_radio f_mm mir f_ir mopt f_opt f_x n_g f_g \
+	                    lg_f_radio lg_f_mm lg_f_ir lg_f_opt lg_f_x lg_f_g \
+	                    lg_kf_radio lg_kf_mm lg_kf_ir lg_kf_opt lg_kf_x lg_kf_g \
+	                    l_radio l_mm l_ir l_opt l_x l_g \
+			    sed_type_rorx sed_type_rx sed_type_ro sed_type_ox \
+	                    nl_radio nl_mm nl_ir nl_opt nl_x nl_g >
+
+	#---------------------------------------
+	# W&P
+	#---------------------------------------
+	read_wp
+	echo ">>>>>>> Remember: just loaded 'wp'"
+	rename_sample
+
+	foreach 9 arrays_list {
+	    set tot_$9 = $9
+	}
+
+	#---------------------------------------
+	# 1Jy
+	#---------------------------------------
+	read_1jy
+	echo ">>>>>>> Remember: just loaded '1jy'"
+	rename_sample
+
+	foreach 9 arrays_list {
+	    set tot_$9 = tot_$9 CONCAT $9
+	}
+
+	#---------------------------------------
+	# Slew (reduced)
+	#---------------------------------------
+	read_slew_red
+	echo ">>>>>>> Remember: just loaded 'slew'"
+	rename_sample
+
+	foreach 9 arrays_list {
+	    set tot_$9 = tot_$9 CONCAT $9
+	}
+
+	#---------------------------------------
+	# Adds the peak data
+	#---------------------------------------
+        add_peak_to_total_sample
+
+	echo " "
+	echo "----------------------------------------------------------------------------"
+	echo " You may want to run 'name_back_bis' to make arrays naming more consistent "
+	echo "----------------------------------------------------------------------------"
+
+#---------------------------------------------------------------------------
+# add_peak_to_total_sample :
+#            adds GF98 peak data to the WP, 1Jy and Slew_red, and TOTAL sets
+add_peak_to_total_sample
+
+	set arrays_list_peak = < peak lpeak nl_peak lumpeak >
+
+	define nl_offset (2)
+
+	#---------------------------------------
+	# W&P
+	#---------------------------------------
+	data "/home/gfossati/Science/Blazars/Seds/samples_data/alt_total_sample.polfit.dat"
+
+	lines $($nl_offset+1) $($nl_offset+dimen(name_wp))
+	read < peak 9 lpeak 10 >
+	set nl_peak = lpeak 
+	set lumpeak = lpeak 
+	define nl_offset $($nl_offset+dimen(name_wp))
+
+	foreach 9 arrays_list_peak {
+	    set tot_$9 = $9
+	}
+
+	set peak_wp    = peak
+	set lumpeak_wp = lpeak
+	set nl_peak_wp = lpeak
+
+	#---------------------------------------
+	# 1Jy
+	#---------------------------------------
+	data "/home/gfossati/Science/Blazars/Seds/samples_data/alt_total_sample.polfit.dat"
+
+	lines $($nl_offset+1) $($nl_offset+dimen(name_1jy))
+	read < peak 9 lpeak 10 >
+	set nl_peak = lpeak 
+	set lumpeak = lpeak 
+	define nl_offset $($nl_offset+dimen(name_1jy))
+	foreach 9 arrays_list_peak {
+	    set tot_$9 = tot_$9 CONCAT $9
+	}
+
+	set peak_1jy    = peak
+	set lumpeak_1jy = lpeak
+	set nl_peak_1jy = lpeak
+
+	#---------------------------------------
+	# Slew (reduced)
+	#---------------------------------------
+	data "/home/gfossati/Science/Blazars/Seds/samples_data/alt_total_sample.polfit.dat"
+	
+	lines $($nl_offset+1) $($nl_offset+dimen(name_slew))
+	read < peak 9 lpeak 10 >
+	set nl_peak = lpeak 
+	set lumpeak = lpeak 
+	define nl_offset $($nl_offset+dimen(name_slew))
+
+	foreach 9 arrays_list_peak {
+	    set tot_$9 = tot_$9 CONCAT $9
+	}
+
+	set peak_slew    = peak
+	set lumpeak_slew = lpeak
+	set nl_peak_slew = lpeak
+
+#---------------------------------------------------------------------------
+# name_back : renames "back" arrays from "tot_ARRAY" to just "ARRAY".
+name_back
+
+	set name     = tot_name
+	set gname    = tot_name
+
+	set arrays_list = < name z d_l flag_g flag_x flag_ax flag_z flagsam \
+	                    check_mm check_ir check_opt check_x check_g \
+	                    ax err_ax_u err_ax_d \
+	                    ag err_ag_u err_ag_d \
+	                    f_radio f_mm mir f_ir mopt f_opt f_x n_g f_g \
+	                    lg_f_radio lg_f_mm lg_f_ir lg_f_opt lg_f_x lg_f_g \
+	                    lg_kf_radio lg_kf_mm lg_kf_ir lg_kf_opt lg_kf_x lg_kf_g \
+	                    l_radio l_mm l_ir l_opt l_x l_g \
+	                    nl_radio nl_mm nl_ir nl_opt nl_x nl_g > \
+
+	foreach 9 arrays_list      { set $9 = tot_$9 }
+	foreach 9 arrays_list_peak { set $9 = tot_$9 }
+
+	# set_checks
+
+	define remember_sample "Total"
+	define second_pro_flag "w/ G"
+	prompt $remember_sample $second_pro_flag :
+
+#---------------------------------------------------------------------------
+# name_back_bis : renames all arrays from "tot_ARRAY" to "ARRAY_tot" form
+#                 that is more consistent with the "ARRAY_sample" form.
+name_back_bis
+
+	set lista = < z        d_l      flag_g    flag_x  flag_ax  flag_z   flagsam  ax       err_ax_u err_ax_d \
+                      ag       err_ag_u err_ag_d f_radio  f_mm     mir      f_ir     mopt     f_opt    \
+                      f_x      n_g      f_g      lg_f_radio  lg_f_mm     lg_f_ir     lg_f_opt lg_f_x   \
+	              lg_f_g   lg_kf_radio lg_kf_mm    lg_kf_ir    lg_kf_opt   lg_kf_x     lg_kf_g     \
+	              l_radio     l_mm        l_ir        l_opt       l_x         l_g        \
+                      nl_radio    nl_mm       nl_ir       nl_opt      nl_x        nl_g      >
+
+	set arrays_list = < name z d_l flag_g flag_x flag_ax flag_z flagsam \
+	                    check_mm check_ir check_opt check_x check_g \
+	                    ax err_ax_u err_ax_d \
+	                    ag err_ag_u err_ag_d \
+	                    f_radio f_mm mir f_ir mopt f_opt f_x n_g f_g \
+	                    lg_f_radio lg_f_mm lg_f_ir lg_f_opt lg_f_x lg_f_g \
+	                    lg_kf_radio lg_kf_mm lg_kf_ir lg_kf_opt lg_kf_x lg_kf_g \
+	                    l_radio l_mm l_ir l_opt l_x l_g \
+			    sed_type_rorx sed_type_ro sed_type_rx sed_type_ox \
+	                    nl_radio nl_mm nl_ir nl_opt nl_x nl_g >
+
+	set name_tot  = tot_name
+	set gname_tot = tot_name
+
+	foreach 1 arrays_list      { set $1_tot = tot_$1 }
+	foreach 1 arrays_list_peak { set $1_tot = tot_$1 }
+
+	# set_checks
+
+	define remember_sample "Total"
+	define second_pro_flag "w/ G"
+	prompt $remember_sample $second_pro_flag :
+
+#---------------------------------------------------------------------------
+# total_sample_iras
+total_sample_iras
+	
+	read_iras  wp
+
+	set tot_name      = name
+	set tot_flag_iras = flag_iras
+	foreach 1 ( 12 25 60 100 ) {
+	   set tot_iras$1       = iras$1
+	   set tot_lg_f_iras$1  = lg_f_iras$1
+	   set tot_lg_kf_iras$1 = lg_kf_iras$1 
+	   set tot_l_iras$1     = l_iras$1
+	   set tot_nl_iras$1    = nl_iras$1
+	}
+
+	read_iras 1jy
+
+	set tot_name      = tot_name      CONCAT name
+	set tot_flag_iras = tot_flag_iras CONCAT flag_iras
+	foreach 1 ( 12 25 60 100 ) {
+	   set tot_iras$1       = tot_iras$1       CONCAT iras$1
+	   set tot_lg_f_iras$1  = tot_lg_f_iras$1  CONCAT lg_f_iras$1
+	   set tot_lg_kf_iras$1 = tot_lg_kf_iras$1 CONCAT lg_kf_iras$1 
+	   set tot_l_iras$1     = tot_l_iras$1     CONCAT l_iras$1
+	   set tot_nl_iras$1    = tot_nl_iras$1    CONCAT nl_iras$1
+	}
+
+	read_iras slew_red
+
+	set tot_name      = tot_name      CONCAT name
+	set tot_flag_iras = tot_flag_iras CONCAT flag_iras
+	foreach 1 ( 12 25 60 100 ) {
+	   set tot_iras$1       = tot_iras$1       CONCAT iras$1
+	   set tot_lg_f_iras$1  = tot_lg_f_iras$1  CONCAT lg_f_iras$1
+	   set tot_lg_kf_iras$1 = tot_lg_kf_iras$1 CONCAT lg_kf_iras$1 
+	   set tot_l_iras$1     = tot_l_iras$1     CONCAT l_iras$1
+	   set tot_nl_iras$1    = tot_nl_iras$1    CONCAT nl_iras$1
+	}
+
+#---------------------------------------------------------------------------
+# name_back_iras
+name_back_iras
+
+	set name      = tot_name
+	set z         = tot_z
+	set flag_iras = tot_flag_iras 
+	foreach 1 ( 12 25 60 100 ) {
+	   set iras$1       = tot_iras$1
+	   set lg_f_iras$1  = tot_lg_f_iras$1
+	   set lg_kf_iras$1 = tot_lg_kf_iras$1
+	   set l_iras$1     = tot_l_iras$1
+	   set nl_iras$1    = tot_nl_iras$1
+	}
+
+	set_checks_iras
+
+#---------------------------------------------------------------------------
+# write_verybig (?) prints in a file sources name, z, R, O, X (flux and lum.)
+#               It does not seem to be completed....(?)
+write_verybig
+
+	set lista = < name        z  \
+		      lg_f_radio  lg_f_opt   lg_f_x  \
+	              lg_kf_radio lg_kf_opt  lg_kf_x \
+	              l_radio     l_opt      l_x     \
+                      nl_radio    nl_opt     nl_x    >
+
+	define fmt "  %16s  %6.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f\n"
+
+	set samp = < dxrbs sallyc emss tot bade rgball >
+
+	foreach 1 samp {
+	print + test '$!fmt' < name_$1        z_$1  \
+		      lg_f_radio_$1  lg_f_opt_$1   lg_f_x_$1  \
+	              lg_kf_radio_$1 lg_kf_opt_$1  lg_kf_x_$1 \
+	              l_radio_$1     l_opt_$1      l_x_$1     \
+                      nl_radio_$1    nl_opt_$1     nl_x_$1    >
+	}
+
+#---------------------------------------------------------------------------
+# xp_vs_lr_smooth  <arguments>
+#     "red"    a1=-0.9  a2=0.22  a3=-0.025   x0=14.5  lr0=43.0
+#     "green"  a1=-0.8  a2=0.12  a3=-0.015   x0=14.5  lr0=43.5
+#  >> "green"  a1=-0.8  a2=0.1   a3=-0.012   x0=14.2  lr0=43.5
+#  >> "green"  a1=-0.8  a2=0.12  a3=-0.012   x0=14.2  lr0=43.5
+#     "black"  a1=-1.8  a2=0.3   a3=-0.019   x0=17.0  lr0=41.0
+#     "ORIG"   a1=-1.2  a2=0.2   a3=-0.0125  x0=14.5  lr0=43.0
+xp_vs_lr_smooth 101
+
+	define a1  (-1.2)
+	define a2  ( 0.2)
+	define a3  (-0.0125)
+	define x0  (14.5)
+	define lr0 (43.0)
+
+        define silentparsing 0
+	mparsep $1
+
+	echo " a1  :" $a1
+	echo " a2  :" $a2
+	echo " a3  :" $a3
+	echo " x0  :" $x0
+	echo " lr0 :" $lr0
+
+	set lr=40,47,0.01
+
+	set dl = lr - $lr0
+	set xsmooth = $x0 + $a1*dl +$a2*dl**2.0 + $a3*dl**3.0
+
+	#-------------------------------------------------
+	# inverse relationship
+	#-------------------------------------------------
+	define c1  ($a1)
+	define c2  ($a2)
+	define c3  ($a3)
+
+	# set aux1 = (-2*$c2**3. +9*$c3*$c2*$c1 -27*$c3**2.*d +sqrt(4*(-1.*$c2**2. +3*$c3*$c1)**3. +(-2*$c2**3. +9*$c3*$c2*$c1 -27*$c3**2.*d)**2.))
+	# set x = -$c2/3/$c3 - (2**0.33333*(-$c2*$c2  + 3.*$c3*$c1))/(3*$c3*aux1**0.333333) + aux1**0.333333/(3*2**0.3333333*$c3)
+
+	set xp = 12,19,0.1
+	set dx = $x0 - xp
+
+	set aux0 =  -2.*$c2**3. +9.*$c3*$c2*$c1 -27.*$c3**2.*dx 
+	set aux1 =  aux0 + sqrt(4.*(3.*$c1*$c3 - $c2*$c2)**3. + aux0**2.)
+	set aux2 = (aux1/2.)**(1./3.)
+	set comp_lr_c = $lr0 - ($c2 + (3.*$c1*$c3 - $c2*$c2)/aux2 - aux2)/(3.*$c3)
+
+	echo " Try arrays 'xp' and 'comp_lr_c' "
+
+        define c  ($c1)
+        define b  ($c2)
+        define a  ($c3)
+        define cx1 $( -2*$b**3. + 9*$a*$b*$c)
+        define cx2 $( - 27*$a**2.)
+        define cx3 $( 4*(-1.*$b**2. +3*$a*$c)**3. )
+     
+        set d = $x0 - xp
+        # set aux1 = (-2*$b**3. + 9*$a*$b*$c - 27*$a**2.*d +sqrt(4*(-1.*$b**2. +3*$a*$c)**3. +(-2*$b**3. +9*$a*$b*$c -27*$a**2.*d)**2.))**0.333333333
+        # set x1   = -$b/3/$a - (2**0.33333*(-$b*$b  + 3.*$a*$c))/(3*$a*aux1) + aux1/(3*2**0.3333333*$a)
+        set aux1 = ( $cx1 + $cx2*d +sqrt( $cx3  + ($cx1 + $cx2*d)**2.))**0.333333333
+        set x1   = -$b/3/$a - (2**0.33333*(-$b*$b  + 3.*$a*$c))/(3*$a*aux1) + aux1/(3*2**0.3333333*$a)
+        set lr1  = x1 + $lr0
+
+	echo " Try arrays 'xp' and 'lr1' "
+
+	## define b0 (0.0)
+	## define b1 (1./$a1)
+	## define b2 (-1.*$a2/$a1**3.)
+	## define b3 (2*$a2*$a2/$a1**5.-$a3/$a1**4.)
+	## define b4 (0)
+        ## define b4 ( ( 5.*$a1*$a2*$a3 - 5.*$a2**3. )/$a1**7. )
+        ## define b5 ( ( 14.*$a2**4. + 3.*$a1**2.*$a3**2  - 21.*$a1*$a2**2.*$a3)/$a1**9. )
+	## define b6 ( (-31.*$a1**2.*$a2*$a3**2. + 104.*$a1*$a2**3.*$a3 - 54.*$a2**5.)/$a1**11. )
+	## echo "-------------------"
+	## echo " b1  :" $b1
+	## echo " b2  :" $b2
+	## echo " b3  :" $b3
+	## echo " b4  :" $b4
+	## echo "-------------------"
+	## set xp = 12,19,0.1
+	## set dx = xp - $x0
+	## set comp_lr_b3 = $lr0 + $b1*dx + $b2*dx**2. + $b3*dx**3. 
+	## set comp_lr_b4 = comp_lr_b3 + $b4*dx**4.
+	## set comp_lr_b5 = comp_lr_b4 + $b5*dx**5.
+	## set comp_lr_b6 = comp_lr_b5 + $b6*dx**6.
+
+	## define c1  (-1.2)
+	## define c2  ( 0.2)
+	## define c3  (-0.01)
+	## define x0  (14.5)
+	## define lr0 (42.2)
+	## define c1  (-1.2)
+	## define c2  ( 0.2)
+	## define c3  (-0.0125)
+	## define x0  (15.0)
+	## define lr0 (42.2)
+#---------------------------------------------------------------------------

@@ -1,0 +1,183 @@
+#---------------------------------------------------------------------------
+# description2
+description2
+
+	define sfx1 ? {Suffix of vector 1 [MECS] ?}
+	define sfx2 ? {Suffix of vector 2 [LECS] ?}
+
+	define mdum1 ( sprintf('%5.2f',$mean_$sfx1) )	
+	define sdum1 ( sprintf('%5.2f',$width_$sfx1) )	
+	define mdum2 ( sprintf('%5.2f',$mean_$sfx2) )	
+	define sdum2 ( sprintf('%5.2f',$width_$sfx2) )	
+
+	relocate (4500 5600)
+	putlabel 6 T_0 = $t0ref [TJD]
+
+	relocate (4500 4100)
+	putlabel 6 \langle MECS2\rangle = $mdum1 \pm $sdum1 [cts/sec]
+
+	relocate (4500 2900)
+	putlabel 6 \langle LECS\rangle  = $mdum2 \pm $sdum2 [cts/sec]
+
+	ctype 4 ltype 2 grid 1 1
+
+	relocate (24000 29000)
+	expand 4 ctype 3 dot
+	relocate (24000 29000)
+	expand 1.5 ctype 2 putlabel 6   MECS2
+
+	relocate (24000 27300)
+	expand 4 ctype 5 dot
+	relocate (24000 27300)
+	expand 1.5 ctype 2 putlabel 6   LECS
+
+#---------------------------------------------------------------------------
+# description3
+description3
+
+	define sfx1 ? {Suffix of vector 1 [LECS] ?}
+	define sfx2 ? {Suffix of vector 2 [MECS] ?}
+	define sfx3 ? {Suffix of vector 3 [TeV] ?}
+
+	if($what < 2) { 
+	   define mdum1 ( sprintf('%5.2f',$mean_$sfx1) )	
+	   define sdum1 ( sprintf('%5.2f',$width_$sfx1) )	
+	   define mdum2 ( sprintf('%5.2f',$mean_$sfx2) )	
+	   define sdum2 ( sprintf('%5.2f',$width_$sfx2) )	
+	   define mdum3 ( sprintf('%5.2f',$mean_$sfx3) )	
+	   define sdum3 ( sprintf('%5.2f',$width_$sfx3) )	
+	} else {
+	   define mdum1 ( sprintf('%5.2f',$top_$sfx1) )	
+	   define mdum2 ( sprintf('%5.2f',$top_$sfx2) )	
+	   define mdum3 ( sprintf('%5.2f',$top_$sfx3) )	
+	}
+
+	relocate (4500 5600)
+	putlabel 6 T_0 = $t0ref [TJD]
+
+	if($what < 2) { 
+   	   relocate (4500 4100)
+	   putlabel 6 \langle LECS\rangle  = $mdum1 \pm $sdum1 [cts/sec]
+
+	   relocate (4500 2900)
+	   putlabel 6 \langle MECS2\rangle = $mdum2 \pm $sdum2 [cts/sec]
+
+	   relocate (4500 1700)
+	   putlabel 6 \langle Whipple\rangle= $mdum3 \pm $sdum3 [cts/min]
+	} else {
+	   relocate (4500 4100)
+	   putlabel 6 LECS_{top}= $mdum1 [cts/sec]
+
+	   relocate (4500 2900)
+	   putlabel 6 MECS_{top}= $mdum2 [cts/sec]
+
+	   relocate (4500 1700)
+	   putlabel 6 Whipple_{top}= $mdum3 [cts/min]
+	}
+
+	ctype 4 ltype 2 grid 1 1
+
+#---------------------------------------------------------------------------
+# description_many
+description_many
+
+	define sfx   ? { Suffix of vector  ? }
+	define lab   ? { Label to be written ? }
+	define units ? { Units to write ? [e.g. cts/s]}
+	define posit ? { Position from top ? }
+	define lcol  ? { Color for Label ? }
+
+	ctype $lcol
+
+	if($what < 2) { 
+	   define mdum ( sprintf('%5.2f',$mean_$sfx) )	
+	   define sdum ( sprintf('%5.2f',$width_$sfx) )	
+	} else {
+	   define mdum ( sprintf('%5.2f',$top_$sfx) )	
+	}
+
+	relocate ( 4500 $(5300 - ($posit - 1)*1200) )
+
+	if($what < 2) { 
+	   # putlabel 6 \langle $lab\rangle  = $mdum \pm $sdum [$units]
+	   putlabel 6 \langle $lab\rangle
+	   relocate ( 15500 $(5300 - ($posit - 1)*1200) )
+	   putlabel 6 = $mdum \pm $sdum [$units]
+	} else {
+	   putlabel 6 $lab_{top}= $mdum [$units]
+	}
+
+	ctype 4 ltype 1 grid 1 1
+	ctype 2 
+
+
+#---------------------------------------------------------------------------
+# description_inbox
+description_inbox
+
+	define sfx   ? { Suffix of vector  ? }
+	define lab   ? { Label to be written ? }
+	define units ? { Units to write ? [e.g. cts/s]}
+	define posit ? { Position from top ? }
+	define lcol  ? { Color for Label ? }
+
+	ctype $lcol
+
+	if($what < 2) { 
+	   define mdum ( sprintf('%5.2f',$mean_$sfx) )	
+	   define sdum ( sprintf('%5.2f',$width_$sfx) )	
+	} else {
+	   define mdum ( sprintf('%5.2f',$top_$sfx) )	
+	}
+
+	if($posit > 0) { 
+          relocate ( $($gx2 - 900) $($gy2 + 400 - $posit*1200) ) 
+
+	  if($what < 2) { 
+	     expand 1.3
+	     putlabel 4 \langle $lab\rangle=$mdum \pm $sdum [$units]
+	  } else {
+	     expand 1.3
+	     putlabel 4 $lab_{top}=$mdum [$units]
+  	  }
+	}
+
+	if($posit < 0) { 
+          relocate ( $($gx1 + 900) $($gy1 - $posit*1200) ) 
+
+	  if($what < 2) { 
+	     expand 1.3
+	     putlabel 6 \langle $lab\rangle=$mdum \pm $sdum [$units]
+	  } else {
+	     expand 1.3
+	     putlabel 6 $lab_{top}=$mdum [$units]
+  	  }
+	}
+
+	ctype 4 ltype 1 grid 1 1
+	ctype 2 ltype 0 
+
+#---------------------------------------------------------------------------
+# description_tau
+description_tau
+
+	define lab   ? { Label to be written ? }
+	define tau   ? { Time scale ? }
+	define units ? { Units to write ? [e.g. ks]}
+	define posit ? { Position from top ? }
+	define lcol  ? { Color for Label ? }
+
+	ctype $lcol
+
+	define taudum ( sprintf('%5.1f',$tau) )	
+
+	if($posit > 0) { 
+          relocate ( $($gx2 - 900) $($gy2 - $posit*1200) ) 
+	  expand 1.3
+	  putlabel 4 $lab: \tau =$taudum [$units]
+	}
+
+	ctype 4 ltype 1 grid 1 1
+	ctype 2 ltype 0 
+
+#---------------------------------------------------------------------------

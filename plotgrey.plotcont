@@ -1,0 +1,109 @@
+#---------------------------------------------------------------------------
+# plot_grey [<shade-colour>] [<contours-colour>]
+plot_grey  02
+
+        location 6500 31000 6500 31000
+
+        set gldum1 = {2.3 4.61 6.17 9.21}
+        set gldum2 = {0.001 0.005 0.01 0.1 0.25 0.5 0.9 0.95 0.99 }
+
+        echo * The pre-defined levels are at :
+        print '    %5.3f    %5.3f  \n ' { gldum1 gldum2 }
+
+        echo * Which set of levels do you prefer ? [0/1/2]
+        define change ? { Type '0' if you wish to change them ? [y/n] }
+        if($change == 0) {
+           define str_gl ? { New level vector  : }
+           set gldum = < $!str_gl >
+        } else { 
+           set gldum = gldum$change
+        }
+
+        set gl = $CHI2 + gldum
+
+        glevels gl
+        levels gl
+
+        ctype 2
+
+        define whatbox ? {Do you want to use the "boxing" limits ? [y/n] }
+
+        if(substr('$whatbox',0,1) == 'y') { 
+            limits $tau1 $tau2 $b1 $b2 
+            ticksize 0 0 0 0
+            expand 1.5
+            box 
+            define labelon ? {Do you want to put labels ? [y/n] }
+            if(substr('$labelon',0,1) == 'y') { 
+               define lab_x ? { X-label ? }
+               define lab_y ? { Y-label ? }
+               expand 2.5
+               xlabel $lab_x
+               ylabel $lab_y
+               expand 1.5
+            }
+        }
+
+        if(substr('$whatbox',0,1) == 'n') { 
+            define yourlim ? { Give me your limits x1 x2 y1 y2 in a row :}
+            limits $yourlim
+            ticksize 0 0 0 0
+            expand 1.5
+            box 
+            define labelon ? {Do you want to put labels ? [y/n] }
+            if(substr('$labelon',0,1) == 'y') { 
+               define lab_x ? { X-label ? }
+               define lab_y ? { Y-label ? }
+               expand 2.5
+               xlabel $lab_x
+               ylabel $lab_y
+               expand 1.5
+            }
+        }
+
+        if($?1) { 
+        if($1 != 0) { 
+           ctype $1 
+           greyscale 200 200 12
+        }
+        }
+        if($?2) { ctype $2 }
+        contour
+
+	do k=0,$(dimen(tauvec)-1) {
+	   set dum= 0*bvec + tauvec[$k]
+	   ctype 4
+	   ptype 4 1 
+	   angle 45
+	   points dum bvec
+	   angle 0
+	}
+	ctype 2
+	box
+
+	relocate $a $b
+	relocate $tau $b
+	ptype 4 1 
+	ctype 3 
+	angle 45
+	lweight 5
+	expand 3.5
+	dot
+	expand 1.5
+	lweight 2
+	angle 0
+	ctype 2 
+
+	ltype 2
+	relocate $($tau-$sig_tau) -10 
+	draw     $($tau-$sig_tau)  10
+	relocate $($tau+$sig_tau) -10 
+	draw     $($tau+$sig_tau)  10
+
+	relocate 0    $($b-$sig_b)
+	draw     1e6  $($b-$sig_b)
+	relocate 0    $($b+$sig_b)
+	draw     1e6  $($b+$sig_b)
+	ltype 0
+
+#---------------------------------------------------------------------------

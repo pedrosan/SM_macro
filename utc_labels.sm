@@ -1,0 +1,322 @@
+#---------------------------------------------------------------------------
+# utc_dates_97
+utc_dates_97 
+
+	define ydove ? { Give top label flag : }
+
+	set dimen(utcstr) = 6.s
+	set utcstr[0] = 'April 29'
+	set utcstr[1] = 'April 30'
+	set utcstr[2] = 'May 1'
+	set utcstr[3] = 'May 2'
+	set utcstr[4] = 'May 3'
+	set utcstr[5] = 'May 4'
+
+	define scale  ( ($gx2 - $gx1)/($fx2 - $fx1) )
+	define oneday ( 86400.0*$scale )
+	expand 1.05
+	lweight 3 
+	define yplace ( $gy2 + $ydove*750 )
+
+	do 1=0,5 { 
+	   define left ( $gx1 - $fx1*$scale + $oneday +$1*$oneday )
+	   if( $left <= $gx2 ) { 
+	      relocate ( $( $gx1 - $fx1*$scale + 0.5*$oneday +$1*$oneday) $yplace )
+	      putlabel 5 $(utcstr[$1])
+	   }
+	}
+	relocate ( $(($gx1+$gx2)/2.) $($yplace + 1500) )
+	putlabel 5 Date of 1997
+
+#---------------------------------------------------------------------------
+# utc_dates_98
+utc_dates_98 
+
+	define ydove ? { Give top label flag : }
+
+	set dimen(utcstr) = 4.s
+	set utcstr[0] = 'April 21'
+	set utcstr[1] = 'April 22'
+	set utcstr[2] = 'April 23'
+	set utcstr[3] = 'April 24'
+
+	define scale  ( ($gx2 - $gx1)/($fx2 - $fx1) )
+	define oneday ( 86400.0*$scale )
+	expand 1.05
+	expand 1.5
+	lweight 3 
+	define yplace ( $gy2 + $ydove*750 )
+
+	do 1=0,3 { 
+	   define left ( $gx1 - $fx1*$scale + $oneday +$1*$oneday )
+	   if( $left <= $gx2 ) { 
+	      relocate ( $( $gx1 - $fx1*$scale + 0.5*$oneday +$1*$oneday )  $yplace )
+	      putlabel 5 $(utcstr[$1])
+	   }
+	}
+	relocate ( $(($gx1+$gx2)/2.) $($yplace + 1500) )
+	putlabel 5 Date of 1998
+
+#---------------------------------------------------------------------------
+# utc_dates_99
+utc_dates_99
+
+	define ydove ? { Give top label flag : }
+
+	set dimen(utcstr) = 4.s
+	set utcstr[0] = ' '
+	set utcstr[1] = 'May 5'
+	set utcstr[2] = 'May 6'
+	set utcstr[3] = 'May 7'
+
+	define scale  ( ($gx2 - $gx1)/($fx2 - $fx1) )
+	define oneday ( 86400.0*$scale )
+	expand 1.05
+	expand 1.5
+	lweight 3 
+	define yplace ( $gy2 + $ydove*750 )
+
+	do 1=0,3 { 
+	   define left ( $gx1 - $fx1*$scale + $oneday +$1*$oneday )
+	   if( $left <= $gx2 ) { 
+	      relocate ( $( $gx1 - $fx1*$scale + 0.5*$oneday +$1*$oneday )  $yplace )
+	      putlabel 5 $(utcstr[$1])
+	   }
+	}
+	relocate ( $(($gx1+$gx2)/2.) $($yplace + 1500) )
+	putlabel 5 Date of 1999
+
+#---------------------------------------------------------------------------
+# utc_dates_00a
+utc_dates_00a
+
+	define ydove ? { Give top label flag [-1/0/+1] : }
+
+	set dimen(utcstr) = 8.s
+	# set utcstr[0] = 'Apr 26'
+	set utcstr[0] = ' '
+	set utcstr[1] = 'Apr 27'
+	set utcstr[2] = 'Apr 28'
+	set utcstr[3] = 'Apr 29'
+	set utcstr[4] = 'Apr 30'
+	set utcstr[5] = 'May 1'
+	set utcstr[6] = 'May 2'
+	set utcstr[7] = 'May 3'
+
+	set dimen(utctjd) = 8
+	# set utcstr[0] = 'Apr 26'
+	set utctjd[0] = 11660 
+	set utctjd[1] = 11661
+	set utctjd[2] = 11662
+	set utctjd[3] = 11663
+	set utctjd[4] = 11664
+	set utctjd[5] = 11665
+	set utctjd[6] = 11666
+	set utctjd[7] = 11667
+
+	define scale  ( ($gx2 - $gx1)/($fx2 - $fx1) )
+	define oneday ( 86400.0*$scale )
+	expand 1.05
+	# expand 1.5
+	lweight 3 
+	define yplace ( $gy2 + $ydove*750 )
+
+	do 1=0,7 { 
+	   define left  ( $gx1 + $scale*((utctjd[$1] - $t0ref + 0.25)*86400 - $fx1) )
+	   define right ( $gx1 + $scale*((utctjd[$1] - $t0ref + 0.75)*86400 - $fx1) )
+
+	   # echo LEFT : $left $right
+	   if( $left > $gx1 && $right <= $gx2 ) { 
+	      define _gx ( $gx1 + $scale*((utctjd[$1] - $t0ref + 0.55)*86400 - $fx1) )
+	      relocate ( $_gx  $yplace )
+	      putlabel 5 $(utcstr[$1])
+	   }
+	}
+
+	# do 1=0,7 { 
+	#    define left ( $gx1 - ($fx1 + 86400*0.7763)*$scale + $oneday +$1*$oneday )
+	#    # echo LEFT = $left
+	#    if( $left <= $gx2 && $left >= $gx1 ) { 
+	#       relocate ( $( $gx1 - ($fx1 + 86400*0.7763)*$scale + 0.5*$oneday +$1*$oneday )  $yplace )
+	#       putlabel 5 $(utcstr[$1])
+	#    }
+	# }
+	# relocate ( $(($gx1+$gx2)/2.) $($yplace + 1500) )
+	# putlabel 5 Date of 2000
+
+#---------------------------------------------------------------------------
+# utc_dates_00b
+utc_dates_00b
+
+	define ydove ? { Give top label flag : }
+
+	set dimen(utcstr) = 4.s
+	set utcstr[0] = 'May 9'
+	set utcstr[1] = 'May 10'
+	set utcstr[2] = 'May 11'
+	set utcstr[3] = 'May 12'
+
+	set dimen(utctjd) = 4
+	set utctjd[0] = 11673
+	set utctjd[1] = 11674
+	set utctjd[2] = 11675
+	set utctjd[3] = 11676
+
+	define scale  ( ($gx2 - $gx1)/($fx2 - $fx1) )
+	define oneday ( 86400.0*$scale )
+	expand 1.05
+	# expand 1.5
+	lweight 3 
+	define yplace ( $gy2 + $ydove*750 )
+
+	do 1=0,3 { 
+	   define left  ( $gx1 + $scale*((utctjd[$1] - $t0ref + 0.25)*86400 - $fx1) )
+	   define right ( $gx1 + $scale*((utctjd[$1] - $t0ref + 0.75)*86400 - $fx1) )
+
+	   # echo LEFT : $left $right
+	   if( $left > $gx1 && $right <= $gx2 ) { 
+	      define _gx ( $gx1 + $scale*((utctjd[$1] - $t0ref + 0.55)*86400 - $fx1) )
+	      relocate ( $_gx  $yplace )
+	      putlabel 5 $(utcstr[$1])
+	   }
+	}
+	# relocate ( $(($gx1+$gx2)/2.) $($yplace + 1500) )
+	# putlabel 5 Date of 2000
+
+#---------------------------------------------------------------------------
+# utc_dates_01
+utc_dates_01
+
+	define ydove ? { Give top label flag : }
+
+	set dimen(utcstr) = 7.s
+	set dimen(tjdstr) = 7.s
+	set utcstr[0] = 'March 19'
+	set utcstr[1] = 'March 20'
+	set utcstr[2] = 'March 21'
+	set utcstr[3] = 'March 22'
+	set utcstr[4] = 'March 23'
+	set utcstr[5] = 'March 24'
+	set utcstr[6] = 'March 25'
+
+	set tjdstr[0] = '11987'
+	set tjdstr[1] = '11988'
+	set tjdstr[2] = '11989'
+	set tjdstr[3] = '11990'
+	set tjdstr[4] = '11991'
+	set tjdstr[5] = '11992'
+	set tjdstr[6] = '11993'
+
+	define scale  ( ($gx2 - $gx1)/($fx2 - $fx1) )
+	define oneday ( 86400.0*$scale )
+	expand 0.8
+	# expand 1.5
+	lweight 3 
+	ctype 2
+	define yplace  ( $gy2 + $ydove*750 )
+	define yplace2 ( $gy2 + ($ydove-1)*750 )
+
+	do 1=0,6 { 
+	   define left ( $gx1 - $fx1*$scale + $oneday +$1*$oneday )
+	   if( $left <= $gx2 ) { 
+	      relocate ( $( $gx1 - $fx1*$scale + 0.5*$oneday +$1*$oneday )  $yplace )
+	      expand 0.8 putlabel 5 $(utcstr[$1])
+	      relocate ( $( $gx1 - $fx1*$scale + 0.5*$oneday +$1*$oneday )  $yplace2 )
+	      expand 0.6 putlabel 5 $(tjdstr[$1])
+	   }
+	}
+	relocate ( $(($gx1+$gx2)/2.) $($yplace + 1500) )
+	expand 0.8 putlabel 5 Date of 2001
+
+#---------------------------------------------------------------------------
+# months_mjd
+months_mjd 01
+
+	set month_length=< 31 28 31 30 31 30 31 31 30 31 30 31 >
+	if(!$?1) {
+	   define what_year ? { What year : }
+	} else {
+	   define what_year $1
+	}
+
+	if( $what_year == 1996 ) { define mjd0 50083 set month_length[1] = 29 }
+	if( $what_year == 1997 ) { define mjd0 50449 set month_length[1] = 28 }
+	if( $what_year == 1998 ) { define mjd0 50814 set month_length[1] = 28 }
+	if( $what_year == 1999 ) { define mjd0 51179 set month_length[1] = 28 }
+	if( $what_year == 2000 ) { define mjd0 51544 set month_length[1] = 29 }
+	if( $what_year == 2001 ) { define mjd0 51910 set month_length[1] = 28 }
+
+	define oldlwe $lweight
+	define oldlty $ltype
+	define oldcty $ctype 
+	define day $mjd0
+	ctype 4 
+	ltype 2 
+	lweight 3 
+
+	do i=0,11 {
+	   define day $( $day + $(month_length[$i]) )
+	   relocate $day $($fy1 - 1) 
+	   draw     $day $($fy2 + 1) 
+	}
+	ltype 3
+	ctype 5 
+	lweight $($lweight+1)
+	relocate $mjd0 $($fy1 - 1) 
+	draw     $mjd0 $($fy2 + 1) 
+
+	ctype $oldcty
+	ltype $oldlty
+	lweight $oldlwe
+
+#---------------------------------------------------------------------------
+# years_mjd
+years_mjd 
+
+	define ydove ? { Give top label flag : }
+
+	set dimen(utcstr) = 7.s
+	set utcstr[0] = '1996'
+	set utcstr[1] = '1997'
+	set utcstr[2] = '1998'
+	set utcstr[3] = '1999'
+	set utcstr[4] = '2000'
+	set utcstr[5] = '2001'
+	set utcstr[6] = ' '
+
+	set years_jan01=< 50083 50449 50814 51179 51544 51910 52275 >
+
+	define oldlwe $lweight
+	define oldlty $ltype
+	define oldcty $ctype 
+	ctype 5 
+	ltype 2 
+	lweight 3 
+
+	do i=0,6 {
+	   relocate $(years_jan01[$i]) $($fy1 - 1) 
+	   draw     $(years_jan01[$i]) $($fy2 + 1) 
+	}
+
+	ctype $oldcty
+	ltype $oldlty
+	lweight $oldlwe
+
+	define scale  ( ($gx2 - $gx1)/($fx2 - $fx1) )
+	define oneyear ( 365*$scale )
+	expand 1.05
+	expand 1.5
+	lweight 2 
+	define yplace ( $gy2 + $ydove*750 )
+
+	do 1=0,$(dimen(utcstr)-1) { 
+	   define left  ( $gx1 + $scale*(years_jan01[$1] + 0.25*365 - $fx1) )
+	   define right ( $gx1 + $scale*(years_jan01[$1] + 0.75*365 - $fx1) )
+	   if( $left >= $gx1 && $right <= $gx2 ) { 
+	      define _gx $( $gx1 + $scale*(years_jan01[$1] + 0.5*365 -$fx1) )
+	      relocate ( $_gx $yplace )
+	      putlabel 5 $(utcstr[$1])
+	   }
+	}
+
+#---------------------------------------------------------------------------

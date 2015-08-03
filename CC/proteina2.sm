@@ -1,0 +1,116 @@
+# initialize
+initialize
+	load surfaces
+	overload surface   1
+	overload viewpoint 1
+
+# test  03 <theta> <phi> <distance>
+test  03
+	
+	define leggo ? {Leggo un file ? (o ho gia i vettori) }
+	if(substr('$leggo',0,1) == 'y') {
+	   define fileinput ? {nome del file ?}
+	   data $fileinput
+	   read { hp 4 px 1 py 2 pz 3 }
+	} 
+
+	vecminmax pz Lo_z Hi_z
+	vecminmax py Lo_y Hi_y
+	vecminmax px Lo_x Hi_x
+
+	if(!$?1) {
+	  define oldtheta    ? {elevation angle ?}
+	  define oldphi      ? {azimuthal angle ?}
+	  define olddistance ? {distance        ?}
+	  define 1 $oldtheta
+	  define 2 $oldphi
+	  define 3 $olddistance 
+	}
+	# define theta    $1
+	# define phi      $2
+	# define distance $3
+	
+	viewpoint $1 $2 $3
+
+	if($2 > 0 && $2 < 90) {
+	  set prof=abs(px*sin($2)+py*cos($2))
+	  vecminmax prof profmin profmax
+	  set expprof= 1-(prof-$profmin)*0.5/($profmax-$profmin)
+	}
+
+	expand 1.5
+	ctype 2
+	box3
+	if($2<90 && $2>-90) {axis3 x $Lo_x $Hi_y $Lo_z $Hi_x $Hi_y $Lo_z 0 2}
+	if($2>90 || $2<-91) {axis3 x $Lo_x $Lo_y $Lo_z $Hi_x $Lo_y $Lo_z 0 3}
+	if($2 > 0)  {axis3 y $Hi_x $Lo_y $Lo_z $Hi_x $Hi_y $Lo_z 0 3 }
+	if($2 < 0)  {axis3 y $Lo_x $Lo_y $Lo_z $Lo_x $Hi_y $Lo_z 0 2 }
+
+	projection px py pz p1 p2
+
+	set lab =1,$(dimen(p2))
+	set labs=string(lab)
+
+        define gurg  ? {Do you want to draw the projection ? [y/n] }
+	if(substr('$gurg',0,1) == 'y') { 
+	   set dz = 0*pz + $Lo_z
+	   projection px py dz d1 d2
+	   expand 0.8
+	   # ptype labs
+	   ctype 4 
+	   ltype 1
+	   pairs d1 d2 p1 p2
+
+	   expand 1.1
+	   ptype 4 3 
+	   ctype 6  points d1 d2
+	   ctype 7  points d1 d2 if(hp == 1)
+	   ctype 4
+	   ltype 1
+	   # connect d1 d2
+	   ltype 0
+	}
+
+	ctype 5
+	lweight 3
+	# connect p1 p2
+	lweight 1
+
+	if($2 >0 && $2 < 90) {
+	   set expvec=4*expprof
+	   expand expvec
+	} else {
+	   expand 4
+	}
+
+	ptype 12 3
+	ctype 3  points p1 p2
+	ctype 7  points p1 p2 if(hp == 1)
+	ptype 12 0
+	ctype 2  points p1 p2
+
+	# if($2 >0 && $2 < 90) {
+	#    set expvec=1.5*expprof
+	#    expand expvec
+	# } else {
+	#    expand 1.5
+	# }
+
+	# define labs  < 1 >
+	# do k=2,$(dimen(p2)) {
+	#    define labs <$labs $k >
+	# }
+	
+	# if($2 >0 && $2 < 90) {
+	#    set expvec=1.1*expprof
+	#    expand expvec
+	# } else {
+	#    expand 0.95
+	# }
+	# ctype white
+	# ptype labs 
+	# points p1 p2 
+
+	expand 1.5
+	ctype 2
+

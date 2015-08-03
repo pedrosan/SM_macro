@@ -1,0 +1,467 @@
+#------------------------------------------------------------------------------
+# read_cube_samples
+read_cube_samples
+
+	foreach 1 < dxrbs emss radio1 radio_z2 radio_z2_23 radio_z2_22 > {
+	   data to_matrix.$1.dat
+	   read { z 1 lr 2 lo 3 lx 4 fr 5 mv 6 fx 7 }
+	   set lg_fr = lg(fr)
+	   set lg_fx = lg(fx)
+	   set fo = 3480*10.0**(-0.4*mv)
+	   set lg_fo = lg(fo)
+	   set a_ro = (lg_fr - lg_fo)/5.037
+	   set a_ox = (lg_fo - (lg_fx - 6))/2.648
+	   set a_rx = (lg_fr - (lg_fx - 6))/7.685
+
+	   set ak_ro = (lr - lo)/5.037
+	   set ak_ox = (lo - lx)/2.648
+	   set ak_rx = (lr - lx)/7.685
+
+	   foreach 2 < z lr lo lx fr mv fx lg_fr lg_fo lg_fx a_ro a_ox a_rx ak_ro ak_ox ak_rx > {
+	      set $2_$1 = $2
+	      delete $2
+	   }
+	}
+
+	echo Redefining which one is "radio"
+	foreach 2 < z lr lo lx fr mv fx lg_fr lg_fo lg_fx a_ro a_ox a_rx ak_ro ak_ox ak_rx > {
+	      set $2_radio = $2_radio_z2_22
+	      delete $2
+	}
+
+#------------------------------------------------------------------------------
+# make_lf
+make_lf
+
+	define step ? { Step in L for the histogram : }
+
+	set xlr = 29.0-$step/2.,38.0+$step/2.,$step
+	set xlo = 27.0-$step/2.,35.0+$step/2.,$step
+	set xlx = 24.0-$step/2.,31.0+$step/2.,$step
+
+	foreach 1 < dxrbs emss radio1 radio_z2 > {
+	   foreach 2 < lr lo lx > {
+	      set phi_$2_$1 = lg(histogram($2_$1:x$2))
+	   }
+	}
+
+#------------------------------------------------------------------------------
+# plot_fr_fx
+plot_fr_fx
+
+	define sample ? { What sample [emss/radio1/radio_z2/dxrbs] : }
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+	location 6000 30000 6000 30000
+	ticksize 0 0 0 0
+	limits   -5 2 -6 3
+	expand 1.5
+	box
+	xlabel log(F_R) [Jy]
+	ylabel log(F_X) [\mu Jy]
+
+	if( substr('$sample',0,5) == 'radio' ) { define col 3 }
+	if( '$sample' == 'emss'   ) { define col 4 }
+	if( '$sample' == 'dxrbs'  ) { define col 5 }
+
+	lweight 1
+	ptype 4 1 
+	ctype $col points lg_fr_$sample lg_fx_$sample
+
+	lweight 2 ltype 2 ctype 2 
+	foreach idx < 0.35 0.75 1.05 > {
+	   relocate $fx1  $($fx1 - $idx*7.685 + 6 )
+	   draw     $fx2  $($fx2 - $idx*7.685 + 6 )
+	}
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+#------------------------------------------------------------------------------
+# plot_fr_mv
+plot_fr_mv
+
+	define sample ? { What sample [emss/radio1/radio_z2/dxrbs] : }
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+	location 6000 30000 6000 30000
+	ticksize 0 0 0 0
+	limits   -5 2 30 10
+	expand 1.5
+	box
+	xlabel log(F_R) [Jy]
+	ylabel m_V
+
+	if( substr('$sample',0,5) == 'radio' ) { define col 3 }
+	if( '$sample' == 'emss'   ) { define col 4 }
+	if( '$sample' == 'dxrbs'  ) { define col 5 }
+
+	lweight 1
+	ptype 4 1 
+	ctype $col points lg_fr_$sample mv_$sample
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+#------------------------------------------------------------------------------
+# plot_fr_fo
+plot_fr_fo
+
+	define sample ? { What sample [emss/radio1/radio_z2/dxrbs] : }
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+	location 6000 30000 6000 30000
+	ticksize 0 0 0 0
+	limits   -5 2 -10 3
+	expand 1.5
+	box
+	xlabel log(F_R) [Jy]
+	ylabel log(F_O) [Jy]
+
+	if( substr('$sample',0,5) == 'radio' ) { define col 3 }
+	if( '$sample' == 'emss'   ) { define col 4 }
+	if( '$sample' == 'dxrbs'  ) { define col 5 }
+
+	lweight 1
+	ptype 4 1 
+	ctype $col points lg_fr_$sample lg_fo_$sample
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+#------------------------------------------------------------------------------
+# plot_l_l
+plot_l_l
+
+	define l1     ? { First  Luminosity [r/o/x] : }
+	define l2     ? { Second Luminosity [r/o/x] : }
+	define sample ? { What sample [emss/radio1/radio_z2/dxrbs] : }
+	define 1 $l1
+	define 2 $l2
+
+	define aro_1 0.1 
+	define aro_2 1.2
+	define aox_1 0.3
+	define aox_2 2.4
+	define arx_1 0.15
+	define arx_2 1.25
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+	if( '$l1' == 'r' ) { 
+	  define xmin (30.0)
+	  define xmax (37.0)
+	  define lab_x "log(L_R)"
+	}
+	if( '$l1' == 'o' ) { 
+	  define xmin (27.5)
+	  define xmax (34.0)
+	  define lab_x "log(L_O)"
+	}
+	if( '$l1' == 'x' ) { 
+	  define xmin (24.5)
+	  define xmax (30.0)
+	  define lab_x "log(L_X)"
+	}
+
+	if( '$l2' == 'r' ) { 
+	  define ymin (30.0)
+	  define ymax (37.0)
+	  define lab_y "log(L_R)"
+	}
+	if( '$l2' == 'o' ) { 
+	  define ymin (27.5)
+	  define ymax (34.0)
+	  define lab_y "log(L_O)"
+	}
+	if( '$l2' == 'x' ) { 
+	  define ymin (24.5)
+	  define ymax (30.0)
+	  define lab_y "log(L_X)"
+	}
+
+	location 6000 30000 6000 30000
+	ticksize 0 0 0 0
+	limits  $($xmin-0.5) $($xmax+0.5) $($ymin-0.5) $($ymax+0.5) 
+	expand 1.5
+	box
+	xlabel $lab_x
+	ylabel $lab_y
+
+	if( substr('$sample',0,5) == 'radio' ) { define col 3 }
+	if( '$sample' == 'emss'   ) { define col 4 }
+	if( '$sample' == 'dxrbs'  ) { define col 5 }
+
+	lweight 1
+	ptype 4 1 
+	ctype $col points l$1_$sample l$2_$sample 
+	   # if( fr_radio >=0.1)
+
+	ltype 2 lweight 2 ctype 2
+	relocate $xmin $ymin 
+	draw     $xmax $ymin
+	relocate $xmin $ymin 
+	draw     $xmin $ymax
+
+	if( '$1$2' == 'ro' ) {
+	   define    ydum $( $xmin - $aro_1*5.037 )
+	   echo $ydum
+	   relocate $xmin $ydum
+	   draw     $($xmin+10) $($ydum+10)
+
+	   define    ydum $( $xmin - $aro_2*5.037 )
+	   echo $ydum
+	   relocate $xmin $ydum
+	   draw     $($xmin+10) $($ydum+10)
+
+	   relocate $xmin $ymin
+	   draw     $($xmin+10) $($ymin+10)
+	   relocate $xmax $ymax
+	   draw     $($xmax-10) $($ymax-10)
+	}
+
+	if( '$1$2' == 'ox' ) {
+	   define    ydum $( $xmin - $aox_1*2.648 )
+	   echo $ydum
+	   relocate $xmin $ydum
+
+	   draw     $($xmin+10) $($ydum+10)
+	   define    ydum $( $xmin - $aox_2*2.648 )
+	   echo $ydum
+	   relocate $xmin $ydum
+	   draw     $($xmin+10) $($ydum+10)
+
+	   relocate $xmin $ymin
+	   draw     $($xmin+10) $($ymin+10)
+	   relocate $xmax $ymax
+	   draw     $($xmax-10) $($ymax-10)
+	}
+
+	if( '$1$2' == 'rx' ) {
+	   define    ydum $( $xmin - $arx_1*7.685 )
+	   echo $ydum
+	   relocate $xmin $ydum
+	   draw     $($xmin+10) $($ydum+10)
+
+	   define    ydum $( $xmin - $arx_2*7.685 )
+	   echo $ydum
+	   relocate $xmin $ydum
+	   draw     $($xmin+10) $($ydum+10)
+
+	   relocate $xmin $ymin
+	   draw     $($xmin+10) $($ymin+10)
+	   relocate $xmax $ymax
+	   draw     $($xmax-10) $($ymax-10)
+
+	   lweight 4 ltype 1 ctype 3 
+	   foreach idx < 0.35 0.75 1.05 > {
+	      relocate $fx1  $($fx1 - $idx*7.685 )
+	      draw     $fx2  $($fx2 - $idx*7.685 )
+	   }
+
+	}
+	ltype 0 
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+#------------------------------------------------------------------------------
+# plot_lr_lx
+plot_lr_lx
+
+	define sample ? { What sample [emss/radio1/radio_z2/dxrbs] : }
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+	location 6000 30000 6000 30000
+	ticksize 0 0 0 0
+	limits  29.5 37.5 24.0 30.5
+	expand 1.5
+	box
+	xlabel log(L_R) 
+	ylabel log(L_X)
+
+	if( substr('$sample',0,5) == 'radio' ) { define col 3 }
+	if( '$sample' == 'emss'   ) { define col 4 }
+	if( '$sample' == 'dxrbs'  ) { define col 5 }
+
+	lweight 1
+	ptype 4 1 
+	ctype $col points lr_$sample lx_$sample
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+#------------------------------------------------------------------------------
+# plot_z_lr
+plot_z_lr
+
+	define sample ? { What sample [emss/radio1/radio_z2/dxrbs] : }
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+	location 6000 30000 6000 30000
+	ticksize 0 0 0 0
+	limits  -0.1 3.1 29.5 37.5
+	expand 1.5
+	box
+	xlabel z
+	ylabel log(L_R)
+
+	if( substr('$sample',0,5) == 'radio' ) { define col 3 }
+	if( '$sample' == 'emss'   ) { define col 4 }
+	if( '$sample' == 'dxrbs'  ) { define col 5 }
+
+	lweight 1
+	ptype 4 1 
+	ctype $col points z_$sample lr_$sample 
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+#------------------------------------------------------------------------------
+# plot_z_lx
+plot_z_lx
+
+	define sample ? { What sample [emss/radio1/radio_z2/dxrbs] : }
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+	location 6000 30000 6000 30000
+	ticksize 0 0 0 0
+	limits  -0.1 3.1 24.0 30.5
+	expand 1.5
+	box
+	xlabel z
+	ylabel log(L_X)
+
+	if( substr('$sample',0,5) == 'radio' ) { define col 3 }
+	if( '$sample' == 'emss'   ) { define col 4 }
+	if( '$sample' == 'dxrbs'  ) { define col 5 }
+
+	lweight 1
+	ptype 4 1 
+	ctype $col points z_$sample lx_$sample 
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+#------------------------------------------------------------------------------
+# plot_ox_ro
+plot_ox_ro
+
+	define sample ? { What sample [emss/radio1/radio_z2/dxrbs] : }
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+	location 6000 30000 6000 30000
+	ticksize 0 0 0 0
+	limits  0.4 2.1 0.1 1.15
+	expand 1.5
+	box
+	expand 2.5
+	xlabel \alpha_{OX}
+	ylabel \alpha_{RO}
+	expand 1.5
+
+	if( substr('$sample',0,5) == 'radio' ) { define col 3 }
+	if( '$sample' == 'emss'   ) { define col 4 }
+	if( '$sample' == 'dxrbs'  ) { define col 5 }
+
+	lweight 1
+	ptype 4 1 
+	ctype $col points a_ox_$sample a_ro_$sample if(z_$sample <= 0.2 )
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+#------------------------------------------------------------------------------
+# plot_ox_rx
+plot_ox_rx
+
+	define sample ? { What sample [emss/radio1/radio_z2/dxrbs] : }
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+	location 6000 30000 6000 30000
+	ticksize 0 0 0 0
+	limits  0.4 2.1 0.0 1.3
+	expand 1.5
+	box
+	expand 2.5
+	xlabel \alpha_{OX}
+	ylabel \alpha_{RX}
+	expand 1.5
+
+	if( substr('$sample',0,5) == 'radio' ) { define col 3 }
+	if( '$sample' == 'emss'   ) { define col 4 }
+	if( '$sample' == 'dxrbs'  ) { define col 5 }
+
+	lweight 1
+	ptype 4 1 
+	ctype $col points a_ox_$sample a_rx_$sample 
+
+	lweight 3
+	ctype 2 
+	ltype 0
+
+#------------------------------------------------------------------------------
+# plot_ro
+plot_ro
+
+	set ox=0.1,2.5,0.05
+	ctype 2 
+	ltype 2 
+	lweight 2
+	set rovec=0.1,1.2,0.1
+	foreach ro rovec {
+	   set rx=($ro+0.525*ox)/1.525
+	   connect ox rx 
+	}
+	ltype 0
+	lweight 3
+
+#------------------------------------------------------------------------------
+# plot_rx
+plot_rx
+
+	set ox=0.1,2.5,0.05
+	ctype 2 ltype 2 lweight 2
+	set rxvec=0.1,1.3,0.1
+	foreach rx rxvec {
+	   set ro=1.525*$rx - 0.525*ox
+	   connect ox ro
+	}
+	ltype 0
+	lweight 3
+
+#------------------------------------------------------------------------------

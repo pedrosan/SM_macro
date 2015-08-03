@@ -1,0 +1,2990 @@
+
+	set help plot_wp  Needs 2 inputs: vector_1 and vector_2
+	set help plot_slew  Needs 2 inputs: vector_1 and vector_2
+	set help plot_1jy  Needs 2 inputs: vector_1 and vector_2
+
+##-------------------------------------------------------------------------
+## help.read_other_samples
+help.read_other_samples
+
+	echo  "--------------------------------------------------"
+        echo  " * read_emss2"
+        echo  " * read_dxrbs"
+        echo  " * read_sally_all"
+        echo  " * read_sally_complete"
+	echo  "--------------------------------------------------"
+        echo  " * z_other"
+        echo  " * bulk_other  <band>  <const> [<?>]"
+        echo  " * bb_indices  <band1> <band2>"
+	echo  "--------------------------------------------------"
+        echo  " * plot_sample [<vec-1>] [<vec-2>] [<sample>]"
+        echo  " * "
+        echo  " * plot_emss"
+        echo  " * plot_dxrbs"
+        echo  " * plot_sallyc"
+        echo  " * plot_wp"
+        echo  " * plot_1jy"
+        echo  " * plot_slew"
+	echo  "--------------------------------------------------"
+        echo  " * sample_label_comp"
+        echo  " * sample_label"
+	echo  "--------------------------------------------------"
+        echo  " * rename_emss"
+        echo  " * rename_dxrbs"
+        echo  " * rename_sally_complete"
+	echo  "--------------------------------------------------"
+	echo  " * a12_a34_others"
+	echo  " * l1_l2_others"
+	echo  "--------------------------------------------------"
+
+##--------------------------------------------------------------------------
+## z_other
+## 	1 - computes the average Z for objects with actual measurements
+##	2 - assigns the average Z to object without direct measurements
+##
+z_other
+
+	set dimen(flag_z) = dimen(name)
+	set dimen(z)      = dimen(name)
+
+	#------------------------
+	# flag_z:
+	#    0 = no redshift
+	#    1 = lower limit
+	#    2 = uncertain
+	#    3 = firm
+	#------------------------
+
+	do i=0,$(dimen(name)-1) {
+	   if(substr(zs[$i],0,1) == '>') {
+	      set flag_z[$i] = 1
+	      set z[$i] = atof(substr(zs[$i],1,5)) 
+           } else {
+	     if(substr(zs[$i],0,1) == '?') {
+	        set flag_z[$i] = 2
+	        set z[$i] = atof(substr(zs[$i],1,5)) 
+             } else {
+	       if(substr(zs[$i],0,1) == '-') {
+	          set flag_z[$i] = 0
+	          set z[$i] = 0
+	       } else {
+	          set flag_z[$i] = 3
+	          set z[$i] = atof(zs[$i])
+	       }
+	     }
+	   }
+	}
+
+	#-----------------------------------------------------------------
+	# fa la media del redshift 
+	#-----------------------------------------------------------------
+	# 
+        define maxind (dimen(name)-1)
+	define sum    (0.0)
+	define num    (0)
+
+	do i=0,$(dimen(name)-1) {
+	  if($(flag_z[$i]) > 0) {
+             define sum  ($sum  + $(z[$i])   )
+	     define num  ($num + 1) 
+	  }
+	}
+
+	echo " "
+	echo "--- redshift -----------------------------------"
+	echo "   Number of valid contributions : "$num
+	echo "   Sum of them : "$sum
+
+	define avrg_z   ($sum/$num)
+	echo
+	echo    the average redshift is : $avrg_z
+	echo -----------------------------------------------
+
+
+	#-----------------------------------------------------------------
+	# assegna il valore del redshift 
+	# alle sorgenti per le quali non c'e` la misura
+	#-----------------------------------------------------------------
+	# 
+	do i=0,$(dimen(name)-1) {
+	  if($(flag_z[$i]) == 0 ) {
+	     set z[$i]       = $avrg_z
+	  }
+	}
+
+#==========================================================================
+# READ commands 
+#==========================================================================
+# read_emss2  : the GOOD one for the EMSS
+read_emss2
+
+	define remember_sample "EMSS-2" 
+	define EMSSarchive "/home/gfossati/Science/Blazars/Seds/samples_data"
+
+	echo " "
+	echo "*-* EMSS survey *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+
+	data "$!EMSSarchive/emss_c.data"
+	read < name 1.s flag_g 3 zs 6.s f_radio 7 f_mm 8 mopt 9 f_x 10 >
+
+	# All objects have x-ray flux by definition
+	set flag_x = 0.0*f_radio + 1
+	set check_x = 0.0*f_radio + 1
+
+	set type = 0*f_radio + 1   # type  is BLLAC (==1)
+	z_other 
+
+	# define dered "y"
+	# define dered ? { Correction for reddening ? [NOT available--> 'n'] }
+	define dered "n"
+	if(substr('$dered',0,1) == 'y') {
+	   data "$!EMSSarchive/emss.ab"
+	   read ab 3
+	   set  av = ab/1.324
+	   set mopt= mopt - av
+	}
+
+	set m_V = mopt
+
+	define a_radio   0.2
+	define a_mm	 0.32
+	define a_ir      1.00
+	define a_opt     1.00
+	define a_x       1.36
+	define avrg_ax   $a_x
+
+	set a_opt   = 0*f_radio + $a_opt
+	set a_radio = 0*f_radio + $a_radio
+
+	# set f_mm = f_radio*(10**11.361/10**9.698)**(-0.32)
+	# set f_mm = f_radio
+	do i=0,$(dimen(name)-1) {
+	   if(f_mm[$i] > 0) {
+	      set f_mm[$i] = f_mm[$i]
+           } else {
+	      set f_mm[$i] = f_radio[$i]
+           } 
+	}
+
+	data "$!EMSSarchive/emss_c.index.free"
+	read_ax
+
+	set a_x = ax
+
+	bulk_other radio 26
+	bulk_other opt   23
+	bulk_other x     29
+
+	bb_indices radio opt ro 
+	bb_indices radio x   rx
+	bb_indices opt   x   ox
+	set_sed_type
+
+	define uu ? < Rename Vectors [y/n] : >
+	if(substr('$uu',0,1) == 'y') { 
+	   echo " INFO: using rename_emss "
+	   rename_emss
+	}
+	
+	prompt $remember_sample:
+
+##--------------------------------------------------------------------------
+# read_dxrbs : loads all three subsets
+read_dxrbs
+
+	define remember_sample "DXRBS"
+	define DXRBSarchiveOLD "/home/gfossati/Science/Blazars/Seds/samples_data"
+
+	echo " "
+	echo "*-* DXRBS *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+	echo " "
+
+	#----------------------------------------------
+	#  reading the first part of DXRBS sample:
+	#    'the NEW objects'
+	#  Perlman et al. 1998 tab. 4
+	#
+	echo "-----------------------------------------------------------------"
+	echo "*** FIRST SET: Perlman et al. 1998 'NEW objects' "
+	echo " "
+	echo " Which list of x-ray data for the DXRBS sample: "
+	echo "  [1] average X  "
+	echo "  [2] lowest X   "
+	echo "  [3] highest X  "
+	define which_dxrbs ? { ....[1|2|3] ?} 
+
+	if($which_dxrbs == 1) { 
+	     define second_pro_flag "[avrg-X]"
+	     data "$!DXRBSarchiveOLD/dxrbs_avrg.dat"
+	     # data dxrbs_avrg.dat 
+	}
+	if($which_dxrbs == 2) { 
+	     define second_pro_flag "[low-X]"
+	     data "$!DXRBSarchiveOLD/dxrbs_low.dat"
+	     #data dxrbs_low.dat 
+	}
+	if($which_dxrbs == 3) { 
+	     define second_pro_flag "[high-X]"
+	     data "$!DXRBSarchiveOLD/dxrbs_high.dat"
+	     #data dxrbs_high.dat
+	}
+
+	read < name1 1.s f_x1 4 f_radio1 6 a_radio1 7 m_B1 8 m_R1 9 class1 10.s zs1 11.s >
+
+	set a_opt1 = 0*f_radio1 + 1.0
+
+	# All objects have x-ray flux by definition
+	set flag_x1 = 0.0*f_radio1 + 1
+	set check_x1 = 0.0*f_radio1 + 1
+	
+	define nur (14.832)
+	define s0r (3010)
+	define nuv (14.732)
+	define s0v (3480)
+	define nub (14.632)
+	define s0b (4440)
+
+	set dimen(m_V1) = dimen(name1)
+	set dimen(lg_nf_b1) = dimen(name1)
+	set dimen(lg_nf_r1) = dimen(name1)
+	set dimen(lg_nf_v1) = dimen(name1)
+
+	do j=0,$(dimen(name1)-1) {
+	   if(m_B1[$j] > 0 && m_R1[$j] > 0) { 
+	      set lg_nf_b1[$j] = lg($s0b) + $nub - m_B1[$j]/2.5 - 23.
+	      set lg_nf_r1[$j] = lg($s0r) + $nur - m_R1[$j]/2.5 - 23.
+	      set lg_nf_v1[$j] = 0.5*(lg_nf_b1[$j] + lg_nf_r1[$j])
+	   }
+	   if(m_B1[$j] > 0 && m_R1[$j] == 0) { 
+	      set lg_nf_b1[$j] = lg($s0b) + $nub - m_B1[$j]/2.5 - 23.
+	      set lg_nf_r1[$j] = 0
+	      set lg_nf_v1[$j] = lg_nf_b1[$j]
+	   }
+	   if(m_B1[$j] == 0 && m_R1[$j] > 0) { 
+	      set lg_nf_b1[$j] = 0
+	      set lg_nf_r1[$j] = lg($s0r) + $nur - m_R1[$j]/2.5 - 23.
+	      set lg_nf_v1[$j] = lg_nf_r1[$j]
+	   }
+	   set m_V1[$j] = -2.5*(lg_nf_v1[$j] - 14.732 + 23 - lg($s0v))
+	      
+	}
+
+	#----------------------------------------------
+	#  reading the second part of DXRBS sample:
+	#    'the already known objects'
+	#  Perlman et al. 1998 tab. 6
+	echo " "
+	echo "-----------------------------------------------------------------"
+	echo "*** SECOND SET: Perlman et al. 1998 'already known objects' "
+	echo " "
+	data "$!DXRBSarchiveOLD/dxrbs_old.dat"
+	read < name2 1.s f_x2 4 f_radio2 6 a_radio2 7 m_V2 8 class2 9.s zs2 10.s >
+
+	set a_opt2 = 0*f_radio2 + 1.0
+
+	# All objects have x-ray flux by definition
+	set flag_x2 = 0.0*f_radio2 + 1
+	set check_x2 = 0.0*f_radio2 + 1
+	
+	#----------------------------------------------
+	#  reading the third part of DXRBS sample:
+	#    'new ID from Landt et al. 2001'
+	#
+	echo " "
+	echo "-----------------------------------------------------------------"
+	echo "*** THIRD SET: Landt et al. NEW DXRBS objects : "
+	echo " "
+	define DXRBSarchive "/home/gfossati/Science/Blazars/Catalogues/DXRBS"
+
+	data "$!DXRBSarchive/new_dxrbs.dat"
+	read < name3 1.s f_x3 5 f_radio3 7 a_radio3 8 class3 12.s zs3 13.s >
+	read < omag3 10 emag3 11 >
+
+	set a_opt3 = 0*f_radio3 + 1.0
+
+	# All objects have x-ray flux by definition
+	set flag_x3 = 0.0*f_radio3 + 1
+	set check_x3 = 0.0*f_radio3 + 1
+	
+	echo "*** Computing Optical flux from O and E magnitudes...            "
+	echo "    Extrapolates to V band from IR and UV, and take the average. "
+	echo "    Otherwise take the extrapolation from the one that exists.   "
+
+	foreach v < lg_f_ir  lg_f_uv  lg_f_opt1 lg_f_opt2 > { set $v local }
+
+	set lg_f_ir  = -19.556 - 0.4*emag3
+	set lg_f_uv  = -19.348 - 0.4*omag3
+	set lg_f_opt1= lg_f_ir - lg(5.432/4.282)
+	set lg_f_opt2= lg_f_uv + lg(8.213/5.432)
+
+	#set a_oe      = 3.53*(-0.208-0.4*(emag3-omag3))
+	#set dlg_f_opt = lg_f_opt1 - lg_f_opt2
+	#set dumvmag1 = -2.5*(lg_f_opt1 - lg(3480.e-23))
+	#set dumvmag2 = -2.5*(lg_f_opt2 - lg(3480.e-23))
+	#set dum1 = 10.0**(lg_f_opt1+26.)
+	#set dum2 = 10.0**(lg_f_opt2+26.)
+	#set diff_f_opt = abs(dum2 - dum1)/(0.5*(dum1+dum2))
+	#set diff_vmag  = dumvmag1 - dumvmag2
+	#set rel_diff_vmag = abs(diff_vmag)/(0.5*(dumvmag1 + dumvmag2))
+
+	# F_opt units are c.g.s. (log)
+	#set lg_f_opt = lg(0.5*(10.**(lg_f_opt1 + 26.) + 10.**(lg_f_opt2 + 26.))) - 26. 
+	set lg_f_opt = 0.5*(lg_f_opt1 + lg_f_opt2)
+
+	do 1=0,$(dimen(name3)-1) {
+	   if( emag3[$1] == 0 && omag3[$1] >  0 ) { set lg_f_opt[$1] = lg_f_opt2[$1] }
+	   if( emag3[$1] >  0 && omag3[$1] == 0 ) { set lg_f_opt[$1] = lg_f_opt1[$1] }
+	}
+	set m_V3 = -2.5*( lg_f_opt - (lg(3480.0) - 23.0) ) 
+
+	#=============================================
+	# Merging v1, v2, and v3, i.e. CLASSIC, OLD and NEW DXRBS tables.
+	#
+	foreach tmp { name f_x flag_x check_x f_radio a_radio class zs m_V a_opt } {
+	   set $tmp = "$!tmp"1 CONCAT "$!tmp"2 
+	   set $tmp = $tmp CONCAT "$!tmp"3
+	}
+
+	set dimen(type)   = $(dimen(name))
+	set dimen(classn) = $(dimen(name))
+
+	do 1=0,$(dimen(name)-1) {
+	   define dumcl "$(class[$1])"
+
+	   if(substr('$dumcl',0,2) == 'RG'    ){ set classn[$1] =  0 }
+	   if(substr('$dumcl',0,2) == 'NL'    ){ set classn[$1] =  0 }
+	   if(substr('$dumcl',0,2) == 'BL'    ){ set classn[$1] =  1 }
+	   if(substr('$dumcl',0,2) == 'FS'    ){ set classn[$1] =  2 }
+	   if(substr('$dumcl',0,2) == 'SS'    ){ set classn[$1] =  2 }
+	# Q: what happens to SSRQ?
+
+	}
+	set type=classn
+
+	set_ax_dxrbs
+	z_other
+
+	echo "-----------------------------------------------------"
+	echo " X-ray flux is in : muJy (10e-29) "
+	echo " Optical data     : V magnitudes  "
+	echo " Radio flux is in : mJy  (10e-26) "
+	echo "-----------------------------------------------------"
+	echo " Calling directly BULK for radio, optical  and X-ray "
+	echo "-----------------------------------------------------"
+
+	bulk_other radio 26
+	bulk_other opt   23 
+	bulk_other x     29
+
+	bb_indices radio opt ro
+	bb_indices radio x   rx
+	bb_indices opt   x   ox
+	set_sed_type
+
+	define uu ? < Rename Vectors [y/n] : >
+	if(substr('$uu',0,1) == 'y') { 
+	   rename_dxrbs
+	}
+
+	prompt $remember_sample $second_pro_flag:
+
+##--------------------------------------------------------------------------
+set_ax_dxrbs
+
+	echo "--------------------------------------------- "
+	echo " setting a FAKE value of X-ray spectral index "
+	echo " and setting the vector "flag_ax" to '3.1'     "
+	echo " for all the objects !                        "
+
+	set dimen(a_x) = $(dimen(name))
+
+	do 1=0,$(dimen(name)-1) {
+	   if( type[$1] == 0 ) { set a_x[$1] = 1.2 }
+	   if( type[$1] == 1 ) { set a_x[$1] = 1.2 }
+	   if( type[$1] == 2 ) { set a_x[$1] = 0.8 }
+	}
+
+	set flag_ax = 0*a_x + 3.1
+
+	echo "---------------------------------------------"
+
+#==========================================================================
+# read_sede : alias for read_sedentary
+read_sede
+        
+	read_sedentary
+
+#==========================================================================
+# read_sedentary  : loads the brand new table
+read_sedentary
+
+	define remember_sample "Sedentary" 
+	echo " "
+	echo "*-* Sedentary survey *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+
+	data "/home/gfossati/Science/Blazars/Catalogues/Sedentary/sedentary.dat"
+	read < name 1.s zs 8.s f_radio 10 mopt 9 f_x 12 class 13.s >
+
+	#set type = 0*f_radio + 1   # type  is BLLAC (==1)
+
+	# All objects have x-ray flux by definition
+	set flag_x = 0.0*f_radio + 1
+	set check_x = 0.0*f_radio + 1
+	
+	set dimen(type) = $(dimen(name))
+	set dimen(classn) = $(dimen(name))
+
+	do 1=0,$(dimen(name)-1) {
+	   define dumcl "$(class[$1])"
+
+	   if(substr('$dumcl',0,2) == 'RG'    ){ set classn[$1] =  0 }
+	   if(substr('$dumcl',0,2) == 'NL'    ){ set classn[$1] =  0 }
+	   if(substr('$dumcl',0,2) == 'BL'    ){ set classn[$1] =  1 }
+	   if(substr('$dumcl',0,2) == 'FS'    ){ set classn[$1] =  2 }
+	   if(substr('$dumcl',0,2) == 'SS'    ){ set classn[$1] =  2 }
+	# Q: what happens to SSRQ?
+
+	}
+	set type=classn
+
+	set_ax_sedentary
+	echo a_x $(dimen(a_x))
+	echo flag_z $(dimen(flag_z))
+	echo flag_x $(dimen(flag_x))
+	echo flag_x $(dimen(flag_ax))
+	z_other 
+
+	#define dered "y"
+	#define dered ? {Correction for reddening ? [NOT available--> 'n'] }
+	#if(substr('$dered',0,1) == 'y') {
+	#   data emss.ab
+	#   read ab 3
+	#   set  av = ab/1.324
+	#   set mopt= mopt - av
+	#}
+
+	set m_V = mopt
+
+	define a_radio   0.2
+	define a_mm	 0.32
+	define a_ir      1.00
+	define a_opt     1.00
+	define a_x       1.6
+	define avrg_ax   $a_x
+
+	set a_opt   = 0*f_radio + $a_opt
+	set a_radio = 0*f_radio + $a_radio
+	#set a_x     = 0*f_radio + $a_x
+
+	#do i=0,$(dimen(name)-1) {
+	#   if(f_mm[$i] > 0) {
+	#      set f_mm[$i] = f_mm[$i]
+        #   } else {
+	#      set f_mm[$i] = f_radio[$i]
+        #   } 
+	#}
+
+	#data emss_c.index.free
+	#read_ax
+
+	#set a_x = ax
+
+	bulk_other radio 26
+	bulk_other opt   23
+	bulk_other x     29
+
+	bb_indices radio opt ro 
+	bb_indices radio x   rx
+	bb_indices opt   x   ox
+	set_sed_type
+
+	define uu ? < Rename Vectors [y/n] : >
+	if(substr('$uu',0,1) == 'y') { 
+	   rename_sedentary
+	}
+	
+	prompt $remember_sample:
+
+##--------------------------------------------------------------------------
+set_ax_sedentary
+
+	echo "--------------------------------------------- "
+	echo " setting a FAKE value of X-ray spectral index "
+	echo " and setting the vector "flag_ax" to '3.1'     "
+	echo " for all the objects !                        "
+
+	set dimen(a_x) = $(dimen(name))
+
+	do 1=0,$(dimen(name)-1) {
+	   if( type[$1] == 0 ) { set a_x[$1] = 1.2 }
+	   if( type[$1] == 1 ) { set a_x[$1] = 1.2 }
+	   if( type[$1] == 2 ) { set a_x[$1] = 0.8 }
+	}
+
+	set flag_ax = 0*a_x + 3.1
+
+	echo "---------------------------------------------"
+
+##---------------------------------------------------------------------------
+# read_sally_whole
+read_sally_whole
+
+	define remember_sample "Sally-whole"
+	#define RGBarchive "/home/gfossati/Science/Blazars/Seds/samples_data"
+	define RGBarchive "/home/gfossati/Science/Blazars/Catalogues/RGB"
+	echo " "
+	echo "*-* Sally RGB whole *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+
+	#data "$!RGBarchive/sally_all.dat"
+	data "$!RGBarchive/sally_RGB_all.dat"
+	read < name 1.s zs 2.s f_radio 3 mopt 4 f_x_band 5 >
+	#
+	# X are in 0.1-2.4 band units of 10^-12
+	#
+	# radio are in milliJy
+	#
+
+	set type = 0*f_radio + 1   # type  is BLLAC (==1)
+
+	# All objects have x-ray flux by definition
+	set flag_x = 0.0*f_radio + 1
+	set check_x = 0.0*f_radio + 1
+
+	z_other
+
+	set f_x = f_x_band/9.013     # converte a monocromatico ad 1 keV (muJy)
+	set f_radio = f_radio/1000.  # con il fattore che corrisponde ad
+	set lg_f_x     = lg(f_x)     # un indice spettrale 1.2 tra 0.1-2.4 keV
+	set lg_f_radio = lg(f_radio)
+
+	set f_opt = 4550e-23*10**(-0.4*mopt)
+	set lg_f_opt = lg(f_opt)
+
+	# do i=0,$(dimen(z)-1) {
+	#    if(z[$i] < 4) {set z[$i] = z[$i]} else {set z[$i] = 0.16 }
+    	# }
+
+	set ratio_xr = lg(f_x/f_radio) - 6.
+	set a_rx     = ratio_xr/7.685
+
+	define ax (1.2)
+	define ar (0.0)
+	define aradio (0.0)
+
+	set a_x     = 0*f_x + $ax
+	set a_radio = 0*f_radio + $aradio
+
+	set lg_kf_x = lg_f_x + ($ax - 1)*lg(1+z)
+	set lg_kf_radio = lg_f_radio + ($ar - 1)*lg(1+z)
+
+	set ratio_kxr = lg_kf_x - lg_kf_radio - 6.
+	set a_krx     = ratio_kxr/7.685
+
+	bb_indices radio opt ro
+	bb_indices radio x   rx
+	bb_indices opt   x   ox
+	set_sed_type
+
+	define uu ? < Rename Vectors [y/n] : >
+	if(substr('$uu',0,1) == 'y') { 
+	   rename_sally_whole
+	}
+
+	prompt $remember_sample :
+	
+##---------------------------------------------------------------------------
+# read_sallyc : alias for read_sally_complete
+read_sallyc
+
+        read_sally_complete
+
+##---------------------------------------------------------------------------
+# read_sally_complete : the BEST one
+read_sally_complete
+
+	define remember_sample "Sally-C"
+	echo " "
+	echo "*-* Sally RGB complete *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+	#define RGBCarchive "/home/gfossati/Science/Blazars/Seds/samples_data"
+	define RGBCarchive "/home/gfossati/Science/Blazars/Catalogues/RGB"
+
+	#data "$!RGBCarchive/sally_complete.dat"
+	data "$!RGBCarchive/sally_RGB_complete.dat"
+	read < name 1.s zs 2.s f_radio 3 mopt 4 f_x 5 a_x 6 a_ro 7 a_ox 8 > 
+	#
+	# X are monochromatic @ 1keV, in nanoJy
+	#
+	# radio are CORE, in milliJy
+	#
+	echo "-------------------------------------------------------"
+	echo " NOTE: remember that RADIO Fluxes for the RGB sample "
+	echo "       are VLA CORE values"
+	echo "-------------------------------------------------------"
+
+	set rdum_opt = -5.037*a_ro + lg(f_radio/1000.)  # lg(F_opt) in Jy
+	set rm_V = -2.5*(rdum_opt - lg(3480)) 
+
+	set xdum_opt =  2.648*a_ox + lg(f_x) - 9.  # lg(F_opt) in Jy
+	set xm_V = -2.5*(xdum_opt - lg(3480)) 
+
+	set m_V = 0.5*(rm_V + xm_V)
+
+	set a_opt = 0*f_radio + 1.
+
+	# All objects have x-ray flux by definition
+	set flag_x = 0.0*f_radio + 1
+	set check_x = 0.0*f_radio + 1
+
+	set dimen(flag_ax) = dimen(name)
+
+	do i=0,$(dimen(name)-1) {
+	   if(a_x[$i] < 4.) { 
+	      set flag_ax[$i] = 3 
+           } else {
+	      set flag_ax[$i] = 1 
+           } 
+	}
+
+	set type = 0*f_radio + 1   # type  is BLLAC (==1)
+
+	z_other
+	
+	set f_x        = f_x/1000.        # converts to muJy
+	set f_radio    = f_radio/1000.    # converts to Jy
+	set lg_f_x     = lg(f_x)
+	set lg_f_radio = lg(f_radio)
+
+	# do i=0,$(dimen(z)-1) {
+	#    if(z[$i] < 4) {set z[$i] = z[$i]} else {set z[$i] = 0.16 }
+  	# }
+
+	define ax     (1.2)
+	define aradio (0.0)
+
+	# set a_x     = 0*f_x + $ax
+	set a_radio = 0*f_radio + $aradio
+
+	echo "---------------------------------------------" 
+	echo " X-ray flux is in : muJy (10e-29)" 
+	echo " Radio flux is in :   Jy (10e-23)" 
+	echo "---------------------------------------------" 
+	echo " Calling directly BULK for radio and X-ray" 
+	echo "---------------------------------------------" 
+
+	bulk_other radio 23 
+	bulk_other opt   23 
+	bulk_other x     29
+
+	bb_indices radio opt ro
+	bb_indices radio x   rx
+	bb_indices opt   x   ox
+	set_sed_type
+
+	define uu ? < Rename Vectors [y|n] : >
+	if(substr('$uu',0,1) == 'y') { 
+	   rename_sally_complete
+	}
+
+	# set ratio_xr = lg(f_x/f_radio) - 6.
+	# set a_rx     = ratio_xr/7.685
+	# set ratio_kxr = lg_kf_x - lg_kf_radio - 6.
+	# set a_krx     = ratio_kxr/7.685
+	
+	prompt $remember_sample :
+	
+##---------------------------------------------------------------------------
+# read_sally_rgball
+read_sally_rgball
+
+	define remember_sample "Sally-RGB"
+	define RGBALLarchive "/home/gfossati/Science/Blazars/Seds/samples_data"
+	echo " "
+	echo "*-* Sally RGB everything *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+
+	data "$!RGBALLarchive/sally_170.dat"
+	read < name 1.s zs 12.s f_radio 8 mopt 9 bf_x 11 >
+	#
+	# X are in units of e-12 in the 0.5-2 keV band
+	#
+	echo "-------------------------------------------------------"
+	echo " NOTE: remember that RADIO Fluxes for the RGB sample "
+	echo "       are VLA CORE values"
+	echo "-------------------------------------------------------"
+
+	define ax     (1.2)
+	define aradio (0.2)
+
+	# All objects have x-ray flux by definition
+	set flag_x = 0.0*f_radio + 1
+	set check_x = 0.0*f_radio + 1
+
+	set a_radio = 0*f_radio + $aradio
+	set a_opt   = 0*f_radio + 1.0
+	set a_x     = 0*f_radio + $ax
+
+	set f_x = 0.413*bf_x*(1. - a_x)/(2.0**(1.0-a_x)- 0.5**(1.0-a_x))
+	set f_b = 4440.0*10.0**(-mopt/2.5)  # in Jy
+
+	# set rdum_opt = -5.037*a_ro + lg(f_radio/1000.)  # lg(F_opt) in Jy
+	# set rm_V = -2.5*(rdum_opt - lg(3480)) 
+	# set xdum_opt =  2.648*a_ox + lg(f_x) - 9.  # lg(F_opt) in Jy
+	# set xm_V = -2.5*(xdum_opt - lg(3480)) 
+	# set m_V = 0.5*(rm_V + xm_V)
+
+	set m_V = -2.5*(lg(f_b) - lg(3480))
+
+	# set dimen(flag_ax) = dimen(name)
+	# do i=0,$(dimen(name)-1) {
+	#    if(a_x[$i] < 4.) { 
+	#       set flag_x[$i] = 3 
+        #    } else {
+	#       set flag_x[$i] = 1 
+        #    } 
+	# }
+	set flag_ax = 0*f_radio + 3.2   # ???? NOTE ????
+
+	set type = 0*f_radio + 1   # type  is BLLAC (==1)
+	#
+	# to be changed...there are many types of sources in the list.
+
+	z_other
+	
+	# set f_x      = f_x/1000.        # converts to muJy
+
+	set f_radio    = f_radio/1000.    # converts to Jy
+	set lg_f_x     = lg(f_x)
+	set lg_f_radio = lg(f_radio)
+
+	# do i=0,$(dimen(z)-1) {
+	#    if(z[$i] < 4) {set z[$i] = z[$i]} else {set z[$i] = 0.16 }
+  	# }
+
+	echo "---------------------------------------------"
+	echo " X-ray flux is in : muJy (10e-29)"
+	echo " Radio flux is in :   Jy (10e-23)"
+	echo "---------------------------------------------"
+	echo " Calling directly BULK for radio and X-ray"
+	echo "---------------------------------------------"
+
+	bulk_other radio 23 
+	bulk_other opt   23 
+	bulk_other x     29
+
+	bb_indices radio opt ro
+	bb_indices radio x   rx
+	bb_indices opt   x   ox
+	set_sed_type
+
+	define uu ? < Rename Vectors [y|n] : >
+	if(substr('$uu',0,1) == 'y') { 
+	   rename_sally_rgball
+	}
+
+	# set ratio_xr = lg(f_x/f_radio) - 6.
+	# set a_rx     = ratio_xr/7.685
+	# set ratio_kxr = lg_kf_x - lg_kf_radio - 6.
+	# set a_krx     = ratio_kxr/7.685
+	
+	prompt $remember_sample :
+	
+##---------------------------------------------------------------------------
+# read_bade
+read_bade
+
+	define remember_sample "Bade"
+	define BADEarchive "/home/gfossati/Science/Blazars/Seds/samples_data"
+
+	echo " "
+	echo "*-* BADE *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+
+	# data bade.dat
+	data "$!BADEarchive/bade.dat"
+	read < name 1.s zs 2.s f_radio 3 mopt 4 bf_x 5 a_x 6 a_ox 10 a_r 11 >
+	#
+	# X are in units of e-12 in the 0.5-2 keV band
+	#
+	# radio are @ 1.4 GHz, in milliJy
+	#
+	echo "-------------------------------------------------------" 
+	echo " NOTE: remember that RADIO Fluxes for the BADE sample" 
+	echo "       are measured at 1.4 GHz" 
+	echo "-------------------------------------------------------" 
+
+	# All objects have x-ray flux by definition
+	set flag_x = 0.0*f_radio + 1
+	set check_x = 0.0*f_radio + 1
+
+	set a_r = -a_r
+	set f_x = 0.413*bf_x*(1. - a_x)/(2.0**(1.0-a_x)- 0.5**(1.0-a_x))
+	set f_b = 4440.0*10.0**(-mopt/2.5)  # in Jy
+
+	# set xdum_opt =  2.551*a_ox + lg(f_x) - 9.       # lg(F_opt) in Jy
+	# set xm_V = -2.5*(xdum_opt - lg(3480)) 
+	#
+	# set m_V = 0.5*(rm_V + xm_V)
+
+	set m_V = -2.5*(lg(f_b) - lg(3480))
+
+	set a_opt = 0*f_radio + 1.
+
+	set dimen(flag_ax) = dimen(name)
+
+	do i=0,$(dimen(name)-1) {
+	   if(a_x[$i] < 4.) { 
+	      set flag_ax[$i] = 3 
+           } else {
+	      set flag_ax[$i] = 1 
+           } 
+	}
+
+	set type = 0*f_radio + 1   # type  is BLLAC (==1)
+
+	z_other
+	
+	# set f_x        = f_x/1000.        # converts to muJy
+	set f_radio    = f_radio*(1.4/5.0)**a_r/1000.  # converts to Jy @ 5GHz
+	set lg_f_x     = lg(f_x)
+	set lg_f_radio = lg(f_radio)
+
+	# do i=0,$(dimen(z)-1) {
+	#    if(z[$i] < 4) {set z[$i] = z[$i]} else {set z[$i] = 0.16 }
+  	# }
+
+	# define ax     (1.2)
+	# define aradio (0.0)
+
+	# set a_x     = 0*f_x + $ax
+	set a_radio = a_r    # 0*f_radio + $aradio
+
+	echo "---------------------------------------------" 
+	echo " X-ray flux is in : muJy (10e-29)" 
+	echo " Radio flux is in :   Jy (10e-23)" 
+	echo "---------------------------------------------"
+	echo " Calling directly BULK for radio and X-ray "
+	echo "---------------------------------------------"
+
+	bulk_other radio 23 
+	bulk_other opt   23 
+	bulk_other x     29
+
+	bb_indices radio opt ro
+	bb_indices radio x   rx
+	bb_indices opt   x   ox
+	set_sed_type
+
+	set a_ro = a_radio_opt
+
+	define uu ? < Rename Vectors [y|n] : >
+	if(substr('$uu',0,1) == 'y') { 
+	   rename_bade
+	}
+
+	# set ratio_xr = lg(f_x/f_radio) - 6.
+	# set a_rx     = ratio_xr/7.685
+	# set ratio_kxr = lg_kf_x - lg_kf_radio - 6.
+	# set a_krx     = ratio_kxr/7.685
+	
+	prompt $remember_sample :
+	
+##--------------------------------------------------------------------------
+## bulk_other <band> <costant for flux scaling>
+##
+## needs (z, f_*, a_*)
+##
+## if 'opt' or 'ir', then check for $3 and use this vector as the
+##  magnitude to convert
+##
+bulk_other  23
+
+	echo "-------------------------------------- "
+	echo " Running 'bulk_other' for the" $1 "band"
+	if( '$1' == 'x' ) {
+	define xkcorr "y" 
+	define xkcorr ? { K-correction for X-ray using real data (or average) [y|n] : }
+	   if(substr('$xkcorr',0,1) == 'y') {
+	      set save_a_x = a_x
+	      sub_xkcorr2
+	   } 
+	}
+
+	define nu_radio   9.698
+	define nu_mm     11.361
+	define nu_ir     14.136
+	define nu_opt    14.736
+	define nu_x      17.383
+
+	if('$1' == 'opt') { set f_opt = 3480*10**(-m_V/2.5) }
+	if('$1' == 'ir')  { set f_ir  =  614*10**(-$3/2.5) }
+
+	set lg_f_$1  = lg(f_$1) - $2
+	set lg_nf_$1 = lg(f_$1) - $2  + $nu_$1
+	set vnu_$1   = 0*f_$1 + $nu_$1
+
+	# echo " * Defining cosmological parameters...  "
+	# echo "   (calling cosmo_calculator_vec) "
+	# define h0 50
+	# define q0 0
+	# define h_100 ($h0/100.)
+	# define log_c_H_0 (27.96616033 - lg($h_100))
+	# cosmo_calculator_vec z
+
+	# lg_dl_cm_vec defined previously by cosmo_calculator_vec
+	set d_l = lg_dl_cm_vec
+
+	echo " * K-correcting the fluxes...."
+
+	set lg_kf_$1 = lg_f_$1 + (a_$1 - 1.)*lg(1.+z)
+	
+	echo " * Computing luminosities..."
+
+	set l_$1 = 1.09920986 + 2.*d_l + lg_kf_$1 
+
+	set nl_$1 = l_$1 + $nu_$1
+	echo "--------------------------------------"
+
+	if( '$1' == 'x' ) { set a_x = save_a_x }
+
+sub_xkcorr2
+
+	#-----------------------------------------------------------------
+	# fa la media dell'indice spettrale X per le sorgenti 
+	# per le quali c'e` la misura
+	#-----------------------------------------------------------------
+	# 
+	echo " > Running sub_xkcorr2 "
+	echo "   * Averaging known X-ray spectral indices "
+        define maxind (dimen(a_x)-1)
+	define sum    (0.0)
+	define num    (0)
+	define sum2   (0.0)
+
+	do i=0,$(dimen(name)-1) {
+	  if($(flag_ax[$i]) == 3) {
+             define sum  ($sum  + $(a_x[$i])   )
+	     define sum2 ($sum2 + $(a_x[$i])**2)
+	     define num  ($num + 1) 
+	  }
+	}
+
+	echo "--- alpha_X -----------------------------------"
+	echo "  Number of valid contributions : "$num
+
+	if($num > 0) {
+
+	   define avrg_ax   ($sum/$num)
+	   define sigma_ax  (sqrt($sum2/$num - ($sum/$num)**2))
+	   echo "  the average spectral index is : "$avrg_ax
+	   if($num == 1) {define sigma_ax  ($sigma_ax/sqrt($num))   }
+	   if($num >= 2) {define sigma_ax  ($sigma_ax/sqrt($num-1)) }
+	} else {
+	   echo "  "
+	   echo "   There are no contributions to the averaging"
+	   echo "     of the X-ray spectral index"
+	   echo "-----------------------------------------------"
+	}
+
+	#-----------------------------------------------------------------
+	# Prepare un nuovo vettore ax_kz, usato solo per la K-correction.
+	# Assegna il valore proprio di ax se la sorgente ha una misura,
+	# assegna il valore dell'indice spettrale X medio
+	# alle sorgenti per le quali non c'e` la misura
+	#-----------------------------------------------------------------
+	# 
+	echo " * Assigning an average X-ray spectral index to sources without "
+	echo "   in order to be able to perform K-correction "
+
+	set dimen(ax_kz)       = dimen(a_x)
+	set dimen(err_ax_kz_u) = dimen(a_x)
+	set dimen(err_ax_kz_d) = dimen(a_x)
+
+	do i=0,$(dimen(name)-1) {
+	  if( $(flag_ax[$i]) == 3 ) {
+	     set a_x[$i] = save_a_x[$i] 
+	  } else {
+	     set a_x[$i] = $avrg_ax
+	  }
+	}
+
+##--------------------------------------------------------------------------
+## bb_indices <band1> <band2> [<output array name suffix>]
+bb_indices 23
+
+	define nu_radio   9.698
+	define nu_mm     11.361
+	define nu_ir     14.136
+	define nu_opt    14.736
+	define nu_x      17.383
+
+        set ak_$1_$2 = (lg_kf_$1 - lg_kf_$2)/($nu_$2 - $nu_$1)
+        set  a_$1_$2 = (lg_f_$1  - lg_f_$2)/($nu_$2 - $nu_$1)
+
+	if( $?3 ) { 
+	   echo " Suffix requested : "$3
+	   set ak_$3 = ak_$1_$2
+	   set a_$3  = a_$1_$2
+	}
+
+##--------------------------------------------------------------------------
+## set_sed_type  : 
+##                 It assumes arrays: a_radio_opt a_radio_x a_opt_x
+##                 It defines sed_type_[rorx|ro|rx|ox]
+##                 WHAT DOES IT MEAN?
+##                 It seems that it divides BLUE from RED seds
+set_sed_type
+
+	define cut_rorx (1.2)
+	define cut_ro   (0.5)
+	define cut_rx   (0.75)
+	define cut_ox   (1.05)  # DO NOT USE !!
+
+	set a_rorx        = a_radio_opt + a_radio_x
+	set sed_type_rorx = a_rorx*0.0
+	set sed_type_ro   = sed_type_rorx*0.0
+	set sed_type_rx   = sed_type_rorx*0.0
+	set sed_type_ox   = sed_type_rorx*0.0
+
+	do 9=0,dimen(z)-1 {
+	    if( a_ro[$9]   <= $cut_ro   ) { set sed_type_ro[$9]   = 1 } else { set sed_type_ro[$9]   = 2 } 
+	    #if( check_x[$9] > 0 ) {
+		# type = 1 ==> HBL
+		# type = 2 ==> LBL
+	        if( a_rorx[$9] <= $cut_rorx ) { set sed_type_rorx[$9] = 1 } else { set sed_type_rorx[$9] = 2 } 
+	        if( a_rx[$9]   <= $cut_rx   ) { set sed_type_rx[$9]   = 1 } else { set sed_type_rx[$9]   = 2 } 
+	        if( a_ox[$9]   <= $cut_rx   ) { set sed_type_ox[$9]   = 1 } else { set sed_type_ox[$9]   = 2 } 
+	    #}
+
+	}
+	
+#--------------------------------------------------------------------------
+## rename_emss
+rename_emss
+
+	foreach vec { name z zs type flag_x check_x flag_ax flag_z a_x m_V } { 
+	   echo  Setting : "$!vec"_emss 
+	   set "$!vec"_emss = $vec 
+	}
+
+	foreach vec { f lg_f lg_kf l nl } {
+	  foreach aux { x radio opt } {
+	     echo  Setting : "$!vec"_"$!aux"_emss 
+	     set "$!vec"_"$!aux"_emss = "$!vec"_"$!aux"
+	  }
+	}
+
+	foreach vec { radio_opt radio_x opt_x } { 
+	  foreach aux { a ak } {
+	     echo  Setting : "$!aux"_"$!vec"_emss 
+	     set "$!aux"_"$!vec"_emss = "$!aux"_"$!vec"
+	  }
+	}
+
+	define 7 "emss"
+	foreach 9 < a sed_type > { 
+	   foreach 8 < rorx ro rx ox > { 
+	      define 1 "$9_$8"
+	      echo " Setting : "$1_$7
+	      set $1_$7 = $1 
+	   }
+	}
+
+##--------------------------------------------------------------------------
+## rename_dxrbs
+rename_dxrbs
+
+	foreach vec { name z zs type class flag_x check_x flag_ax flag_z a_x m_V } { 
+	   echo  Setting : "$!vec"_dxrbs 
+	   set "$!vec"_dxrbs = $vec 
+	}
+
+	foreach vec { f lg_f lg_kf l nl } {
+	  foreach aux { x radio opt } {
+	     echo  Setting : "$!vec"_"$!aux"_dxrbs 
+	     set "$!vec"_"$!aux"_dxrbs = "$!vec"_"$!aux"
+	  }
+	}
+
+	foreach vec { radio_opt radio_x opt_x } { 
+	  foreach aux { a ak } {
+	     echo  Setting : "$!aux"_"$!vec"_dxrbs 
+	     set "$!aux"_"$!vec"_dxrbs = "$!aux"_"$!vec"
+	  }
+	}
+
+	define 7 "dxrbs"
+	foreach 9 < a sed_type > { 
+	   foreach 8 < rorx ro rx ox > { 
+	      define 1 "$9_$8"
+	      echo " Setting : "$1_$7
+	      set $1_$7 = $1 
+	   }
+	}
+
+#--------------------------------------------------------------------------
+## rename_sedentary
+rename_sedentary
+
+	foreach vec { name z zs type flag_x check_x flag_ax flag_z a_x m_V } { 
+	   echo  Setting : "$!vec"_sede 
+	   set "$!vec"_sede = $vec 
+	}
+
+	foreach vec { f lg_f lg_kf l nl } {
+	  foreach aux { x radio opt } {
+	     echo  Setting : "$!vec"_"$!aux"_sede 
+	     set "$!vec"_"$!aux"_sede = "$!vec"_"$!aux"
+	  }
+	}
+
+	foreach vec { radio_opt radio_x opt_x } { 
+	  foreach aux { a ak } {
+	     echo  Setting : "$!aux"_"$!vec"_sede 
+	     set "$!aux"_"$!vec"_sede = "$!aux"_"$!vec"
+	  }
+	}
+
+	define 7 "sede"
+	foreach 9 < a sed_type > { 
+	   foreach 8 < rorx ro rx ox > { 
+	      define 1 "$9_$8"
+	      echo " Setting : "$1_$7
+	      set $1_$7 = $1 
+	   }
+	}
+
+##--------------------------------------------------------------------------
+## rename_sally_whole
+rename_sally_whole
+
+	foreach vec { name z zs type class flag_x check_x flag_ax flag_z a_ro a_ox a_x m_V } { 
+	   echo  Setting : "$!vec"_sallyw 
+	   set "$!vec"_sallyw = $vec 
+	}
+
+	foreach vec { f lg_f lg_kf l nl } {
+	  foreach aux { x radio opt } {
+	     echo  Setting : "$!vec"_"$!aux"_sallyw 
+	     set "$!vec"_"$!aux"_sallyw = "$!vec"_"$!aux"
+	  }
+	}
+
+	foreach vec { radio_opt radio_x opt_x } { 
+	  foreach aux { a ak } {
+	     echo  Setting : "$!aux"_"$!vec"_sallyw 
+	     set "$!aux"_"$!vec"_sallyw = "$!aux"_"$!vec"
+	  }
+	}
+
+	define 7 "sallyw"
+	foreach 9 < a sed_type > { 
+	   foreach 8 < rorx ro rx ox > { 
+	      define 1 "$9_$8"
+	      echo " Setting : "$1_$7
+	      set $1_$7 = $1 
+	   }
+	}
+
+##--------------------------------------------------------------------------
+## rename_sally_complete
+rename_sally_complete
+
+	foreach vec { name z zs type class flag_x check_x flag_ax flag_z a_ro a_ox a_x m_V } { 
+	   echo  Setting : "$!vec"_sallyc 
+	   set "$!vec"_sallyc = $vec 
+	}
+
+	foreach vec { f lg_f lg_kf l nl } {
+	  foreach aux { x radio opt } {
+	     echo  Setting : "$!vec"_"$!aux"_sallyc 
+	     set "$!vec"_"$!aux"_sallyc = "$!vec"_"$!aux"
+	  }
+	}
+
+	foreach vec { radio_opt radio_x opt_x } { 
+	  foreach aux { a ak } {
+	     echo  Setting : "$!aux"_"$!vec"_sallyc 
+	     set "$!aux"_"$!vec"_sallyc = "$!aux"_"$!vec"
+	  }
+	}
+
+	define 7 "sallyc"
+	foreach 9 < a sed_type > { 
+	   foreach 8 < rorx ro rx ox > { 
+	      define 1 "$9_$8"
+	      echo " Setting : "$1_$7
+	      set $1_$7 = $1 
+	   }
+	}
+
+##--------------------------------------------------------------------------
+## rename_sally_rgball
+rename_sally_rgball
+
+	foreach vec { name z zs type class flag_x check_x flag_ax flag_z a_ro a_ox a_x m_V } { 
+	   echo  Setting : "$!vec"_rgball
+	   set "$!vec"_rgball = $vec 
+	}
+
+	foreach vec { f lg_f lg_kf l nl } {
+	  foreach aux { x radio opt } {
+	     echo  Setting : "$!vec"_"$!aux"_rgball
+	     set "$!vec"_"$!aux"_rgball = "$!vec"_"$!aux"
+	  }
+	}
+
+	foreach vec { radio_opt radio_x opt_x } { 
+	  foreach aux { a ak } {
+	     echo  Setting : "$!aux"_"$!vec"_rgball 
+	     set "$!aux"_"$!vec"_rgball = "$!aux"_"$!vec"
+	  }
+	}
+
+	define 7 "rgball"
+	foreach 9 < a sed_type > { 
+	   foreach 8 < rorx ro rx ox > { 
+	      define 1 "$9_$8"
+	      echo " Setting : "$1_$7
+	      set $1_$7 = $1 
+	   }
+	}
+
+##--------------------------------------------------------------------------
+## rename_bade
+rename_bade
+
+	foreach vec { name z zs type class flag_x check_x flag_ax flag_z a_ro a_ox a_x m_V } { 
+	   echo  Setting : "$!vec"_bade
+	   set "$!vec"_bade = $vec 
+	}
+
+	foreach vec { f lg_f lg_kf l nl } {
+	  foreach aux { x radio opt } {
+	     echo  Setting : "$!vec"_"$!aux"_bade
+	     set "$!vec"_"$!aux"_bade = "$!vec"_"$!aux"
+	  }
+	}
+
+	foreach vec { radio_opt radio_x opt_x } { 
+	  foreach aux { a ak } {
+	     echo  Setting : "$!aux"_"$!vec"_bade 
+	     set "$!aux"_"$!vec"_bade = "$!aux"_"$!vec"
+	  }
+	}
+
+	define 7 "bade"
+	foreach 9 < a sed_type > { 
+	   foreach 8 < rorx ro rx ox > { 
+	      define 1 "$9_$8"
+	      echo " Setting : "$1_$7
+	      set $1_$7 = $1 
+	   }
+	}
+
+#--------------------------------------------------------------------------
+# plot_sample [<vec-1>] [<vec-2>] [<sample>]
+plot_sample  03
+
+	if(!$?1) { define b1 ? { Vector 1 ? } } else { define b1 $1 }
+	if(!$?2) { define b2 ? { Vector 2 ? } } else { define b2 $2 }
+	if(!$?3) { 
+	   define bs ? < Sample [sede|emss|dxrbs|sallyc|slew|wp|1jy] : >
+	} else {
+	   define bs $3
+	}
+
+	define 1 $b1
+	define 2 $b2
+	define 3 $bs
+
+	if('$1'=='lg_kf_radio' || '$1' == 'lg_f_radio') {set v1 = $1_$3 + 23.}
+	if('$2'=='lg_kf_radio' || '$2' == 'lg_f_radio') {set v2 = $2_$3 + 23.}
+	if('$1'=='lg_kf_opt'   || '$1' == 'lg_f_opt')   {set v1 = $1_$3 + 26.}
+	if('$2'=='lg_kf_opt'   || '$2' == 'lg_f_opt')   {set v2 = $2_$3 + 26.}
+	if('$1'=='lg_kf_x'     || '$1' == 'lg_f_x')     {set v1 = $1_$3 + 29.}
+	if('$2'=='lg_kf_x'     || '$2' == 'lg_f_x')     {set v2 = $2_$3 + 29.}
+	if('$1'=='m_V' )                                {set v1 = $1_$3 }
+	if('$2'=='m_V' )                                {set v2 = $2_$3 }
+
+	if('$1'=='lg_kf_x' || '$1' == 'lg_f_x' || '$2'=='lg_kf_x' || '$2' == 'lg_f_x') {
+	   set _filter = check_x_$3
+	   echo "  "
+	   echo " NOTE: objects without X-ray flux are not plotted "
+	} else {
+	   set _filter = check_x_$3*0.0 + 1
+	}
+
+	# if('$1'=='l_radio' || '$1' == 'nl_radio') {set v1 = $1_$3}
+	# if('$2'=='l_radio' || '$2' == 'nl_radio') {set v2 = $2_$3}
+	# if('$1'=='l_opt'   || '$1' == 'nl_opt')   {set v1 = $1_$3}
+	# if('$2'=='l_opt'   || '$2' == 'nl_opt')   {set v2 = $2_$3}
+	# if('$1'=='l_x'     || '$1' == 'nl_x')     {set v1 = $1_$3}
+	# if('$2'=='l_x'     || '$2' == 'nl_x')     {set v2 = $2_$3}
+
+	if(substr('$1',0,2) == 'l_' || substr('$1',0,3) == 'nl_') { set v1 = $1_$3  }
+	if(substr('$2',0,2) == 'l_' || substr('$2',0,3) == 'nl_') { set v2 = $2_$3  }
+
+	if(substr('$1',0,1) == 'a' || substr('$1',0,2) == 'ak')   { set v1 = $1_$3  }
+	if(substr('$2',0,1) == 'a' || substr('$2',0,2) == 'ak')   { set v2 = $2_$3  }
+
+        ##set v1 = v1 if( _filter > 0 )
+        ##set v2 = v2 if( _filter > 0 )
+
+	echo " "
+	echo " * Plot Options * "
+	echo "  [1] All objects "
+	echo "  [2] All objects, with those having a measured redshift 'marked' "
+	echo "  [3] Only objects having a measured redshift "
+	define chfilt ? < Your Choice : >
+
+	dots_$3
+
+#---------------------------------------------------------------------------
+# sample_label_comp
+sample_label_comp
+
+  ltype 0 
+  ctype 2 
+  
+  echo "* Sample ? * "
+  echo " [1] 1Jy  BLL "
+  echo " [2] Slew BLL "
+  echo " [3] EMSS BLL "
+  echo " [4] RGB  BLL "
+  echo " [5] W&P  FSRQ "
+  echo " [6] DXRB BLL "
+  echo " [7] DXRB FSRQ "
+
+  define corner ? {   Which corner [ul|ur|lr] : }
+  define sample ? {        Selected Sample is : }
+  define lnum $sample
+  define lnum   ? { Label Position (from top) : }
+
+  if('$corner' == 'ul') { 
+     define xcoref $($gx1+1500)
+     define ycoref $($gy2-200)
+  }
+
+  if('$corner' == 'ur') { 
+     define xcoref $($gx2-7500)
+     define ycoref $($gy2-200)
+  }
+
+  if('$corner' == 'lr') { 
+     define xcoref $($gx2-7500)
+     define ycoref $($gy1+200)
+  }
+
+  if(substr('$corner',0,1) == 'u') { 
+     define xcoord $xcoref
+     define ycoord $($ycoref -1000*$lnum)
+  }
+
+  if(substr('$corner',0,1) == 'l') { 
+     define xcoord $xcoref
+     define ycoord $($ycoref +1000*$lnum)
+  }
+
+  lweight 2
+  if ($sample == 1) {  dot_bll_1jy    }
+  if ($sample == 2) {  dot_bll_slew   }
+  if ($sample == 3) {  dot_bll_emss   }
+  if ($sample == 4) {  dot_bll_rgb    }
+  if ($sample == 6) {  dot_bll_dxrbs  }
+  if ($sample == 5) {  dot_fsrq_wp    }
+  if ($sample == 7) {  dot_fsrq_dxrbs }
+
+  ctype 2 
+  lweight 3
+  relocate ( $($xcoord -  600) $($ycoord-500) ) 
+  draw     ( $($xcoord + 7000) $($ycoord-500) ) 
+  draw     ( $($xcoord + 7000) $($ycoord+500) ) 
+  draw     ( $($xcoord -  600) $($ycoord+500) ) 
+  draw     ( $($xcoord -  600) $($ycoord-500) ) 
+
+#---------------------------------------------------------------------------
+# sample_label
+sample_label
+  
+  echo "* Sample ? *   "
+  echo " [1] 1Jy  BLL  "
+  echo " [2] Slew BLL  "
+  echo " [3] EMSS BLL  "
+  echo " [4] RGB  BLL  "
+  echo " [5] W&P  FSRQ "
+  echo " [6] DXRB BLL  "
+  echo " [7] DXRB FSRQ "
+
+  define sample ? {        Selected Sample is : }
+
+  define corner ? {      Which corner [ul|ur] : }
+  define lnum   ? { Label Position (from top) : }
+
+  if('$corner' == 'ul') { 
+     define xcoref $($gx1+2000)
+     define ycoref $($gy2-200)
+  }
+
+  if('$corner' == 'ur') { 
+     define xcoref $($gx2-9000)
+     define ycoref $($gy2-200)
+  }
+
+  define xcoord $xcoref
+  define ycoord $($ycoref -1200*$lnum)
+
+  if ($sample == 1) {  dot_bll_1jy    }
+  if ($sample == 2) {  dot_bll_slew   }
+  if ($sample == 3) {  dot_bll_emss   }
+  if ($sample == 4) {  dot_bll_rgb    }
+  if ($sample == 6) {  dot_bll_dxrbs  }
+  if ($sample == 5) {  dot_fsrq_wp    }
+  if ($sample == 7) {  dot_fsrq_dxrbs }
+
+dot_bll_rgb
+  relocate ( $xcoord $ycoord ) expand 2.9 ctype 7 ptype 4 3 dot 
+  relocate ( $xcoord $ycoord ) expand 2.9 ctype 2 ptype 4 0 dot 
+  ctype 5
+  relocate ( $xcoord $ycoord )
+  expand 1.35 putlabel 6   RGB BLL
+
+dot_bll_emss
+  relocate ( $xcoord $ycoord ) expand 2.9 ctype 8 ptype 3 3 angle 180 dot 
+  relocate ( $xcoord $ycoord ) expand 2.9 ctype 5 ptype 3 0 dot angle 0
+  ctype 5
+  relocate ( $xcoord $ycoord )
+  expand 1.35 putlabel 6   EMSS BLL
+
+dot_bll_slew
+  relocate ( $xcoord $ycoord ) expand 2.9 ctype 4 ptype 3 3 dot 
+  relocate ( $xcoord $ycoord ) expand 2.9 ctype 5 ptype 3 0 dot 
+  ctype 5
+  relocate ( $xcoord $ycoord )
+  expand 1.35 putlabel 6   Slew BLL
+
+dot_bll_1jy
+  relocate ( $xcoord $ycoord ) expand 2.9 ctype 6 ptype 20 3 dot 
+  relocate ( $xcoord $ycoord ) expand 2.9 ctype 5 ptype 20 0 dot 
+  ctype 5
+  relocate ( $xcoord $ycoord )
+  expand 1.35 putlabel 6   1Jy BLL
+
+dot_bll_dxrbs
+  lweight 3
+  relocate ( $xcoord $ycoord ) expand 2.9 ctype 3 ptype 5 2 dot 
+  lweight 1
+  ctype 5
+  relocate ( $xcoord $ycoord )
+  expand 1.35 putlabel 6   DXRB BLL
+
+dot_fsrq_dxrbs
+  lweight 3
+  relocate ( $xcoord $ycoord ) expand 2.9 ctype 2 ptype 5 1 dot 
+  lweight 1
+  ctype 3
+  relocate ( $xcoord $ycoord )
+  expand 1.35 putlabel 6   DXRB FSRQ
+
+dot_fsrq_wp
+  relocate ( $xcoord $ycoord ) expand 2.9 ctype 8 ptype 4 3 dot 
+  relocate ( $xcoord $ycoord ) expand 2.9 ctype 3 ptype 4 0 dot 
+  ctype 3
+  relocate ( $xcoord $ycoord )
+  expand 1.35 putlabel 6   W&P FSRQ
+
+
+#---------------------------------------------------------------------------
+# a12_a34_others : *** the CORRECT ONE for nice color/color plots ***
+a12_a34_others
+
+  define band1 ? <  Select the first band [radio|mm|opt|x]: >
+  define band2 ? < Select the second band [radio|mm|opt|x]: >
+
+  if('$band1' == 'radio' && '$band2' == 'x')   {
+     define xmin 0.3
+     define xmax 1.15
+     define lab_x <\alpha_{RX}>
+  }
+  if('$band1' == 'radio' && '$band2' == 'opt') {
+     define xmin 0.1 
+     define xmax 1.15
+     define lab_x <\alpha_{RO}>
+  }
+  if('$band1' == 'mm'    && '$band2' == 'opt') {
+     define xmin 0.09
+     define xmax 1.35
+     define lab_x <\alpha_{mmO}>
+  }
+  if('$band1' == 'mm'    && '$band2' == 'x'  ) {
+     define xmin 0.32
+     define xmax 1.35
+     define lab_x <\alpha_{mmX}>
+  }
+  if('$band1' == 'opt'   && '$band2' == 'x'  ) {
+     define xmin 0.45
+     define xmax 2.1
+     define lab_x <\alpha_{OX}>
+  }
+  # limits -0.1 3.1 $xmin $xmax
+  define xtickbig 0.2
+
+  if( '$band1' == 'radio') { define nu1     9.698 }
+  if( '$band1' == 'mm'   ) { define nu1    11.361 }
+  if( '$band1' == 'opt'  ) { define nu1    14.736 }
+  if( '$band1' == 'x'    ) { define nu1    17.383 }
+  if( '$band2' == 'radio') { define nu2     9.698 }
+  if( '$band2' == 'mm'   ) { define nu2    11.361 }
+  if( '$band2' == 'opt'  ) { define nu2    14.736 }
+  if( '$band2' == 'x'    ) { define nu2    17.383 }
+
+  define band3 ? <  Select the third band [radio|mm|opt|x]: >
+  define band4 ? < Select the fourth band [radio|mm|opt|x]: >
+
+  if('$band3' == 'radio' && '$band4' == 'x')   {
+     define ymin 0.3
+     define ymax 1.15
+     define lab_y <\alpha_{RX}>
+  }
+  if('$band3' == 'radio' && '$band4' == 'opt') {
+     define ymin 0.1 
+     define ymax 1.15
+     define lab_y <\alpha_{RO}>
+  }
+  if('$band3' == 'mm'    && '$band4' == 'opt') {
+     define ymin 0.09
+     define ymax 1.35
+     define lab_y <\alpha_{mmO}>
+  }
+  if('$band3' == 'mm'    && '$band4' == 'x'  ) {
+     define ymin 0.32
+     define ymax 1.35
+     define lab_y <\alpha_{mmX}>
+  }
+  if('$band3' == 'opt'   && '$band4' == 'x'  ) {
+     define ymin 0.45
+     define ymax 2.1
+     define lab_y <\alpha_{OX}>
+  }
+
+  # limits $xmin $xmax $ymin $ymax
+  define xtickbig 0.2
+
+  if( '$band3' == 'radio') { define nu3     9.698 }
+  if( '$band3' == 'mm'   ) { define nu3    11.361 }
+  if( '$band3' == 'opt'  ) { define nu3    14.736 }
+  if( '$band3' == 'x'    ) { define nu3    17.383 }
+  if( '$band4' == 'radio') { define nu4     9.698 }
+  if( '$band4' == 'mm'   ) { define nu4    11.361 }
+  if( '$band4' == 'opt'  ) { define nu4    14.736 }
+  if( '$band4' == 'x'    ) { define nu4    17.383 }
+
+  define checkbox ? <                          Draw Box [y|n]: >
+
+  if(substr('$checkbox',0,1) == 'y') { 
+     location 6500 31000 5000 31000
+     
+     limits $xmin $xmax $ymin $ymax
+
+     lweight 3
+     ctype 2
+     expand 1.5
+     ticksize 0.05 0.2 0.05 0.2
+     box 
+     expand 2.0
+     xlabel $lab_x
+     ylabel $lab_y
+  }
+
+  define who ? <  Sample [emss|dxrbs|sallyc|slew|wp|1jy]: >
+
+  define with_k ? < K-corrected [y|n] : >
+
+  if(substr('$with_k',0,1) == 'y') { 
+    set v1 = (lg_kf_"$!band1"_$!who - lg_kf_"$!band2"_$!who)/($nu2 - $nu1)
+    set v2 = (lg_kf_"$!band3"_$!who - lg_kf_"$!band4"_$!who)/($nu4 - $nu3)
+    if(substr('$checkbox',0,1) == 'y') { 
+       relocate ( $gx1 $($gy2+500) ) 
+       expand 1.5
+       putlabel 9 K-corrected fluxes
+    }
+  } else {
+    set v1 = (lg_f_"$!band1"_$!who - lg_f_"$!band2"_$!who)/($nu2 - $nu1)
+    set v2 = (lg_f_"$!band3"_$!who - lg_f_"$!band4"_$!who)/($nu4 - $nu3)
+  }
+
+  echo " Setting up FILTER, based on the existence of X-ray data (for now only option)"
+  if( '$who' == 'ffss' ) {
+     set check_x_ffss = flag_x_ffss
+  }
+  if( '$band1'=='x' || '$band2' == 'x' ) { 
+     set _filter = check_x_$who
+     echo "  "
+     echo " NOTE: objects without X-ray flux are not plotted "
+  } else {
+     set _filter = check_x_$who*0.0 + 1
+  }
+
+  echo "* Plot Options *"
+  echo " [1] All objects"
+  echo " [2] All objects, with those having a measured redshift 'marked'"
+  echo " [3] Only objects having a measured redshift"
+  define chfilt ? < Your Choice : >
+
+  dots_$who
+
+#---------------------------------------------------------------------------
+# l1_l2_others
+l1_l2_others
+
+  define band1 ? < Select the first  band [radio|mm|opt|x] : >
+  define band2 ? < Select the second band [radio|mm|opt|x] : >
+
+  if('$band1' == 'radio') {
+     define xmin 29.5 
+     define xmax 37.5
+     define lab_x <L_{5GHz}>
+  }
+  if('$band1' == 'mm'  ) {
+     define xmin 29.0
+     define xmax 37.5
+     define lab_x <L_{230GHz}>
+  }
+  if('$band1' == 'opt' ) {
+     define xmin 28.5 
+     define xmax 34.1
+     define lab_x <L_{5500\rm \AA}>
+  }
+  if('$band1' == 'x' ) {
+     define xmin 24.5 
+     define xmax 31.3
+     define lab_x <L_{1keV}>
+  }
+  if('$band2' == 'radio') {
+     define ymin 29.5
+     define ymax 37.5
+     define lab_y <L_{5GHz}>
+  }
+  if('$band2' == 'mm'  ) {
+     define ymin 29.0
+     define ymax 37.5
+     define lab_y <L_{230GHz}>
+  }
+  if('$band2' == 'opt' ) {
+     define ymin 28.5
+     define ymax 34.1
+     define lab_y <L_{5500\rm \AA}>
+  }
+  if('$band2' == 'x' ) {
+     define ymin 24.5
+     define ymin 23.9
+     define ymax 31.1
+     define lab_y <L_{1keV}>
+  }
+
+  # limits $xmin $xmax $ymin $ymax
+  define xtickbig 0.2
+
+  define checkbox ? { Draw Box ? [y|n] }
+
+  if(substr('$checkbox',0,1) == 'y') { 
+     location 6500 31000 5000 31000
+
+     limits $xmin $xmax $ymin $ymax
+
+     lweight 2
+     ltype 0
+     ctype 2
+     expand 1.5
+     ticksize 0.25 1 0.25 1
+     box 
+     expand 2.0
+     xlabel $lab_x
+     ylabel $lab_y
+  }
+
+  define who ? < What sample [emss|dxrbs|sallyc|slew|wp|1jy] : >
+
+  plot_sample l_$band1 l_$band2 $who
+
+
+#---------------------------------------------------------------------------
+# f1_f2_others : the correct one for nice flux/flux plots.
+f1_f2_others
+
+  ltype 0
+  ctype 2
+  lweight 3
+
+  define band1 ? <* Select the first  band [radio|mm|opt|x|g]: >
+  define band2 ? <* Select the second band [radio|mm|opt|x|g]: >
+
+  define xtick1 -1
+  define xtick2  0
+  define ytick1 -1
+  define ytick2  0
+
+  if('$band1' == 'radio') {
+     define xmin -3.05
+     define xmax  1.55
+     define lab_x <F_{5GHz} [Jy]>
+  }
+  if('$band1' == 'mm'  ) {
+     define xmin 0.09
+     define xmax 1.35
+     define lab_x <F_{230GHz}>
+  }
+  if('$band1' == 'opt' ) {
+     define xmin -2.65
+     define xmax  1.95
+     define lab_x <F_{5500\rm \AA} [mJy]>
+  }
+  if('$band1' == 'm_V' ) {
+     define xmin  24
+     define xmax  12
+     define xtick1 0
+     echo " Define linear tick"
+     define lab_x <m_{V}>
+  }
+  if('$band1' == 'x' ) {
+     define xmin -3.1
+     define xmax  2.3 
+     define lab_x <F_{1keV} [\mu Jy]>
+  }
+  if('$band1' == 'g' ) {
+     define xmin 0.45
+     define xmax 1.75
+     define lab_x <F_{100MeV}>
+  }
+  if('$band2' == 'radio') {
+     define ymin -3.05
+     define ymax  1.55
+     define lab_y <F_{5GHz} [Jy]>
+  }
+  if('$band2' == 'mm'  ) {
+     define ymin 0.09
+     define ymax 1.35
+     define lab_y <F_{230GHz}>
+  }
+  if('$band2' == 'opt' ) {
+     define ymin -2.65
+     define ymax  1.95
+     define lab_y <F_{5500\rm \AA} [mJy]>
+  }
+  if('$band2' == 'm_V' ) {
+     define ymin  24
+     define ymax  12
+     define ytick1 0
+     echo " Define linear tick"
+     define lab_y <m_{V}>
+  }
+  if('$band2' == 'x' ) {
+     define ymin -3.1
+     define ymax  2.3 
+     define lab_y <F_{1keV} [\mu Jy]>
+  }
+  if('$band2' == 'g' ) {
+     define ymin 0.45
+     define ymax 1.75
+     define lab_y <F_{100MeV}>
+  }
+
+  # limits $xmin $xmax $ymin $ymax
+  # limits -3.2 2 -2.7 2.5
+  define xtickbig 0.2
+
+  define checkbox ? <                      Draw Box frame [y|n] : >
+
+  if(substr('$checkbox',0,1) == 'y') { 
+     location 6500 31000 5000 31000
+     limits $xmin $xmax $ymin $ymax
+     # limits -3.2 2 -2.7 2.5
+
+     ctype 2
+     expand 1.5
+     ticksize 0.05 0.2 0.05 0.2
+     ticksize -1 0 -1 0
+     ticksize $xtick1 $xtick2 $ytick1 $ytick2
+     box 
+     expand 2.0
+     xlabel $lab_x
+     ylabel $lab_y
+  }
+
+  define who ?    <* Sample [ffss|emss|dxrbs|sallyc|slew|wp|1jy]: >
+  define with_k ? <*                           K-corrected [y|n]: >
+
+  if(substr('$with_k',0,1) == 'y') { 
+     plot_sample lg_kf_$band1 lg_kf_$band2 $who
+     relocate ( $gx1 $($gy2+500) ) 
+     expand 1.5
+     putlabel 9 K-corrected fluxes
+  } else { 
+     if( substr('$band1',0,strlen('$band1')) == 'm_V' ) { define v1  "m_V" } else { define v1 "lg_f_$!band1" }
+     if( substr('$band2',0,strlen('$band2')) == 'm_V' ) { define v2  "m_V" } else { define v2 "lg_f_$!band2" }
+     if( '$band2' == 'm_V' ) { set v2 = m_V } else { set v2 = lg_f_$band2 }
+     #plot_sample lg_f_$band1 lg_f_$band2 $who
+     plot_sample $v1 $v2 $who
+  }
+
+#==========================================================================
+# plot_dxrbs
+plot_dxrbs  2  
+
+	if('$1'=='lg_kf_radio' || '$1' == 'lg_f_radio') {set v1 = $1_dxrbs+23.}
+	if('$2'=='lg_kf_radio' || '$2' == 'lg_f_radio') {set v2 = $2_dxrbs+23.}
+	if('$1'=='lg_kf_opt'   || '$1' == 'lg_f_opt')   {set v1 = $1_dxrbs+23.}
+	if('$2'=='lg_kf_opt'   || '$2' == 'lg_f_opt')   {set v2 = $2_dxrbs+23.}
+	if('$1'=='lg_kf_x'     || '$1' == 'lg_f_x')     {set v1 = $1_dxrbs+29.}
+	if('$2'=='lg_kf_x'     || '$2' == 'lg_f_x')     {set v2 = $2_dxrbs+29.}
+
+	if('$1'=='l_radio' || '$1' == 'nl_radio') {set v1 = $1_dxrbs}
+	if('$2'=='l_radio' || '$2' == 'nl_radio') {set v2 = $2_dxrbs}
+	if('$1'=='l_opt'   || '$1' == 'nl_opt')   {set v1 = $1_dxrbs}
+	if('$2'=='l_opt'   || '$2' == 'nl_opt')   {set v2 = $2_dxrbs}
+	if('$1'=='l_x'     || '$1' == 'nl_x')     {set v1 = $1_dxrbs}
+	if('$2'=='l_x'     || '$2' == 'nl_x')     {set v2 = $2_dxrbs}
+
+	echo "* Plot Options * "
+	echo " [1] All objects "
+	echo " [2] All objects, with those having a measured redshift 'marked' "
+	echo " [3] Only objects having a measured redshift "
+	define chfilt ? { Your Choice ? }
+
+	dots_dxrbs
+
+##--------------------------------------------------------------------------
+# plot_sallyc
+plot_sallyc  2  
+
+	if('$1'=='lg_kf_radio' || '$1' == 'lg_f_radio') {set v1 = $1_sallyc+23.}
+	if('$2'=='lg_kf_radio' || '$2' == 'lg_f_radio') {set v2 = $2_sallyc+23.}
+	if('$1'=='lg_kf_x'     || '$1' == 'lg_f_x')     {set v1 = $1_sallyc+29.}
+	if('$2'=='lg_kf_x'     || '$2' == 'lg_f_x')     {set v2 = $2_sallyc+29.}
+
+	if('$1'=='l_radio' || '$1' == 'nl_radio') {set v1 = $1_sallyc}
+	if('$2'=='l_radio' || '$2' == 'nl_radio') {set v2 = $2_sallyc}
+	if('$1'=='l_x'     || '$1' == 'nl_x')     {set v1 = $1_sallyc}
+	if('$2'=='l_x'     || '$2' == 'nl_x')     {set v2 = $2_sallyc}
+
+	echo "* Plot Options * "
+	echo " [1] All objects "
+	echo " [2] All objects, with those having a measured redshift 'marked' "
+	echo " [3] Only objects having a measured redshift "
+	define chfilt ? { Your Choice ? }
+
+	dots_sallyc
+
+##--------------------------------------------------------------------------
+# plot_emss
+plot_emss  2  
+
+	if('$1'=='lg_kf_radio' || '$1' == 'lg_f_radio') {set v1 = $1_emss+23.}
+	if('$2'=='lg_kf_radio' || '$2' == 'lg_f_radio') {set v2 = $2_emss+23.}
+	if('$1'=='lg_kf_opt'   || '$1' == 'lg_f_opt')   {set v1 = $1_emss+23.}
+	if('$2'=='lg_kf_opt'   || '$2' == 'lg_f_opt')   {set v2 = $2_emss+23.}
+	if('$1'=='lg_kf_x'     || '$1' == 'lg_f_x')     {set v1 = $1_emss+29.}
+	if('$2'=='lg_kf_x'     || '$2' == 'lg_f_x')     {set v2 = $2_emss+29.}
+
+	if('$1'=='l_radio' || '$1' == 'nl_radio') {set v1 = $1_emss}
+	if('$2'=='l_radio' || '$2' == 'nl_radio') {set v2 = $2_emss}
+	if('$1'=='l_opt'   || '$1' == 'nl_opt')   {set v1 = $1_emss}
+	if('$2'=='l_opt'   || '$2' == 'nl_opt')   {set v2 = $2_emss}
+	if('$1'=='l_x'     || '$1' == 'nl_x')     {set v1 = $1_emss}
+	if('$2'=='l_x'     || '$2' == 'nl_x')     {set v2 = $2_emss}
+
+	echo "* Plot Options * "
+	echo " [1] All objects "
+	echo " [2] All objects, with those having a measured redshift 'marked' "
+	echo " [3] Only objects having a measured redshift "
+	define chfilt ? { Your Choice ? }
+
+	dots_emss
+
+#---------------------------------------------------------------------------
+# plot_slew
+plot_slew 2 
+
+	if('$1'=='lg_kf_radio' || '$1' == 'lg_f_radio') {set v1 = $1_slew+23.}
+	if('$2'=='lg_kf_radio' || '$2' == 'lg_f_radio') {set v2 = $2_slew+23.}
+	if('$1'=='lg_kf_opt'   || '$1' == 'lg_f_opt')   {set v1 = $1_slew+23.}
+	if('$2'=='lg_kf_opt'   || '$2' == 'lg_f_opt')   {set v2 = $2_slew+23.}
+	if('$1'=='lg_kf_x'     || '$1' == 'lg_f_x')     {set v1 = $1_slew+29.}
+	if('$2'=='lg_kf_x'     || '$2' == 'lg_f_x')     {set v2 = $2_slew+29.}
+
+	if('$1'=='l_radio' || '$1' == 'nl_radio') {set v1 = $1_slew}
+	if('$2'=='l_radio' || '$2' == 'nl_radio') {set v2 = $2_slew}
+	if('$1'=='l_opt'   || '$1' == 'nl_opt')   {set v1 = $1_slew}
+	if('$2'=='l_opt'   || '$2' == 'nl_opt')   {set v2 = $2_slew}
+	if('$1'=='l_x'     || '$1' == 'nl_x')     {set v1 = $1_slew}
+	if('$2'=='l_x'     || '$2' == 'nl_x')     {set v2 = $2_slew}
+
+	echo "* Plot Options * "
+	echo " [1] All objects "
+	echo " [2] All objects, with those having a measured redshift 'marked' "
+	echo " [3] Only objects having a measured redshift "
+	define chfilt ? { Your Choice ? }
+
+	dots_slew
+
+##--------------------------------------------------------------------------
+# plot_1jy
+plot_1jy 2 
+
+	if('$1'=='lg_kf_radio' || '$1' == 'lg_f_radio') {set v1 = $1_1jy+23.}
+	if('$2'=='lg_kf_radio' || '$2' == 'lg_f_radio') {set v2 = $2_1jy+23.}
+	if('$1'=='lg_kf_opt'   || '$1' == 'lg_f_opt')   {set v1 = $1_1jy+23.}
+	if('$2'=='lg_kf_opt'   || '$2' == 'lg_f_opt')   {set v2 = $2_1jy+23.}
+	if('$1'=='lg_kf_x'     || '$1' == 'lg_f_x')     {set v1 = $1_1jy+29.}
+	if('$2'=='lg_kf_x'     || '$2' == 'lg_f_x')     {set v2 = $2_1jy+29.}
+
+	if('$1'=='l_radio' || '$1' == 'nl_radio') {set v1 = $1_1jy}
+	if('$2'=='l_radio' || '$2' == 'nl_radio') {set v2 = $2_1jy}
+	if('$1'=='l_opt'   || '$1' == 'nl_opt')   {set v1 = $1_1jy}
+	if('$2'=='l_opt'   || '$2' == 'nl_opt')   {set v2 = $2_1jy}
+	if('$1'=='l_x'     || '$1' == 'nl_x')     {set v1 = $1_1jy}
+	if('$2'=='l_x'     || '$2' == 'nl_x')     {set v2 = $2_1jy}
+
+	echo "* Plot Options * "
+	echo " [1] All objects "
+	echo " [2] All objects, with those having a measured redshift 'marked' "
+	echo " [3] Only objects having a measured redshift "
+	define chfilt ? { Your Choice ? }
+
+	dots_1jy
+
+
+##--------------------------------------------------------------------------
+# plot_wp
+plot_wp 2 
+
+	if('$1'=='lg_kf_radio' || '$1' == 'lg_f_radio') {set v1 = $1_wp+23.}
+	if('$2'=='lg_kf_radio' || '$2' == 'lg_f_radio') {set v2 = $2_wp+23.}
+	if('$1'=='lg_kf_opt'   || '$1' == 'lg_f_opt')   {set v1 = $1_wp+23.}
+	if('$2'=='lg_kf_opt'   || '$2' == 'lg_f_opt')   {set v2 = $2_wp+23.}
+	if('$1'=='lg_kf_x'     || '$1' == 'lg_f_x')     {set v1 = $1_wp+29.}
+	if('$2'=='lg_kf_x'     || '$2' == 'lg_f_x')     {set v2 = $2_wp+29.}
+
+	if('$1'=='l_radio' || '$1' == 'nl_radio') {set v1 = $1_wp}
+	if('$2'=='l_radio' || '$2' == 'nl_radio') {set v2 = $2_wp}
+	if('$1'=='l_opt'   || '$1' == 'nl_opt')   {set v1 = $1_wp}
+	if('$2'=='l_opt'   || '$2' == 'nl_opt')   {set v2 = $2_wp}
+	if('$1'=='l_x'     || '$1' == 'nl_x')     {set v1 = $1_wp}
+	if('$2'=='l_x'     || '$2' == 'nl_x')     {set v2 = $2_wp}
+
+	echo "* Plot Options * "
+	echo " [1] All objects "
+	echo " [2] All objects, with those having a measured redshift 'marked' "
+	echo " [3] Only objects having a measured redshift "
+	define chfilt ? { Your Choice ? }
+
+	dots_wp
+
+##--------------------------------------------------------------------------
+dots_dxrbs_old
+
+	if($chfilt == 2) { 
+	   ptype 5 2 
+	   ctype 3 
+	   expand 0.9
+	   lweight 4
+	   points v1 v2 if(type_dxrbs == 1 && flag_z_dxrbs > 0 && _filter > 0)
+	}
+
+	ctype 3 
+	lweight 3
+	expand 2.0 
+	ptype 5 0 
+	if($chfilt <= 2) {points v1 v2 if(type_dxrbs == 1) }
+	if($chfilt == 3) {points v1 v2 if(type_dxrbs == 1 && flag_z_dxrbs > 0 && _filter > 0)} 
+
+	lweight 3
+	ptype 5 0 
+	if($chfilt <= 2) {points v1 v2 if(type_dxrbs == 2)}
+	if($chfilt == 3) {points v1 v2 if(type_dxrbs == 2 && flag_z_dxrbs > 0 && _filter > 0)}
+	angle 45
+	ptype 5 1 
+	if($chfilt <= 2) {points v1 v2 if(type_dxrbs == 2)}
+	if($chfilt == 3) {points v1 v2 if(type_dxrbs == 2 && flag_z_dxrbs > 0 && _filter > 0)}
+	angle 0
+
+	ctype 2 
+	lweight 1
+
+##--------------------------------------------------------------------------
+dots_dxrbs
+
+	if($chfilt == 2) { 
+	   ptype 5 2 
+	   ctype 3 
+	   expand 0.9
+	   lweight 4
+	   points v1 v2 if(type_dxrbs == 1 && flag_z_dxrbs > 0 && _filter > 0)
+	}
+
+	lweight 3
+	expand 1.3 
+	ptype 20 0 
+	ctype 3 
+	if($chfilt <= 2) {points v1 v2 if(type_dxrbs == 1) }
+	if($chfilt == 3) {points v1 v2 if(type_dxrbs == 1 && flag_z_dxrbs > 0 && _filter > 0)} 
+
+	ptype 20 0
+	if($chfilt <= 2) {points v1 v2 if(type_dxrbs == 2)}
+	if($chfilt == 3) {points v1 v2 if(type_dxrbs == 2 && flag_z_dxrbs > 0 && _filter > 0)}
+	ptype 4 1
+	expand 1.1
+	angle 45
+	if($chfilt <= 2) {points v1 v2 if(type_dxrbs == 2)}
+	if($chfilt == 3) {points v1 v2 if(type_dxrbs == 2 && flag_z_dxrbs > 0 && _filter > 0)}
+	angle 0
+
+	ctype 2 
+	lweight 1
+
+##--------------------------------------------------------------------------
+dots_sede
+
+	if($chfilt == 2) { 
+	   ptype 5 2 
+	   ctype 3 
+	   expand 0.9
+	   lweight 4
+	   points v1 v2 if(type_sede == 1 && flag_z_sede > 0 && _filter > 0)
+	}
+
+	expand 2.0 
+	ptype 5 2 
+	ctype 5 
+	lweight 3
+	if($chfilt <= 2) {points v1 v2 if(type_sede == 1) }
+	if($chfilt == 3) {points v1 v2 if(type_sede == 1 && flag_z_sede > 0 && _filter > 0)} 
+
+	ptype 5 1 
+	ctype 5 
+	lweight 3
+	if($chfilt <= 2) {points v1 v2 if(type_sede == 2)}
+	if($chfilt == 3) {points v1 v2 if(type_sede == 2 && flag_z_sede > 0 && _filter > 0)}
+
+	ctype 2 
+	lweight 1
+
+##--------------------------------------------------------------------------
+dots_ffss
+
+	# ctype 5
+	# ptype 4 2 
+	# points v1 v2 
+	help _filter
+	# set _filter = flag_x
+
+	if($chfilt == 2) { 
+	   ptype 5 2 
+	   ctype 3 
+	   expand 0.9
+	   lweight 4
+	   points v1 v2 if(type_ffss == 1 && flag_z_ffss > 0 && _filter > 0)
+	}
+
+	expand 2.0 
+	lweight 3
+	ptype 4 0 
+	ctype 2 
+	if($chfilt <= 2) {points v1 v2 if(type_ffss == 1 && _filter > 0) }
+	if($chfilt == 3) {points v1 v2 if(type_ffss == 1 && flag_z_ffss > 0 && _filter > 0)} 
+
+	ctype 2 
+	lweight 3
+	ptype 4 0 
+	points v1 v2  if( type_ffss != 1 && _filter > 0 ) 
+	angle 45
+	ptype 4 1
+	expand 1.75
+	points v1 v2  if( type_ffss != 1 && _filter > 0 ) 
+	angle 0
+	# if($chfilt <= 2) {points v1 v2 if(type_ffss == 2)}
+	# if($chfilt == 3) {points v1 v2 if(type_ffss == 2 && flag_z_ffss > 0)}
+	# if($chfilt <= 2) {points v1 v2 if(type_ffss == 1)}
+	# if($chfilt == 3) {points v1 v2 if(type_ffss == 1 && flag_z_ffss > 0)}
+
+	ctype 2 
+	lweight 1
+
+##--------------------------------------------------------------------------
+dots_sallyc
+
+	expand 3.0 
+	expand 2.0 
+	ptype 4 3 
+	ctype 7 
+	if($chfilt <= 2) { points v1 v2  }
+	if($chfilt == 3) { points v1 v2  if(flag_z_sallyc > 0 && _filter > 0) } 
+
+	ptype 4 0 
+	ctype 2 
+	lweight 2
+	if($chfilt <= 2) { points v1 v2  }
+	if($chfilt == 3) { points v1 v2  if(flag_z_sallyc > 0 && _filter > 0) } 
+
+	if($chfilt == 2) { 
+	   ptype 4 3 
+	   ctype 2 
+	   expand 1.5 
+	   lweight 2
+	   points v1 v2 if(flag_z_sallyc > 0 && _filter > 0)
+	}
+
+	ctype 2 
+	lweight 1
+
+##--------------------------------------------------------------------------
+dots_sallyw
+
+	dots_sallyc
+##--------------------------------------------------------------------------
+dots_emss
+
+	expand 3.0 
+	expand 2.0 
+	ptype 3 3 
+	ctype 8 
+	angle 180
+	if($chfilt <= 2) { points v1 v2  if( _filter > 0 )}
+	if($chfilt == 3) { points v1 v2  if(flag_z_emss > 0 && _filter > 0 ) }
+
+	ptype 3 0 
+	ctype 5 
+	lweight 2
+	if($chfilt <= 2) { points v1 v2  if(_filter > 0 ) }
+	if($chfilt == 3) { points v1 v2  if(flag_z_emss > 0 && _filter > 0 ) }
+
+	if($chfilt == 2) { 
+	   ptype 3 3 
+	   ctype 5 
+	   expand 1.1 
+	   lweight 2
+	   points v1 v2 if(flag_z_emss > 0 && _filter > 0 )
+	}
+
+	ctype 2 
+	lweight 1
+	angle 0
+
+##--------------------------------------------------------------------------
+dots_slew
+
+	expand 3.0 
+	expand 2.0 
+	ptype 3 3 
+	ctype 4 
+	if($chfilt <= 2) { points v1 v2  if( _filter > 0 ) }
+	if($chfilt == 3) { points v1 v2  if(flag_z_slew > 0 && _filter > 0 ) } 
+
+	ptype 3 0 
+	ctype 5 
+	lweight 2
+	if($chfilt <= 2) { points v1 v2  if( _filter > 0 )}
+	if($chfilt == 3) { points v1 v2  if(flag_z_slew > 0 && _filter > 0 ) } 
+
+	if($chfilt == 2) { 
+	   ptype 3 3 
+	   ctype 5 
+	   expand 1.1 
+	   lweight 2
+	   points v1 v2 if(flag_z_slew > 0 && _filter > 0 )
+	}
+
+	ctype 2 
+	lweight 1
+
+##--------------------------------------------------------------------------
+dots_bade
+
+	expand 1.6
+	ptype 20 3 
+	ctype 6 
+	if($chfilt <= 2) { points v1 v2  if( _filter > 0 ) }
+	if($chfilt == 3) { points v1 v2  if(flag_z_bade > 0 && _filter > 0 ) } 
+
+	expand 1.8
+	ptype 20 0 
+	ctype 7 
+	lweight 3
+	if($chfilt <= 2) { points v1 v2  if( _filter > 0 ) }
+	if($chfilt == 3) { points v1 v2  if(flag_z_bade > 0 && _filter > 0 ) } 
+
+	if($chfilt == 2) { 
+	   ptype 20 3 
+	   ctype 7 
+	   expand 1.4
+	   lweight 2
+	   points v1 v2 if(flag_z_bade > 0 && _filter > 0 )
+	}
+
+	ctype 2 
+	lweight 1
+
+##--------------------------------------------------------------------------
+dots_1jy
+
+	expand 2.7
+	expand 2.0
+	ptype 20 3 
+	ctype 6 
+	if($chfilt <= 2) { points v1 v2  if( _filter > 0 ) }
+	if($chfilt == 3) { points v1 v2  if(flag_z_1jy > 0 && _filter > 0 ) } 
+
+	ptype 20 0 
+	ctype 5 
+	lweight 2
+	if($chfilt <= 2) { points v1 v2  if( _filter > 0 ) }
+	if($chfilt == 3) { points v1 v2  if(flag_z_1jy > 0 && _filter > 0 ) } 
+
+	if($chfilt == 2) { 
+	   ptype 20 3 
+	   ctype 5 
+	   expand 1.4
+	   lweight 2
+	   points v1 v2 if(flag_z_1jy > 0 && _filter > 0 )
+	}
+
+	ctype 2 
+	lweight 1
+
+##--------------------------------------------------------------------------
+dots_wp
+
+	expand 3.0 
+	expand 2.0 
+	ptype 4 3 
+	ctype 8 
+	if($chfilt <= 2) { points v1 v2  if( _filter > 0 ) }
+	if($chfilt == 3) { points v1 v2  if( flag_z_wp > 0 && _filter > 0 ) } 
+
+	ptype 4 0 
+	ctype 3 
+	lweight 2
+	if($chfilt <= 2) { points v1 v2  if( _filter > 0 ) }
+	if($chfilt == 3) { points v1 v2  if( flag_z_wp > 0 && _filter > 0 ) } 
+
+	if($chfilt == 2) { 
+	   ptype 4 3 
+	   ctype 3 
+	   expand 1.5
+	   lweight 2
+	   points v1 v2 if( flag_z_wp > 0 && _filter > 0 ) )
+	}
+
+	ctype 2 
+	lweight 1
+
+##--------------------------------------------------------------------------
+dots_master
+
+	if($chfilt == 2) { 
+	   ptype 5 2 
+	   ctype 3 
+	   expand 0.9
+	   lweight 4
+	   points v1 v2 if( type_master == 1 && flag_z_master > 0 && _filter > 0 )
+	}
+
+	lweight 3
+	expand 1.3 
+	ptype 20 0 
+	ctype 5 
+	if($chfilt <= 2) {points v1 v2 if( type_master == 1 && _filter > 0 ) }
+	if($chfilt == 3) {points v1 v2 if( type_master == 1 && flag_z_master > 0 && _filter > 0 )} 
+
+	ctype 3 
+	ptype 20 0
+	if($chfilt <= 2) {points v1 v2 if( type_master == 2 && _filter > 0 )}
+	if($chfilt == 3) {points v1 v2 if( type_master == 2 && flag_z_master > 0 && _filter > 0 )}
+	#ptype 4 1
+	#expand 1.1
+	#angle 45
+	#if($chfilt <= 2) {points v1 v2 if(type_master == 2)}
+	#if($chfilt == 3) {points v1 v2 if(type_master == 2 && flag_z_master > 0)}
+	#angle 0
+
+	ctype 2 
+	lweight 1
+
+#--------------------------------------------------------------------------
+# histo_z
+histo_z
+ 
+	define sample ? {                                  Sample : }
+	define band1  ? {  Select the first band [radio|mm|opt|x] : }
+	define band2  ? { Select the second band [radio|mm|opt|x] : }
+	define step   ? {                  STEP for the histogram : }
+
+	define 1 $band1
+	define 2 $band2
+	define 3 $sample
+
+	if('$band1' == 'radio' && '$band2' == 'x')   {
+	   define xmin 0.3
+	   define xmax 1.15
+	   define lab_x <\alpha_{RX}>
+	}
+	if('$band1' == 'radio' && '$band2' == 'opt') {
+	   define xmin 0.0
+	   define xmax 1.15
+	   define lab_x <\alpha_{RO}>
+	}
+	if('$band1' == 'opt'   && '$band2' == 'x'  ) {
+           define xmin 0.45
+           define xmax 1.75
+           define lab_x <\alpha_{OX}>
+	}
+
+	set xx = -8.0+$step/2.,8.0+$step/2.,$step
+
+	set h_any_$3 = histogram( a_$1_$2_$3 : xx )
+
+	vecminmax h_any_$3 dum max_$3
+
+        if($max_$3 <  6){ ticksize $step $xtickbig 1 1 }
+        if($max_$3 >  6){ ticksize $step $xtickbig 1 2 }
+        if($max_$3 > 11){ ticksize $step $xtickbig 1 3 }
+        if($max_$3 > 15){ ticksize $step $xtickbig 1 4 }
+        if($max_$3 > 19){ ticksize $step $xtickbig 1 5 }
+        if($max_$3 > 29){ ticksize $step $xtickbig 2 10 }
+        if($max_$3 > 60){ ticksize $step $xtickbig 5 20 }
+
+	expand 1.5
+	ctype  2
+	lweight 3 
+	limits $xmin $xmax 0.01 $($max_$3*1.05)
+	box 1 2 0 0 
+	expand 2.5
+	xlabel $lab_x
+
+	histogram xx h_any_$3
+
+	
+#--------------------------------------------------------------------------
+# histo_a12_norm  [box1=N sample=NAME band1=NAME band2=NAME step=N col=N norm=y/n] 
+#                 e.g.: box1=2 band1=radio band2=opt step=0.05 col=3 norm=y sample=ffss
+#                 It plots one sample at a time.
+#                 The box1 variable sets the first parameters for the box command.
+#                 NOTE: It is called internally by 'histo_a12_multi'.
+histo_a12_norm 08
+ 
+	define type (3) 
+	if($?1) { 
+	    foreach n < 1 2 3 4 5 6 7 8 > { parsing $$n }
+	} else {
+	    define sample ? {                                  Sample : }
+    	    define band1  ? {  Select the first band [radio|mm|opt|x] : }
+	    define band2  ? { Select the second band [radio|mm|opt|x] : }
+	    define step   ? {                  STEP for the histogram : }
+	    define norm   ? {                    Normalize Area [y|n] : }
+	    define type   ? {                      Objects type [1|2] : }
+	    define col 2
+	    define box1 1
+	}
+
+	define 1 $band1
+	define 2 $band2
+	define 3 $sample
+
+	if('$band1' == 'radio' && '$band2' == 'x')   {
+	   define xmin 0.3
+	   define xmax 1.15
+	   define lab_x <\alpha_{RX}>
+	}
+	if('$band1' == 'radio' && '$band2' == 'opt') {
+	   define xmin 0.0
+	   define xmax 1.15
+	   define lab_x <\alpha_{RO}>
+	}
+	if('$band1' == 'opt'   && '$band2' == 'x'  ) {
+           define xmin 0.45
+           define xmax 1.75
+           define lab_x <\alpha_{OX}>
+	}
+
+	set xx = -8.0+$step/2.,8.0+$step/2.,$step
+
+	if( $type != 3 ) { 
+	   if( $type == 1 ) { define col 5 }
+	   if( $type == 2 ) { define col 3 }
+	}
+
+	if( $type == 1 ) { set a_for_h = a_$1_$2_$3   if( type_$3 == 1 ) } 
+	if( $type == 2 ) { set a_for_h = a_$1_$2_$3   if( type_$3 == 2 ) } 
+	if( $type == 3 ) { set a_for_h = a_$1_$2_$3                      }
+	set h_any_$3 = histogram( a_for_h : xx )
+	# set h_any_$3 = histogram( a_$1_$2_$3 : xx )
+
+	vecminmax h_any_$3 dum max_$3
+	if( substr('$norm',0,1) == 'y' ) { 
+	   set h_any_$3 = h_any_$3/sum(h_any_$3)
+	   define ymax 0.45
+	} else {
+	   define ymax 109
+	}
+	define ymax ? < Ymax : >
+
+	define xtickbig 0.2
+
+        ticksize $step $xtickbig 0 0 
+
+	expand 1.5
+	ctype  2
+	lweight 3 
+	limits $xmin $xmax 0.01 $ymax
+	box $box1 2 0 0 
+	expand 2.5
+	if( $box1 == 1 ) { xlabel $lab_x }
+
+	ctype $col
+	histogram xx h_any_$3
+	angle 45
+	shade histogram 200 xx h_any_$3
+	angle 0
+	ctype 2 
+	
+#--------------------------------------------------------------------------
+# histo_a12_multi  
+#                Asks for 4 samples to plot in four separate panels
+histo_a12_multi
+
+	define s1 ? < Sample 1 : >
+	define s2 ? < Sample 2 : >
+	define s3 ? < Sample 3 : >
+	define s4 ? < Sample 4 : >
+
+    	define band1 ? <  Select the first band [radio|mm|opt|x] : >
+	define band2 ? < Select the second band [radio|mm|opt|x] : >
+	define hstep ? <                          Histogram step : >
+
+	define normalize ? <              Normalize Histograms [y|n] : >
+	define type2plot ? <     Type of objects to consider [1|2|3] : >
+	define 4 $normalize
+
+	foreach 1 < 1 2 3 4 > {
+	   if( substr('$s$1',0,2) == 'sl' ) { define lab$1 "Slew" }
+	   if( substr('$s$1',0,2) == 'em' ) { define lab$1 "EMSS" }
+	   if( substr('$s$1',0,2) == '1j' ) { define lab$1 "1 Jy" }
+	   if( substr('$s$1',0,2) == 'wp' ) { define lab$1 "W&P" }
+	   if( substr('$s$1',0,2) == 'se' ) { define lab$1 "Sedentary" }
+	   if( substr('$s$1',0,2) == 'dx' ) { define lab$1 "DXRBS" }
+	   if( substr('$s$1',0,2) == 'ff' ) { define lab$1 "FFSS" }
+	   if( substr('$s$1',0,2) == 'sa' ) { define lab$1 "RGB" }
+	   if( substr('$s$1',0,2) == 'ma' ) { define lab$1 "Total" }
+	}
+
+	location 8500 26000 5500 31000
+
+	window 1 -4 1 1 
+	histo_a12_norm band1=$band1 band2=$band2 step=$hstep box1=1 norm=$4 col=3 sample=$s1 type=$type2plot
+	relocate ( $($gx2 + 500 ) $( ($gy1+$gy2)/2. ) )
+	expand 1.5
+	putlabel 6 $lab1
+	
+	window 1 -4 1 2 
+	histo_a12_norm band1=$band1 band2=$band2 step=$hstep box1=0 norm=$4 col=3 sample=$s2 type=$type2plot
+	relocate ( $($gx2 + 500 ) $( ($gy1+$gy2)/2. ) )
+	expand 1.5
+	putlabel 6 $lab2
+	
+	window 1 -4 1 3 
+	histo_a12_norm band1=$band1 band2=$band2 step=$hstep box1=0 norm=$4 col=3 sample=$s3 type=$type2plot
+	relocate ( $($gx2 + 500 ) $( ($gy1+$gy2)/2. ) )
+	expand 1.5
+	putlabel 6 $lab3
+	
+	window 1 -4 1 4 
+	histo_a12_norm band1=$band1 band2=$band2 step=$hstep box1=0 norm=$4 col=3 sample=$s4 type=$type2plot
+	relocate ( $($gx2 + 500 ) $( ($gy1+$gy2)/2. ) )
+	expand 1.5
+	putlabel 6 $lab4
+
+	window 1 1 1 1
+	
+#--------------------------------------------------------------------------
+# histo_z_norm  [box1=N sample=NAME band1=NAME band2=NAME step=N col=N norm=y/n] 
+#                 e.g.: box2=1 step=0.05 col=3 norm=y sample=ffss
+#                 It plots one sample at a time.
+#                 The box1 variable sets the first parameters for the box command.
+#                 NOTE: It is called internally by 'histo_z_multi'.
+histo_z_norm 06
+ 
+	if($?1) { 
+	    foreach n < 1 2 3 4 5 6 > { parsing $$n }
+	} else {
+	    define box1 1
+	    define sample ? {                                  Sample : }
+	    define step   ? {                  STEP for the histogram : }
+	    define norm   ? {                    Normalize Area [y|n] : }
+	    define type   ? {                      Objects type [1|2] : }
+	    define col 2
+	}
+
+	define 3 $sample
+
+	define xmin -0.01
+	define xmax  $(4.00+$step/2.)
+	define lab_x redshift
+
+	set xx = -1.0+$step/2.,4.0+$step/2.,$step
+
+	if( $type != 3 ) { 
+	   if( $type == 1 ) { define col 5 }
+	   if( $type == 2 ) { define col 3 }
+	}
+
+	if( $type == 1 ) { 
+	   set z_for_h    = z_$3       if( type_$3 == 1 ) 
+	   set flag_for_h = flag_z_$3  if( type_$3 == 1 ) 
+	}
+	if( $type == 2 ) { 
+	   set z_for_h    = z_$3       if( type_$3 == 2 ) 
+	   set flag_for_h = flag_z_$3  if( type_$3 == 2 ) 
+	}
+	if( $type == 3 ) { 
+	   set z_for_h    = z_$3   
+	   set flag_for_h = flag_z_$3 
+	}
+
+	set z_in_$3 = z_for_h if( flag_for_h > 0 )
+
+	set h_any_$3 = histogram( z_in_$3 : xx )
+
+	vecminmax h_any_$3 dum max_$3
+	if( substr('$norm',0,1) == 'y' ) { 
+	   set h_any_$3 = h_any_$3/sum(h_any_$3)
+	   define ymax 0.69
+	   define ymax 0.20
+	} else {
+	   define ymax 159
+	   define ymax 89
+	   define ymax 39
+	}
+
+	define xtickbig 1
+
+        ticksize $step $xtickbig 0 0 
+
+	expand 1.5
+	ctype  2
+	lweight 3 
+	limits $xmin $xmax 0.01 $ymax
+	box $box1 2 0 0 
+	expand 2.5
+	if( $box1 == 1 ) { xlabel $lab_x }
+
+	ctype $col
+	histogram xx h_any_$3
+	if( $type == 1 ) { angle 315 }
+	if( $type == 2 ) { angle  45 }
+	shade histogram 200 xx h_any_$3
+	angle 0
+	ctype 2 
+	
+#--------------------------------------------------------------------------
+# histo_z_multi
+#                Asks for 4 samples to plot in four separate panels
+histo_z_multi
+
+	define s1 ? < Sample 1 : >
+	define s2 ? < Sample 2 : >
+	define s3 ? < Sample 3 : >
+	define s4 ? < Sample 4 : >
+
+	define hstep ?     <                      Histogram step : >
+	define normalize ? <          Normalize Histograms [y|n] : >
+	define type2plot ? < Type of objects to consider [1|2|3] : >
+	define 4 $normalize
+
+	define nsamps (0)
+	foreach 1 < 1 2 3 4 > {
+	   if( substr('$s$1',0,2) == 'sl' ) { define lab$1 "Slew"  }
+	   if( substr('$s$1',0,2) == 'em' ) { define lab$1 "EMSS"  }
+	   if( substr('$s$1',0,2) == '1j' ) { define lab$1 "1 Jy"  }
+	   if( substr('$s$1',0,2) == 'wp' ) { define lab$1 "W&P"   }
+	   if( substr('$s$1',0,2) == 'se' ) { define lab$1 "Sedentary" }
+	   if( substr('$s$1',0,2) == 'dx' ) { define lab$1 "DXRBS" }
+	   if( substr('$s$1',0,2) == 'ff' ) { define lab$1 "FFSS"  }
+	   if( substr('$s$1',0,2) == 'sa' ) { define lab$1 "RGB"   }
+	   if( substr('$s$1',0,2) == 'ma' ) { define lab$1 "Total" }
+	   if( substr('$s$1',0,1) != '  '  ) { define nsamps $($nsamps+1) } 
+	}
+
+	location 8500 26000 5500 31000
+
+	if( $nsamps >= 1 ) {
+	window 1 -$nsamps 1 1 
+	histo_z_norm step=$hstep box1=1 norm=$4 col=3 sample=$s1 type=$type2plot
+	relocate ( $($gx2 + 500 ) $( ($gy1+$gy2)/2. ) )
+	expand 1.5
+	putlabel 6 $lab1
+	}
+	
+	if( $nsamps >= 2 ) {
+	window 1 -$nsamps 1 2 
+	histo_z_norm step=$hstep box1=0 norm=$4 col=3 sample=$s2 type=$type2plot
+	relocate ( $($gx2 + 500 ) $( ($gy1+$gy2)/2. ) )
+	expand 1.5
+	putlabel 6 $lab2
+	}
+	
+	if( $nsamps >= 3 ) {
+	window 1 -$nsamps 1 3 
+	histo_z_norm step=$hstep box1=0 norm=$4 col=3 sample=$s3 type=$type2plot
+	relocate ( $($gx2 + 500 ) $( ($gy1+$gy2)/2. ) )
+	expand 1.5
+	putlabel 6 $lab3
+	}
+	
+	if( $nsamps >= 4 ) {
+	window 1 -$nsamps 1 4 
+	histo_z_norm step=$hstep box1=0 norm=$4 col=3 sample=$s4 type=$type2plot
+	relocate ( $($gx2 + 500 ) $( ($gy1+$gy2)/2. ) )
+	expand 1.5
+	putlabel 6 $lab4
+	}
+
+	window 1 1 1 1
+	
+#--------------------------------------------------------------------------
+# concat_samples : makes 'master' sample
+#                  concatenating FFSS SEDE EMSS Slew Sally-c 1Jy W&P     
+#                  Of course it needs them to be loaded!
+#                  Why not also DXRBS?
+concat_samples 
+
+        #-----------------------------------------------------------------------------
+        if(!$(is_macro(read_emss))) {
+            echo "WARNING: this macro REQUIRES 'read_emss' included in verynew.read_samples.sm"
+            return
+        }
+        if(!$(is_macro(read_wp))) {
+            echo "WARNING: this macro REQUIRES 'read_wp' included in verynew.read_samples.sm"
+            return
+        }
+        if(!$(is_macro(read_ffss))) {
+            echo "WARNING: this macro REQUIRES 'read_ffss' included in FFSS.sm"
+            return
+        }
+
+	# define concat_dxrbs  ? < DXRBS   : >
+	define concat_ffss   ? < FFSS    : >
+	define concat_sede   ? < SEDE    : >
+	define concat_emss   ? < EMSS    : >
+	define concat_slew   ? < Slew    : >
+	define concat_sallyc ? < Sally-c : >
+	define concat_1jy    ? < 1 Jy    : >
+	define concat_wp     ? < W&P     : >
+
+	define 4 "master"
+
+	#-----------------------------------------------------------
+	# start master arrays with dxrbs sample
+	#-----------------------------------------------------------
+	echo " Starting with DXRBS ..."
+	foreach 1 < name z type flag_x check_x flag_ax flag_z a_x m_V > { 
+	   set $1_master = $1_dxrbs
+	}
+
+	foreach 1 < f lg_f lg_kf l nl > {
+	  foreach 2 < x radio opt > {
+	     echo " Concatenating : "$1_$2 
+	     set $1_$2_master = $1_$2_dxrbs
+	  }
+	}
+
+	foreach 1 < a ak > {
+	  foreach 2 < radio_opt radio_x opt_x > { 
+	     echo " Concatenating : "$1_$2 
+	     set $1_$2_master = $1_$2_dxrbs
+	  }
+	}
+
+	foreach 1 < a sed_type > {
+	   foreach 2 < rorx ro rx ox > { 
+	     echo " Concatenating : "$1_$2 
+	     set $1_$2_master = $1_$2_dxrbs
+	   }
+	}
+
+	#-----------------------------------------------------------
+	# other samples
+	#-----------------------------------------------------------
+	foreach 3 < ffss sede sallyc emss slew 1jy wp > {
+
+	   if( $concat_$3 == 1 ) { 
+
+	       echo " Doing sample "$3
+
+	       foreach 1 < name z type flag_x check_x flag_ax flag_z a_x m_V > { 
+	          echo " Concatenating : "$1 
+	          set $1_master = $1_master CONCAT $1_$3
+	       }
+
+	       foreach 1 < f lg_f lg_kf l nl > {
+	         foreach 2 < x radio opt > {
+	            echo " Concatenating : "$1_$2 
+	            set $1_$2_master = $1_$2_master CONCAT  $1_$2_$3
+	         }
+	       }
+
+	       foreach 1 < a ak > {
+	         foreach 2 < radio_opt radio_x opt_x > { 
+	            echo " Concatenating : "$1_$2 
+	            set $1_$2_master = $1_$2_master CONCAT  $1_$2_$3
+	         }
+	       }
+
+	       foreach 1 < a sed_type > {
+	         foreach 2 < rorx ro rx ox > { 
+	            echo " Concatenating : "$1_$2 
+	            set $1_$2_master = $1_$2_master CONCAT  $1_$2_$3
+	         }
+	       }
+
+	   }
+	}
+
+#-------------------------------------------------------------------------------
+# guess_xpeak <a_rorx> <sed_type_rorx> 
+#     this seems to be the GOOD parameterization to guess the peak position
+#     It returns 3 arrays for a range of estimated x_peak: guess_xp[123]
+#     guess_xp1 is the lowest value, _xp3 the highest, _xp2 their average
+guess_xpeak 2
+
+       set _rorx    local
+       set _st_rorx local
+       set _rorx    = $1
+       set _st_rorx = $2
+       # help _rorx
+       # help _st_rorx
+
+       set guess_xp1 = 0.0*_rorx
+       set guess_xp3 = 0.0*_rorx
+
+       do 9=0,dimen(_rorx)-1 {
+	  if( _st_rorx[$9] > 0 ) {
+             set guess_xp1[$9] = 20.9 - 8.7*sqrt((_rorx[$9]-0.46)/1.3)
+             set guess_xp3[$9] = 21.4 - 8.7*sqrt((_rorx[$9]-0.54)/1.3)
+	  }
+       }
+       set guess_xp2 = 0.5*(guess_xp1 + guess_xp3 )
+
+       #----------------------------------------
+       # Alternative case with F_x reduced by a constant factor
+       #
+       set dguess_xp2 = 0.0*_rorx
+       define x_down_factor (10.)
+       set _rorx_alt = _rorx + (lg($x_down_factor)/7.685)
+
+       set guess_xp1_alt = 0.0*_rorx_alt
+       set guess_xp3_alt = 0.0*_rorx_alt
+       do 9=0,dimen(_rorx_alt)-1 {
+	  if( _st_rorx[$9] > 0 ) {
+             set guess_xp1_alt[$9] = 20.9 - 8.7*sqrt((_rorx_alt[$9]-0.46)/1.3)
+             set guess_xp3_alt[$9] = 21.4 - 8.7*sqrt((_rorx_alt[$9]-0.54)/1.3)
+	  }
+       }
+       set guess_xp2_alt = 0.5*(guess_xp1_alt + guess_xp3_alt)
+
+       do 9=0,dimen(_rorx_alt)-1 {
+          if( is_x_upper[$9] == 1 ) {
+	     # echo $9
+	     set dguess_xp2[$9] = guess_xp2[$9] - guess_xp2_alt[$9]
+	  }
+       }
+
+#--------------------------------------------------------------------------
+# histo_generic 
+#               [box1=N par=NAME sample=NAME step=N xmin=N xmax=N col=N norm=y/n] 
+#                It plots one sample at a time.
+#                The box1 variable sets the first parameters for the box command.
+#                NOTE: It is called internally by 'histo_z_multi'.
+histo_generic 08
+ 
+	define par ?       <                           parameter : >
+	define sample ?    <                           sample    : >
+	define type2plot ? < Type of objects to consider [1|2|3] : >
+	define minz ?      <                    minimum redshift : > 
+	define maxz ?      <                    maximum redshift : > 
+	define normalize ? <          Normalize Histograms [y|n] : >
+
+	define hg_xmin ?   <                                xmin : >
+	define hg_xmax ?   <                                xmax : >
+	define hstep ?     <                      Histogram step : >
+
+	define 3 $sample
+	define 4 $par
+	define 5 $4_$3
+
+	set xx = -100.0+$hstep/2.,100.0+$hstep/2.,$hstep
+
+	if( $type2plot != 3 ) { 
+	   if( $type2plot == 1 ) { 
+	      define col 5 
+	      define slant 315 
+	   }
+	   if( $type2plot == 2 ) { 
+	      define col 3 
+	      define slant 45
+	   }
+	} else {
+	      define col 2 
+	      define slant 0
+	}
+
+	if( $type2plot == 1 ) { 
+	       set for_h = $5     if( type_$3 == 1 && flag_z_$3 > 0 ) 
+	       set fil_h = z_$3   if( type_$3 == 1 && flag_z_$3 > 0 ) 
+	}
+	if( $type2plot == 2 ) { 
+	       set for_h = $5     if( type_$3 == 2 && flag_z_$3 > 0 ) 
+	       set fil_h = z_$3   if( type_$3 == 2 && flag_z_$3 > 0 ) 
+	}
+	if( $type2plot == 3 ) { 
+	       set for_h = $5     if( flag_z_$3 > 0 ) 
+	       set fil_h = z_$3   if( flag_z_$3 > 0 ) 
+	}
+	echo " Number of objects before filter on z: "$(dimen(for_h))
+
+	set for_h_in = for_h  if( fil_h <= $maxz && fil_h >= $minz )
+	echo " Number of objects after  filter on z: "$(dimen(for_h_in))
+
+	set h_any_$3 = histogram( for_h_in : xx )
+
+	vecminmax h_any_$3 dum _max
+	if( substr('$normalize',0,1) == 'y' ) { 
+	   set h_any_$3 = h_any_$3/sum(h_any_$3)
+	   define ymax 0.69
+	   define ymax 0.20
+	} else {
+	   define ymax 159
+	   define ymax 89
+	   define ymax 39
+	   define ymax $_max
+	}
+	define ymax ?      <                                ymax : >
+
+	if( substr('$par',0,1) == 'a' ) {
+	   define xtickbig 0.2
+	} else {
+	   define xtickbig 1
+	}
+
+        ticksize $hstep $xtickbig 0 0 
+
+	expand 1.5
+	ctype  2
+	lweight 3 
+	limits $hg_xmin $hg_xmax 0.01 $ymax
+	# box $box1 2 0 0 
+	box 1 2 0 0 
+	expand 2.5
+	# if( $box1 == 1 ) { xlabel $lab_x }
+
+	ctype $col
+	histogram xx h_any_$3
+	if( $type2plot == 1 ) { angle $slant }
+	if( $type2plot == 2 ) { angle $slant }
+	shade histogram 200 xx h_any_$3
+	angle 0
+	ctype 2 
+	
+#--------------------------------------------------------------------------
+# histo_generic_sed
+#               [box1=N par=NAME sample=NAME step=N xmin=N xmax=N col=N norm=y/n] 
+#                It plots one sample at a time.
+#                The box1 variable sets the first parameters for the box command.
+#                NOTE: It is called internally by 'histo_z_multi'.
+histo_generic_sed 08
+ 
+	define par ?       <                           parameter : >
+	define sample ?    <                              sample : >
+	define type2plot ? < Type of objects to consider [1|2|3] : >
+	define minz ?      <                    minimum redshift : > 
+	define maxz ?      <                    maximum redshift : > 
+	define normalize ? <          Normalize Histograms [y|n] : >
+
+	define hg_xmin ?   <                                xmin : >
+	define hg_xmax ?   <                                xmax : >
+	define hstep ?     <                      Histogram step : >
+
+	define 3 $sample
+	define 4 $par
+	define 5 $4_$3
+
+	set xx = -100.0+$hstep/2.,100.0+$hstep/2.,$hstep
+
+	if( $type2plot != 3 ) { 
+	   if( $type2plot == 1 ) { 
+	      define col 5 
+	      define slant 315 
+	   }
+	   if( $type2plot == 2 ) { 
+	      define col 3 
+	      define slant 45
+	   }
+	} else {
+	      define col 2 
+	      define slant 0
+	}
+
+	if( $type2plot == 1 ) { 
+	       set for_h = $5     if( sed_type_rorx_$3 == 1 && flag_z_$3 > 0 ) 
+	       set fil_h = z_$3   if( sed_type_rorx_$3 == 1 && flag_z_$3 > 0 ) 
+	}
+	if( $type2plot == 2 ) { 
+	       set for_h = $5     if( sed_type_rorx_$3 == 2 && flag_z_$3 > 0 ) 
+	       set fil_h = z_$3   if( sed_type_rorx_$3 == 2 && flag_z_$3 > 0 ) 
+	}
+	if( $type2plot == 3 ) { 
+	       set for_h = $5     if( flag_z_$3 > 0 ) 
+	       set fil_h = z_$3   if( flag_z_$3 > 0 ) 
+	}
+	echo " Number of objects before filter on z: "$(dimen(for_h))
+
+	set for_h_in = for_h  if( fil_h <= $maxz && fil_h >= $minz )
+	echo " Number of objects after  filter on z: "$(dimen(for_h_in))
+
+	set h_any_$3 = histogram( for_h_in : xx )
+
+	vecminmax h_any_$3 dum _max
+	if( substr('$normalize',0,1) == 'y' ) { 
+	   set h_any_$3 = h_any_$3/sum(h_any_$3)
+	   define ymax 0.69
+	   define ymax 0.20
+	} else {
+	   define ymax 159
+	   define ymax 89
+	   define ymax 39
+	   define ymax $_max
+	}
+	define ymax ?      <                                ymax : >
+
+	if( substr('$par',0,1) == 'a' ) {
+	   define xtickbig 0.2
+	} else {
+	   define xtickbig 1
+	}
+
+        ticksize $hstep $xtickbig 0 0 
+
+	expand 1.5
+	ctype  2
+	lweight 3 
+	limits $hg_xmin $hg_xmax 0.01 $ymax
+	# box $box1 2 0 0 
+	box 1 2 0 0 
+	expand 2.5
+	# if( $box1 == 1 ) { xlabel $lab_x }
+
+	ctype $col
+	histogram xx h_any_$3
+	if( $type2plot == 1 ) { angle $slant }
+	if( $type2plot == 2 ) { angle $slant }
+	shade histogram 200 xx h_any_$3
+	angle 0
+	ctype 2 
+	
+#--------------------------------------------------------------------------

@@ -1,0 +1,445 @@
+#---------------------------------------------------------------------------
+# write_super_sample
+write_super_sample
+
+	set samples_list = < ffss dxrbs sede bade sallyc emss slew 1jy wp > 
+        define fmt "  %-20s  %6.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f   %3.1f  %3.1f\n"
+        define fmt "  %-20s  %6.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f   %1d  %1d\n"
+        foreach 9 < name flag_x z lg_f_radio lg_f_opt lg_f_x lg_kf_radio lg_kf_opt lg_kf_x l_radio l_opt l_x nl_radio nl_opt nl_x flag_x check_x > {
+           set _$9 local
+	}
+
+	define with_z_or_all ?  < Print only objects with redshift [y|n] : >
+	if( substr('$with_z_or_all',0,1) == 'y' ) { 
+	   define note_on_z "NOTE: Rejecting objects without redshift "
+	   define outf "new_ss_with_z.dat"
+	} else {
+	   define note_on_z "NOTE: Keeping also objects without redshift "
+	   define outf "new_ss_all.dat"
+	}
+
+
+	write   $outf "# New super sample "
+	write + $outf "# $!note_on_z "
+        write + $outf "#       name             z              lg_f_opt         lg_kf_radio        lg_kf_x        "
+        write + $outf "#                              lg_f_radio         lg_f_x           lg_kf_opt          l_radio   l_opt     l_x    nl_radio  nl_opt    nl_x "
+	define print_noheader 1
+
+	set _with_x local
+	define ntot   (0)
+	define ngood  (0)
+	define nwithx (0)
+	foreach 8 samples_list {
+	   # echo $8 $(dimen(check_x_$8))
+           foreach 9 < name flag_x check_x z lg_f_radio lg_f_opt lg_f_x lg_kf_radio lg_kf_opt lg_kf_x l_radio l_opt l_x nl_radio nl_opt nl_x flag_x > {
+	       if( substr('$with_z_or_all',0,1) == 'y' ) { 
+                  set _$9 = $9_$8   if( flag_z_$8 > 0 )
+	       } else {
+                  set _$9 = $9_$8 
+	       }
+           }
+	   set _with_x = _z  if( _check_x > 0 )
+	   define ntot   $( $ntot   + dimen(z_$8) )
+	   define ngood  $( $ngood  + dimen(_z) )
+	   define nwithx $( $nwithx + dimen(_with_x) )
+	   write + $outf "#SAMPLE: $!8 "
+           print + $outf '$!fmt' < _name _z _lg_f_radio _lg_f_opt _lg_f_x _lg_kf_radio _lg_kf_opt _lg_kf_x _l_radio _l_opt _l_x _nl_radio _nl_opt _nl_x _flag_x _check_x >
+	}
+
+	echo $note_on_z
+	echo "      Total number of objects IN     : "$ntot
+	echo "      Total number of objects OUT    : "$ngood
+	echo "      Total number of objects with X : "$nwithx
+	echo " " 
+	echo "REMEMBER that to use this file as input for the fortran code "
+	echo "  you need to remove the \# lines. "
+	echo "  It\'s enough to egrep SAMPLE... "
+
+#---------------------------------------------------------------------------
+# read_verybig
+#    Reads the "super sample" table, and performs some additional operations
+#    such as setting a plausible x_peak (two different parameterizations
+#    plus their average), etc.
+#
+read_verybig
+
+	data "/home/gfossati/Science/GLAST/super_sample.dat"
+	read { name 1.s z 2 lg_f_radio 3 lg_f_opt 4 lg_f_x 5 lg_kf_radio 6 lg_kf_opt 7 lg_kf_x 8 l_radio 9 l_opt 10 l_x 11 nl_radio 12 nl_opt 13 nl_x 14 }
+
+	set lista = < name \
+	              z \
+		      lg_f_radio \
+		      lg_f_opt \
+		      lg_f_x \
+		      lg_kf_radio \
+		      lg_kf_opt \
+		      lg_kf_x \
+		      l_radio \
+		      l_opt \
+		      l_x \
+		      nl_radio \
+		      nl_opt \
+		      nl_x >
+
+	set filter = lg_f_x
+	foreach var lista {
+	   set $var = $var if (filter < -25)
+	}
+
+	set a_rx = (lg_kf_radio - lg_kf_x)/7.685
+	set a_ro = (lg_kf_radio - lg_kf_opt)/5.037
+	set a_rxro = a_rx + a_ro
+
+	set xp_min = 19.75 - 7.7*sqrt((a_rxro - 0.56)/1.25)
+	set xp_max = 20.25 - 7.7*sqrt((a_rxro - 0.64)/1.25)
+	set xp_mid = 0.5*(xp_min + xp_max)
+
+	#
+	# It seems to be computing reverse-guessed radio luminosities from x_peak
+	#	
+        set p = xp_min
+        set aux1 = (0.011 + sqrt(5.e-7 + (0.011 - 0.00421875*(15. - p))**2.) - 0.00421875*(15. - p))**0.333333333 
+        set x = 5.33333 + 0.16798947/aux1 - (26.6667*aux1)/1.25992105 
+        set vlr_1 = x + 42.2
+	#	
+        set p = xp_mid
+        set aux1 = (0.011 + sqrt(5.e-7 + (0.011 - 0.00421875*(15. - p))**2.) - 0.00421875*(15. - p))**0.333333333 
+        set x = 5.33333 + 0.16798947/aux1 - (26.6667*aux1)/1.25992105 
+        set vlr_2 = x + 42.2
+	#	
+        set p = xp_max
+        set aux1 = (0.011 + sqrt(5.e-7 + (0.011 - 0.00421875*(15. - p))**2.) - 0.00421875*(15. - p))**0.333333333 
+        set x = 5.33333 + 0.16798947/aux1 - (26.6667*aux1)/1.25992105 
+        set vlr_3 = x + 42.2
+	#
+
+	set sed_l_x          = 0*vlr_3
+	set sed_arx          = 0*vlr_3
+	set sed_aro          = 0*vlr_3
+	set sed_peak         = 0*vlr_3
+	set sed_fl_xrm_10_20 = 0*vlr_3
+	set sed_fl_xrm_20_40 = 0*vlr_3
+	set sed_fl_xrm_40_80 = 0*vlr_3
+	set sed_fl_glast     = 0*vlr_3
+	set sed_fn_glast     = 0*vlr_3
+
+	define 2 ? < Which value for nu_peak [min=1/mid=2/max=3] : >
+	if( $2 == 1 ) {  define ext "min" }
+	if( $2 == 2 ) {  define ext "mid" }
+	if( $2 == 3 ) {  define ext "max" }
+
+	define gamma_level (1.0)
+	define gamma_level ? { Gamma-Ray Level : }
+
+	do 1=0,dimen(vlr_3)-1 {
+	    echo "@@@@ doing source "$($1+1)/$(dimen(vlr_3))
+
+	    #-------------------------------------------
+	    # this program is provided by 'glast_seds'
+            seds_comp_exp2 $(vlr_$2[$1]) 2000.0 11.7 8.3 0.2 -6.0 0.0 0.5 $gamma_level
+	    set sed_l_x[$1]  = $l_1kev_sc
+	    set sed_arx[$1]  = $alrx
+	    set sed_aro[$1]  = $alro
+	    set sed_peak[$1] = $x_peak
+
+	    set nulnu = nulnu + nl_x[$1] - sed_l_x[$1]
+
+	    define redshift $(z[$1])
+            echo "-------------------------------------------------------"
+            intflux  x  10  20 $redshift 
+	    set sed_fl_xrm_10_20[$1] = $dumfl
+            intflux  x  20  40 $redshift 
+	    set sed_fl_xrm_20_40[$1] = $dumfl
+            intflux  x  40  80 $redshift 
+	    set sed_fl_xrm_40_80[$1] = $dumfl
+            # intflux  x  80 200 $redshift
+            # intflux  x  10 200 $redshift
+            echo "-------------------------------------------------------"
+            intflux  g 100 30e3 $redshift
+	    set sed_fl_glast[$1] = $dumfl
+	    set sed_fn_glast[$1] = $dumfn
+            echo "-------------------------------------------------------"
+	}
+
+	set defvecs = < sed_l_x \
+	                sed_arx \
+			sed_aro \
+			sed_peak \
+			xp_min \
+			xp_mid \
+			xp_max \
+			sed_fl_xrm_10_20 \
+			sed_fl_xrm_20_40 \
+			sed_fl_xrm_40_80 \
+			sed_fl_glast \
+			sed_fn_glast >
+	echo "-------------------------------------------------------"
+	foreach 3 defvecs {
+	    echo "Renaming $3 --> "$3_$ext
+	    set $3_$ext = $3
+	}
+	echo "-------------------------------------------------------"
+
+#---------------------------------------------------------------------------
+# select_super_sample
+select_super_sample
+
+	set lista = < name \
+	              z \
+		      lg_f_radio \
+		      lg_f_opt \
+		      lg_f_x \
+		      lg_kf_radio \
+		      lg_kf_opt \
+		      lg_kf_x \
+		      l_radio \
+		      l_opt \
+		      l_x \
+		      nl_radio \
+		      nl_opt \
+		      nl_x >
+	set lista2 = defvecs
+
+	echo "-------------------------------------------------------"
+	echo " [1] XRM 10- 20 keV "
+	echo " [2] XRM 20- 40 keV "
+	echo " [3] XRM 40- 80 keV "
+	# echo " [4] # XRM 80-200 keV "
+	# echo " [5] # XRM 80-200 keV "
+	echo " [6] GLAST "
+	define sband ? { Which band : }
+
+	xrm_flux_limits
+
+	define soglia $(sens[$($sband-1)])
+
+	define which_peak ? { Which value for nu_peak [min=1/mid=2/max=3] : }
+	if ( $which_peak == 1 ) {  define ext "min" }
+	if ( $which_peak == 2 ) {  define ext "mid" }
+	if ( $which_peak == 3 ) {  define ext "max" }
+
+	if( $sband == 1 ) { set filtervec = sed_fl_xrm_10_20_$ext }
+	if( $sband == 2 ) { set filtervec = sed_fl_xrm_20_40_$ext }
+	if( $sband == 3 ) { set filtervec = sed_fl_xrm_40_80_$ext }
+	if( $sband == 6 ) { set filtervec = sed_fn_glast_$ext }
+
+	foreach 1 lista  {
+	    set red_$1_$ext = $1       if ( filtervec >= $soglia )
+	}
+	foreach 1 lista2 {
+	    set red_$1_$ext = $1_$ext  if ( filtervec >= $soglia )
+	}
+
+	define fmt "  %16s  %6.3f  %7.3f  %7.3f  %7.3f %7.3f  %7.3f  %7.3f %7.3f  %7.3f  %7.3f %7.3f  %7.3f  %7.3f \n"
+	define doprint ? { Print ? }
+	if( substr('$doprint',0,1) == 'y' ) {
+	   print '$!fmt' < red_name_$!ext red_z_$!ext red_lg_f_radio_$!ext red_lg_f_x_$!ext red_nl_radio_$!ext red_nl_x_$!ext red_sed_l_x_$!ext red_sed_fl_xrm_10_20_$!ext red_sed_fl_xrm_20_40_$!ext red_sed_fl_xrm_40_80_$!ext red_sed_fn_glast_$!ext >
+	}
+
+#---------------------------------------------------------------------------
+# set_detect
+#   Reads a 'Real Source' dat file and outputs the .OUT and .summary reports
+#
+set_detect
+
+	define wvar  ? < What CASE [e.g. plain|ic_10|sync_10|sed_10] : >
+	define wnorm ? <                  What normalization [R|X|H] : >
+	define wpeak ? <                      What PEAK-case [1|2|3] : >
+	define oldnew ? <                    Old or New runs [old|new] : >
+
+	if( substr('$oldnew',0,1) == 'o' ) { 
+	   define whatrun "old"
+	} else { 
+	   define whatrun "new"
+	}
+	define outfile1 "RS_"$wvar"_"$wnorm".peak"$wpeak".OUT"
+	define outfile2 "RS_"$wvar"_"$wnorm".peak"$wpeak".summary"
+	data "/home/gfossati/Science/GLAST/"$whatrun"/results_Real_Sources/RS_"$wvar"_"$wnorm".peak"$wpeak".dat"
+	
+	echo $outfile1
+	read { tmp_peak 8.s tmp_day 9.s tmp_week 10.s tmp_surv 11.s test 12.s }
+	read { tmp_fr 2 tmp_fx 4 }
+
+	set day  = tmp_day  if(test != 'NaN' && test != 'Infinity' )
+	set week = tmp_week if(test != 'NaN' && test != 'Infinity' )
+	set surv = tmp_surv if(test != 'NaN' && test != 'Infinity' )
+	set peak = tmp_peak if(test != 'NaN' && test != 'Infinity' )
+	set fr   = tmp_fr   if(test != 'NaN' && test != 'Infinity' )
+	set fx   = tmp_fx   if(test != 'NaN' && test != 'Infinity' )
+	delete tmp_day
+	delete tmp_week
+	delete tmp_surv
+	delete tmp_peak
+
+	set peak = atof(peak)
+
+	do 1=0,5 {
+	   foreach 2 < day week surv > {
+	      set $2_$($1+1) = substr($2,$1,1)
+	      set $2_$($1+1) = atof($2_$($1+1))
+	   }
+	}
+
+	set binvec = < 1 2 4 8 16 32 >
+	foreach 1 < day week surv > { set $1_ch = $1_1 + 2*$1_2 + 4*$1_3 + 8*$1_4 + 16*$1_5 + 32*$1_6 }
+	set det_dum  =0,63,1
+	set det_day  = 0*det_dum
+	set det_week = 0*det_dum
+	set det_surv = 0*det_dum
+	set dimen(det_string) = 64.s
+
+	set det_string_a = { ------ *----- -*---- **---- --*--- *-*--- -**--- ***--- \
+                             ---*-- *--*-- -*-*-- **-*-- --**-- *-**-- -***-- ****-- \
+                             ----*- *---*- -*--*- **--*- --*-*- *-*-*- -**-*- ***-*- \
+                             ---**- *--**- -*-**- **-**- --***- *-***- -****- *****- \
+			     -----* *----* -*---* **---* --*--* *-*--* -**--* ***--* \
+                             ---*-* *--*-* -*-*-* **-*-* --**-* *-**-* -***-* ****-* \
+                             ----** *---** -*--** **--** --*-** *-*-** -**-** ***-** \
+                             ---*** *--*** -*-*** **-*** --**** *-**** -***** ****** }
+	set det_string_b = {  '       '   [10--20]   [20--40]   [10++40]   [40--80]    '     '   [20++80]   [10++80] \
+                               [80-200]   '     '    '     '    '     '    [40+200]    '     '   [20+200]   [10+200] \
+                             xrmTOT-only  [10--20]   [20--40]   [10++40]   [40--80]    '     '   [20++80]   [10++80] \
+                               [80-200]   '     '    '     '    '     '    [40+200]    '     '   [20+200]   [10+200] \
+			      GLAST_only  [10--20]   [20--40]   [10++40]   [40--80]    '     '   [20++80]   [10++80] \
+                               [80-200]   '     '    '     '    '     '    [40+200]    '     '   [20+200]   [10+200] \
+                             xrmTOT-only  [10--20]   [20--40]   [10++40]   [40--80]    '     '   [20++80]   [10++80] \
+                               [80-200]   '     '    '     '    '     '    [40+200]    '     '   [20+200]   [10+200] }
+	set det_string_c = { no-detection  no-XRMTOT  no-XRMTOT  no-XRMTOT  no-XRMTOT  no-XRMTOT  no-XRMTOT  no-XRMTOT \
+                               no-XRMTOT   no-XRMTOT  no-XRMTOT  no-XRMTOT  no-XRMTOT  no-XRMTOT  no-XRMTOT  no-XRMTOT \
+                              '         '  +XRMTOT    +XRMTOT    +XRMTOT    +XRMTOT    +XRMTOT    +XRMTOT    +XRMTOT \
+                              '         '  +XRMTOT    +XRMTOT    +XRMTOT    +XRMTOT    +XRMTOT    +XRMTOT    +XRMTOT \
+                              GLAST_no-XRMTOT  GLAST_no-XRMTOT  GLAST_no-XRMTOT  GLAST_no-XRMTOT  \
+			      GLAST_no-XRMTOT  GLAST_no-XRMTOT  GLAST_no-XRMTOT  GLAST_no-XRMTOT \
+                              GLAST_no-XRMTOT  GLAST_no-XRMTOT  GLAST_no-XRMTOT  GLAST_no-XRMTOT  \
+			      GLAST_no-XRMTOT  GLAST_no-XRMTOT  GLAST_no-XRMTOT  GLAST_no-XRMTOT \
+                              GLAST___+XRMTOT  GLAST___+XRMTOT  GLAST___+XRMTOT  GLAST___+XRMTOT \
+		              GLAST___+XRMTOT  GLAST___+XRMTOT  GLAST___+XRMTOT  GLAST___+XRMTOT  \
+                              GLAST___+XRMTOT  GLAST___+XRMTOT  GLAST___+XRMTOT  GLAST___+XRMTOT \
+			      GLAST___+XRMTOT  GLAST___+XRMTOT  GLAST___+XRMTOT  GLAST___+XRMTOT  }
+
+	foreach 1 < day week surv > {
+	     do 2=0,$(dimen(day_1)-1) {
+		 define 3 $($1_ch[$2])
+		 set det_$1[$3] = det_$1[$3] + 1
+	     } 
+	}
+	write   $outfile1 -----------------------------------------------------------------
+	write + $outfile1       Results for: $outfile1
+	write + $outfile1 -----------------------------------------------------------------
+	print + $outfile1 ' %16s %12s  %6s  %3g  %3g  %3g \n' { det_string_c det_string_b det_string det_day det_week det_surv }
+	write + $outfile1 -----------------------------------------------------------------
+
+	# echo "-------------------------------------------------------"
+	# xrm 
+	#
+	set pp=9,21,2
+	foreach 1 < day week surv > {
+	   set pip_peak_$1 = peak if( $1_ch >= 48 || ($1_ch >= 16 && $1_ch < 32))
+	   set pip_fr_$1   = fr   if( $1_ch >= 48 || ($1_ch >= 16 && $1_ch < 32))
+	   set pip_fx_$1   = fx   if( $1_ch >= 48 || ($1_ch >= 16 && $1_ch < 32))
+	   set pip_arx_$1  = (fr-fx)/7.685 if( $1_ch >= 48 || ($1_ch >= 16 && $1_ch < 32))
+	   set hp_$1=histogram(pip_peak_$1:pp)
+	}
+
+	foreach 1 < day week surv > {
+	   set pip  = det_$1      if( det_dum >= 48 || (det_dum >= 16 && det_dum < 32))
+	   define n_$1_TOT  $(sum(pip))
+	   set pip  = det_$1      if( ( det_dum > 0 && det_dum <  16) || (det_dum >  32 && det_dum <  48))
+	   define n_$1_not_TOT $(sum(pip))
+	   set pip  = det_$1      if( ((det_dum-15) % 16) == 0 )
+	   define n_$1_all  $(sum(pip))
+	   set pip  = det_$1      if( (det_dum > 16 && det_dum < 32) || (det_dum > 48) )
+	   define n_$1_any $(sum(pip)-$n_$1_all)
+	   set pip  = det_$1      if( (det_dum % 16) == 1 )
+	   define n_$1_10_20 $(sum(pip))
+	   set pip  = det_$1      if( (det_dum % 16) == 8 )
+	   define n_$1_80_200 $(sum(pip))
+	   set pip  = det_$1      if( det_dum > 0 && det_dum < 32 )
+	   define n_$1_not_glast $(sum(pip))
+	   set pip  = det_$1      if( det_dum >= 32 )
+	   define n_$1_glast $(sum(pip))
+	   set pip  = det_$1      if( det_dum >= 32 && det_dum < 48)
+	   define n_$1_glast_not_xrm $(sum(pip))
+	}
+
+	echo "-------------------------------------------------------"
+	echo "    Results for: "$outfile1
+	echo "-------------------------------------------------------"
+	echo "XRM detections   : "$(sprintf('%3g',$n_day_TOT)) [+$(sprintf('%2g',$n_day_not_TOT))]    $(sprintf('%3g',$n_week_TOT)) [+$(sprintf('%2g',$n_week_not_TOT))]     $(sprintf('%3g',$n_surv_TOT)) [+$(sprintf('%2g',$n_surv_not_TOT))]
+	echo "    not-GLAST    : "$(sprintf('%3g',$n_day_not_glast))          $(sprintf('%3g',$n_week_not_glast))          $(sprintf('%3g',$n_surv_not_glast)) 
+	echo "    all bands    : "$(sprintf('%3g',$n_day_all))          $(sprintf('%3g',$n_week_all))          $(sprintf('%3g',$n_surv_all))
+	echo "    any band     : "$(sprintf('%3g',$n_day_any)) [+$(sprintf('%2g',$n_day_not_TOT))]    $(sprintf('%3g',$n_week_any)) [+$(sprintf('%2g',$n_week_not_TOT))]     $(sprintf('%3g',$n_surv_any)) [+$(sprintf('%2g',$n_surv_not_TOT))]
+	echo "    only 10- 20  : "$(sprintf('%3g',$n_day_10_20))          $(sprintf('%3g',$n_week_10_20))          $(sprintf('%3g',$n_surv_10_20)) 
+	echo "    only 80-200  : "$(sprintf('%3g',$n_day_80_200))          $(sprintf('%3g',$n_week_80_200))          $(sprintf('%3g',$n_surv_80_200)) 
+	echo "  "
+	echo "GLAST detections : "$(sprintf('%3g',$n_day_glast))          $(sprintf('%3g',$n_week_glast))          $(sprintf('%3g',$n_surv_glast))
+	echo "      not-XRM    : "$(sprintf('%3g',$n_day_glast_not_xrm))          $(sprintf('%3g',$n_week_glast_not_xrm))          $(sprintf('%3g',$n_surv_glast_not_xrm)) 
+	echo "   "
+	echo "      nu_p < 14  : "$(sprintf('%3g',$(hp_day[0]+hp_day[1]+hp_day[2])))          $(sprintf('%3g',$(hp_week[0]+hp_week[1]+hp_week[2])))          $(sprintf('%3g',$(hp_surv[0]+hp_surv[1]+hp_surv[2])))
+	echo " 14 < nu_p < 16  : "$(sprintf('%3g',$(hp_day[3])))          $(sprintf('%3g',$(hp_week[3])))          $(sprintf('%3g',$(hp_surv[3])))
+	echo " 16 < nu_p       : "$(sprintf('%3g',$(hp_day[4]+hp_day[5]+hp_day[6])))          $(sprintf('%3g',$(hp_week[4]+hp_week[5]+hp_week[6])))          $(sprintf('%3g',$(hp_surv[4]+hp_surv[5]+hp_surv[6])))
+	echo "-------------------------------------------------------"
+
+	print_detect_to_file
+
+##
+print_detect_to_file
+
+	write $outfile2 -------------------------------------------------------
+	write $outfile2     Results for: $outfile1
+	write $outfile2 -------------------------------------------------------
+	write $outfile2 XRM detections   :  $(sprintf('%3g',$n_day_TOT)) [+$(sprintf('%2g',$n_day_not_TOT))]   $(sprintf('%3g',$n_week_TOT)) [+$(sprintf('%2g',$n_week_not_TOT))]     $(sprintf('%3g',$n_surv_TOT)) [+$(sprintf('%2g',$n_surv_not_TOT))]
+	write $outfile2     not-GLAST    :  $(sprintf('%3g',$n_day_not_glast))          $(sprintf('%3g',$n_week_not_glast))          $(sprintf('%3g',$n_surv_not_glast)) 
+	write $outfile2     all bands    :  $(sprintf('%3g',$n_day_all))          $(sprintf('%3g',$n_week_all))          $(sprintf('%3g',$n_surv_all))
+	write $outfile2     any band     :  $(sprintf('%3g',$n_day_any)) [+$(sprintf('%2g',$n_day_not_TOT))]   $(sprintf('%3g',$n_week_any)) [+$(sprintf('%2g',$n_week_not_TOT))]     $(sprintf('%3g',$n_surv_any)) [+$(sprintf('%2g',$n_surv_not_TOT))]
+	write $outfile2     only 10- 20  :  $(sprintf('%3g',$n_day_10_20))          $(sprintf('%3g',$n_week_10_20))          $(sprintf('%3g',$n_surv_10_20)) 
+	write $outfile2     only 80-200  :  $(sprintf('%3g',$n_day_80_200))          $(sprintf('%3g',$n_week_80_200))          $(sprintf('%3g',$n_surv_80_200)) 
+	write $outfile2
+	write $outfile2 GLAST detections :  $(sprintf('%3g',$n_day_glast))          $(sprintf('%3g',$n_week_glast))          $(sprintf('%3g',$n_surv_glast))
+	write $outfile2       not-XRM    :  $(sprintf('%3g',$n_day_glast_not_xrm))          $(sprintf('%3g',$n_week_glast_not_xrm))          $(sprintf('%3g',$n_surv_glast_not_xrm)) 
+	write $outfile2
+	write $outfile2       nu_p < 14  :  $(sprintf('%3g',$(hp_day[0]+hp_day[1]+hp_day[2])))          $(sprintf('%3g',$(hp_week[0]+hp_week[1]+hp_week[2])))          $(sprintf('%3g',$(hp_surv[0]+hp_surv[1]+hp_surv[2])))
+	write $outfile2  14 < nu_p < 16  :  $(sprintf('%3g',$(hp_day[3])))          $(sprintf('%3g',$(hp_week[3])))          $(sprintf('%3g',$(hp_surv[3])))
+	write $outfile2  16 < nu_p       :  $(sprintf('%3g',$(hp_day[4]+hp_day[5]+hp_day[6])))          $(sprintf('%3g',$(hp_week[4]+hp_week[5]+hp_week[6])))          $(sprintf('%3g',$(hp_surv[4]+hp_surv[5]+hp_surv[6])))
+	write $outfile2 -------------------------------------------------------
+
+	# echo "-------------------------------------------------------"
+	# echo XRM detections   :  $(sprintf('%3g',$n_day_TOT)) [+$(sprintf('%2g',$n_day_not_TOT))]
+	# echo     not-GLAST    :  $(sprintf('%3g',$n_day_not_glast))
+	# echo     all bands    :  $(sprintf('%3g',$n_day_all))
+	# echo     any band     :  $(sprintf('%3g',$n_day_any)) [+$(sprintf('%2g',$n_day_not_TOT))]
+	# echo     only 10- 20  :  $(sprintf('%3g',$n_day_10_20))
+	# echo     only 80-200  :  $(sprintf('%3g',$n_day_80_200))
+	# echo GLAST detections :  $(sprintf('%3g',$n_day_glast))
+	# echo       not-XRM    :  $(sprintf('%3g',$n_day_glast_not_xrm))
+	# echo -------------------------------------------------------
+
+	echo "-------------------------------------------------------"
+
+
+
+#---------------------------------------------------------------------------
+# doubles
+doubles
+
+	foreach 1 < day week surv > {
+	  set qq_$1 = $1_ch*0.0
+
+	  do 2=0,$(dimen(day_1)-1) {
+	      if( $1_ch[$2] >= 48 || ($1_ch[$2] >= 16 && $1_ch[$2] < 32)) { 
+		 set qq_$1[$2] = 1
+              } 
+  	      if( ( $1_ch[$2] > 0 && $1_ch[$2] < 16) || ($1_ch[$2] > 32 && $1_ch[$2] <  48)) {
+	         set qq_$1[$2] = 1
+	      } 
+	  } 
+	}
+	define sfx ? < Suffix for renaming : >
+
+	foreach 1 < day week surv > {
+	    set qq_$1_$sfx = qq_$1
+	    delete qq_$1
+	}
+
+
+#---------------------------------------------------------------------------

@@ -1,0 +1,1378 @@
+#-------------------------------------------------------------------------------
+# delta_vs_theta
+delta_vs_theta
+
+        reset_graph
+        set theta=0,90,0.01
+
+        define Gamma local
+	define Gamma ? < Lorenz factor : >
+
+        set delta = 1./($Gamma - sqrt($Gamma**2. - 1)*cosd(theta))
+	set lg_delta = lg(delta)
+
+        limits -5 95 lg_delta 
+        limits -5 95 $(lg(0.08)) $(lg(70))
+	ticksize 2 10 -1 0 
+        box
+	ticksize 2 10 -5 0 
+        box
+	xlabel \theta\ [deg]
+	ylabel \delta
+
+	ctype 4 
+	ltype 2 
+        relocate $fx1 $(lg($Gamma))
+	draw     $fx2 $(lg($Gamma))
+        relocate $(360/2./3.1415/$Gamma) $fy1 
+	draw     $(360/2./3.1415/$Gamma) $fy2 
+	ctype 2 
+	ltype 0 
+
+	ctype 3 
+	lweight 4 
+        connect theta lg_delta
+	lweight 3
+	ctype 2 
+        
+	echo "----------------------------------------"
+	foreach 9 < 1 10 50 > { 
+           set testy = abs(lg_delta - lg($Gamma/$9))
+           set testx = theta
+           set testn = 0,dimen(testx)-1
+           sort < testy testx testn >
+           relocate $(testx[0]) $(lg_delta[testn[0]])
+           ptype 4 3 
+           dot
+           echo " delta = delta/"$(sprintf('%2.0f',$(1.0001*$9)))"  theta = "$(sprintf('%4.1f',$(testx[0])))"  cos(theta) = "$(sprintf('%5.3f',$(cosd(testx[0]))))
+	}
+	echo "----------------------------------------"
+
+#-------------------------------------------------------------------------------
+# deltaGamma_vs_theta
+deltaGamma_vs_theta
+
+        reset_graph
+        set theta=0,90,0.01
+
+        define Gamma local
+	define Gamma ? < Lorenz factor : >
+
+        set delta = 1./($Gamma - sqrt($Gamma**2. - 1)*cosd(theta))
+	set lg_delta = lg(delta)
+	set lg_deltagamma = lg(delta) - lg($Gamma)
+
+        limits -2 25 $(lg(0.08)) $(lg(70))
+        limits -2 25 lg_deltagamma
+        limits -2 25 $(lg(0.02)) $(lg(3))
+	ticksize 2 10 -1 0 
+        limits -2 15 $(lg(0.05)) $(lg(3))
+	ticksize 1 5 -1 0 
+        box
+	ticksize 2 10 -5 0 
+        box
+	xlabel \theta\ [deg]
+	ylabel \delta/\Gamma
+
+	ctype 4 
+	ltype 2 
+        relocate $fx1 $(lg($Gamma))
+	draw     $fx2 $(lg($Gamma))
+        relocate $(360/2./3.1415/$Gamma) $fy1 
+	draw     $(360/2./3.1415/$Gamma) $fy2 
+	ctype 2 
+	ltype 0 
+
+	ctype 3 
+	lweight 4 
+        connect theta lg_deltagamma
+	lweight 3
+	ctype 2 
+        
+#-------------------------------------------------------------------------------
+# delta_vs_mu
+delta_vs_mu
+
+        reset_graph
+        set mu=1.0,0.0,0.01
+	# set mu = cosd(theta)
+
+        define Gamma local
+	define Gamma ? < Lorenz factor : >
+
+        set delta = 1./($Gamma - sqrt($Gamma**2. - 1)*mu)
+	set lg_delta = lg(delta)
+
+        #limits 1.05 -0.05 lg_delta 
+	#ticksize 0 0 -1 0 
+        #box
+        limits 1.05 -0.05 lg_delta 
+        limits 1.05 -0.05 $(lg(0.08)) $(lg(70))
+	ticksize 0 0 -1 0 
+        box
+	ticksize 0 0 -5 0 
+        box
+	xlabel cos(\theta)
+	ylabel \delta
+
+	ctype 4 
+	ltype 2 
+        relocate $fx1 $(lg($Gamma))
+	draw     $fx2 $(lg($Gamma))
+        relocate $(cos(360/2./3.1415/$Gamma)) $fy1 
+	draw     $(cos(360/2./3.1415/$Gamma)) $fy2 
+	ctype 2 
+	ltype 0 
+
+	ctype 3 
+	lweight 4 
+        connect mu lg_delta
+	lweight 3
+	ctype 2 
+        
+	echo "----------------------------------------"
+	foreach 9 < 1 10 50 > { 
+           set testy = abs(lg_delta - lg($Gamma/$9))
+           set testx = mu
+           set testn = 0,dimen(testx)-1
+           sort < testy testx testn >
+           relocate $(testx[0]) $(lg_delta[testn[0]])
+           ptype 4 3 
+           dot
+           echo " delta = delta/"$(sprintf('%2.0f',$(1.0001*$9)))"  cos(theta) = "$(sprintf('%5.3f',$(testx[0])))
+	}
+	echo "----------------------------------------"
+
+#-------------------------------------------------------------------------------
+# bapp_vs_theta
+bapp_vs_theta
+
+        reset_graph
+	# location $gx1 $gx2 $gy1 $($gy2-1500)
+
+	define dmu (0.0001)
+        set mu=0.0,1.0,$dmu
+	set theta=acosd(mu)
+
+	#define dtheta (0.01)
+        #set theta=$dtheta,180-$dtheta,$dtheta
+
+	define Gamma local
+	define Gamma ? < Lorenz factor : >
+
+	define beta $( sqrt(1.0 - 1.0/$Gamma**2.0) )
+
+	set beta_app = $beta*sind(theta)/(1 - $beta*cosd(theta)) 
+	set delta    = 1/$Gamma/(1 - $beta*cosd(theta)) 
+
+        define one_over_Gamma $(360/2./3.1415/$Gamma)
+	echo " 1/Gamma angle = "$one_over_Gamma
+
+	#define aa (1.0)
+	#define theta_half $( acosd(($aa*$Gamma**2. - 1)/$aa/$Gamma/sqrt($Gamma**2.-1)) )
+	#echo " theta(delta=1.0/Gamma) = "$theta_half
+	define aa (0.5)
+	define theta_half $( acosd(($aa*$Gamma**2. - 1)/$aa/$Gamma/sqrt($Gamma**2.-1)) )
+	echo " theta(delta="$aa"/Gamma) = "$theta_half
+	define aa (0.25)
+	define theta_quarter $( acosd(($aa*$Gamma**2. - 1)/$aa/$Gamma/sqrt($Gamma**2.-1)) )
+	echo " theta(delta="$aa"/Gamma) = "$theta_quarter
+
+	vecminmax beta_app a b 
+
+        limits -1 25 -1 $($b+0.1*$b)
+        limits -1 25 -1 35
+	ticksize 0 0 0 0 
+        box 1 2 0 0
+	xlabel \theta
+	ylabel \beta_{app}
+
+	ctype 4 
+	ltype 2 
+        relocate $($one_over_Gamma/2.) $fy1 
+	draw     $($one_over_Gamma/2.) $fy2 
+	ltype 3 
+        relocate $one_over_Gamma $fy1 
+	draw     $one_over_Gamma $fy2 
+	ltype 2 
+        relocate $theta_half $fy1 
+	draw     $theta_half $fy2 
+	ltype 2 
+        relocate $theta_quarter $fy1 
+	draw     $theta_quarter $fy2 
+	ctype 2 
+	ltype 0 
+
+	ctype 3 
+	lweight 4 
+        connect theta beta_app
+	lweight 3
+	ctype 2 
+
+	set vec_ref_angles = < $($one_over_Gamma/2.) $one_over_Gamma $theta_half $theta_quarter >
+	define j (0)
+	echo "----------------------------------------"
+	foreach 9 vec_ref_angles  { 
+	   define j ($j+1)
+           set testx = abs(theta - $9)
+           set testy = beta_app
+           set testn = 0,dimen(testx)-1
+           sort < testx testy testn >
+           relocate $(theta[testn[0]]) $(testy[0])
+	   define dd $( 1.0/$Gamma/(1.0 - $beta*cosd($(theta[testn[0]]))) )
+           ptype 4 3 
+           dot
+           echo " theta = "$(sprintf('%6.3f',$(theta[testn[0]])))"  beta_app = "$(sprintf('%4.1f',$(testy[0])))"  delta = "$(sprintf('%5.2f',$dd))
+
+	   grelocate 0.35 $(1.0 - 0.05*$j)
+	   expand 1.1
+	   putlabel 6 " \theta="$(sprintf('%5.2f',$(theta[testn[0]])))",   \beta_{app}="$(sprintf('%4.1f',$(testy[0])))",   \delta="$(sprintf('%5.2f',$dd))
+	   expand 1.5
+	}
+	echo "----------------------------------------"
+
+	grelocate 0.0 1.025 
+	putlabel 6 "\Gamma = "$Gamma
+
+##-------------------------------------------------------------------------------
+## delta_sintheta_vs_mu  [SOME PROBLEMS]
+delta_sintheta_vs_mu
+
+        reset_graph
+	notation -2 2 -2 2
+
+	define dtheta (0.01)
+        set theta=$dtheta,90-$dtheta,$dtheta
+	set mu = cosd(theta)
+
+        define Gamma local
+	define Gamma    ? <  Lorenz factor : >
+	define which_IC ? < EC or IC [e|i] : > 
+	if( substr('$which_IC',0,1) == 'e' ) { define ic_factor (6) } 
+	if( substr('$which_IC',0,1) == 'i' ) { define ic_factor (4) } 
+
+        set delta = 1./($Gamma - sqrt($Gamma**2. - 1)*mu)
+	set lg_delta = lg(delta)
+	set factor = $ic_factor*lg_delta + lg(sind(theta)*$dtheta) 
+
+	vecminmax factor a b 
+	set factor = factor - $b
+
+        # limits 1.05 -0.05 factor
+        # limits 1.05 -0.05 $(lg(0.08)) $(lg(70))
+	limits 1.05 -0.05 -5 $(lg(2))
+	limits 1.01 0.85 -5 $(lg(2))
+	ticksize 0 0 -1 0 
+        box
+	#ticksize 0 0 -5 0 
+        #box
+	xlabel cos(\theta)
+	ylabel \delta^{$ic_factor} sin(\theta)d\theta
+
+	ctype 4 
+	ltype 2 
+        relocate $fx1 $(lg($Gamma))
+	draw     $fx2 $(lg($Gamma))
+        relocate $(cos(360/2./3.1415/$Gamma)) $fy1 
+	draw     $(cos(360/2./3.1415/$Gamma)) $fy2 
+	ctype 2 
+	ltype 0 
+
+	ctype 3 
+	lweight 4 
+        connect mu factor
+	lweight 3
+	ctype 2 
+        
+	echo "----------------------------------------"
+	foreach 9 < 1 10 50 > { 
+           set testy = abs(factor - lg($Gamma/$9))
+           set testx = mu
+           set testn = 0,dimen(testx)-1
+           sort < testy testx testn >
+           relocate $(testx[0]) $(factor[testn[0]])
+           ptype 4 3 
+           dot
+           echo " delta = delta/"$(sprintf('%2.0f',$(1.0001*$9)))"  cos(theta) = "$(sprintf('%5.3f',$(testx[0])))
+	}
+	echo "----------------------------------------"
+
+#-------------------------------------------------------------------------------
+# delta_sintheta_vs_theta
+delta_sintheta_vs_theta
+
+        reset_graph
+	notation -2 2 -2 2
+
+	define dtheta (0.01)
+        set theta=$dtheta,90-$dtheta,$dtheta
+
+        define Gamma local
+	define Gamma    ? <  Lorenz factor : >
+	define which_IC ? < EC or IC [e|i] : > 
+	if( substr('$which_IC',0,1) == 'e' ) { define ic_factor (6) } 
+	if( substr('$which_IC',0,1) == 'i' ) { define ic_factor (4) } 
+
+	define beta $( sqrt(1.0 - 1.0/$Gamma**2.0) )
+        define one_over_Gamma $(360.0/2.0/$pi/$Gamma)
+	echo " 1/Gamma angle = "$one_over_Gamma
+
+        set delta    = 1./($Gamma - sqrt($Gamma**2. - 1)*cosd(theta))
+	set lg_delta = lg(delta)
+	set factor   = $ic_factor*lg_delta + lg(sind(theta)*$dtheta) 
+	set beta_app = $beta*sind(theta)/(1 - $beta*cosd(theta)) 
+
+        define delta_ooG  $( 1./($Gamma - sqrt($Gamma**2. - 1)*cosd($one_over_Gamma)) )
+	define factor_ooG $( $ic_factor*lg($delta_ooG) + lg(sind($one_over_Gamma)*$dtheta) )
+
+	vecminmax factor a b 
+	set factor = factor - $b
+	define factor_ooG $(10.0**($b - $factor_ooG))
+	# echo $delta_ooG $factor_ooG $($factor_ooG - $b)
+
+        # limits -5 95 factor
+        # limits -5 95 $(lg(0.08)) $(lg(70))
+	limits -1 30 -5 $(lg(2))
+	ticksize 2 10 -1 0 
+        box
+	#ticksize 2 10 -5 0 
+        #box
+	xlabel \theta\ [deg]
+	ylabel \delta^{$ic_factor} sin(\theta) d\theta
+
+	ctype 4 
+	ltype 2 
+        #relocate $fx1 $(lg($Gamma))
+	#draw     $fx2 $(lg($Gamma))
+        relocate $one_over_Gamma $fy1 
+	draw     $one_over_Gamma $fy2 
+	ctype 2 
+	ltype 0 
+
+	ctype 3 
+	lweight 4 
+        connect theta factor
+	lweight 3
+	ctype 2 
+        
+	echo "-----------------------------------------------------------------"
+        echo "  max(factor)/n   theta           cos(theta)  beta_app   delta "
+	foreach 9 < 1 3 10 $factor_ooG > { 
+           set testy = abs(factor + lg($9))
+           set testt = theta
+	   set testf = factor
+	   set testd = delta
+	   set testb = beta_app
+           set testn = 0,dimen(testt)-1
+           sort < testy testt testn testf testd testb >
+           relocate $(testt[0]) $(factor[testn[0]])
+           ptype 4 3 
+	   ctype 5 
+           dot
+	   ctype 2 
+	   define d2d $( (testd[0]/$Gamma)**$ic_factor )
+           echo "     "$(sprintf('%5.2f',$(1.0001*$9)))"       "$(sprintf('%6.3f',$(testt[0])))" "$(sprintf('%6.3f',$(testt[0]/$one_over_Gamma)))"     "$(sprintf('%7.5f',$(cosd(testt[0]))))"     "$(sprintf('%5.2f',$(testb[0])))"     "$(sprintf('%5.2f',$(testd[0])))"   "$(sprintf('%5.1f',$d2d))
+           #echo " factor= max(factor)/"$(sprintf('%2.0f',$(1.0001*$9)))" ,  theta= "$(sprintf('%6.3f',$(testt[0])))" ,  factor= "$(sprintf('%6.3f',$(testf[0])))" ,  cos(theta)= "$(sprintf('%7.5f',$(cosd(testt[0]))))
+
+	}
+	echo "-----------------------------------------------------------------"
+
+	# NOT SURE WHAT THIS WAS SUPPOSED TO DO!?
+        #GF?# echo "----------------------------------------"
+        #GF?# foreach 9 < 1 10 50 > { 
+        #GF?#    set testy = abs(factor - lg($Gamma/$9))
+        #GF?#    set testx = theta
+        #GF?#    set testf = factor
+        #GF?#    set testn = 0,dimen(testx)-1
+        #GF?#    sort < testy testx testn testf >
+        #GF?#    relocate $(testx[0]) $(factor[testn[0]])
+        #GF?#    ptype 4 3 
+        #GF?#    dot
+        #GF?#    echo " delta = delta/"$(sprintf('%2.0f',$(1.0001*$9)))"  theta = "$(sprintf('%4.1f',$(testx[0])))"  factor = "$(sprintf('%6.3f',$(testf[0])))"  cos(theta) = "$(sprintf('%7.5f',$(cosd(testx[0]))))
+        #GF?# }
+        #GF?# echo "----------------------------------------"
+
+#-------------------------------------------------------------------------------
+# theta_to_theta
+theta_to_theta
+
+        reset_graph
+	define dtheta (0.01)
+        set theta=$dtheta,180-$dtheta,$dtheta
+
+        define Gamma local
+	define Gamma ? < Lorenz factor : >
+
+	define beta $( sqrt(1.0 - 1.0/$Gamma**2.0) )
+
+	set theta_obs = acosd( (cosd(theta) + $beta)/(1.0 + $beta*cosd(theta)) ) 
+
+        limits -5 185 theta_obs
+	ticksize 5 20 0 0 
+        box
+	xlabel \theta\'\ [deg]
+	ylabel \theta_{obs} [deg]
+
+	ctype 3 
+	lweight 4 
+        connect theta theta_obs
+	lweight 3
+	ctype 2 
+	
+#-------------------------------------------------------------------------------
+# aspect_curve   (beta_app vs. L_core)
+aspect_curve
+
+        reset_graph
+	# location $gx1 $gx2 $gy1 $($gy2-1500)
+
+	define dtheta (0.01)
+        set theta=$dtheta,180-$dtheta,$dtheta
+
+	define Gamma local
+	define Gamma ? < Lorenz factor : >
+
+	define nuR   (300e6)
+	define nuR   (1.4e9)
+	define P_int (5e24)
+	define p local
+	define p (2)
+
+	define lg_L_int (lg($P_int) + 7 + lg($nuR))
+
+	define beta $( sqrt(1.0 - 1.0/$Gamma**2.0) )
+
+	set beta_app = $beta*sind(theta)/(1 - $beta*cosd(theta)) 
+	set delta    = 1/$Gamma/(1 - $beta*cosd(theta)) 
+	set lg_L     = $lg_L_int + $p*lg(delta) 
+
+        # limits lg_L beta_app 
+        limits 36 45 -5 60 
+        limits 36 46 -5 60 
+	ticksize  0.25 1 5 10
+        limits 36 46 $(lg(0.02)) $(lg(75))
+	ticksize  0.25 1 -1 0
+        box 1 2 3 0 
+	xlabel L_{core} [erg/s]
+	ylabel \beta_{app}
+
+	ctype 3 
+	lweight 4 
+        #connect lg_L beta_app
+        connect lg_L (lg(beta_app))
+	lweight 3
+	ctype 2 
+
+        # limits $(36-7-lg($nuR)) $(45-7-lg($nuR)) -5 60 
+        limits $($fx1-7-lg($nuR)) $($fx2-7-lg($nuR)) -5 60 
+	ticksize  0.25 1 5 10
+        box 3 3 1 3 
+
+#-------------------------------------------------------------------------------
+# bapp_vs_delta
+bapp_vs_delta
+
+        reset_graph
+	# location $gx1 $gx2 $gy1 $($gy2-1500)
+
+	define dmu (0.001)
+        set mu=0.0,1.0,$dmu
+	set theta=acosd(mu)
+
+	#define dtheta (0.01)
+        #set theta=$dtheta,180-$dtheta,$dtheta
+
+	define Gamma local
+	define Gamma ? < Lorenz factor : >
+
+	define beta $( sqrt(1.0 - 1.0/$Gamma**2.0) )
+
+	set beta_app = $beta*sind(theta)/(1 - $beta*cosd(theta)) 
+	set delta    = 1/$Gamma/(1 - $beta*cosd(theta)) 
+
+        # limits lg_L beta_app 
+        limits delta -5 60 
+	ticksize 0 0 0 0 
+        box 1 2 0  0
+	xlabel \delta
+	ylabel \beta_{app}
+
+	ctype 3 
+	lweight 4 
+        connect delta beta_app
+	lweight 3
+	ctype 2 
+
+	define nthin $( dimen(theta)/30 )
+	set tht = mythin(theta,$nthin)
+	set thb = mythin(beta_app,$nthin)
+	set thd = mythin(delta,$nthin)
+	set thm = mythin(mu,$nthin)
+
+	points thd thb
+
+#-------------------------------------------------------------------------------
+# beaming_comparison
+beaming_comparison
+
+        reset_graph
+        set theta=0,90,0.01
+
+        define Gamma local
+	define Gamma ? < Lorenz factor : >
+
+        set delta = 1./($Gamma - sqrt($Gamma**2. - 1)*cosd(theta))
+	set lg_delta = lg(delta)
+
+	define p (3)
+
+	set beaming_1 = $p*lg_delta
+	set beaming_2 = ($p+2)*lg_delta
+
+	set diff_beaming = beaming_2 - beaming_1
+
+        limits -5 95 diff_beaming
+        limits -5 95 $(lg(0.08)) $(lg(70))
+	ticksize 2 10 -1 0 
+        box
+	ticksize 2 10 -5 0 
+        box
+	xlabel \theta\ [deg]
+	ylabel \delta(\Gamma,\theta) 
+
+	ctype 4 
+	ltype 2 
+        relocate $fx1 $(lg($Gamma))
+	draw     $fx2 $(lg($Gamma))
+        relocate $(360/2./3.1415/$Gamma) $fy1 
+	draw     $(360/2./3.1415/$Gamma) $fy2 
+	ctype 2 
+	ltype 0 
+
+	ctype 3 
+	lweight 4 
+        connect theta lg_delta
+	lweight 3
+	ctype 2 
+        
+	echo "----------------------------------------"
+	foreach 9 < 1 10 50 > { 
+           set testy = abs(lg_delta - lg($Gamma/$9))
+           set testx = theta
+           set testn = 0,dimen(testx)-1
+           sort < testy testx testn >
+           relocate $(testx[0]) $(lg_delta[testn[0]])
+           ptype 4 3 
+           dot
+           echo " delta = delta_max/"$(sprintf('%2.0f',$(1.0001*$9)))"  theta = "$(sprintf('%4.1f',$(testx[0])))"  cos(theta) = "$(sprintf('%5.3f',$(cosd(testx[0]))))
+	}
+	echo "----------------------------------------"
+
+#-------------------------------------------------------------------------------
+# delta_to_delta
+delta_to_delta
+
+        reset_graph
+
+	define delta_S ? < Doppler factor slow : >
+	# define Gamma_S ? < Lorentz factor slow : >
+	define Gamma_F ? < Lorentz factor fast : >
+
+	define sqGF   $(sqrt($Gamma_F*$Gamma_F - 1))
+
+	# from cos(\theta) <= 1
+	define GS_min $( ($delta_S**2+1)/2/$delta_S )
+
+	define Gstep (0.01)
+	set Gamma_S = $GS_min,$Gamma_F,$Gstep
+	set Gamma_S = Gamma_S + $Gstep
+
+	# minimum cos(\theta), from the d\mu/d\Gamma
+	# for \Gamma = \delta
+	define mu_min $( sqrt(1-1/$delta_S**2) )
+
+	define delta_F_min $( 1./($Gamma_F - $sqGF*$mu_min) )
+
+	echo " Gamma_S_min = "$GS_min
+	echo " mu_min      = "$mu_min
+	echo " theta_min   = "$(acosd($mu_min))" deg."
+	echo " delta_F_min = "$delta_F_min
+
+	set    sqGS = sqrt(Gamma_S*Gamma_S - 1)
+
+	set mu = ($delta_S*Gamma_S - 1)/$delta_S/sqGS
+	set delta_F = 1./($Gamma_F - $sqGF*mu)
+
+	set theta = acosd(mu)
+
+	# set delta_F = $delta_S*sqGS/( $Gamma_F*$delta_S*sqGS - Gamma_S*$delta_S*$sqGF + $sqGF )
+
+	limits Gamma_S delta_F 
+	ticksize 0 0 0 0 
+        box
+	xlabel \Gamma_{slow}
+	ylabel \delta_{fast}
+
+	ctype 3 
+	lweight 4 
+        connect Gamma_S delta_F 
+	lweight 3
+	ctype 2 
+        
+##-------------------------------------------------------------------------------
+## theta_vs_Gamma (it was 'cos_2_cos')  [OBSOLETE!!!]
+##                 indexed on \Gamma_S and \Gamma_F separately, 
+##                 angles are then derived by \delta_S and \delta_F
+##                 _S and _F arrays are NOT aligned
+theta_vs_Gamma
+
+        reset_graph
+
+	define delta_S ? < Doppler factor slow : >
+	define delta_F ? < Doppler factor FAST : >
+
+	define GS_min (1)
+	define GF_min (1)
+	define Gstep (0.001)
+	set GS = $GS_min,50,$Gstep
+	set GS = GS + $Gstep
+	set GF = $GF_min,50,$Gstep
+	set GF = GF + $Gstep
+
+	set sqGS = sqrt(GS*GS - 1)
+	set sqGF = sqrt(GF*GF - 1)
+
+	set cosS = ($delta_S*GS-1)/($delta_S*sqGS)
+	set cosF = ($delta_F*GF-1)/($delta_F*sqGF)
+
+	set thetaS = acosd(cosS)   if(cosS <= 1)
+	set thetaF = acosd(cosF)   if(cosF <= 1)
+
+	set diff_cos = cosS - cosF
+
+	set cosSF = cosS CONCAT cosF
+	set thetaSF = thetaS CONCAT thetaF
+	vecminmax cosSF min_cos b
+	vecminmax thetaSF b max_theta
+
+	define plot_vs ? < Plot theta or cos [t|c] > 
+	if( substr('$plot_vs',0,1) == 't') {
+	   set yS = thetaS
+	   set yF = thetaF
+	   define ymin (-4) 
+	   define ymax $($max_theta+5)
+	} else {
+	   set yS = cosS
+	   set yF = cosF
+	   define ymin $($min_cos-0.1*(1-$min_cos)) 
+	   define ymax $(1+0.1*(1-$min_cos))
+	} 
+	#------------------------------
+	# window 1 -2 1 1 
+	limits GS $ymin $ymax
+	box 1 2 0 0 
+	xlabel \Gamma
+	if( substr('$plot_vs',0,1) == 't') {
+	   ylabel \theta
+	} else {
+	   ylabel cos(\theta)
+	}
+
+	lweight 1 
+	ltype 1 
+	ctype 3 connect GS yS
+	ctype 5 connect GF yF
+	lweight 4 
+	ltype 0 
+	   ctype 3 connect GS yS    if( cosS <= 1 )
+	   ctype 5 connect GF yF    if( cosF <= 1 )
+	if( substr('$plot_vs',0,1) == 't') {
+	} else {
+	   ctype 3 connect GS yS    if( cosS <= 1 )
+	   ctype 5 connect GF yF    if( cosF <= 1 )
+	}
+
+	ctype 2
+	lweight 3
+	ltype 0
+
+#-------------------------------------------------------------------------------
+# cos_to_cos_2a : indexed on \delta_S and \delta_F separately, 
+#               + angles are then derived by \gamma_S and \gamma_F
+#               + _S and _F arrays are NOT aligned
+cos_to_cos_2a
+
+        reset_graph
+
+	#define delta_S ? < Doppler factor slow : >
+	define GS ? < Lorentz factor slow : >
+	#define delta_F ? < Doppler factor FAST : >
+	define GF ? < Lorentz factor FAST : >
+
+	define dS_min (1/$GS)
+	define dF_min (1/$GF)
+	define dstep (0.001)
+	set dS = $dS_min,50,$dstep
+	set dS = dS + $dstep
+	set dF = $dF_min,50,$dstep
+	set dF = dF + $dstep
+
+	define sqGS  $(sqrt($GS*$GS - 1))
+	define sqGF  $(sqrt($GF*$GF - 1))
+
+	set cosS = (dS*$GS-1)/(dS*$sqGS)
+	set cosF = (dF*$GF-1)/(dF*$sqGF)
+
+	set testS = cosS
+	set testF = cosF
+	set y_cosS   = cosS          if( testS <= 1 )
+	set y_cosF   = cosF          if( testF <= 1 )
+	set x_cosS   = dS            if( testS <= 1 )
+	set x_cosF   = dF            if( testF <= 1 )
+	set y_thetaS = acosd(cosS)   if( testS <= 1 )
+	set y_thetaF = acosd(cosF)   if( testF <= 1 )
+	set x_thetaS = dS            if( testS <= 1 )
+	set x_thetaF = dF            if( testF <= 1 )
+
+	set y_cosSF = y_cosS CONCAT y_cosF
+	set x_cosSF = x_cosS CONCAT x_cosF
+	set y_cosSF = y_cosSF  if( x_cosSF >= 1 )
+	vecminmax y_cosSF min_cos b
+
+	set y_thetaSF = y_thetaS CONCAT y_thetaF
+	set x_thetaSF = x_thetaS CONCAT x_thetaF
+	set y_thetaSF = y_thetaSF if( x_thetaSF >= 2.0 )
+	vecminmax y_thetaSF b max_theta
+	
+	define plot_vs ? < Plot theta or cos [t|c] > 
+	if( substr('$plot_vs',0,1) == 't') {
+	   set yS = y_thetaS
+	   set yF = y_thetaF
+	   set xS = x_thetaS
+	   set xF = x_thetaF
+	   define ymin (-4) 
+	   define ymax $($max_theta+5)
+	   define ymax $max_theta
+	} else {
+	   set yS = y_cosS  
+	   set yF = y_cosF 
+	   set xS = x_cosS 
+	   set xF = x_cosF 
+	   define ymin $($min_cos-0.1*(1-$min_cos)) 
+	   define ymax $(1+0.1*(1-$min_cos))
+	} 
+
+	set xSF = xS CONCAT xF 
+	set xSF = xSF if( xSF > 2.0 ) 
+
+	#------------------------------
+	# window 1 -2 1 1 
+	limits (lg(xSF)) $ymin $ymax
+	ticksize -1 0 0 0
+	box 1 2 0 0 
+	xlabel \delta
+	if( substr('$plot_vs',0,1) == 't') {
+	   ylabel \theta
+	} else {
+	   ylabel cos(\theta)
+	}
+
+	lweight 4 
+	ltype 0 
+	ctype 3 connect (lg(xS)) yS 
+	ctype 5 connect (lg(xF)) yF 
+
+	ctype 2
+	lweight 3
+	ltype 0
+
+#-------------------------------------------------------------------------------
+# compute_cos_to_cos_2b <Lorentz slow> <Lorentz fast> <indexed on [t|m]>
+#    [BEST]     + internally indexed on 'mu' or 'theta'
+#               + creates theta_$GS_$GF, cos_*, dS_*, dF_* arrays
+#               + arrays are aligned
+compute_cos_to_cos_2b 3
+
+	#define GS ?      < Lorentz factor slow : >
+	#define GF ?      < Lorentz factor FAST : >
+	#define plot_vs ? < Plot theta or cos [t|m] > 
+
+	local define GS $1
+	local define GF $2
+	local define plot_vs $3
+
+	if( substr('$plot_vs',0,1) == 't') {
+	   define theta_step (0.1)
+	   set theta = 0,90,$theta_step
+	   set mu = cosd(theta)
+	} else {
+	   define mu_step (0.001)
+  	   set mu = 0,1,$mu_step
+	   set theta = acosd(mu)
+	}
+
+	define sqGS  $(sqrt($GS*$GS - 1))
+	define sqGF  $(sqrt($GF*$GF - 1))
+
+	set dS = 1.0/($GS - $sqGS*mu)
+	set dF = 1.0/($GF - $sqGF*mu)
+
+	# Cleaning for possible computation errors leading to cos>1
+	set testS = mu
+	set testF = mu
+	set cosS   = mu          if( testS <= 1 && testF <= 1 )
+	set cosF   = mu          if( testS <= 1 && testF <= 1 )
+	set theta  = theta       if( testS <= 1 && testF <= 1 )
+	set thetaS = theta       if( testS <= 1 && testF <= 1 )
+	set thetaF = theta       if( testS <= 1 && testF <= 1 )
+	set dS     = dS          if( testS <= 1 && testF <= 1 )
+	set dF     = dF          if( testS <= 1 && testF <= 1 )
+
+	#OBS# set y_cosS   = cosS          if( testS <= 1 && testF <= 1 )
+	#OBS# set y_cosF   = cosF          if( testS <= 1 && testF <= 1 )
+	#OBS# set x_cosS   = dS            if( testS <= 1 && testF <= 1 )
+	#OBS# set x_cosF   = dF            if( testS <= 1 && testF <= 1 )
+	#OBS# set y_thetaS = acosd(cosS)   if( testS <= 1 && testF <= 1 )
+	#OBS# set y_thetaF = acosd(cosF)   if( testS <= 1 && testF <= 1 )
+	#OBS# set x_thetaS = dS            if( testS <= 1 && testF <= 1 )
+	#OBS# set x_thetaF = dF            if( testS <= 1 && testF <= 1 )
+
+	define save_prfx ""$GS"_"$GF""
+	#define save_prfx ? < prefix for renaming arrays : >
+	define 8 $save_prfx
+	#OBS# foreach 9 < xS xF yS yF theta >
+	foreach 9 < mu theta dS dF > {
+	   #set $8_$9 = $9
+	   set $9_$8 = $9
+	}
+	define Gamma_F_$8 $GF
+	define Gamma_S_$8 $GS
+
+	echo "----------------------------------------"
+	echo " Gamma slow          : "$GS
+	echo " Gamma fast          : "$GF
+	echo "----------------------------------------"
+	echo " ARRAYS:"
+	echo "  dS_, dF_ : \delta "
+	echo "  theta_   : \theta "
+	echo "  mu__     : cos(\theta) " 
+	echo " VARIABLES:"
+	echo "  Gamma_F_, Gamma_S_ : \Gamma "
+	echo "----------------------------------------"
+
+#-------------------------------------------------------------------------------
+# plot_cos_to_cos_2b : internally indexed on 'mu'  
+#                    + use 'theta' for preparing files for dF_dS plots
+#      [BEST]        + \delta_S and \delta_F are then derived by \gamma_S and \gamma_F
+#                    + _S and _F arrays are aligned
+plot_cos_to_cos_2b
+
+        reset_graph
+
+	define GS ?      < Lorentz factor slow     : >
+	define GF ?      < Lorentz factor FAST     : >
+	define plot_vs ? < Plot theta or cos [t|m] : > 
+
+        compute_cos_to_cos_2b $GS $GF $plot_vs
+
+	define x_cut (1.0)
+	set xS = dS
+	set xF = dF
+        set xSF = dS CONCAT dF
+
+	if( substr('$plot_vs',0,1) == 't') {
+	   set yS = thetaS
+	   set yF = thetaF
+
+           set ySF = thetaS CONCAT thetaF
+           set ySF = ySF  if( xSF >= $x_cut )
+	   vecminmax y_thetaSF b max_theta
+	   define ymin (-4) 
+	   define ymax $($max_theta+5)
+	   define ymax $max_theta
+	   define ymin (-2) 
+	   define ymax (25)
+	} else {
+	   set yS = cosS  
+	   set yF = cosF 
+
+           set ySF = cosS CONCAT cosF
+           set ySF = ySF  if( xSF >= $x_cut )
+           vecminmax ySF min_cos b
+	   define ymin $($min_cos-0.1*(1-$min_cos)) 
+	   define ymax $(1+0.1*(1-$min_cos))
+	   define ymin $(cosd(25))
+	   define ymax 1.015
+	} 
+
+	set xSF = xSF if( xSF >= $x_cut ) 
+
+	#------------------------------
+	# window 1 -2 1 1 
+	limits (lg(xSF)) $ymin $ymax
+	limits $(lg(2)) $(lg(30)) $ymin $ymax
+	ticksize -0.5 1 0 0
+	box 1 2 0 0 
+	xlabel \delta
+	if( substr('$plot_vs',0,1) == 't') {
+	   ylabel \theta
+	} else {
+	   ylabel cos(\theta)
+	}
+
+	lweight 4 
+	ltype 0 
+	ctype 3 connect (lg(xS)) yS 
+	ctype 5 connect (lg(xF)) yF 
+
+	define wanted_dS ? < delta_slow to match : > 
+
+	set dx = abs(xS - $wanted_dS)
+	set dum_xS = xS
+	set dum_yS = yS
+	set dum_xF = xF
+	sort < dx dum_xS dum_yS dum_xF > 
+
+	lweight 2
+	ctype 4 
+	ltype 2 
+	ptype 4 3 
+	relocate $(lg($wanted_dS)) $fy1 
+	draw     $(lg($wanted_dS)) $(dum_yS[0])
+	dot 
+	draw     $(lg(dum_xF[0]))  $(dum_yS[0]) 
+	dot 
+	draw     $(lg(dum_xF[0]))  $fy1
+
+	ctype 2
+	lweight 3
+	ltype 0
+
+	echo "----------------------------------------"
+	echo " Gamma slow          : "$GS
+	echo " Gamma fast          : "$GF
+	echo " "
+	echo " slow Doppler factor : "$( sprintf('%5.2f',$wanted_dS) )
+	echo " theta               : "$( sprintf('%5.2f',$(dum_yS[0])) )
+	echo " fast Doppler factor : "$( sprintf('%5.2f',$(dum_xF[0])) )
+	echo "----------------------------------------"
+
+#-------------------------------------------------------------------------------
+# dF_dS  <prefix>  <color> <nobox flag>
+#        + It uses the arrays produced by compute_cos_2_cos_2b
+#        + There is a "hidden" max theta (45)
+##       + It needs to define the variable $case = "ec" or "uc" 
+dF_dS 03
+
+	#----------------------------------------
+	# parameters from pre-computed arrays
+	#----------------------------------------
+	# dF_, dS_      = Doppler factors for fast and slow Lorentz factor
+	# theta_, mu_   = theta and cos(theta)
+	#----------------------------------------
+
+	#----------------------------------------
+	# some additional parameters
+	#   - "p" and "\alpha" values
+	#----------------------------------------
+	# FAST component: IC
+	define p1a (3) 
+	define a1a (1)
+	# FAST component: SYNCHROTRON
+	define p1b (3)  
+	define a1b (1)
+	# SLOW component
+	define p2  (2)  
+	define a2  (0)
+	#----------------------------------------
+
+	reset_graph
+	notation -2 2 -2 2
+	location 6500 32000 5500 30000
+
+	define flag_box 1
+
+	if( $?1 ) { 
+	   define in_prfx $1
+	   if( $?2 ) {
+	      define cc $2
+	      define flag_color 1
+	      if( $?3 ) {
+	         define flag_box 0
+	      }
+	   } else {
+	      define flag_color 0
+	   }
+	} else {
+	   define in_prfx ? < prefix for arrays : >
+	   define flag_color 0
+	}
+
+	define case ? < Case: [ec|uc] : > 
+
+  	define 8 $in_prfx
+	#OBS# foreach 9 < xS xF yS yF theta > 
+	foreach 9 < theta mu dS dF > {
+	   set $9 local
+	   set $9 = $9_$8
+	}
+	set delta_S = dS
+	set delta_F = dF
+	set was_yS  = theta
+
+	# duplicate arrays for filtering on delta_S < delta_F
+	define min_theta (0.25)
+	define max_theta (45)
+	set xs = delta_S     if( was_yS <= $max_theta && was_yS >= $min_theta )
+	set xf = delta_F     if( was_yS <= $max_theta && was_yS >= $min_theta )
+	set th = theta       if( was_yS <= $max_theta && was_yS >= $min_theta )
+
+	set beaming_S = ($p2 + $a2)*lg(delta_S)   if( was_yS <= $max_theta && was_yS >= $min_theta )
+	if( substr('$case',0,1) == 'e' ) { 
+	   # regular EC
+	   set beaming_F = ($p1a - $p1b + 1 + 2*$a1a - $a1b)*lg(delta_F)    if( was_yS <= $max_theta && was_yS >= $min_theta )
+	   #WRONG?# set beaming_F = (1 + $a1)*lg(delta_F)    if( was_yS <= $max_theta && was_yS > 1 )
+	} else {
+	   # upstream Compton
+	   set beaming_F = (1 + $a1a)*lg(delta_F) - ($p1a - $p2 + 1 + $a1a)*lg(delta_S)   if( was_yS <= $max_theta && was_yS >= $min_theta )
+	}
+
+	#range 3 3 
+	ticksize -1 0 -1 0 
+	limits beaming_S beaming_F 
+	if( substr('$case',0,1) == 'e' ) { 
+   	   limits $(0.86+$p2-2) $(3.2+$p2-2) 0.86 3.2
+	} else {
+   	   limits $(0.66+$p2-2) $(3+$p2-2) $(0.00 - $p1a + lg(2)) $(3.33- $p1a + lg(2)) 
+	}
+
+	ctype 4 
+	lweight 1 
+	ltype 1 
+	#grid 1
+	ltype 2 
+	#grid 0
+
+	if( $flag_box ) {
+           lweight 1
+           ctype 7 
+           ltype 3 
+          #relocate $( 0.5*($fx1+$fx2) -1   ) $( 0.5*($fy1+$fy2) -3 )  # slope = 3
+          #draw     $( 0.5*($fx1+$fx2) +1   ) $( 0.5*($fy1+$fy2) +3 )
+           relocate $( 0.5*($fx1+$fx2) -1   ) $( 0.5*($fy1+$fy2) -2 )  # slope = 2
+           draw     $( 0.5*($fx1+$fx2) +1   ) $( 0.5*($fy1+$fy2) +2 )
+          #relocate $( 0.5*($fx1+$fx2) -2   ) $( 0.5*($fy1+$fy2) -2 )  # slope = 1
+          #draw     $( 0.5*($fx1+$fx2) +2   ) $( 0.5*($fy1+$fy2) +2 )
+           relocate $( 0.5*($fx1+$fx2) -1.5 ) $( 0.5*($fy1+$fy2) -1 )  # slope = 2/3
+           draw     $( 0.5*($fx1+$fx2) +1.5 ) $( 0.5*($fy1+$fy2) +1 )
+	}
+
+	lweight 3 
+	ltype 0 
+	ctype 2
+	if( $flag_box ) {
+           box 
+           expand 2.1
+           if( substr('$case',0,1) == 'e' ) { 
+              #xlabel $p2*log(\delta_{slow})
+              #ylabel $(1+$a1)*log(\delta_{fast})
+              #xlabel (p_{slow}+\alpha_{slow})*log(\delta_{slow}) = $($p2+$a2)*log(\delta_{slow})
+              xlabel \delta_{slow}^{(p_{slow}+\alpha_{slow})} = \delta_{slow}^{$($p2+$a2)}
+           
+              #ylabel $($p1a-$p1b+1+2*$a1a-$a1b)*log(\delta_{fast})
+              #ylabel (p_\gamma-p_{sy}+1+2\alpha_\gamma-\alpha_{sy})*log(\delta_{fast}) = $($p1a-$p1b+1+2*$a1a-$a1b)*log(\delta_{fast})
+              ylabel \delta_{fast}^{(p_\gamma-p_{sy}+1+2\alpha_\gamma-\alpha_{sy})} = \delta_{fast}^{$($p1a-$p1b+1+2*$a1a-$a1b)}
+           } else {
+              #xlabel $p2*log(\delta_{slow})
+              #ylabel $(1+$a1)*log(\delta_{fast}) - $($p1 - $p2 + 1 + $a1)*lg(\delta_{slow}) 
+              #xlabel (p_{slow}+\alpha_{slow})*log(\delta_{slow}) = $($p2+$a2)*log(\delta_{slow})
+              xlabel \delta_{slow}^{(p_{slow}+\alpha_{slow})} = \delta_{slow}^{$($p2+$a2)}
+           
+              #ylabel $(1+$a1a)*log(\delta_{fast}) - $($p1a - $p2 + 1 + $a1a)*lg(\delta_{slow}) 
+              #ylabel (1+\alpha_\gamma)*log(\delta_{fast})-(p_\gamma-p_{slow}+1+\alpha_\gamma)*lg(\delta_{slow}) = $(1+$a1a)*log(\delta_{fast}) - $($p1a - $p2 + 1 + $a1a)*lg(\delta_{slow}) 
+              ylabel \delta_{fast}^{(1+\alpha_\gamma)}/\delta_{slow}^{(p_\gamma-p_{slow}+1+\alpha_\gamma)} = \delta_{fast}^{$(1+$a1a)}"  "/\delta_{slow}^{$($p1a - $p2 + 1 + $a1a)}
+           }
+           expand 1.5
+	}
+	
+	ctype 2 
+	lweight 1
+	ltype 1 
+	#connect beaming_S beaming_F  if( th < 25 )
+	connect beaming_S beaming_F  if( th <= $max_theta )
+	ltype 0
+	
+	if( $flag_color ) { 
+           ctype $cc
+           lweight 15
+           connect beaming_S beaming_F  if( xs <= xf ) 
+	} else {
+           ctype orange 
+           lweight 15
+           connect beaming_S beaming_F  if( th <= $max_theta && xs <= xf ) 
+           #
+           ctype red
+           lweight 15
+           connect beaming_S beaming_F  if( th < 10 && xs <= xf ) 
+           #
+           ctype maroon
+           lweight 15
+           connect beaming_S beaming_F  if( th <  5 && xs <= xf ) 
+	}
+
+	ltype 0 
+	ctype 2
+	lweight 3
+
+	set test = th  if( xf < xs )
+	echo "--------------------------------------------------------------"
+	echo " Color : "$cc
+	echo " array : "$in_prfx
+	echo " max theta default = "$max_theta 
+	echo "     Largest theta = "$(test[0])"    (for \delta_F > \delta_S)"
+	echo "            p_fast = "$p1a " , "$p1b
+	echo "            p_slow = "$p2
+	echo "--------------------------------------------------------------"
+	echo " Lines: " 
+	echo "  black dotted :       theta < 25 "
+	echo "  colored      : \delta_fast > \delta_slow "
+	echo "--------------------------------------------------------------"
+
+	if( $flag_box ) {
+           expand 1.25
+           relocate ( $($gx1) $($gy2+1550) ) putlabel 6 "p_\gamma="$p1a "  p_{sy}="$p1b "  p_{slow}="$p2 
+           relocate ( $($gx1) $($gy2+ 650) ) putlabel 6 "\alpha_\gamma="$a1a "  \alpha_{sy}="$a1b "  a_{slow}="$a2 
+	}
+
+print_dF_dS_table
+
+	set or_angle = th
+	set deltaS = xs
+	set deltaF = xf
+	set Rce    = beaming_S
+	set Rp     = beaming_F
+	define gF    $Gamma_F_$8
+	define gS    $Gamma_S_$8
+	write   "RpRce_"$case"__"$gF"_"$gS"__"$p1a"_"$p1b"_"$p2".dat" "#----------------------------------"
+	write   "RpRce_"$case"__"$gF"_"$gS"__"$p1a"_"$p1b"_"$p2".dat" "# case             : $!case"
+	write   "RpRce_"$case"__"$gF"_"$gS"__"$p1a"_"$p1b"_"$p2".dat" "# Gamma_fast       : $!gF"
+	write   "RpRce_"$case"__"$gF"_"$gS"__"$p1a"_"$p1b"_"$p2".dat" "# Gamma_slow       : $!gS"
+	write   "RpRce_"$case"__"$gF"_"$gS"__"$p1a"_"$p1b"_"$p2".dat" "# p fast 1 (IC)    : $!p1a"
+	write   "RpRce_"$case"__"$gF"_"$gS"__"$p1a"_"$p1b"_"$p2".dat" "# p fast 2 (sync)  : $!p1b"
+	write   "RpRce_"$case"__"$gF"_"$gS"__"$p1a"_"$p1b"_"$p2".dat" "# p slow           : $!p2"
+	write   "RpRce_"$case"__"$gF"_"$gS"__"$p1a"_"$p1b"_"$p2".dat" "#----------------------------------"
+	print + "RpRce_"$case"__"$gF"_"$gS"__"$p1a"_"$p1b"_"$p2".dat" '    %6.2f   %6.2f   %6.2f   %7.3f   %7.3f\n' < or_angle deltaF deltaS Rce Rp >
+
+	write "/tmp/sm_dummy.txt" " printed "
+
+##-------------------------------------------------------------------------------
+## old_dF_dS  <prefix>  <color> <nobox flag>
+##        It needs to define the variable $case = "ec" or "uc" 
+old_dF_dS 02
+
+	reset_graph
+	notation -2 2 -2 2
+	location 6500 32000 5500 30000
+
+	# xF, xS = Doppler factors for fast and slow Lorentz factor
+	# yF, yS (same values) = angles, theta
+
+	define flag_box 1
+
+	if( $?1 ) { 
+	   define in_prfx $1
+	   if( $?2 ) {
+	      define cc $2
+	      define flag_color 1
+	      if( $?3 ) {
+	         define flag_box 0
+	      }
+	   } else {
+	      define flag_color 0
+	   }
+	} else {
+	   define in_prfx ? < prefix for arrays : >
+	   define flag_color 0
+	}
+
+	define case ? < Case: [ec|uc] : > 
+
+  	define 8 $in_prfx
+	foreach 9 < xS xF yS yF theta > {
+	   set $9 local
+	   set $9 = $8_$9
+	}
+
+	define p1 (3)  # fast component
+	define a1 (1)
+	define p2 (2)  # slow component
+	define a2 (0)
+
+	set xs = xS          if( yS < 20 && yS > 1 )
+	set xf = xF          if( yS < 20 && yS > 1 )
+	set x1 = ($p2 + $a2)*lg(xS)   if( yS < 20 && yS > 1 )
+	#set x2 = 2*lg(xF)    if( yS < 20 && yS > 1 )
+	if( substr('$case',0,1) == 'e' ) { 
+	   set x2 = (1 + $a1)*lg(xF)    if( yS < 20 && yS > 1 )   # regular EC
+	} else {
+	   set x2 = (1 + $a1)*lg(xF) - ($p1 - $p2 + 1 + $a1)*lg(xS)   if( yS < 20 && yS > 1 )
+	   #set x2 = 3*lg(xF) - 2*lg(xS)   if( yS < 20 && yS > 1 )
+	}
+	set th = yS          if( yS < 20 && yS > 1 )
+
+	#range 3 3 
+	ticksize -1 0 -1 0 
+	limits x1 x2 
+	if( substr('$case',0,1) == 'e' ) { 
+	   limits $(0+$p2-2) $(3+$p2-2) 0 3 
+   	   limits $(0.66+$p2-2) $(3+$p2-2) 0.66 3 
+	} else {
+   	   limits $(0.66+$p2-2) $(3+$p2-2) $(0.66 - $p1 + lg(2)) $(3 - $p1 + lg(2)) 
+	}
+
+	ctype 4 
+	lweight 1 
+	ltype 1 
+	#grid 1
+	ltype 2 
+	#grid 0
+
+	if( $flag_box ) {
+           lweight 1
+           ctype 7 
+           ltype 2 
+           relocate $( 0.5*($fx1+$fx2) -1 )   $( 0.5*($fy1+$fy2) -3 )  # slope = 3
+           draw     $( 0.5*($fx1+$fx2) +1 )   $( 0.5*($fy1+$fy2) +3 )
+           relocate $( 0.5*($fx1+$fx2) -1 )   $( 0.5*($fy1+$fy2) -2 )  # slope = 2
+           draw     $( 0.5*($fx1+$fx2) +1 )   $( 0.5*($fy1+$fy2) +2 )
+           relocate $( 0.5*($fx1+$fx2) -2 )   $( 0.5*($fy1+$fy2) -2 )  # slope = 1
+           draw     $( 0.5*($fx1+$fx2) +2 )   $( 0.5*($fy1+$fy2) +2 )
+           relocate $( 0.5*($fx1+$fx2) -1.5 ) $( 0.5*($fy1+$fy2) -1 )  # slope = 2/3
+           draw     $( 0.5*($fx1+$fx2) +1.5 ) $( 0.5*($fy1+$fy2) +1 )
+	}
+
+	lweight 3 
+	ltype 0 
+	ctype 2
+	if( $flag_box ) {
+           box
+           if( substr('$case',0,1) == 'e' ) { 
+              xlabel $p2*log(\delta_{slow})
+              ylabel $(1+$a1)*log(\delta_{fast})
+           } else {
+              xlabel $p2*log(\delta_{slow})
+              ylabel $(1+$a1)*log(\delta_{fast}) - $($p1 - $p2 + 1 + $a1)*lg(\delta_{slow}) 
+           }
+	}
+	
+	ctype 2 
+	lweight 1
+	ltype 1 
+	connect x1 x2  if( th < 25 )
+	ltype 0
+	
+	if( $flag_color ) { 
+           ctype $cc
+           lweight 15
+           connect x1 x2  if( xs <= xf ) 
+	} else {
+           ctype orange 
+           lweight 15
+           connect x1 x2  if( th < 20 && xs <= xf ) 
+           #
+           ctype red
+           lweight 15
+           connect x1 x2  if( th < 10 && xs <= xf ) 
+           #
+           ctype maroon
+           lweight 15
+           connect x1 x2  if( th <  5 && xs <= xf ) 
+	}
+
+	ltype 0 
+	ctype 2
+	lweight 3
+
+	set test = th  if( xf < xs )
+	echo "------------------------------"
+	echo " Color : "$cc
+	echo " array : "$in_prfx
+	echo "   Largest theta = "$(test[0])
+	echo "          p_fast = "$p1
+	echo "          p_slow = "$p2
+	echo "------------------------------"
+
+#-------------------------------------------------------------------------------
+# em_plot_xnew  : mainly to make data files quickly
+em_plot_xnew
+
+        compute_cos_to_cos_2b  5 20 t
+        compute_cos_to_cos_2b 10 20 t
+        compute_cos_to_cos_2b 15 20 t
+        compute_cos_to_cos_2b  5 15 t
+        compute_cos_to_cos_2b 10 15 t
+        compute_cos_to_cos_2b 12 15 t
+        compute_cos_to_cos_2b  3 10 t
+        compute_cos_to_cos_2b  5 10 t
+        compute_cos_to_cos_2b  8 10 t
+        compute_cos_to_cos_2b  3  8 t
+        compute_cos_to_cos_2b  6  8 t
+
+        dF_dS  5_20 3
+        dF_dS 10_20 3 x
+        dF_dS 15_20 3 x
+        dF_dS  5_15 5 x
+        dF_dS 10_15 5 x
+        dF_dS 12_15 5 x
+        dF_dS  3_10 4 x
+        dF_dS  5_10 4 x
+        dF_dS  8_10 4 x
+        dF_dS   3_8 7 x
+        dF_dS   6_8 7 x
+
+#-------------------------------------------------------------------------------
+# em_plot_new  : more like the proposal color scheme
+em_plot_new
+
+        dF_dS 14_15 red
+        dF_dS 10_15 orange nobox
+        dF_dS 5_15 yellow2 nobox
+        dF_dS 7_10 5 nobox
+        dF_dS 5_10 6 nobox
+        dF_dS 3_8 green nobox
+        dF_dS 4_8 maroon nobox
+
+        #dF_dS 3_10 darkolivegreen4 nobox
+        dF_dS 3_12 grey50 nobox
+
+##-------------------------------------------------------------------------------
+## em_plot
+em_plot
+
+        dF_dS 14_15 red
+        dF_dS 10_15 orange nobox
+        dF_dS 5_15 yellow2 nobox
+        dF_dS 7_10 5 nobox
+        dF_dS 5_10 6 nobox
+        dF_dS 3_8 green nobox
+        dF_dS 4_8 maroon nobox
+
+        #dF_dS 3_10 darkolivegreen4 nobox
+        dF_dS 3_12 grey50 nobox
+
+##-------------------------------------------------------------------------------
+## old_em_plot
+old_em_plot
+
+        old_dF_dS 14_15 red
+        old_dF_dS 10_15 orange nobox
+        old_dF_dS 5_15 yellow2 nobox
+        old_dF_dS 7_10 5 nobox
+        old_dF_dS 5_10 6 nobox
+        old_dF_dS 3_8 green nobox
+        old_dF_dS 4_8 maroon nobox
+
+        #dF_dS 3_10 darkolivegreen4 nobox
+        old_dF_dS 3_12 grey50 nobox
+
+#-------------------------------------------------------------------------------

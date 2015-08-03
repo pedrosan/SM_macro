@@ -1,0 +1,420 @@
+#-------------------------------------------------------------------------------
+# load_sed <n>
+load_sed 1
+
+	data "/home/gfossati/Science/NegativeEvolution/Eileen/"LR$1.dat
+
+	define nl (2000)
+	define nspectra (6)
+
+	do 9=1,$nspectra {
+	   define l1 $(($9-1)*$nl +    1)
+	   define l2 $(($9-1)*$nl + 2000)
+	   
+           lines $l1 $l2 
+	   read < _ekev 1 _ph 2 >
+
+	   set ekev = _ekev   if( _ekev < 50 )
+	   set ph   = _ph     if( _ekev < 50 )
+	   # echo "ph :"$(ph[1200])
+        
+           set lg_nu_$9  = lg(ekev) + 17.384         
+           set lg_fn_$9  = lg(ph) + lg(1.602e-9) + lg(ekev) - 17.384 
+	   set lg_nfn_$9 = lg_fn_$9 + lg(ekev) + 17.384  
+	   # echo $(lg_nfn_$9[1200])
+	}
+        
+#-------------------------------------------------------------------------------
+# load_real_sed <model>
+load_real_sed 1
+
+	data "/home/gfossati/Science/NegativeEvolution/Eileen/"output_$1.dat
+
+	read < x_$1 1 y_$1 2 >
+	set x_$1_kev = x_$1 - 17.384
+
+	set lg_nu_$1  = x_$1
+	set lg_nfn_$1 = y_$1 -54.337 - 2  
+	set lg_fn_$1  = lg_nfn_$1 - lg_nu_$1
+
+	print sed_$1.dat '   %9.4f  %9.4f\n' < lg_nu_$1 lg_nfn_$1 > 
+
+#---------------------------------------------------------------------------
+# find_max:  
+#          USAGE: find_max <array> <idx> <value>
+#          : It finds the index of the maximum value in <array>, and the 
+#            maximum value.
+#            Returns them stored in the given variables <idx> and <value>
+#  
+find_max 3
+
+	define dummy local
+	define max local
+
+	set rank local
+	set sorting local
+
+	set sorting = $1
+	set rank = 0,dimen($1)-1,1
+
+	sort < sorting rank > 
+	set rank=reverse(rank)
+
+	define $2 $(rank[0])
+	define $3 $($1[rank[0]])
+
+#----------------------------------------------------------------------
+# plot_nufnu_scaled <1|2|3|4>
+#           set of 6 SEDs, nfn, all scaled to same nu_peak and F_peak
+#
+plot_nufnu_scaled 1
+
+	reset_graph
+
+	if( strlen('$1') > 1 ) { 
+	    load_real_sed $1
+	    set lg_nu_1  = lg_nu_$1
+	    set lg_nfn_1 = lg_nfn_$1
+	    define nspectra 1
+	    if( substr('$1',0,3) == 'exw' ) { define sedc 2 }
+	    if( substr('$1',0,3) == 'gf6' ) { define sedc 3 }
+	    if( substr('$1',0,3) == 'gf9' ) { define sedc 4 }
+	    if( substr('$1',0,3) == 'gf1' ) { define sedc 5 }
+	    if( substr('$1',0,3) == 'em7' ) { define sedc 6 }
+	    if( substr('$1',0,3) == 'reb' ) { define sedc 7 }
+	    define sedlw 4 
+	} else {
+	    load_sed $1
+	    define sedc 0
+	    define sedlw 1 
+	}
+
+        ctype 2 
+	limits -1.6 1.4 -2 1 
+	ticksize -1 0 0.2 1 
+	box
+	xlabel Energy [keV]
+	ylabel log(\\nu F_\\nu) [arb. units]
+
+	ltype 1
+	ctype 4 
+	foreach ex < 0.1 1 2.4 > {
+	   relocate $( lg($ex) ) -100 
+	   draw     $( lg($ex) )  100 
+	}
+	ctype 2
+	ltype 0
+
+	do 9=1,$nspectra {
+	  # echo $9
+	  if( $sedc == 0 ) {
+             ctype $($9+1) 
+	     define nshift $9
+	  } else {
+             ctype $sedc
+	     define nshift ($sedc-1)
+	  }
+	  lweight $sedlw
+	  # echo $(lg_nfn_$9[1200])
+	  find_max lg_nfn_$9 ix iv 
+	  
+	  connect (lg_nu_$9-lg_nu_$9[$ix]+lg(0.5)) (lg_nfn_$9 - $iv + 0.025*$nshift)
+	}
+
+	lweight 3 
+	expand  1.25
+	if( $sedc > 0 ) {
+	   relocate ( $($gx1 + 500)  $($gy1 + 850*(7-$nshift)) )
+	   putlabel 6 $1
+	}
+
+
+	echo "----------------------------------------"
+	echo "  NOTE : "
+	echo "  The small shift is intentional "
+	echo "----------------------------------------"
+
+#----------------------------------------------------------------------
+# plot_nufnu withbox=<y|n> sedcase=<n> [escale=kev]
+plot_nufnu 101
+
+	define withbox "y"
+	define escale  "kev"
+
+        if($?1) {
+            if(substr('$1',0,2) == '-h' ){
+               echo "-----------------------------------------------"
+               echo " plot_nufnu: "
+               echo " "
+               echo " USAGE: "
+               echo "    > plot_nufnu withbox=[y|n] sedcase=[1|2|3|4] [escale=kev]"
+               echo "  or"
+               echo "    > plot_nufnu (in this case it draws the line in black) "
+               echo " "
+               echo "-----------------------------------------------"
+               return
+            } else {
+               define silentparsing 1
+               mparsep $1
+               define silentparsing 0
+            }
+        } else {
+           define sedcase ? < SED model case [1|2|3|4] : >
+        }
+
+	if( strlen('$sedcase') > 1 ) { 
+	    load_real_sed $sedcase
+	    set lg_nu_1  = lg_nu_$sedcase
+	    set lg_nfn_1 = lg_nfn_$sedcase
+	    define nspectra 1
+	} else {
+	    load_sed $sedcase
+	}
+
+	if( substr('$withbox',0,1) == 'y' ) {
+           define xel  (0.05)
+           define xeh  (13.0)
+           define yl  -12.19
+           define yh  -10.80
+           
+           if( substr('$escale',0,1) == 'k' ) {
+	       define eshift (0)
+           } else {
+	       define eshift (17.384)
+	   }
+
+           ctype 2 
+	   limits $(lg($xel) + $eshift) $(lg($xeh) + $eshift)  $yl $yh
+	   window 1 1 1 1
+	   ticksize -1 0 0 0 
+	   location 5000 28500 6000 29500 
+   	   box
+	}
+
+	ltype 1
+	ctype 7 
+	foreach ex < 0.1 1 2.4 > {
+	   relocate $( lg($ex) + $eshift ) -100 
+	   draw     $( lg($ex) + $eshift )  100 
+	}
+	ctype 2
+	ltype 0
+
+	do 9=1,$nspectra {
+	  echo $9
+          ctype $($9+1) 
+	  if( substr('$escale',0,1) == 'k' ) {
+	     set x = lg_nu_$9 - 17.384 
+	  } else {
+	     set x = lg_nu_$9
+	  }
+	  connect x lg_nfn_$9
+	}
+
+#----------------------------------------------------------------------
+# four_seds escale=<nu|kev> erange=<wide|narrow>
+four_seds 101
+
+	reset_graph
+
+	define escale  "kev"
+	define erange  "narrow"
+
+        if($?1) {
+            if(substr('$1',0,2) == '-h' ){
+               echo "-----------------------------------------------"
+               echo " four_seds: "
+               echo " "
+               echo " USAGE: "
+               echo "    > four_seds [escale=kev]"
+               echo "  or"
+               echo "    > four_seds "
+               echo " "
+               echo "-----------------------------------------------"
+               return
+            } else {
+               define silentparsing 1
+               mparsep $1
+               define silentparsing 0
+            }
+        } else {
+	   echo "Alright, using energy and narrow range "
+        }
+
+	location 5000 28500 6000 29500 
+	window 1 1 1 1 
+
+	if( substr('$erange',0,1) == 'n' ) {
+	   define xel  (0.05)
+	   define xeh  (5.00)
+	   define yl  -12.49
+	   define yh  -10.50
+	} 
+
+	if( substr('$erange',0,1) == 'w' ) {
+	   define xel  (0.005)
+	   define xeh (50.00)
+	   define yl  -14.09
+	   define yh  -10.10
+	} 
+
+	if( substr('$escale',0,1) == 'k' ) {
+	    define eshift (0)
+	    define x_label "log(E) [keV]"
+	} else {
+	    define eshift (17.384)
+	    define x_label "log(\\nu) [Hz]"
+	} 
+	define xl $(lg($xel) + $eshift) 
+	define xh $(lg($xeh) + $eshift)
+
+	expand 1.25
+	ticksize -1 0 0 0 
+
+	#--- top left ---#
+	window -2 -2 1 2 
+	ctype 2 
+	limits $xl $xh $yl $yh
+	box 0 2 0 0 
+
+	plot_nufnu withbox=n sedcase=1 escale=$escale
+
+	#--- top right ---#
+	window -2 -2 2 2 
+	ctype 2 
+	limits $xl $xh $yl $yh
+	box 0 0 0 2 
+
+	plot_nufnu withbox=n sedcase=2 escale=$escale
+
+	#--- bottom left ---#
+	window -2 -2 1 1 
+	ctype 2 
+	limits $xl $xh $yl $yh
+	box 1 2 0 0 
+
+	plot_nufnu withbox=n sedcase=3 escale=$escale
+
+	#--- bottom right ---#
+	window -2 -2 2 1 
+	ctype 2 
+	limits $xl $xh $yl $yh
+	box 1 0 0 2 
+
+	plot_nufnu withbox=n sedcase=4 escale=$escale
+
+	#--------------------#
+	ctype 2 
+
+	window 1 1 1 1 
+	expand 1.5
+	xlabel $x_label
+	ylabel log(\\nu F_{\\nu}) 
+
+#----------------------------------------------------------------------
+# compute_curved_nfn  e1=0.5 e2=5 a1=1.03 a2=1.79 e_break=1.68 fold=2.0
+#
+#    Curved spectral shape from 2000 Mrk421 paper.
+#    It's the same as implemented in XSPEC (with fold and @E_ref spectral indices.)
+#    It is computed over the range -2 < log(nu) < 2
+#
+#    Output arrays:
+#       log(E) in keV          : lg_e 
+#       log(F) in erg/cm2/s/Hz : lg_f   (the vertical scale is arbitrary)
+#    To obtain nuFnu, just do (lg_f + lg_e + SHIFT-to-make-it-right)
+#
+compute_curved_nfn 101
+
+        if($?1) {
+            if(substr('$1',0,2) == '-h' ){
+    	       echo "-----------------------------------------------"
+	       echo " Curved spectral shape from 2000 Mrk421 paper. "
+	       echo " It is the same as implemented in XSPEC (with fold and @E_ref spectral indices.) "
+	       echo " It is computed over the range -2 < log(nu) < 2 "
+    	       echo "-----------------------------------------------"
+               echo " compute_curved_nfn: "
+               echo " "
+               echo " USAGE: "
+               echo "    > compute_curved_nfn e1=0.1 e2=30 a1=0.6 a2=3.0 e_break=2.0 fold=1.0 "
+               echo "  or"
+               echo "    > compute_curved_nfn (in this case it prompts for all parameters)"
+               echo " "
+               return
+            } else {
+	       define silentparsing 1
+               mparsep $1 
+	       define silentparsing 0
+            }
+        } else {
+
+	    define e1      ? {      E_ref_1 [keV] : }
+	    define e2      ? {      E_ref_2 [keV] : }
+	    define a1      ? {    Alpha @ E_ref_1 : }
+	    define a2      ? {    Alpha @ E_ref_2 : }
+	    define e_break ? {        break [keV] : }
+	    define fold    ? { "folding" exponent : }
+
+	}
+
+	# little messy here.
+	define g1 $a1
+	define g2 $a2
+
+	define xb (lg($e_break))
+	define x1 (lg($e1))
+	define x2 (lg($e2))
+
+	define dum1 ( exp(2.302*($x1 - $xb)*$fold) )
+	define dum2 ( exp(2.302*($x2 - $xb)*$fold) )
+
+	define a1inf ( ($g1*$dum2*(1+$dum1)-$g2*$dum1*(1+$dum2))/($dum2-$dum1) ) 
+	define a2inf ( ($g2*(1+$dum2)-$g1*(1+$dum1))/($dum2-$dum1) ) 
+
+	define ha1inf ( ($g1*$dum2*(1+$dum1)-$g2*$dum1*(1+$dum2))/($dum2-$dum1) ) 
+	define ha2inf ( ($g2*(1+$dum2)*(1+$dum1*(1-$fold)) - $g1*(1+$dum1)*(1+$dum2*(1-$fold)))/(($dum2-$dum1)*$fold) ) 
+
+	define normdum   ( -2.302585093*$xb*$fold )
+	define normdumf  ( ($a1inf - $a2inf)*lg(1. + exp($normdum))/$fold )
+	define hnormdumf ( ($ha1inf - $ha2inf)*lg(1. + exp($normdum)) )
+
+	echo "-------------------------"
+	echo "* alpha @ -ifnty = "$a1inf
+	echo "* alpha @ +infty = "$a2inf
+
+	#
+	#  recomputing back the spectral indices at the E_ref.
+	#
+	define t1 ( (1 - $dum1/(1+$dum1))*$a1inf + ($dum1/(1+$dum1))*$a2inf )
+	define t2 ( (1 - $dum2/(1+$dum2))*$a1inf + ($dum2/(1+$dum2))*$a2inf )
+
+	define ht1 ( (1 - $fold*$dum1/(1+$dum1))*$ha1inf + ($fold*$dum1/(1+$dum1))*$ha2inf )
+	define ht2 ( (1 - $fold*$dum2/(1+$dum2))*$ha1inf + ($fold*$dum2/(1+$dum2))*$ha2inf )
+
+	echo "-------------------------"
+	echo "* alpha @ +infty = "$( (1-$fold)*$ha1inf + $fold*$ha2inf )  
+	echo "-------------------------"
+	echo " Spectral indices at E_Ref (recomputed for consistency check)"
+	echo " "
+	echo "* alpha (@E_Ref1) = "$ht1
+	echo "* alpha (@E_Ref2) = "$ht2
+	echo "-------------------------"
+
+	# defines energy array
+	#
+	define lg_e_step (0.001)
+	set lg_e=-4.0,4.0,$lg_e_step
+	set dum = 2.302585*(lg_e - $xb)*$fold
+
+	set lg_f = -$a1inf*lg_e + ($a1inf - $a2inf)*lg(1 + exp(dum))/$fold
+	set lg_f = lg_f - $normdumf
+
+	set hlg_f = -$ha1inf*lg_e + ($ha1inf - $ha2inf)*lg(1 + exp(dum))
+	set hlg_f = hlg_f - $hnormdumf
+
+	#--------------------
+	## define xp $($xb*(($a1inf-1)/(1-$a2inf))**(1./$fold))
+	define xp $($xb + lg(($a1inf-1)/(1-$a2inf))/$fold )
+
+	echo "* E_peak = "$(10**$xp)
+
+#---------------------------------------------------------------------------

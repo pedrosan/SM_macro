@@ -1,0 +1,947 @@
+#-------------------------------------------------------------------------------
+# read_glast_Aeff
+read_glast_Aeff
+
+        # define release ?  < Which release [old|new] : >
+        # define 7 $release
+
+	define fudge_Aeff ? < Aeff fudge factor : >
+
+        define 7 "new"
+
+        foreach 8 < mid pole > {
+	   data glast_rsp_lat_$8_$7.dat
+
+	   define nl_header (3)
+	   
+	   verbose 0
+	   do 9=1,30 {
+	      lines $(($9-1)*30 + 1 + $nl_header) $($9*30 + $nl_header)
+	      read < glast_Aeff_$8_$9 1 >
+	   }
+	   
+	   set glast_Aeff_$8_tot = glast_Aeff_$8_1
+	   do 9=2,30 {
+	      set glast_Aeff_$8_tot = glast_Aeff_$8_tot + glast_Aeff_$8_$9
+	   }
+	   verbose 1
+	   
+	   data glast_energy_bins_$7.dat
+	   read < e1 1 e2 2 >
+	   
+	   # transforms to GeV
+	   set e1 = e1/1.0e6
+	   set e2 = e2/1.0e6
+	   set de = e2 - e1
+	   
+	   set lg_e1 = lg(e1)
+	   set lg_e2 = lg(e2)
+	   set emid = sqrt(e1*e2)
+	   set lg_emid = lg(emid)
+
+	   data glast_bkg_$8_$7.dat
+	   read < lat_bkg_$8_counts 2 >
+	   set lat_bkg_$8_rate  = lat_bkg_$8_counts/3633903.0
+
+	   data xspec_Aeff_$8_$7.dat
+	   read < glast_Aeff_xspec_$8 3 >
+
+	   # overrides all RSP-derived values and uses straight the xspec Aeff array.
+	   set glast_Aeff_$8_tot = glast_Aeff_xspec_$8
+	   set glast_Aeff_$8_tot = $fudge_Aeff*glast_Aeff_$8_tot
+	}
+
+	foreach 9 < 1 2 3 > {
+	   data LAT_sensitivity_differential_$9.dat
+	   read < sensdiff_$9_e 1 sensdiff_$9_f 2 >
+	   data LAT_sensitivity_integral_$9.dat
+	   read < sensint_$9_e 1 sensint_$9_f 2 >
+	}
+
+	foreach 9 < 1 2 > {
+	   data LAT_tmin_for_detection_$9.dat
+	   read < tmin_$9_flux 1 tmin_$9_time 2 >
+	}
+
+	data xspec_Aeff_mid_$7.dat
+	read < emidxs 1 dexs 2 >
+	set emidxs = emidxs/1.0e6
+	set dexs   = 2.0*dexs/1.0e6
+	set lg_emidxs = lg(emidxs)
+
+#-------------------------------------------------------------------------------
+# read_glast_Aeff_dc1
+read_glast_Aeff_dc1
+
+	# define fudge_Aeff ? < Aeff fudge factor : >
+
+	#--------------------------------------------------
+	# 36 energy bins
+	#--------------------------------------------------
+	data aeff_DC1_energy.dat
+	read < dc1_e1 1 dc1_e2 2 >
+
+	# transforms to GeV
+	set dc1_e1 = dc1_e1/1.0e3
+	set dc1_e2 = dc1_e2/1.0e3
+	set dc1_de = dc1_e2 - dc1_e1
+	set lg_dc1_e1 = lg(dc1_e1)
+	set lg_dc1_e2 = lg(dc1_e2)
+	set dc1_emid = sqrt(dc1_e1*dc1_e2)
+	set lg_dc1_emid = lg(dc1_emid)
+
+	set dc1_emid_long = dc1_emid
+	do 9=2,20 {
+	    set dc1_emid_long = dc1_emid_long CONCAT dc1_emid
+	}
+	sort < dc1_emid_long >
+
+	set nemid  = 1,20,1
+	set dc1_nemid_long = 0*nemid + 1
+	do 9=2,36 {
+	    set dc1_nemid_long = dc1_nemid_long CONCAT (0*nemid + $9)
+	}
+
+	set ntheta = 1,20,1
+	set dc1_ntheta_long = ntheta
+	do 9=2,36 {
+	    set dc1_ntheta_long = dc1_ntheta_long CONCAT ntheta
+	}
+
+	#--------------------------------------------------
+	# 20 angular bins
+	# values are for constant delta-cos(theta) = 0.05
+	#--------------------------------------------------
+	data aeff_DC1_theta.dat
+	read < dc1_theta1 1 dc1_theta2 2 >
+
+	set dc1_theta1_long = dc1_theta1
+	do 9=2,36 {
+	    set dc1_theta1_long = dc1_theta1_long CONCAT dc1_theta1
+	}
+	set dc1_cos1   = cos(dc1_theta1/57.3)
+	set dc1_cos2   = cos(dc1_theta2/57.3)
+	set dc1_dtheta = dc1_theta2 - dc1_theta1
+	set dc1_dcos   = dc1_cos1 - dc1_cos2
+
+	#--------------------------------------------------
+	# Aeff
+	#--------------------------------------------------
+	data aeff_DC1_effarea.dat
+	read < dc1_Aeff_long 1 >
+	define nl_header (8)
+	   
+	# effarea array is 36 blocks of 20 rows.
+	# Each block is for a value of E, running over theta.
+	verbose 0
+	do 9=1,36 {
+	   lines $(($9-1)*20 + 1 + $nl_header) $($9*20 + $nl_header)
+	   read < dc1_Aeff_by_theta_e$9 1 >
+	}
+	verbose 1
+
+	do 9=1,20 {
+	   set dc1_Aeff_by_emid_th$9 = dc1_Aeff_long   if( dc1_ntheta_long == $9 )
+	}
+
+	#--------------------------------------------------
+	# angle averaged Aeff
+	# including only 12 angular bins, out to theta = 66., total dcos=0.6
+	#--------------------------------------------------
+	set sum_Aeff = 0*dc1_Aeff_by_emid_th1
+	do 9=1,12 {
+	   set sum_Aeff = sum_Aeff + dc1_dcos[$9]*dc1_Aeff_by_emid_th$9
+	}
+	set dc1_Aeff_by_emid = sum_Aeff/0.6
+
+#-------------------------------------------------------------------------------
+# plot_glast_Aeff_dc1
+plot_glast_Aeff_dc1
+
+	reset_graph
+
+	# limits $(lg(0.025)) $(lg(400)) -0.05 1.05
+	limits $(lg(0.025)) $(lg(400)) -20 11000
+	ticksize -1 0 0 0 
+	box
+	xlabel log(E)  [GeV]
+
+	ltype 0 
+	do 9=1,20 {
+	   define ct $(2 + ($9 % 7) )
+	   ctype $ct
+	   if( dc1_theta2[$9-1] <= 67 ) {
+	      # connect lg_dc1_emid (dc1_Aeff_by_emid_th$9/dc1_Aeff_by_emid_th1)  if( dc1_e1 > 0.09 )
+	      connect lg_dc1_emid  dc1_Aeff_by_emid_th$9
+	   }
+	}
+	ctype 2 
+	ltype 0 
+	lweight 5 
+	connect lg_dc1_emid  dc1_Aeff_by_emid
+	lweight 3
+
+
+##-------------------------------------------------------------------------------
+## plot_glast_Aeff_single
+plot_glast_Aeff_single
+
+	reset_graph
+
+	define what_lat ? < Latitude case [mid|pole] : >
+	define e_in     ? < What input energy [1-30] : >
+
+	if( substr('$what_lat',0,1) == 'm' ) {
+	   define 8 "mid"
+	} else {
+	   define 8 "pole"
+	}
+
+	set effarea local
+	set effarea = glast_Aeff_$8_$e_in
+	limits lg_e1 effarea
+	limits $(lg(0.01)) $(lg(400)) -20 1500
+	ticksize -1 0 0 0 
+	box
+	xlabel log(E)  [GeV]
+
+	ctype 3
+	connect lg_emid effarea
+	ctype 2
+
+#-------------------------------------------------------------------------------
+# plot_glast_Aeff
+plot_glast_Aeff
+
+	reset_graph
+
+	define what_lat ? < Latitude case [mid|pole] : >
+	if( substr('$what_lat',0,1) == 'm' ) { define 8 "mid" } 
+	if( substr('$what_lat',0,1) == 'p' ) { define 8 "pole" }
+	# if( substr('$what_lat',0,1) == 'f' ) { 
+	#    define 8 "fake" 
+	#    set glast_Aeff_fake_tot = 0*glast_Aeff_pole_tot + 1000
+	# }
+
+	set effarea local
+	set effarea = glast_Aeff_$8_tot
+
+	vecminmax effarea a b
+
+	limits $(lg(0.025)) $(lg(400)) -20 $(1.05*$b)
+	ticksize -1 0 0 0 
+	box
+	xlabel log(E)  [GeV]
+
+	ltype 1 
+	do 9=1,30 {
+	   define ct $(2 + ($9 % 7) )
+	   ctype $ct
+	   connect lg_emid glast_Aeff_$8_$9
+	}
+	ltype 0 
+
+	ctype 5
+	connect lg_emid effarea
+	ctype 2
+
+
+#-------------------------------------------------------------------------------
+# plot_glast_Aeff_folded
+#    Compares with bkg counts spectrum obtained from the canned files
+plot_glast_Aeff_folded
+
+	reset_graph
+
+	define what_lat ? < Latitude case [mid|pole|fake] : >
+	if( substr('$what_lat',0,1) == 'm' ) { define 8 "mid" } 
+	if( substr('$what_lat',0,1) == 'p' ) { define 8 "pole" }
+	if( substr('$what_lat',0,1) == 'f' ) { 
+	   define 8 "fake" 
+	   set glast_Aeff_fake_tot = 0*glast_Aeff_pole_tot + 1500
+	}
+
+	compute_src_model_spectrum
+	# returns 'flux_src_model'
+
+	set pl = flux_src_model
+
+	compute_bkg_model_spectrum
+	# returns 'flux_bkg_model_sr' and 'flux_bkg_model'
+
+	define Texp_in ?  <                                    T_exp [s] : >
+	# define Texp (1e6)
+	# define Texp $(1e3*$Texp_in)
+	define Texp $Texp_in
+
+	define dolog ?  <              Plot in logarithmic scale [1|0] : >
+
+	set src_spec       = flux_src_model*glast_Aeff_$8_tot*de*$Texp
+	set bkg_spec_model = flux_bkg_model*glast_Aeff_$8_tot*de*$Texp
+	set bkg_spec_xspec = lat_bkg_$8_rate*$Texp
+	
+	foreach 9 < 0.1 0.2 0.4 1.0 $Emin_src $Ecut_det > {
+           set tmp = src_spec         if( e1 > $9 )
+           define src_cts $(sum(tmp))
+           set tmp = bkg_spec_model   if( e1 > $9 )
+           define bkg_cts_model $(sum(tmp))
+           echo "--------------------------------------------------"
+           echo " Total SRC        >"$9" GeV : "$src_cts" cts "
+           echo " Total BKG (model)>"$9" GeV : "$bkg_cts_model
+           echo " S/N (model)      >"$9" GeV : "$($src_cts/sqrt($src_cts+$bkg_cts_model))
+	}
+        echo "--------------------------------------------------"
+
+	set dummy = src_spec CONCAT bkg_spec_model
+	set noise = src_spec + bkg_spec_model
+	set noise = sqrt(noise)
+	set snr = src_spec/noise
+
+	define y1tick (0)
+	if( $dolog ) { 
+	   set src_spec       = lg(src_spec)
+	   set bkg_spec_xspec = lg(bkg_spec_xspec)
+	   set bkg_spec_model = lg(bkg_spec_model)
+	   set dummy          = lg(dummy)
+	   define y1tick (-1)
+	}
+
+	vecminmax src_spec a b
+	vecminmax dummy a b
+
+	notation -4 4 -3 3 
+	limits $(lg(0.025)) $(lg(400)) $($a-0.05*$a) $(1.05*$b)
+	limits $(lg(0.025)) $(lg(400)) src_spec
+	limits $(lg(0.025)) $(lg(400)) dummy
+	ticksize -1 0 $y1tick 0 
+	box 1 2 0 0 
+	xlabel log(E)  [GeV]
+	ylabel N_{PL}\cdot A_{eff}\cdot \Delta E\cdot T_{exp} [ph]
+
+	ltype 1 
+	do 9=1,30 {
+	   define ct $(2 + ($9 % 7) )
+	   ctype $ct
+	   # connect lg_emid glast_Aeff_$8_$9
+	}
+	ltype 0 
+
+	ctype 5
+	histogram lg_emid src_spec
+	ltype 2 
+	ctype 3 
+	# histogram lg_emid bkg_spec_xspec
+	# ctype 7 
+	histogram lg_emid bkg_spec_model
+	ltype 0
+	ctype 2
+
+	relocate ( $($gx2 - 1250) $($gy2 - 1250) )
+	ctype 3 putlabel 4 BKG
+	relocate ( $($gx2 - 1250) $($gy2 - 2250) )
+	ctype 5 putlabel 4 SRC
+	ctype 2
+
+#-------------------------------------------------------------------------------
+# lat_psf_model
+lat_psf_model
+
+	data LAT_PSF_containment.dat
+	read < lat_psf_e 1 lat_psf_width 2 >
+	set psfx = 0.03,300,0.01
+	interp2 lat_psf_e lat_psf_width psfx psfy
+
+	define fudge_psf (1.75)
+	define psf_exp (-0.78)
+	# set psf_scale_f = $fudge_psf*sqrt( (0.028*(emid/0.1)**$psf_exp)**2.0 + (1.58e-4)**2.0 )
+	# set psf_scale_b = $fudge_psf*sqrt( (0.046*(emid/0.1)**$psf_exp)**2.0 + (3.58e-4)**2.0 )
+	set psf_scale_f = $fudge_psf*sqrt( (0.028*(emid/0.1)**(-0.79))**2.0 + (2.58e-4)**2.0 )
+	set psf_scale_b = $fudge_psf*sqrt( (0.046*(emid/0.1)**(-0.76))**2.0 + (4.68e-4)**2.0 )
+	set psf_scale   = 0.5*(psf_scale_f + psf_scale_b)
+
+	notation -4 4 -1 2 
+	location 5500 27500 6000 28000
+	limits $(lg(0.02)) $(lg(400)) $(lg(1e-4*57.3)) $(lg(1e0*57.3))
+	ticksize -1 0 -1 0 
+	ctype 4 ltype 1 grid 1
+	ctype 4 ltype 2 grid 0
+	ctype 2 ltype 0
+	# box 4 4 4 2
+	box 1 2 0 4 
+	ylabel PSF scale [deg ?]
+
+	limits $(lg(0.02)) $(lg(400)) -4 0 
+	ticksize -1 0 -1 0 
+	# box 1 2 0 4
+	box 4 4 4 2
+	xlabel E [GeV]
+	# ylabel PSF scale [rad ?]
+	relocate ( $($gx2+3200) $(0.5*($gy1+$gy2)) )
+	angle 90
+	putlabel 5 PSF scale [rad ?]
+	angle 0
+
+	ctype 2 
+	ptype 4 2 
+	angle 45
+	points (lg(lat_psf_e)) (lg(lat_psf_width/57.3))
+	angle 0
+
+	lweight 4 
+
+	ctype 5 
+	ltype 2 
+	connect lg_emid (lg(psf_scale_b))
+	ltype 0 
+	relocate ( $($gx1+1250) $($gy1+1250) )
+	putlabel 6 back
+
+	ctype 3 
+	ltype 2 
+	connect lg_emid (lg(psf_scale_f))
+	ltype 0 
+	relocate ( $($gx1+1250) $($gy1+2250) )
+	putlabel 6 front
+
+	ctype 2 
+	connect lg_emid (lg(psf_scale))
+	relocate ( $($gx1+1250) $($gy1+3250) )
+	putlabel 6 average
+
+	lweight 3 
+	ctype 2
+
+#-------------------------------------------------------------------------------
+# compute_src_model_spectrum
+compute_src_model_spectrum
+
+	echo "--------------------------------------------------"
+	echo "  SOURCE SPECTRUM "
+	echo " "
+	define slope    ? <                               Gamma : >
+	define Emin_src ? <     E_min for integrated flux [GeV] : >
+	define IntFlux  ? <  Photon flux integrated above E_min : > 
+	define Ecut_det ? <           E_cut for detection [GeV] : >
+
+	define K0src (3.154e-7)
+	define K0src (2.983e-7)
+	define K0src (3.000e-7)
+
+	define K0src $( ($slope-1)*$IntFlux/1.0*($Emin_src/1.0)**($slope-1) )
+	define K0keV $( $K0src*(1e-6/1.0)**(-1.0*$slope)/1e6 )
+
+	echo " "
+	echo ">> K0 = "$K0src", @1.0 GeV "
+	echo "      = "$K0keV", @1.0 keV "
+	echo ">> output in array 'flux_src_model' in ph/cm2/s/GeV"
+	echo "--------------------------------------------------"
+
+	set flux_src_model        = $K0src*(emid/1.0)**(-1*$slope)
+	set flux_src_model_cumul  = $K0src*(1.0)/($slope-1)*(e1/1.0)**(1.0-$slope)
+	set flux_src_model_binned = $K0src*(1.0)/($slope-1)*(e1/1.0)**(1.0-$slope)*(1.0 - (e2/e1)**(1.0-$slope))
+
+#-------------------------------------------------------------------------------
+# compute_bkg_model_spectrum
+compute_bkg_model_spectrum
+
+	echo "--------------------------------------------------"
+	echo "  BACKGROUND SPECTRUM "
+	# ph/cm^2/s/GeV/sr
+	#
+	define Gamma_bkg     (2.1)
+	define IntFluxBkg_sr (1.5e-5)
+	define Eref          (0.451)
+	define Emin_bkg      (0.1)
+	define K0bkg        $( ($Gamma_bkg - 1)*$IntFluxBkg_sr/$Eref*($Emin_bkg/$Eref)**($Gamma_bkg - 1) )
+
+	echo " "
+	echo " Preparing model spectrum for BKG "
+	echo "        Gamma : "$Gamma_bkg
+	echo "         Eref : "$Eref
+	echo "   scaled to F(>"$Emin_bkg") = "$IntFluxBkg_sr
+	echo ">> K0 = "$K0bkg", @"$Eref" GeV "
+	echo ">> output in array 'flux_bkg_model_sr' in ph/cm2/s/GeV/sr "
+	echo "               and 'flux_bkg_model'    in ph/cm2/s/GeV "
+	echo " "
+
+	set flux_bkg_model_sr = $K0bkg*(emid/$Eref)**(-1.0*$Gamma_bkg) 
+	set flux_bkg_model_sr_binned = $K0bkg*$Eref/($Gamma_bkg-1)*(e1/$Eref)**(1.0-$Gamma_bkg)*(1.0 - (e2/e1)**(1.0-$Gamma_bkg))
+
+	set tmp = psfy  if( psfx > $Ecut_det )
+	echo " For Ecut="$Ecut_det", PSF(Ecut) = "$(tmp[0])
+	define Npsf (2.0)
+
+	define width_psf ? < LAT PSF 1-sigma radius (0 for using array) [deg] : >
+	
+	if( $width_psf > 0 ) { 
+	   define area_psf $(3.1415*($Npsf*$width_psf/57.3)**2.0)
+	   echo "  PSF area for this width : "$area_psf 
+	   set flux_bkg_model        = flux_bkg_model_sr*$area_psf
+	   set flux_bkg_model_binned = flux_bkg_model_sr_binned*$area_psf
+	} else {
+	   set flux_bkg_model        = flux_bkg_model_sr*(3.1415*($Npsf*psf_scale)**2.0)
+	   set flux_bkg_model_binned = flux_bkg_model_sr_binned*(3.1415*($Npsf*psf_scale)**2.0)
+	}
+	echo "--------------------------------------------------"
+
+	# this from canned xspec bkg file
+	set flux_bkg_xspec_sr = lat_bkg_mid_rate/glast_Aeff_mid_tot/de
+	if( $width_psf > 0 ) { 
+	   define area_psf $(3.1415*($Npsf*$width_psf/57.3)**2.0)
+	   set psf_area_flat   = 0*flux_bkg_xspec_sr + $area_psf
+	   set flux_bkg_xspec  = flux_bkg_xspec_sr*psf_area_flat
+	   # set flux_bkg_xspec    = flux_bkg_xspec_sr*$area_psf
+	} else {
+	   set psf_area_diff   = 3.1415*($Npsf*psf_scale)**2.0
+	   set flux_bkg_xspec  = flux_bkg_xspec_sr*psf_area_diff
+	   # set flux_bkg_xspec  = flux_bkg_xspec_sr*(3.1415*($Npsf*psf_scale)**2.0)
+	}
+
+	#--------------------------------------------------
+	set psf_area_above_e1 = 0*flux_bkg_model_sr
+	do 9=0,dimen(flux_bkg_model_sr)-1 {
+	    set tmp = psfy  if( psfx >= e1[$9] )
+	    set psf_area_above_e1[$9] = tmp[0]
+	}
+	set psf_area_above_e1 = 3.1415*($Npsf*psf_area_above_e1/57.3)**2.0
+
+#-------------------------------------------------------------------------------
+# compare_spectra
+compare_spectra
+
+	reset_graph
+
+	define howplot ?   <                          Plot Fnu or nuFnu [1|2] : >
+	
+	#--------------------------------------------------
+	# returns 'flux_src_model'
+	#--------------------------------------------------
+	compute_src_model_spectrum
+
+	#--------------------------------------------------
+	# returns 'flux_bkg_model_sr' and 'flux_bkg_model'
+	#  as well as the XSPEC one 'flux_bkg_xspec
+	#--------------------------------------------------
+	compute_bkg_model_spectrum
+
+	if( $howplot == 1 ){ 
+	   define ymin (-12)
+	   define ymax (-3)
+	   define labx "N(E)  [ph/cm^2/s/GeV]"
+	   set xaux = 0*lg_emid
+	} else {
+	   define ymin (-12)
+	   define ymax (-4)
+	   define labx "E\cdot N(E)  [ph/cm^2/s]"
+	   set xaux = lg_emid   ## + 3 
+	}
+
+	notation -4 4 -2 2 
+	limits $(lg(0.025)) $(lg(400)) -15 -6
+	limits $(lg(0.025)) $(lg(400)) $ymin $ymax
+	ticksize -1 0 -1 0 
+	box
+	xlabel E [GeV]
+	ylabel $labx
+
+	ctype 4 
+	ltype 0 
+	histogram lg_emid (lg(flux_bkg_xspec) + xaux)
+	ltype 2 
+	histogram lg_emid (lg(flux_bkg_xspec_sr) + xaux)
+	ltype 0
+	ctype 3 
+	ptype 4 3
+	points    lg_emid (lg(flux_bkg_model) + xaux)
+	ptype 4 0
+	points    lg_emid (lg(flux_bkg_model_sr) + xaux)
+	ctype 5 
+	histogram lg_emid (lg(flux_src_model) + xaux)
+	ctype 2 
+
+	#-------------------------------------------------
+	# checking integrated fluxes
+	set tmp_f  = flux_bkg_model_sr  if( e1 > 0.1 )
+	set tmp_de = de                 if( e1 > 0.1 )
+	define flux_bkg_model_int  $(sum(tmp_f*tmp_de))
+
+	set tmp_f  = flux_bkg_xspec_sr  if( e1 > 0.1 )
+	set tmp_de = de                 if( e1 > 0.1 )
+	define flux_bkg_xspec_int        $(sum(tmp_f*tmp_de))
+
+	set tmp_f  = flux_src_model     if( e1 > 0.1 )
+	set tmp_de = de                 if( e1 > 0.1 )
+	define flux_src_model_int  $(sum(tmp_f*tmp_de))
+
+	echo " F_bkg_model(>100 MeV) = "$flux_bkg_model_int" ph/cm2/s/sr"
+	echo " F_bkg_xspec(>100 MeV) = "$flux_bkg_xspec_int" ph/cm2/s/sr"
+	echo " F_src(>100 MeV)       = "$flux_src_model_int" ph/cm2/s"
+
+	relocate ( $($gx2 - 1250) $($gy2 - 1250) )
+	ctype 5 putlabel 4 source
+	relocate ( $($gx2 - 1250) $($gy2 - 2250) )
+	ctype 3 putlabel 4 bkg model
+	relocate ( $($gx2 - 1250) $($gy2 - 3250) )
+	ctype 4 putlabel 4 bkg xspec
+	ctype 2
+
+	expand 1.01
+	relocate ( $($gx1) $($gy2 + 800) )
+	ctype 2 putlabel 6 F_{src}(>$Emin_src GeV)=$IntFlux
+	expand 1.5
+
+#-------------------------------------------------------------------------------
+# sensitivity_differential
+sensitivity_differential
+
+	reset_graph
+
+	define snr  ?      <             S/N ratio required : >
+	define Texp ?      <              Exposure time [s] : > 
+	define bkg_fudge ? <        Background fudge factor : >
+
+	define rebinby ?   <  Rebinning by factor [2|3|5|6] : >
+	define 9 $rebinby
+
+	#--------------------------------------------------
+	# returns 'flux_bkg_model_sr' and 'flux_bkg_model'
+	#  as well as the XSPEC one 'flux_bkg_xspec
+	#--------------------------------------------------
+	compute_bkg_model_spectrum
+
+	set bkg_model_rate = flux_bkg_model*de*glast_Aeff_mid_tot
+	set bkg_xspec_rate = flux_bkg_xspec*de*glast_Aeff_mid_tot
+	# set bkg_xspec_rate = lat_bkg_mid_rate*(3.1415*($Npsf*psf_scale)**2.0)
+
+	#---------------------------------------
+        define newdim $(dimen(emid)/$rebinby)
+
+        foreach 8 < lat_bkg_mid_rate bkg_xspec_rate bkg_model_rate glast_Aeff_mid_tot e1 e2 emid lg_emid de > {
+           set dimen(reb_$8) = $newdim
+           set pop_$8 = $8
+        }
+
+        if( $rebinby == 1 ) {
+
+           foreach 8 < lat_bkg_mid_rate bkg_xspec_rate bkg_model_rate glast_Aeff_mid_tot e1 e2 emid lg_emid de > {
+              set reb_$8 = $8
+           }
+
+        } else {
+
+           set reb_e1[0] = 0.03
+           define k (-1)
+           do i=0,$newdim-1 {
+           if( $i > 0 ) {
+                 set reb_e1[$i] = reb_e2[$i-1]
+           }
+              do j=1,$rebinby {
+                 define k $( $k + 1 )
+                 set reb_e2[$i] = pop_e2[$k]
+              }
+           }
+           set reb_emid = sqrt(reb_e1*reb_e2)
+           set reb_lg_emid = lg(reb_emid)
+
+           foreach 8 < glast_Aeff_mid_tot lat_bkg_mid_rate bkg_xspec_rate bkg_model_rate de > {
+              define k (-1)
+              do i=0,$newdim-1 {
+                 set reb_$8[$i] = 0.0
+                 do j=1,$rebinby {
+                    define k $( $k + 1 )
+                    # echo $i $j $k $(pop_$8[$k])
+                    set reb_$8[$i] = reb_$8[$i] + pop_$8[$k]
+                 }
+              }
+           }
+
+        }
+
+        define beta $($snr*$snr/$Texp)
+        # set src_rate     = 0.5*$beta*(1 + sqrt(1 + 4.0*$bkg_fudge*reb_lat_bkg_mid_rate/$beta))
+        # set src_flux_ph  = src_rate/reb_glast_Aeff_mid_tot/reb_de
+        # set src_flux_mev = src_rate/reb_glast_Aeff_mid_tot*(reb_emid*1000.0)
+        # set src_flux_erg = src_rate/reb_glast_Aeff_mid_tot*(reb_emid*1.602e-6)
+        
+        set src_rate_xspec     = 0.5*$beta*(1 + sqrt(1 + 4.0*$bkg_fudge*reb_bkg_xspec_rate/$beta))
+        set src_flux_ph_xspec  = src_rate_xspec/reb_glast_Aeff_mid_tot/reb_de
+        set src_flux_mev_xspec = src_rate_xspec/reb_glast_Aeff_mid_tot*(reb_emid*1000.0)
+        set src_flux_erg_xspec = src_rate_xspec/reb_glast_Aeff_mid_tot*(reb_emid*1.602e-3)
+
+        set src_rate_model     = 0.5*$beta*(1 + sqrt(1 + 4.0*$bkg_fudge*reb_bkg_model_rate/$beta))
+        set src_flux_ph_model  = src_rate_model/reb_glast_Aeff_mid_tot/reb_de
+        set src_flux_mev_model = src_rate_model/reb_glast_Aeff_mid_tot*(reb_emid*1000.0)
+        set src_flux_erg_model = src_rate_model/reb_glast_Aeff_mid_tot*(reb_emid*1.602e-3)
+        
+        notation -4 4 -3 3 
+        limits $(lg(0.02)) $(lg(400)) -6 -2 
+        limits $(lg(0.02)) $(lg(400)) -6.2 -2.7 
+        ticksize -1 0 -1 0 
+	ctype 4 ltype 1 grid 1
+	ctype 4 ltype 2 grid 0
+	ctype 2 ltype 0
+        box 
+        xlabel E [GeV]
+        ylabel Flux [MeV/cm^2/s]
+        
+	# Plots data from paper figure
+	ctype 2 
+	ltype 1 
+	foreach 9 < 1 2 3 > {
+	   connect (lg(sensdiff_$9_e)) (sensdiff_$9_f+6)
+	}
+	ltype 0
+        # ctype 3 
+	# ltype 2 
+        # connect reb_lg_emid (lg(src_flux_mev))
+	# ltype 0
+        # ptype 4 0 
+        # points  reb_lg_emid (lg(src_flux_mev))
+        # ctype 2 
+
+        ctype 3 
+        connect reb_lg_emid (lg(src_flux_mev_xspec))
+        ptype 4 3 
+        points  reb_lg_emid (lg(src_flux_mev_xspec))
+        ctype 2 
+
+        ctype 5 
+        connect reb_lg_emid (lg(src_flux_mev_model))
+        ptype 4 3 
+        points  reb_lg_emid (lg(src_flux_mev_model))
+        ctype 2 
+
+	relocate ( $($gx2 - 1250) $($gy2 - 1250) )
+	ctype 3 putlabel 4 XSPEC
+	relocate ( $($gx2 - 1250) $($gy2 - 2250) )
+	ctype 5 putlabel 4 model
+	ctype 2
+
+#-------------------------------------------------------------------------------
+# sensitivity_integral
+sensitivity_integral
+
+	reset_graph
+
+	define snr  ?      <             S/N ratio required : >
+	define Texp ?      <              Exposure time [s] : > 
+	define bkg_fudge ? <        Background fudge factor : >
+
+	#--------------------------------------------------
+	# returns 'flux_bkg_model_sr' and 'flux_bkg_model'
+	#  as well as the XSPEC one 'flux_bkg_xspec
+	#--------------------------------------------------
+	compute_src_model_spectrum
+	compute_bkg_model_spectrum
+
+	#--------------------------------------------------
+	# Background 
+	#--------------------------------------------------
+	# to integrate over different A_psf(E_cut) must use _sr here.
+	# BE CAREFUL WITH NAMES!
+	set bkg_model_rate = flux_bkg_model_sr*de*glast_Aeff_mid_tot
+	set bkg_xspec_rate = flux_bkg_xspec_sr*de*glast_Aeff_mid_tot
+	# set bkg_model_rate = flux_bkg_model*de*glast_Aeff_mid_tot
+	# set bkg_xspec_rate = flux_bkg_xspec*de*glast_Aeff_mid_tot
+
+	define which_psf_area ? < Use A_psf(E1) or constant [1|0] : >
+
+	if( $which_psf_area == 1 ) { 
+	   set psf_area = psf_area_above_e1
+	} else {
+	   set psf_area = psf_area_flat
+	}
+
+	#--------------------------------------------------
+	# prepare the cumulative (>E) arrays
+	#--------------------------------------------------
+	foreach 9 < model xspec > {
+           set tmp1 = reverse(bkg_$9_rate)
+           set tmp2 = cumulate(tmp1)
+           set tmp3 = reverse(tmp2)
+           set bkg_$9_rate_cumul = tmp3
+           delete tmp1
+           delete tmp2
+           delete tmp3
+           set bkg_$9_rate_cumul = bkg_$9_rate_cumul*psf_area
+	}
+	
+	#--------------------------------------------------
+	# preparing cumulated "template" source spectrum
+	#--------------------------------------------------
+	# define fudge_Aeff ? < Fudge for A_eff : >
+	define fudge_Aeff (1.0)
+	set tmp1 = flux_src_model*$fudge_Aeff*glast_Aeff_mid_tot*de
+	set tmp2 = reverse(tmp1)
+	set tmp3 = cumulate(tmp2)
+	set tmp4 = reverse(tmp3)
+	set src_template_rate_cumul = tmp4
+	foreach 9 < 1 2 3 4 > { delete tmp$9 }
+
+	#--------------------------------------------------
+
+	#--------------------------------------------------
+        define beta $($snr*$snr/$Texp)
+        set src_rate_xspec_cumul = 0.5*$beta*(1 + sqrt(1 + 4.0*$bkg_fudge*bkg_xspec_rate_cumul/$beta))
+
+	set ratio_cumul = src_rate_xspec_cumul/src_template_rate_cumul
+	set flux_detect_xspec = flux_src_model_cumul*ratio_cumul
+
+        set src_rate_model_cumul = 0.5*$beta*(1 + sqrt(1 + 4.0*$bkg_fudge*bkg_model_rate_cumul/$beta))
+
+	set ratio_cumul = src_rate_model_cumul/src_template_rate_cumul
+	set flux_detect_model = flux_src_model_cumul*ratio_cumul
+
+	set dummy_bkg = bkg_model_rate_cumul*$Texp
+	set dummy_src = src_rate_model_cumul*$Texp
+	set dummy_snr = dummy_src/sqrt(dummy_bkg+dummy_src)
+	# print < e1 dummy_src dummy_bkg dummy_snr >
+
+	#--------------------------------------------------
+        notation -4 4 -3 3 
+        limits $(lg(0.02)) $(lg(400)) -6.2 -2.7 
+        limits $(lg(0.02)) $(lg(400)) -10 -7
+        limits $(lg(0.1))  $(lg(100)) -10 -7
+        ticksize -1 0 -1 0 
+	ctype 4 ltype 1 grid 1
+	ctype 4 ltype 2 grid 0
+	ctype 2 ltype 0
+        box 
+        xlabel E [GeV]
+        ylabel F(>E) [ph/cm^2/s]
+        
+	# plot data from paper figure
+	ctype 2 
+	ltype 1 
+	foreach 9 < 1 2 3 > {
+	   connect (lg(sensint_$9_e)) (sensint_$9_f)
+	}
+	ltype 0
+        ctype 3 
+        connect lg_e1 (lg(flux_detect_xspec))   if( e1 <= 60.0 && e1 >= 0.1 )
+        ptype 4 3 
+        points  lg_e1 (lg(flux_detect_xspec))   if( e1 <= 60.0 && e1 >= 0.1 )
+        ctype 2 
+
+        ctype 5 
+        connect lg_e1 (lg(flux_detect_model))   if( e1 <= 60.0 && e1 >= 0.1 )
+        ptype 4 3 
+        points  lg_e1 (lg(flux_detect_model))   if( e1 <= 60.0 && e1 >= 0.1 )
+        ctype 2 
+
+	relocate ( $($gx2 - 1250) $($gy2 - 1250) )
+	ctype 3 putlabel 4 XSPEC
+	relocate ( $($gx2 - 1250) $($gy2 - 2250) )
+	ctype 5 putlabel 4 model
+	ctype 2
+
+#-------------------------------------------------------------------------------
+# sensitivity_time
+sensitivity_time
+
+	define snr  ?      <                  S/N ratio required : >
+	define bkg_fudge ? <             Background fudge factor : >
+	define Ecut ?      < Minimum Energy to be included [GeV] : >
+
+	#--------------------------------------------------
+	# Returns 'flux_bkg_model_sr' and 'flux_bkg_model'
+	# it is ph/cm2/s/GeV
+	#--------------------------------------------------
+	compute_bkg_model_spectrum
+	compute_src_model_spectrum
+
+	#--------------------------------------------------
+	# rescale whatever spectrum is given to one normalized to yield 1 c/s above Ecut
+	#--------------------------------------------------
+	set tmp = flux_src_model_cumul   if( e1 >= 0.1 )
+	define flux_src_scale $(tmp[0])
+	set flux_src_template = flux_src_model/$flux_src_scale
+
+	#--------------------------------------------------
+	set src_model_rate_template = flux_src_template*de*glast_Aeff_mid_tot
+	set bkg_model_rate          = flux_bkg_model*de*glast_Aeff_mid_tot
+
+	set tmp_src_rate = src_model_rate_template      if( e1 >= $Ecut )
+	set tmp_bkg_rate = bkg_model_rate*$bkg_fudge    if( e1 >= $Ecut )
+	set tmp_e1       = e1                           if( e1 >= $Ecut )
+
+	define tmp_src_cts $(sum(tmp_src_rate))
+	define tmp_bkg_cts $(sum(tmp_bkg_rate))
+
+	set test_flux = -8.25,-4.55,0.05
+	set test_src_cts = $tmp_src_cts*10.0**test_flux
+
+	set test_time = $snr**2.0*(test_src_cts + $tmp_bkg_cts)/test_src_cts**2.0
+	#--------------------------------------------------
+
+        notation -4 4 -3 3 
+        limits $(lg(0.02)) $(lg(400)) -6.2 -2.7 
+        limits $(lg(0.02)) $(lg(400)) -10 -7
+        limits -8.5 -4.5 1.5 8.5 
+
+        ticksize 0.1 1 0.2 1 
+	box 4 4 1 2 
+
+        ticksize -1 0 -1 0 
+	lweight 2 
+	ctype 4 ltype 1 grid 1
+	ctype 4 ltype 2 grid 0
+	ctype 2 ltype 0
+	lweight 3 
+        box 1 2 4 4
+        xlabel F(>100 MeV) [ph/cm^2/s]
+        ylabel log(T_{exp})  [s]
+        
+	ctype 3 ltype 0 lweight 4 connect tmin_1_flux tmin_1_time
+	ctype 2 ltype 0 lweight 3 connect tmin_2_flux tmin_2_time
+
+        ctype 5 
+	ltype 0
+        connect test_flux (lg(test_time)) 
+        # ptype 4 3 
+        # points  test_flux (lg(test_time)) 
+        ctype 2 
+
+	relocate ( $($gx2 - 1250) $($gy2 - 1200) )
+	ctype 5 putlabel 4 model (\Gamma=$slope)
+	relocate ( $($gx2 - 1250) $($gy2 - 2400) )
+	ctype 3 putlabel 4 5\sigma\ detection
+	relocate ( $($gx2 - 1250) $($gy2 - 3600) )
+	ctype 2 putlabel 4 \Delta f/f=0.2
+	ctype 2
+
+	relocate ( $($gx1 + 1400) $($gy1 + 1700) )
+	ctype 2 putlabel 6 T_{exp}\propto F^{-3/2}
+
+	ltype 2 
+	relocate -5 2 draw -6 3.5
+	relocate -5 2 draw -6 3.0
+	relocate -8 7 draw -6 4  
+	ltype 0
+
+#-------------------------------------------------------------------------------
+# read_test_xspec
+read_test_xspec
+
+        define repoxs "/home/gfossati/Science/Fermi/effarea/xspec"
+        define obsid "13149"
+        define obsid ? < which obsid : >
+        define 9 $obsid
+
+        data "$!repoxs/$!9_src.dat"
+        read < src_counts 2 >
+        data "$!repoxs/$!9_bkg.dat"
+        read < bkg_counts 2 >
+
+        data "$!repoxs/$!9_wdata_src_bkg.dat"
+        read < xs_src_counts 2 xs_src_err_counts 3 xs_bkg_counts 4 xs_bkg_err_counts 5 >
+        set xs_srcbkg_counts = xs_src_counts + xs_bkg_counts
+
+        set src_ratio = src_counts/xs_src_counts
+        set bkg_ratio = bkg_counts/xs_bkg_counts
+        set src_ratio_alt = (src_counts + bkg_counts)/xs_src_counts
+        set src_ratio_alt = src_counts/(xs_src_counts+xs_bkg_counts)
+
+        print < src_counts bkg_counts xs_src_counts xs_bkg_counts xs_srcbkg_counts >
+
+#-------------------------------------------------------------------------------

@@ -1,0 +1,150 @@
+#---------------------------------------------------------------------------
+# nulnu	 2	: arg[1]=datafile arg[2]=colore
+nulnu	 2	#
+
+		location 4500 32000 7000 31000
+
+		ctype 2
+		ltype 0
+
+		limits 9.1 26 42 50
+		limits 9.1 27.4 42 50
+		ticksize 0 0 0 0
+		expand 1.5
+		ltype 1
+		ctype 4
+		grid
+		ctype 2
+		ltype 0
+		box
+
+		expand 1.5
+		xlabel Log \\nu
+		ylabel Log \\nu L(\\nu )
+
+		data $1
+		read {x_obs 1 y_obs 2 err_obs 3_}
+
+		expand 2 ptype 4 3 ctype 2 
+		points x_obs y_obs 
+		set errup  = 0.07 + 0*y_obs
+		set errdown= 0.35 + 0*y_obs
+		set errup  = 0.2*err_obs
+		set errdown= err_obs
+		errorbar x_obs y_obs errup   2
+		errorbar x_obs y_obs errdown 4
+
+		# data fort.55
+		# read {x_model 1 y_model 2}
+		# ctype $2
+		# lweight 1.5
+		# connect x_model y_model
+		# lweight 1.
+		# ctype 2
+
+		set dimen(pars_desc)= 8.s 
+		set pars_desc[0]= 'R_blob='
+		set pars_desc[1]= 'l_inj ='
+		set pars_desc[2]= 'l_ext ='
+		set pars_desc[3]= 'B     ='
+		set pars_desc[4]= 'g_max ='
+		set pars_desc[5]= 'g_min ='
+		set pars_desc[6]= 's     ='
+		set pars_desc[7]= 'delta ='
+
+		data fort.55
+		lines 1 100
+		read {x_model 1 y_model 2}
+		lines 103 103
+		read costo 3 
+		lines 105 112
+		read pars 3 
+		ctype $2
+		lweight 1.5
+		connect x_model y_model
+		lweight 1.
+		ctype 2
+
+		echo  --------------------
+		echo   costo = $(costo)
+		echo  --------------------
+		print '%8s  %14.6f \n' {pars_desc pars}
+		echo  --------------------
+
+		# data fort.23
+		# read {x_model1 1 y_model1 2}
+		ctype $($2+1)
+		lweight 1.5
+		# connect x_model1 y_model1
+		lweight 1.
+		ctype 2
+
+
+#---------------------------------------------------------------------------
+# readparcheck 01
+readparcheck 01
+
+	define filename ? {Prefix of data file name ?}
+
+	data $filename.par_all.record
+	if($?1 == 1) {lines 1 $1}
+
+	read {temp 1 costo 2 r 3 l_inj 4 l_ext 5 b 6 g_max 7 g_min 8 s 9 delta 10}
+	set step=1,$(dimen(costo)-2)
+
+	set lum_inj = l_inj*r*8.187*2.99792/665.
+	set u_rmax  = lum_inj*1.e5/(16.755*r**2.)
+	set u_b     = b*b/25.13
+	set ll      = l_inj/l_ext
+
+#---------------------------------------------------------------------------
+# parcheck
+parcheck
+
+	define var ? {quantity to plot ?}
+
+	location 5500 31500 9000 30000
+	ctype 2 
+	expand 1.5 
+	lweight 2.5
+	ticksize 0 0 0 0
+	limits step ($var) 
+	box
+	xlabel Step
+
+	ltype 0
+	lweight 1.5
+	connect step ($var) 
+
+
+#---------------------------------------------------------------------------
+# parchecklim
+parchecklim
+
+	define var ?   { Quantity to plot ?}
+
+	set ydum = $var
+	vecminmax ydum ymin ymax 
+
+	define xmin ?  { Minimum X ?}
+	define xmax ?  { Maximum X ?}
+	define ymin ?  { Minimum Y ?}
+	define ymax ?  { Maximum Y ?}
+	define color ? { Color ? }
+
+	location 5500 31500 9000 30000
+	ctype 2 
+	expand 1.5 
+	lweight 2.5
+	ltype 0
+	ticksize 0 0 0 0
+	limits $xmin $xmax $ymin $ymax 
+	box
+	xlabel Step
+
+	ctype $color
+	lweight 1.5
+	connect step ($var) 
+	ctype 2 
+
+#---------------------------------------------------------------------------

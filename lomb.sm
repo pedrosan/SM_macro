@@ -1,0 +1,673 @@
+#------------------------------------------------------------------------------
+# vs_period
+vs_period
+
+	define name ? { Filename : }
+	data ls_"$!name".period
+	read { t 1 power 2 prob 3 }
+
+	define ylog ? { Log of power [y/n] : }
+	if( substr('$ylog',0,1) == 'y' ) { 
+	   set y = lg(power)
+	   define ytick (-1)
+	} else {
+	   set y = power
+	   define ytick (0)
+	}
+
+	set x = lg(t)
+
+	location 6000 31000 6000 31000
+	notation -4 4 -3 3 
+	ticksize -1 0 $ytick 0 
+	limits 2 7 y
+	lweight 3
+	expand 1.5
+	ltype 0
+	ctype 2 
+	box
+	xlabel  Time [s]
+	ylabel Lomb-Scargle Norm. Power
+
+	histogram x y 
+	set signif = -lg(prob)
+
+	define soglia ? { Threshold of significance : }
+
+	ctype 4 
+	histogram x y  if( signif > $soglia )
+	ctype 2 
+
+#------------------------------------------------------------------------------
+# vs_frequency
+vs_frequency
+
+	define name ? { Filename : }
+	data ls_"$!name".frequency
+	read { nu 1 power 2 prob 3 }
+
+	define colore ? { Colour : }
+
+	define ylog ? { Log of power [y/n] : }
+	if( substr('$ylog',0,1) == 'y' ) { 
+	   set y = lg(power)
+	   define ytick (-1)
+	   define ylims "-2 2"
+	} else {
+	   set y = power
+	   define ytick (0)
+	   define ylims "-4 60"
+	}
+
+	set x = lg(nu)
+
+	location 6000 31000 6000 31000
+	notation -4 4 -3 3 
+	ticksize -1 0 $ytick 0 
+	limits -6.2 -2.7 y
+	limits -4.5 -2.1 $ylims
+	limits -6.2 -2.7 $ylims
+	lweight 3
+	expand 1.5
+	ltype 0
+	ctype 2 
+	box
+	xlabel Frequency [Hz]
+	ylabel Lomb-Scargle Norm. Power
+
+	define scalefac ? { Scaling factor : }
+
+	if( substr('$ylog',0,1) == 'y' ) { 
+	   set y = y - lg($scalefac)
+	} else {
+	   set y = y/$scalefac
+	}
+
+	ctype $colore
+	histogram x y
+	set signif = -lg(prob)
+	ctype 2
+
+	define soglia ? { Threshold of significance : }
+
+	ctype 3 
+	histogram x y if( signif > $soglia )
+	ctype 2 
+
+#------------------------------------------------------------------------------
+# sf_vs_period
+sf_vs_period
+
+	define name ? { Filename : }
+	data sf_"$!name".period
+	read { t 1 power 2 e_power 3 n_data 4 }
+
+	define ylog ? { Log of power [y/n] : }
+	if( substr('$ylog',0,1) == 'y' ) { 
+	   set y = lg(power)
+	   define ytick (-1)
+	} else {
+	   set y = power
+	   define ytick (0)
+	}
+
+	define colore ? { Colour : }
+
+	set x = lg(t)
+
+	location 6000 31000 6000 31000
+	notation -4 4 -3 3 
+	ticksize -1 0 $ytick 0 
+	limits 2 6.2 -2.1 $(lg(5)) 
+	lweight 3
+	expand 1.5
+	ltype 0
+	ctype 2 
+	box
+	xlabel  Time \tau [s]
+	ylabel 1^{st} order Structure Function D^{(1)}(\tau)
+
+	relocate 4 $(lg(2.0)) 
+	ctype 3 ltype 2 
+	draw     8 $(lg(2.0)) 
+	ltype 0 
+	ctype $colore
+	histogram x y
+	points    x y
+	ctype 2 
+
+	define soglia ? { Threshold of N_data : }
+
+	set x_tmp = x     if( n_data > $soglia )
+	set y_tmp = y     if( n_data > $soglia )
+
+	if( substr('$ylog',0,1) == 'y' ) { 
+	   set e_y_u = lg(power + e_power) - lg(power)    if( n_data > $soglia )
+	   set e_y_d = lg(power) - lg(power - e_power)    if( n_data > $soglia )
+	} else {
+	   set e_y_u = e_power     if( n_data > $soglia )
+	   set e_y_d = e_power     if( n_data > $soglia )
+	}
+
+	ctype $colore
+	ptype 4 3
+	points   x_tmp y_tmp 
+	errorbar x_tmp y_tmp e_y_u 2
+	errorbar x_tmp y_tmp e_y_d 4
+	ctype $colore
+	histogram x y
+	ctype 2 
+
+
+#------------------------------------------------------------------------------
+# sf_vs_frequency
+sf_vs_frequency
+
+	define name ? { Filename : }
+	data sf_"$!name".frequency
+	read { nu 1 power 2 e_power 3 n_data 4 }
+
+	define colore ? { Colour : }
+
+	define ylog ? { Log of power [y/n] : }
+	if( substr('$ylog',0,1) == 'y' ) { 
+	   set y = lg(power)
+	   define ytick (-1)
+	   define ylims "-2 2"
+	} else {
+	   set y = power
+	   define ytick (0)
+	   define ylims "-4 80"
+	}
+
+	set x = lg(nu)
+
+	location 6000 31000 6000 31000
+	notation -4 4 -3 3 
+	ticksize -1 0 $ytick 0 
+	limits -7 -2 y
+	limits -7 -2 $ylims
+	lweight 3
+	expand 1.5
+	ltype 0
+	ctype 2 
+	box
+	xlabel Frequency [Hz]
+	ylabel Structure Function
+
+	ctype $colore
+	histogram x y 
+	points    x y
+	ctype 2 
+
+	define soglia ? { Threshold of N_data : }
+
+	set x_tmp = x     if( n_data > $soglia )
+	set y_tmp = y     if( n_data > $soglia )
+
+	if( substr('$ylog',0,1) == 'y' ) { 
+	   set e_y_u = lg(power + e_power) - lg(power)    if( n_data > $soglia )
+	   set e_y_d = lg(power) - lg(power - e_power)    if( n_data > $soglia )
+	} else {
+	   set e_y_u = e_power     if( n_data > $soglia )
+	   set e_y_d = e_power     if( n_data > $soglia )
+	}
+
+	ctype $colore
+	ptype 4 3
+	points   x_tmp y_tmp 
+	errorbar x_tmp y_tmp e_y_u 2
+	errorbar x_tmp y_tmp e_y_d 4
+	ctype 2 
+	histogram x y
+
+#------------------------------------------------------------------------------
+# sf_vs_period_rebin
+sf_vs_period_rebin
+
+	define name ? { Filename : }
+	data sf_"$!name".period
+	read { t 1 power 2 e_power 3 n_data 4 }
+
+	define reb_n ? { How much N_data per bin you want : }
+
+	set new_t       = 0*t
+	set new_power   = 0*power
+	set new_e_power = 0*power
+	set new_n_data  = 0*n_data
+
+	define i (-1)
+
+	define count       ( 0 )
+	define tmp_t       ( 0 )
+	define tmp_power   ( 0 )
+	define tmp_e_power ( 0 ) 
+	define tmp_n_data  ( 0 )
+
+	do 1=0,$(dimen(t)-1) {
+	   define count       ( $count + 1 )
+	   define tmp_t       ( $tmp_t       + $(t[$1]) )
+	   define tmp_power   ( $tmp_power   + $(power[$1]) )
+	   define tmp_e_power ( $tmp_e_power + $(e_power[$1])**2. )
+	   define tmp_n_data  ( $tmp_n_data  + $(n_data[$1]) )
+
+	   if( $tmp_n_data > $reb_n ) {
+	      define i ( $i + 1 )
+	      set new_t[$i]       = $tmp_t/$count
+	      set new_power[$i]   = $tmp_power/$count
+	      set new_e_power[$i] = sqrt($tmp_e_power)/$count
+	      set new_n_data[$i]  = $tmp_n_data
+
+	      define count       ( 0 )
+	      define tmp_t       ( 0 )
+	      define tmp_power   ( 0 )
+	      define tmp_e_power ( 0 )
+	      define tmp_n_data  ( 0 )
+	   } 
+	}
+
+	define new_size ( $i+1 )
+	echo -------------------------------------------------------
+	echo  The size of the new vectors is : $new_size (it was $(dimen(t)-1))
+	echo -------------------------------------------------------
+
+	foreach 2 < t power e_power n_data > {
+	   set dimen(xnew_$2) = $new_size
+	   do 3=0,$i {
+	      set xnew_$2[$3] = new_$2[$3]
+	   }
+	   set save_$2 = $2
+	   set $2      = xnew_$2
+	}
+
+	define ylog ? { Log of power [y/n] : }
+	if( substr('$ylog',0,1) == 'y' ) { 
+	   set y = lg(power)
+	   define ytick (-1)
+	} else {
+	   set y = power
+	   define ytick (0)
+	}
+
+	define colore ? { Colour : }
+
+	set x = lg(t)
+
+	location 6000 31000 6000 31000
+	notation -4 4 -3 3 
+	ticksize -1 0 $ytick 0 
+	limits 2 6.2 -2.1 $(lg(5)) 
+	lweight 3
+	expand 1.5
+	ltype 0
+	ctype 2 
+	box
+	xlabel  Time \tau [s]
+	ylabel 1^{st} order Structure Function D^{(1)}(\tau)
+
+	relocate 4 $(lg(2.0)) 
+	ctype 3 ltype 2 
+	draw     8 $(lg(2.0)) 
+	ltype 0 
+	ctype $colore
+	histogram x y
+	points    x y
+	ctype 2 
+
+	define soglia ? { Threshold of N_data : }
+
+	set x_tmp = x     if( n_data > $soglia )
+	set y_tmp = y     if( n_data > $soglia )
+
+	if( substr('$ylog',0,1) == 'y' ) { 
+	   set e_y_u = lg(power + e_power) - lg(power)    if( n_data > $soglia )
+	   set e_y_d = lg(power) - lg(power - e_power)    if( n_data > $soglia )
+	} else {
+	   set e_y_u = e_power     if( n_data > $soglia )
+	   set e_y_d = e_power     if( n_data > $soglia )
+	}
+
+	ctype $colore
+	ptype 4 3
+	points   x_tmp y_tmp 
+	errorbar x_tmp y_tmp e_y_u 2
+	errorbar x_tmp y_tmp e_y_d 4
+	ctype $colore
+	histogram x y
+	ctype 2 
+
+
+#------------------------------------------------------------------------------
+# sf_vs_period_snr
+sf_vs_period_snr
+
+	define name ? { Filename : }
+	data sf_"$!name".period
+	read { t 1 power 2 e_power 3 n_data 4 }
+
+	define reb_snr ? {    What S/N per bin you want : }
+	define logt    ? { Log sum of Time stamps [y/n] : }
+
+	set new_t       = 0*t
+	set new_power   = 0*power
+	set new_e_power = 0*power
+	set new_n_data  = 0*n_data
+	set new_snr     = 0*n_data
+
+	define i (-1)
+
+	define count       ( 0 )
+	define tmp_t       ( 0 )
+	define tmp_power   ( 0 )
+	define tmp_e_power ( 0 ) 
+	define tmp_n_data  ( 0 )
+
+	if( substr('$logt',0,1) == 'y' ) { 
+	   set backup_t = t
+	   set t        = lg(t)
+	}
+
+	do 1=0,$(dimen(t)-1) {
+	   define count       ( $count + 1 )
+	   define tmp_t       ( $tmp_t       + $(t[$1]) )
+	   define tmp_power   ( $tmp_power   + $(power[$1]) )
+	   define tmp_e_power ( $tmp_e_power + $(e_power[$1])**2. )
+	   define tmp_n_data  ( $tmp_n_data  + $(n_data[$1]) )
+	   define tmp_snr     ( $tmp_power/(sqrt($tmp_e_power)) )
+
+	   if( $tmp_snr > $reb_snr ) {
+	      define i ( $i + 1 )
+	      echo New bin OK [$i] : S/N = $tmp_snr
+	      set new_t[$i]       = $tmp_t/$count
+	      set new_power[$i]   = $tmp_power/$count
+	      set new_e_power[$i] = sqrt($tmp_e_power)/$count
+	      set new_n_data[$i]  = $tmp_n_data
+	      set new_snr[$i]     = $tmp_snr
+
+	      define count       ( 0 )
+	      define tmp_t       ( 0 )
+	      define tmp_power   ( 0 )
+	      define tmp_e_power ( 0 )
+	      define tmp_n_data  ( 0 )
+	   } 
+	}
+	echo ---- Doing left-overs
+	define i ( $i + 1 )
+	echo Left-overs bin is [$i] : S/N = $tmp_snr
+	set new_t[$i]       = $tmp_t/$count
+	set new_power[$i]   = $tmp_power/$count
+	set new_e_power[$i] = sqrt($tmp_e_power)/$count
+	set new_n_data[$i]  = $tmp_n_data
+	set new_snr[$i]     = $tmp_snr
+
+	define new_size ( $i+1 )
+	echo -------------------------------------------------------
+	echo  The size of the new vectors is : $new_size (it was $(dimen(t)-1))
+	echo -------------------------------------------------------
+
+	foreach 2 < t power e_power n_data snr > {
+	   set dimen(xnew_$2) = $new_size
+	   do 3=0,$i {
+	      set xnew_$2[$3] = new_$2[$3]
+	   }
+	   set save_$2 = $2
+	   set $2      = xnew_$2
+	}
+
+	if( substr('$logt',0,1) == 'y' ) { 
+	   set t        = 10.0**t
+	}
+
+	define ylog ? { Log of power [y/n] : }
+	if( substr('$ylog',0,1) == 'y' ) { 
+	   set y = lg(power)
+	   define ytick (-1)
+	} else {
+	   set y = power
+	   define ytick (0)
+	}
+
+	define colore ? { Colour : }
+
+	set x = lg(t)
+
+	location 6000 31000 6000 31000
+	notation -4 4 -3 3 
+	ticksize -1 0 $ytick 0 
+	limits 2 6.2 -2.1 $(lg(5)) 
+	lweight 3
+	expand 1.5
+	ltype 0
+	ctype 2 
+	box
+	xlabel  Time \tau [s]
+	ylabel 1^{st} order Structure Function D^{(1)}(\tau)
+
+	relocate 4 $(lg(2.0)) 
+	ctype 3 ltype 2 
+	draw     8 $(lg(2.0)) 
+	ltype 0 
+	ctype $colore
+	histogram x y
+	points    x y
+	ctype 2 
+
+	define soglia ? { Threshold of N_data : }
+
+	set x_tmp = x     if( n_data > $soglia )
+	set y_tmp = y     if( n_data > $soglia )
+
+	if( substr('$ylog',0,1) == 'y' ) { 
+	   set e_y_u = lg(power + e_power) - lg(power)    if( n_data > $soglia )
+	   set e_y_d = lg(power) - lg(power - e_power)    if( n_data > $soglia )
+	} else {
+	   set e_y_u = e_power     if( n_data > $soglia )
+	   set e_y_d = e_power     if( n_data > $soglia )
+	}
+
+	ctype $colore
+	ptype 4 3
+	points   x_tmp y_tmp 
+	errorbar x_tmp y_tmp e_y_u 2
+	errorbar x_tmp y_tmp e_y_d 4
+	ctype $colore
+	histogram x y
+	ctype 2 
+
+
+#------------------------------------------------------------------------------
+# sf_vs_period_reb_snr  [-s] (switch for silent operation)  GOOD ONE
+sf_vs_period_reb_snr 01
+
+	define silent 1
+	if($?1) { define silent 0 }
+	define name ? { Filename : }
+	data sf_"$!name".period
+	read { t 1 power 2 e_power 3 n_data 4 }
+
+	define reb_snr ? {         What S/N per bin you want : }
+	define reb_n ?   {  Max. N original bins per new bin : }
+	define logt    ? {      Log sum of Time stamps [y/n] : }
+
+	set new_t       = 0*t
+	set new_power   = 0*power
+	set new_e_power = 0*power
+	set new_n_data  = 0*n_data
+	set new_snr     = 0*n_data
+
+	define i (-1)
+
+	define count       ( 0 )
+	define tmp_t       ( 0 )
+	define tmp_power   ( 0 )
+	define tmp_e_power ( 0 ) 
+	define tmp_n_data  ( 0 )
+        define badj        ( 0 )
+
+	if( substr('$logt',0,1) == 'y' ) { 
+	   set backup_t = t
+	   set t        = lg(t)
+	}
+
+	do 1=0,$(dimen(t)-1) {
+	   define count       ( $count + 1 )
+	   define tmp_t       ( $tmp_t       + $(t[$1]) )
+	   define tmp_power   ( $tmp_power   + $(power[$1]) )
+	   define tmp_e_power ( $tmp_e_power + $(e_power[$1])**2. )
+	   define tmp_n_data  ( $tmp_n_data  + $(n_data[$1]) )
+	   define tmp_snr     ( $tmp_power/(sqrt($tmp_e_power)) )
+
+	   if( $tmp_snr >= $reb_snr || $count >= $reb_n ) {
+	      define i ( $i + 1 )
+	      if($silent) {
+	        echo New bin OK [$i] : S/N = $(sprintf('%7.3f',$tmp_snr)) [N_bins = $count]
+	      }
+	      set new_t[$i]       = $tmp_t/$count
+	      set new_power[$i]   = $tmp_power/$count
+	      set new_e_power[$i] = sqrt($tmp_e_power)/$count
+	      set new_n_data[$i]  = $tmp_n_data
+	      set new_snr[$i]     = $tmp_snr
+	      if( $count == $reb_n ) {
+		 define badj ($badj + 1)
+	      }
+
+	      define count       ( 0 )
+	      define tmp_t       ( 0 )
+	      define tmp_power   ( 0 )
+	      define tmp_e_power ( 0 )
+	      define tmp_n_data  ( 0 )
+	   } 
+	}
+	echo ---- Doing left-overs
+	define i ( $i + 1 )
+	echo Left-overs bin is [$i] : S/N = $tmp_snr
+	set new_t[$i]       = $tmp_t/$count
+	set new_power[$i]   = $tmp_power/$count
+	set new_e_power[$i] = sqrt($tmp_e_power)/$count
+	set new_n_data[$i]  = $tmp_n_data
+	set new_snr[$i]     = $tmp_snr
+
+	define new_size ( $i+1 )
+	echo -------------------------------------------------------
+	echo  The size of the new vectors is : $new_size (it was $(dimen(t)-1))
+	echo  The number of 'uncompleted' new bins is : $badj
+	echo -------------------------------------------------------
+
+	foreach 2 < t power e_power n_data snr > {
+	   set dimen(xnew_$2) = $new_size
+	   do 3=0,$i {
+	      set xnew_$2[$3] = new_$2[$3]
+	   }
+	   set save_$2 = $2
+	   set $2      = xnew_$2
+	}
+
+	if( substr('$logt',0,1) == 'y' ) { 
+	   set t        = 10.0**t
+	}
+
+	define ylog ? { Log of power [y/n] : }
+	if( substr('$ylog',0,1) == 'y' ) { 
+	   set y = lg(power)
+	   define ytick (-1)
+	} else {
+	   set y = power
+	   define ytick (0)
+	}
+
+	define colore ? { Colour : }
+
+	set x = lg(t)
+
+	location 6000 31000 6000 31000
+	notation -4 4 -3 3 
+	ticksize -1 0 $ytick 0 
+	limits 3.2 4.8 -2.1 $(lg(5)) 
+	limits 2 6.2 -2.1 $(lg(5)) 
+	lweight 3
+	expand 1.5
+	ltype 0
+	ctype 2 
+	box
+	xlabel  Time \tau [s]
+	ylabel 1^{st} order Structure Function D^{(1)}(\tau)
+
+	relocate 4 $(lg(2.0)) 
+	ctype 3 ltype 2 
+	draw     8 $(lg(2.0)) 
+	ltype 0 
+	ctype $colore
+	histogram x y
+	points    x y
+	ctype 2 
+
+	set xx = 0,$reb_snr,0.5
+	set xx  = xx+0.25 
+	set xx1 = xx-0.25
+	set xx2 = xx+0.25
+	set hsnr = histogram(snr:xx)
+	echo ** Histogram of S/N values of the rebinned S.F.
+	print < xx1 xx2 hsnr >
+	define soglia ? { Threshold of S/N : }
+
+	set x_tmp = x     if( snr > $soglia )
+	set y_tmp = y     if( snr > $soglia )
+
+	if( substr('$ylog',0,1) == 'y' ) { 
+	   set e_y_u = lg(power + e_power) - lg(power)    if( snr > $soglia )
+	   set e_y_d = lg(power) - lg(power - e_power)    if( snr > $soglia )
+	} else {
+	   set e_y_u = e_power     if( snr > $soglia )
+	   set e_y_d = e_power     if( snr > $soglia )
+	}
+
+	ctype $colore
+	ptype 4 3
+	points   x_tmp y_tmp 
+	errorbar x_tmp y_tmp e_y_u 2
+	errorbar x_tmp y_tmp e_y_d 4
+	ctype $colore
+	histogram x y
+	ctype 4 
+	ltype 1
+	relocate $(lg(5700)) -3
+	draw     $(lg(5700))  3
+	ltype 0
+	ctype 2 
+
+#------------------------------------------------------------------------------
+# fit_sf
+fit_sf
+
+	echo  --- Give Times in Seconds --- 
+	define x1 ? {   T_1 : }
+	define x2 ? {   T_2 : }
+	define x0 ? { T_ref : }
+
+	define lg_x1 $(lg($x1))
+	define lg_x2 $(lg($x2))
+	define lg_x0 $(lg($x0))
+
+	set data_x = x_tmp if( x_tmp >= $lg_x1 && x_tmp <= $lg_x2 )
+	set data_y = y_tmp if( x_tmp >= $lg_x1 && x_tmp <= $lg_x2 )
+
+	set lg_xf=$lg_x1,$lg_x2,0.05
+
+	set lg_xf  = lg_xf  - $lg_x0
+	set data_x = data_x - $lg_x0 
+
+	lsq data_x data_y lg_xf yf rms
+
+	echo ---------------------------------------------
+	echo * Slope        : $(sprintf('%8.5f',$a)) +/- $(sprintf('%8.5f',$sig_a))
+	echo * SF[@ $(sprintf('%5d',$x0))s] : $(sprintf('%8.5f',$b)) +/- $(sprintf('%8.5f',$sig_b))
+	echo ---------------------------------------------
+
+	define cfit ? { Color for fit : }
+	ctype $cfit
+	connect (lg_xf + $lg_x0) yf
+	points  (lg_xf + $lg_x0) yf
+	ctype 2
+
+
+#------------------------------------------------------------------------------

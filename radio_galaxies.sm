@@ -1,0 +1,91 @@
+#-------------------------------------------------------------------------------
+# read_lin
+read_lin
+
+	data "/home/gfossati/Science/Radio_Galaxies/Lin_etal_2010/Lin_etal_2010_table4.dat"
+
+	read < class 5.s z 6 Lr 7 Mag 8 rs 12 Loiii 13 > 
+	set Pr = Lr - 7 - lg(1.4e9)
+
+	set flag_class_a = 0*Lr
+	set flag_class_b = 0*Lr
+
+	do 9=0,dimen(flag_class_a)-1 {
+	   define 8 $(class[$9])
+	   if( substr('$8',0,1) == 'a' ) { set flag_class_a[$9] = 1 }
+	   if( substr('$8',0,1) == 'b' ) { set flag_class_b[$9] = 1 }
+	}
+#-------------------------------------------------------------------------------
+# histo_rs
+histo_rs
+
+	reset_graph
+
+	define step_rs (0.05)
+	set hx_rs = 0-3.5*$step_rs,1.0+3.5*$step_rs,$step_rs
+
+	set tmp_a = rs  if( flag_class_a == 1 )
+	set tmp_b = rs  if( flag_class_b == 1 )
+
+	set hy_rs_a = histogram(tmp_a:hx_rs)
+	set hy_rs_b = histogram(tmp_b:hx_rs)
+
+	ticksize 0.05 0.2 0 0
+	limits -0.05 1.05 -5 90
+	box
+	xlabel r_{s}
+	ylabel N
+
+	ctype 3 
+	histogram hx_rs hy_rs_a
+	ctype 5 
+	histogram hx_rs hy_rs_b
+	ctype 2 
+#-------------------------------------------------------------------------------
+# radio_vs_optical
+radio_vs_optical
+
+	reset_graph
+
+	define cl  ? < Class [a|b]: >
+	define rs1 ? <    Min r_s : > 
+	define rs2 ? <    Max r_s : > 
+
+	if( substr('$cl',0,1) == 'a' ) { 
+	   define clc (5)
+	   define clp "3 0"
+	} else {
+	   define clc (3)
+	   define clp "20 0"
+	}
+
+	set tmp_o = Mag   if( rs >= $rs1 && rs < $rs2 && flag_class_$cl )
+	set tmp_r = Pr    if( rs >= $rs1 && rs < $rs2 && flag_class_$cl )
+	#set tmp_r  = Lr    if( rs >= $rs1 && rs < $rs2 && flag_class_$cl )
+
+	ticksize 0.2 1 0.2 1 
+	limits -20.5 -25.0 $(22.2+16.4161) $(26.8+16.4161)
+	box 3 3 3 2
+	limits -20.5 -25.0 22.5 28.3
+	box 1 2 0 3
+	xlabel M_{r}
+	ylabel L_{1.4GHz}
+
+	ptype 5 2 
+	ctype 2 
+	points Mag Pr  if( rs >= 0.9 && flag_class_a )
+	#points Mag Lr  if( rs >= 0.9 && flag_class_a )
+
+	expand 2.5
+	ptype $clp
+	ctype $clc
+	points tmp_o tmp_r
+
+	ctype 2 
+	expand 1.5
+	ltype 2 
+	relocate -21 24 
+	draw -25 26.8
+	ltype 0
+
+#-------------------------------------------------------------------------------

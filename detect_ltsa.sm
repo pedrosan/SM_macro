@@ -1,0 +1,2657 @@
+#---------------------------------------------------------------------------
+# histo_h_norm3
+histo_h_norm3
+
+	window 1 1 1 1 
+	location 6000 29000 6000 31000
+	ltype 0
+	lweight 3
+
+	set dum = { 0.35 0.55 0.65 0.70 0.75 0.80 0.90 1.1 }
+	set dimen(xarx) = 7
+	set dimen(binwidth) = 7
+
+	do i=0,6 {
+	   set xarx[$i] = (dum[$i] + dum[$($i+1)])/2.
+	   set binwidth[$i] = dum[$($i+1)] - dum[$i]
+	}
+
+	#---------------------------------------------
+	define plotbol ? { Plot normal or bolometric ? [y/n] }
+	define colore ? { Which Colour ? }
+	define mettolabs ? { Put Model Labels [y/n] ? }
+
+	echo  " Optical and Radio Flux limits "
+	print '   %5.2f   %5.3f \n' <optval rval>
+
+	define ocut ? { Optical Limit ? }
+	define rcut ? { Radio Limit ? }
+	#---------------------------------------------
+	
+	define flag (0)
+
+	do i=0,$(dimen(rlim)-1) { 
+	  if( rlim[$i] == $rcut && $flag == 0 ) {
+	     do j=0,$($nopt-1) { 
+		define k $($i+$j) 
+		if( optlim[$k] == $ocut) { 
+		   define kk $k 
+		   define flag (1)
+		}
+	     }
+	  }
+	}
+
+	echo $kk $(rlim[$kk]) $(optlim[$kk])
+
+	set dimen(hx) = 7
+	set dimen(hr) = 7
+	set dimen(hb) = 7
+
+	do i=0,6 {
+	  define 1 $($i+1)
+	  set hx[$i] = xh$1[$kk]
+	  set hr[$i] = rh$1[$kk]
+	  set hb[$i] = bh$1[$kk]
+	}
+	print {hx hr hb }
+	set hx = hx/binwidth
+	set hr = hr/binwidth
+	set hb = hb/binwidth
+
+	set dumxarx = { 0.35 0.35 0.55 0.55 0.65 \
+			     0.65 0.70 0.70 0.75 \
+			     0.75 0.80 0.80 0.90 \
+			     0.90 1.10 1.10 }
+	set dumx = < 0 $(hx[0]) $(hx[0]) $(hx[1]) $(hx[1]) \
+		       $(hx[2]) $(hx[2]) $(hx[3]) $(hx[3]) \
+		       $(hx[4]) $(hx[4]) $(hx[5]) $(hx[5]) \
+		       $(hx[6]) $(hx[6]) 0 >
+	set dumr = < 0 $(hr[0]) $(hr[0]) $(hr[1]) $(hr[1]) \
+		       $(hr[2]) $(hr[2]) $(hr[3]) $(hr[3]) \
+		       $(hr[4]) $(hr[4]) $(hr[5]) $(hr[5]) \
+		       $(hr[6]) $(hr[6]) 0 >
+	set dumb = < 0 $(hb[0]) $(hb[0]) $(hb[1]) $(hb[1]) \
+		       $(hb[2]) $(hb[2]) $(hb[3]) $(hb[3]) \
+		       $(hb[4]) $(hb[4]) $(hb[5]) $(hb[5]) \
+		       $(hb[6]) $(hb[6]) 0 >
+
+	# define howmany ? {howmany trial targets ?}
+	define howmany 1
+
+	set dumxnfh1 = dumx
+	set dumrnfh1 = dumr
+	set dumbnfh1 = dumb
+
+	#-----------------------
+	window 1 -3 1 1 
+
+	expand 1.5 
+	lweight 3
+	ctype 2
+	ticksize 0 0 0 0
+	limits 0.3 1.15 0 $($howmany/0.1)
+
+	lweight 5
+	ltype 2
+	ctype 4
+	relocate 0.75 0
+	echo X : $xp
+	echo Y : $yp
+	define xxp $xp
+	define yyp $yp
+
+	draw  0.75 $($howmany/0.1)
+	ltype 0
+	ctype 2
+	lweight 3
+
+	box
+	expand 2.5
+	relocate ( $(($gx1+$gx2)/2) $($gy1-3700) ) 
+	putlabel 5 \alpha_{rx}
+
+	expand 2.0
+	relocate ( $gx1 $($gy1-2000) ) 
+	ctype 5
+	lweight 5
+	putlabel 6 Blue
+	relocate ( $($xxp - 7500) $($yp+300) )
+	draw ( $xxp $yp )
+	define yyp $yp
+	putlabel 4 >
+	relocate ( $gx1 $($gy1-3400) ) 
+	ctype 5
+	lweight 5
+	putlabel 6 blazars
+
+	ctype 3
+	relocate ( $xxp $yyp )
+	draw ( $($xxp + 7200) $yyp )
+	putlabel 4 >
+
+	relocate ( $gx2 $($gy1-2000) ) 
+	putlabel 4 Red
+	relocate ( $gx2 $($gy1-3400) ) 
+	putlabel 4 blazars
+	lweight 3
+	expand 1.5
+	ctype 2
+
+	relocate ( $($gx1 + 1000) $($gy2 - 2000) ) 
+	expand 2.0
+	putlabel 6 (c)
+	expand 1.5
+
+	if(substr('$plotbol',0,1) == 'y') {
+	#     ctype $colore
+	#     lweight 4
+	#     connect  dumxarx dumbnfh1
+	#     ctype 2 
+	#     lweight 3
+	} else {
+	    ctype $colore
+	    lweight 4
+	    connect  dumxarx dumbnfh1
+	    ctype 2 
+	    lweight 3
+	}
+
+
+	#-----------------------
+	window 1 -3 1 2 
+
+	expand 1.5 
+	lweight 3
+	ctype 2
+	ticksize 0 0 0 0
+	limits 0.3 1.15 0 $howmany
+	limits 0.3 1.15 0 $($howmany/0.1)
+
+	lweight 5
+	ltype 2
+	ctype 4
+	relocate 0.75 0
+	draw  0.75 $($howmany/0.1)
+	ltype 0
+	ctype 2
+	lweight 3
+
+	box 0 2 0 0 
+
+	relocate ( $($gx1 + 1000) $($gy2 - 2000) ) 
+	expand 2.0
+	putlabel 6 (b)
+	expand 1.5
+
+	if(substr('$plotbol',0,1) == 'y') {
+	    ctype $colore
+	    lweight 4
+	    connect  dumxarx dumxnfh1
+	    ctype 2 
+	    lweight 3
+	}
+
+	#-----------------------
+	window 1 -3 1 3 
+
+	expand 1.5 
+	lweight 3
+	ctype 2
+	ticksize 0 0 0 0
+	limits 0.3 1.15 0 $howmany
+	limits 0.3 1.15 0 $($howmany/0.1)
+
+	lweight 5
+	ltype 2
+	ctype 4
+	relocate 0.75 0
+	draw  0.75 $($howmany/0.1)
+	ltype 0
+	ctype 2
+	lweight 3
+
+	box 0 2 0 0 
+
+	relocate ( $($gx1 + 1000) $($gy2 - 2000) ) 
+	expand 2.0
+	putlabel 6 (a)
+	expand 1.5
+
+	if(substr('$plotbol',0,1) == 'y') {
+	    ctype $colore
+	    lweight 4
+	    connect  dumxarx dumrnfh1
+	    lweight 3
+	    ctype 2 
+	} 
+
+	#-----------------------
+
+	window 1 1 1 1
+	# location 6000 29000 6000 31000
+	relocate ( $($gx1-2500) $(($gy1+$gy2)/2) )
+	angle 90
+	expand 2.0
+	putlabel 8 Probability per unit \alpha_{rx}
+	expand 1.5
+	angle 0
+
+
+#---------------------------------------------------------------------------
+# histo_h_norm2
+histo_h_norm2
+
+	window 1 1 1 1 
+	location 6000 29000 6000 31000
+	ltype 0
+	lweight 3
+
+	set dum = { 0.35 0.55 0.65 0.70 0.75 0.80 0.90 1.1 }
+	set dimen(xarx) = 7
+	set dimen(binwidth) = 7
+
+	do i=0,6 {
+	   set xarx[$i] = (dum[$i] + dum[$($i+1)])/2.
+	   set binwidth[$i] = dum[$($i+1)] - dum[$i]
+	}
+
+	#---------------------------------------------
+	define plotbol ? { Plot normal or bolometric ? [y/n] }
+	define colore ? { Which Colour ? }
+	define mettolabs ? { Put Model Labels [y/n] ? }
+
+	echo  " Optical and Radio Flux limits "
+	print '   %5.2f   %5.3f \n' <optval rval>
+
+	define ocut ? { Optical Limit ? }
+	define rcut ? { Radio Limit ? }
+	#---------------------------------------------
+	
+	define flag (0)
+
+	do i=0,$(dimen(rlim)-1) { 
+	  if( rlim[$i] == $rcut && $flag == 0 ) {
+	     do j=0,$($nopt-1) { 
+		define k $($i+$j) 
+		if( optlim[$k] == $ocut) { 
+		   define kk $k 
+		   define flag (1)
+		}
+	     }
+	  }
+	}
+
+	echo $kk $(rlim[$kk]) $(optlim[$kk])
+
+	set dimen(hx) = 7
+	set dimen(hr) = 7
+	set dimen(hb) = 7
+
+	do i=0,6 {
+	  define 1 $($i+1)
+	  set hx[$i] = xh$1[$kk]
+	  set hr[$i] = rh$1[$kk]
+	  set hb[$i] = bh$1[$kk]
+	}
+	print {hx hr hb }
+	set hx = hx/binwidth
+	set hr = hr/binwidth
+	set hb = hb/binwidth
+
+	set dumxarx = { 0.35 0.35 0.55 0.55 0.65 \
+			     0.65 0.70 0.70 0.75 \
+			     0.75 0.80 0.80 0.90 \
+			     0.90 1.10 1.10 }
+	set dumx = < 0 $(hx[0]) $(hx[0]) $(hx[1]) $(hx[1]) \
+		       $(hx[2]) $(hx[2]) $(hx[3]) $(hx[3]) \
+		       $(hx[4]) $(hx[4]) $(hx[5]) $(hx[5]) \
+		       $(hx[6]) $(hx[6]) 0 >
+	set dumr = < 0 $(hr[0]) $(hr[0]) $(hr[1]) $(hr[1]) \
+		       $(hr[2]) $(hr[2]) $(hr[3]) $(hr[3]) \
+		       $(hr[4]) $(hr[4]) $(hr[5]) $(hr[5]) \
+		       $(hr[6]) $(hr[6]) 0 >
+	set dumb = < 0 $(hb[0]) $(hb[0]) $(hb[1]) $(hb[1]) \
+		       $(hb[2]) $(hb[2]) $(hb[3]) $(hb[3]) \
+		       $(hb[4]) $(hb[4]) $(hb[5]) $(hb[5]) \
+		       $(hb[6]) $(hb[6]) 0 >
+
+	# define howmany ? {howmany trial targets ?}
+	define howmany 1
+
+	set dumxnfh1 = dumx
+	set dumrnfh1 = dumr
+	set dumbnfh1 = dumb
+
+	#-----------------------
+	window 1 -2 1 1 
+
+	expand 1.5 
+	lweight 3
+	ctype 2
+	ticksize 0 0 0 0
+	limits 0.3 1.15 0 $($howmany/0.1)
+
+	lweight 5
+	ltype 2
+	ctype 4
+	relocate 0.75 0
+	echo X : $xp
+	echo Y : $yp
+	define xxp $xp
+	define yyp $yp
+
+	draw  0.75 $($howmany/0.1)
+	ltype 0
+	ctype 2
+	lweight 3
+
+	box
+	expand 2.5
+	relocate ( $(($gx1+$gx2)/2) $($gy1-3700) ) 
+	putlabel 5 \alpha_{rx}
+
+	expand 2.0
+	relocate ( $gx1 $($gy1-2000) ) 
+	ctype 5
+	lweight 5
+	putlabel 6 HBL 
+	relocate ( $($xxp - 7500) $($yp+300) )
+	draw ( $xxp $yp )
+	define yyp $yp
+	putlabel 4 >
+
+	ctype 3
+	relocate ( $xxp $yyp )
+	draw ( $($xxp + 7200) $yyp )
+	putlabel 4 >
+
+	relocate ( $gx2 $($gy1-2000) ) 
+	putlabel 4 LBL
+	lweight 3
+	expand 1.5
+	ctype 2
+
+	if( substr('$mettolabs',0,1) == 'y' ) { 
+	   relocate ( $($gx1 + 1000) $($gy2 - 1000) ) 
+	   putlabel 6 X-ray leading
+	} else {
+	   relocate ( $($gx1 + 1000) $($gy2 - 2000) ) 
+	   expand 2.0
+	   putlabel 6 (b)
+	   expand 1.5
+	}
+
+	if(substr('$plotbol',0,1) == 'y') {
+	    ctype $colore
+	    lweight 4
+	    connect  dumxarx dumxnfh1
+	    lweight 3
+	    ctype 2 
+	} else {
+	    ctype $colore
+	    lweight 4
+	    connect  dumxarx dumbnfh1
+	    ctype 2 
+	    lweight 3
+	}
+
+
+	#-----------------------
+	window 1 -2 1 2 
+
+	expand 1.5 
+	lweight 3
+	ctype 2
+	ticksize 0 0 0 0
+	limits 0.3 1.15 0 $howmany
+	limits 0.3 1.15 0 $($howmany/0.1)
+
+	lweight 5
+	ltype 2
+	ctype 4
+	relocate 0.75 0
+	draw  0.75 $($howmany/0.1)
+	ltype 0
+	ctype 2
+	lweight 3
+
+	box 0 2 0 0 
+
+	if( substr('$mettolabs',0,1) == 'y' ) { 
+	    relocate ( $($gx1 + 1000) $($gy2 - 1000) ) 
+	    putlabel 6 Radio leading
+	} else {
+	   relocate ( $($gx1 + 1000) $($gy2 - 2000) ) 
+	   expand 2.0
+	   putlabel 6 (a)
+	   expand 1.5
+	}
+
+	if(substr('$plotbol',0,1) == 'y') {
+	    ctype $colore
+	    lweight 4
+	    connect  dumxarx dumrnfh1
+	    ctype 2 
+	    lweight 3
+	} else {
+	    ctype $colore
+	    lweight 4
+	    connect  dumxarx dumbnfh1
+	    ctype 2 
+	    lweight 3
+	}
+
+	#-----------------------
+	# window 1 -3 1 3 
+
+	# expand 1.5 
+	# lweight 3
+	# ctype 2
+	# ticksize 0 0 0 0
+	# limits 0.3 1.15 0 $howmany
+	# limits 0.3 1.15 0 $($howmany/0.1)
+
+	# lweight 5
+	# ltype 2
+	# ctype 4
+	# relocate 0.75 0
+	# draw  0.75 $($howmany/0.1)
+	# ltype 0
+	# ctype 2
+	# lweight 3
+
+	# box 0 2 0 0 
+
+	# if( substr('$mettolabs',0,1) == 'y' ) { 
+	#     relocate ( $($gx1 + 1000) $($gy2 - 1000) ) 
+	#     putlabel 6 Bolometric
+	# } else {
+	#    relocate ( $($gx1 + 1000) $($gy2 - 2000) ) 
+	#    expand 2.0
+	#    putlabel 6 (c)
+	#    expand 1.5
+	# }
+
+	# ctype $colore
+	# lweight 4
+	# connect  dumxarx dumbnfh1
+	# ctype 2 
+	# lweight 3
+
+	#-----------------------
+
+	window 1 1 1 1
+	# location 6000 29000 6000 31000
+	relocate ( $($gx1-2500) $(($gy1+$gy2)/2) )
+	angle 90
+	expand 2.0
+	putlabel 8 Probability per unit \alpha_{rx}
+	expand 1.5
+	angle 0
+
+
+#---------------------------------------------------------------------------
+# histo_h_meg
+histo_h_meg
+
+	window 1 1 1 1 
+	location 6000 29000 6000 31000
+	ltype 0
+	lweight 3
+
+	set dum = { 0.35 0.55 0.65 0.70 0.75 0.80 0.90 1.1 }
+	set dimen(xarx) = 7
+
+	do i=0,6 {
+	   set xarx[$i] = (dum[$i] + dum[$($i+1)])/2.
+	}
+
+	define colore ? { Which Colour ? }
+	define mettolabs ? { Put Model Labels [y/n] ? }
+
+	echo  " Optical and Radio Flux limits "
+	print '   %5.2f   %5.3f \n' <optval rval>
+
+	define ocut ? { Optical Limit ? }
+	define rcut ? { Radio Limit ? }
+	
+	define flag (0)
+
+	do i=0,$(dimen(rlim)-1) { 
+	  if( rlim[$i] == $rcut && $flag == 0 ) {
+	     do j=0,$($nopt-1) { 
+		define k $($i+$j) 
+		if( optlim[$k] == $ocut) { 
+		   define kk $k 
+		   define flag (1)
+		}
+	     }
+	  }
+	}
+
+	echo $kk $(rlim[$kk]) $(optlim[$kk])
+
+	set dimen(hx) = 7
+	set dimen(hr) = 7
+	set dimen(hb) = 7
+
+	do i=0,6 {
+	  define 1 $($i+1)
+	  set hx[$i] = xh$1[$kk] 
+	  set hr[$i] = rh$1[$kk] 
+	  set hb[$i] = bh$1[$kk] 
+	}
+
+	set dumxarx = { 0.35 0.35 0.55 0.55 0.65 0.65 0.70 0.70 0.75 0.75 0.80 0.80 0.90 0.90 1.10 1.10 }
+	set dumx = < 0 $(hx[0]) $(hx[0]) $(hx[1]) $(hx[1]) $(hx[2]) $(hx[2]) $(hx[3]) $(hx[3]) $(hx[4]) $(hx[4]) $(hx[5]) $(hx[5]) $(hx[6]) $(hx[6]) 0 >
+	set dumr = < 0 $(hr[0]) $(hr[0]) $(hr[1]) $(hr[1]) $(hr[2]) $(hr[2]) $(hr[3]) $(hr[3]) $(hr[4]) $(hr[4]) $(hr[5]) $(hr[5]) $(hr[6]) $(hr[6]) 0 > 
+	set dumb = < 0 $(hb[0]) $(hb[0]) $(hb[1]) $(hb[1]) $(hb[2]) $(hb[2]) $(hb[3]) $(hb[3]) $(hb[4]) $(hb[4]) $(hb[5]) $(hb[5]) $(hb[6]) $(hb[6]) 0 > 
+
+	define howmany ? {howmany trial targets ?}
+
+	set dumxnfh1 = $howmany*dumx
+	set dumrnfh1 = $howmany*dumr
+	set dumbnfh1 = $howmany*dumb
+
+	set xnfh1 = $howmany*hx
+	set rnfh1 = $howmany*hr
+	set bnfh1 = $howmany*hb
+	set err_xnfh1 = $width*sqrt(xnfh1)
+	set err_rnfh1 = $width*sqrt(rnfh1)
+	set err_bnfh1 = $width*sqrt(bnfh1)
+
+	ptype 4 3 
+
+	#-----------------------
+	window 1 -3 1 1 
+
+	expand 1.5 
+	lweight 3
+	ctype 2
+	ticksize 0 0 0 0
+	limits 0.3 1.15 0 $howmany
+
+	lweight 5
+	ltype 2
+	ctype 4
+	relocate 0.75 0
+	echo X : $xp
+	echo Y : $yp
+	define xxp $xp
+	define yyp $yp
+
+	draw  0.75 $howmany
+	ltype 0
+	ctype 2
+	lweight 3
+
+	box
+	expand 2.5
+	# xlabel \alpha_{RX}
+	relocate ( $(($gx1+$gx2)/2) $($gy1-3700) ) 
+	putlabel 5 \alpha_{rx}
+
+	expand 2.0
+	# lweight 5
+	# ctype 4
+	# ltype 2
+	# relocate ( $xxp $yyp )
+	# draw     ( $xxp $($yyp-2500) )
+	# ltype 0
+	# lweight 3
+	# ctype 2
+
+	relocate ( $gx1 $($gy1-2000) ) 
+	ctype 5
+	lweight 5
+	putlabel 6 HBL 
+	relocate ( $($xxp - 7500) $($yp+300) )
+	draw ( $xxp $yp )
+	define yyp $yp
+	putlabel 4 >
+
+	ctype 3
+	relocate ( $xxp $yyp )
+	draw ( $($xxp + 7200) $yyp )
+	putlabel 4 >
+
+	relocate ( $gx2 $($gy1-2000) ) 
+	putlabel 4 LBL
+	lweight 3
+	expand 1.5
+	ctype 2
+
+	if( substr('$mettolabs',0,1) == 'y' ) { 
+	   relocate ( $($gx1 + 1000) $($gy2 - 1000) ) 
+	   putlabel 6 X-ray leading
+	} else {
+	   relocate ( $($gx1 + 1000) $($gy2 - 2000) ) 
+	   expand 2.0
+	   putlabel 6 (c)
+	   expand 1.5
+	}
+
+	ctype $colore
+	lweight 4
+	# histogram xarx xnfh1
+	connect  dumxarx dumxnfh1
+	points   xarx xnfh1
+	error_y  xarx xnfh1 err_xnfh1
+	lweight 3
+	ctype 2 
+
+	#-----------------------
+	window 1 -3 1 2 
+
+	expand 1.5 
+	lweight 3
+	ctype 2
+	ticksize 0 0 0 0
+	limits 0.3 1.15 0 $howmany
+
+	lweight 5
+	ltype 2
+	ctype 4
+	relocate 0.75 0
+	draw  0.75 $howmany
+	ltype 0
+	ctype 2
+	lweight 3
+
+	box 0 2 0 0 
+
+	if( substr('$mettolabs',0,1) == 'y' ) { 
+	    relocate ( $($gx1 + 1000) $($gy2 - 1000) ) 
+	    putlabel 6 Radio leading
+	} else {
+	   relocate ( $($gx1 + 1000) $($gy2 - 2000) ) 
+	   expand 2.0
+	   putlabel 6 (b)
+	   expand 1.5
+	}
+
+	ctype $colore
+	lweight 4
+	# histogram xarx rnfh1
+	connect  dumxarx dumrnfh1
+	points    xarx rnfh1
+	error_y   xarx rnfh1 err_rnfh1
+	ctype 2 
+	lweight 3
+
+	#-----------------------
+	window 1 -3 1 3 
+
+	expand 1.5 
+	lweight 3
+	ctype 2
+	ticksize 0 0 0 0
+	limits 0.3 1.15 0 $howmany
+
+	lweight 5
+	ltype 2
+	ctype 4
+	relocate 0.75 0
+	draw  0.75 $howmany
+	ltype 0
+	ctype 2
+	lweight 3
+
+	box 0 2 0 0 
+
+	if( substr('$mettolabs',0,1) == 'y' ) { 
+	    relocate ( $($gx1 + 1000) $($gy2 - 1000) ) 
+	    putlabel 6 Bolometric
+	} else {
+	   relocate ( $($gx1 + 1000) $($gy2 - 2000) ) 
+	   expand 2.0
+	   putlabel 6 (a)
+	   expand 1.5
+	}
+
+	ctype $colore
+	lweight 4
+	# histogram xarx bnfh1
+	connect  dumxarx dumbnfh1
+	points    xarx bnfh1
+	error_y   xarx bnfh1 err_bnfh1
+	ctype 2 
+	lweight 3
+
+	#-----------------------
+
+	window 1 1 1 1
+
+#---------------------------------------------------------------------------
+# histo_h_norm
+histo_h_norm
+
+	window 1 1 1 1 
+	location 6000 29000 6000 31000
+	ltype 0
+	lweight 3
+
+	set dum = { 0.35 0.55 0.65 0.70 0.75 0.80 0.90 1.1 }
+	set dimen(xarx) = 7
+	set dimen(binwidth) = 7
+
+	do i=0,6 {
+	   set xarx[$i] = (dum[$i] + dum[$($i+1)])/2.
+	   set binwidth[$i] = dum[$($i+1)] - dum[$i]
+	}
+
+	#---------------------------------------------
+	define colore ? { Which Colour ? }
+	define mettolabs ? { Put Model Labels [y/n] ? }
+
+	echo  " Optical and Radio Flux limits "
+	print '   %5.2f   %5.3f \n' <optval rval>
+
+	define ocut ? { Optical Limit ? }
+	define rcut ? { Radio Limit ? }
+	#---------------------------------------------
+	
+	define flag (0)
+
+	do i=0,$(dimen(rlim)-1) { 
+	  if( rlim[$i] == $rcut && $flag == 0 ) {
+	     do j=0,$($nopt-1) { 
+		define k $($i+$j) 
+		if( optlim[$k] == $ocut) { 
+		   define kk $k 
+		   define flag (1)
+		}
+	     }
+	  }
+	}
+
+	echo $kk $(rlim[$kk]) $(optlim[$kk])
+
+	set dimen(hx) = 7
+	set dimen(hr) = 7
+	set dimen(hb) = 7
+
+	do i=0,6 {
+	  define 1 $($i+1)
+	  set hx[$i] = xh$1[$kk]
+	  set hr[$i] = rh$1[$kk]
+	  set hb[$i] = bh$1[$kk]
+	}
+	print {hx hr hb }
+	set hx = hx/binwidth
+	set hr = hr/binwidth
+	set hb = hb/binwidth
+
+	set dumxarx = { 0.35 0.35 0.55 0.55 0.65 \
+			     0.65 0.70 0.70 0.75 \
+			     0.75 0.80 0.80 0.90 \
+			     0.90 1.10 1.10 }
+	set dumx = < 0 $(hx[0]) $(hx[0]) $(hx[1]) $(hx[1]) \
+		       $(hx[2]) $(hx[2]) $(hx[3]) $(hx[3]) \
+		       $(hx[4]) $(hx[4]) $(hx[5]) $(hx[5]) \
+		       $(hx[6]) $(hx[6]) 0 >
+	set dumr = < 0 $(hr[0]) $(hr[0]) $(hr[1]) $(hr[1]) \
+		       $(hr[2]) $(hr[2]) $(hr[3]) $(hr[3]) \
+		       $(hr[4]) $(hr[4]) $(hr[5]) $(hr[5]) \
+		       $(hr[6]) $(hr[6]) 0 >
+	set dumb = < 0 $(hb[0]) $(hb[0]) $(hb[1]) $(hb[1]) \
+		       $(hb[2]) $(hb[2]) $(hb[3]) $(hb[3]) \
+		       $(hb[4]) $(hb[4]) $(hb[5]) $(hb[5]) \
+		       $(hb[6]) $(hb[6]) 0 >
+
+	# define howmany ? {howmany trial targets ?}
+	define howmany 1
+
+	set dumxnfh1 = dumx
+	set dumrnfh1 = dumr
+	set dumbnfh1 = dumb
+
+	#-----------------------
+	window 1 -3 1 1 
+
+	expand 1.5 
+	lweight 3
+	ctype 2
+	ticksize 0 0 0 0
+	limits 0.3 1.15 0 $($howmany/0.1)
+
+	lweight 5
+	ltype 2
+	ctype 4
+	relocate 0.75 0
+	echo X : $xp
+	echo Y : $yp
+	define xxp $xp
+	define yyp $yp
+
+	draw  0.75 $($howmany/0.1)
+	ltype 0
+	ctype 2
+	lweight 3
+
+	box
+	expand 2.5
+	relocate ( $(($gx1+$gx2)/2) $($gy1-3700) ) 
+	putlabel 5 \alpha_{rx}
+
+	expand 2.0
+	relocate ( $gx1 $($gy1-2000) ) 
+	ctype 5
+	lweight 5
+	putlabel 6 HBL 
+	relocate ( $($xxp - 7500) $($yp+300) )
+	draw ( $xxp $yp )
+	define yyp $yp
+	putlabel 4 >
+
+	ctype 3
+	relocate ( $xxp $yyp )
+	draw ( $($xxp + 7200) $yyp )
+	putlabel 4 >
+
+	relocate ( $gx2 $($gy1-2000) ) 
+	putlabel 4 LBL
+	lweight 3
+	expand 1.5
+	ctype 2
+
+	if( substr('$mettolabs',0,1) == 'y' ) { 
+	   relocate ( $($gx1 + 1000) $($gy2 - 1000) ) 
+	   putlabel 6 X-ray leading
+	} else {
+	   relocate ( $($gx1 + 1000) $($gy2 - 2000) ) 
+	   expand 2.0
+	   putlabel 6 (c)
+	   expand 1.5
+	}
+
+	ctype $colore
+	lweight 4
+	connect  dumxarx dumxnfh1
+	lweight 3
+	ctype 2 
+
+	#-----------------------
+	window 1 -3 1 2 
+
+	expand 1.5 
+	lweight 3
+	ctype 2
+	ticksize 0 0 0 0
+	limits 0.3 1.15 0 $howmany
+	limits 0.3 1.15 0 $($howmany/0.1)
+
+	lweight 5
+	ltype 2
+	ctype 4
+	relocate 0.75 0
+	draw  0.75 $($howmany/0.1)
+	ltype 0
+	ctype 2
+	lweight 3
+
+	box 0 2 0 0 
+
+	if( substr('$mettolabs',0,1) == 'y' ) { 
+	    relocate ( $($gx1 + 1000) $($gy2 - 1000) ) 
+	    putlabel 6 Radio leading
+	} else {
+	   relocate ( $($gx1 + 1000) $($gy2 - 2000) ) 
+	   expand 2.0
+	   putlabel 6 (b)
+	   expand 1.5
+	}
+
+	ctype $colore
+	lweight 4
+	connect  dumxarx dumrnfh1
+	ctype 2 
+	lweight 3
+
+	#-----------------------
+	window 1 -3 1 3 
+
+	expand 1.5 
+	lweight 3
+	ctype 2
+	ticksize 0 0 0 0
+	limits 0.3 1.15 0 $howmany
+	limits 0.3 1.15 0 $($howmany/0.1)
+
+	lweight 5
+	ltype 2
+	ctype 4
+	relocate 0.75 0
+	draw  0.75 $($howmany/0.1)
+	ltype 0
+	ctype 2
+	lweight 3
+
+	box 0 2 0 0 
+
+	if( substr('$mettolabs',0,1) == 'y' ) { 
+	    relocate ( $($gx1 + 1000) $($gy2 - 1000) ) 
+	    putlabel 6 Bolometric
+	} else {
+	   relocate ( $($gx1 + 1000) $($gy2 - 2000) ) 
+	   expand 2.0
+	   putlabel 6 (a)
+	   expand 1.5
+	}
+
+	ctype $colore
+	lweight 4
+	connect  dumxarx dumbnfh1
+	ctype 2 
+	lweight 3
+
+	#-----------------------
+
+	window 1 1 1 1
+	# location 6000 29000 6000 31000
+	relocate ( $($gx1-2500) $(($gy1+$gy2)/2) )
+	angle 90
+	expand 2.5
+	putlabel 8 dP/d\alpha_{rx}
+	expand 1.5
+	angle 0
+
+
+#---------------------------------------------------------------------------
+# readdata
+readdata
+
+	data x_hbl.dat
+	read xfh 3
+
+	data r_hbl.dat
+	read rfh 3
+
+	data b_hbl.dat
+	read bfh 3
+
+	data radio_limit
+	read rlim 5
+
+	data opt_limit
+	read optlim 5
+
+	define test (25.0)
+	define nopt (0)
+	do 1=0,15 {
+	   if(optlim[$1] < $test) { 
+	     define test $(optlim[$1]) 
+	     define nopt ($nopt+1)
+	     echo $test $nopt
+	   }
+	}
+	define nr $(dimen(rlim)/$nopt)
+	set dimen(rval)   = $nr
+	set dimen(optval) = $nopt
+
+	do 1=0,$($nr-1) {
+	   set rval[$1] = rlim[$($1*$nopt)]
+	}
+
+	do 1=0,$($nopt-1) {
+	   set optval[$1] = optlim[$1]
+	}
+
+	set dimen(optlimaux) = dimen(optlim)
+	do 1=0,$(dimen(optval)-1) {
+	   do 2=1,$nr {
+	      set optlimaux[$($1*$nr+$2-1)] = optval[$1]
+	#      set xfh2[$($1*$nr+$2-1)] = xfh1[$1]
+	   }
+	}
+
+	echo - radio limits are   $nr
+	echo - optical limits are $nopt
+
+#---------------------------------------------------------------------------
+# readdata_h
+readdata_h
+
+	data x_model.dat
+	read {xh1 4 xh2 5 xh3 6 xh4 7 xh5 8 xh6 9 xh7 10}
+
+	data r_model.dat
+	read {rh1 4 rh2 5 rh3 6 rh4 7 rh5 8 rh6 9 rh7 10}
+
+	data b_model.dat
+	read {bh1 4 bh2 5 bh3 6 bh4 7 bh5 8 bh6 9 bh7 10}
+
+	data x_model.dat
+	read {rlim 2 optlim 3}
+
+	define test (25.0)
+	define nopt (0)
+	do 1=0,15 {
+	   if(optlim[$1] < $test) { 
+	     define test $(optlim[$1]) 
+	     define nopt ($nopt+1)
+	     echo $test $nopt
+	   }
+	}
+	define nr $(dimen(rlim)/$nopt)
+	set dimen(rval)   = $nr
+	set dimen(optval) = $nopt
+
+	do 1=0,$($nr-1) {
+	   set rval[$1] = rlim[$($1*$nopt)]
+	}
+
+	do 1=0,$($nopt-1) {
+	   set optval[$1] = optlim[$1]
+	}
+
+	set dimen(optlimaux) = dimen(optlim)
+	do 1=0,$(dimen(optval)-1) {
+	   do 2=1,$nr {
+	      set optlimaux[$($1*$nr+$2-1)] = optval[$1]
+	#      set xfh2[$($1*$nr+$2-1)] = xfh1[$1]
+	   }
+	}
+
+	echo - radio limits are   $nr
+	echo - optical limits are $nopt
+
+
+#---------------------------------------------------------------------------
+# select01
+select01
+
+	ctype 2 
+	lweight 2
+	location 6000 31000 6000 31000
+	define nmax $(dimen(rlim)-1)
+
+	set dimen(xfh1) = dimen(rlim)
+	set dimen(rfh1) = dimen(rlim)
+	set dimen(bfh1) = dimen(rlim)
+	set dimen(xfh2) = dimen(rlim)
+	set dimen(rfh2) = dimen(rlim)
+	set dimen(bfh2) = dimen(rlim)
+
+	do i=0,$nmax{
+	   set xfh1[$i]=xfh[$($i*2)]
+	   set rfh1[$i]=rfh[$($i*2)]
+	   set bfh1[$i]=bfh[$($i*2)]
+	   set xfh2[$i]=xfh[$($i*2+1)]
+	   set rfh2[$i]=rfh[$($i*2+1)]
+	   set bfh2[$i]=bfh[$($i*2+1)]
+	}
+
+	define limite ? {plot against Radio [1] or optlim [2] ?}
+	if(substr('$limite',0,1) == '1') {
+	    define plotx rlim 
+	    define check optval
+	    define xlim1 0.02
+	    define xlim2 0.3
+	    define labx  <Radio Flux>
+	} else {
+	    define plotx optlim
+	    define check rval
+	    define xlim1 20.5
+	    define xlim2 16.0
+	    define labx  <Optical Magnitude>
+	}
+
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0
+	limits $xlim1 $xlim2 -0.05 1.05
+	box
+	xlabel $labx
+	relocate ( $gx1 $($gy2+500) ) 
+	expand 1.2
+	putlabel 6 Fraction of HBL for the three scenarios
+
+	print <$check>
+	define checkval ? {which value of the other limiting vector ?}
+
+	expand 2.5
+	ctype 2
+
+	if('$check' == 'rval') {
+	ptype 4 0 points  $plotx xfh1    if(rlim == $checkval)
+	ptype 4 3 points  $plotx rfh1    if(rlim == $checkval)
+	ptype 3 0 points  $plotx bfh1    if(rlim == $checkval)
+	}
+
+	if('$check' == 'optval') {
+	ptype 4 0 points  $plotx xfh1    if(optlim == $checkval)
+	ptype 4 3 points  $plotx rfh1    if(optlim == $checkval)
+	ptype 3 0 points  $plotx bfh1    if(optlim == $checkval)
+	}
+
+	relocate ( $($gx1+1000) $($gy2 - 1300) )
+	expand 2.5 ptype 4 0 dot
+	expand 1.5 putlabel 6 " X-ray leading"
+
+	relocate ( $($gx1+1000) $($gy2 - 2600) )
+	expand 2.5 ptype 4 3 dot
+	expand 1.5 putlabel 6 " Radio leading"
+
+	relocate ( $($gx1+1000) $($gy2 - 3900) )
+	expand 2.5 ptype 3 0 dot
+	expand 1.5 putlabel 6 " Bolometric"
+
+	ctype 2
+	lweight 2
+
+#---------------------------------------------------------------------------
+# selectstrip
+selectstrip
+
+	location 6000 31000 6000 31000
+	define howmany ? {howmany trial targets ?}
+	define width   ? {number of sigmas-strip to plot ?}
+
+	define nmax $(dimen(rlim)-1)
+	set dimen(xfh1) = dimen(rlim)
+	set dimen(rfh1) = dimen(rlim)
+	set dimen(bfh1) = dimen(rlim)
+	set dimen(xfh2) = dimen(rlim)
+	set dimen(rfh2) = dimen(rlim)
+	set dimen(bfh2) = dimen(rlim)
+
+	do i=0,$nmax{
+	   set xfh1[$i]=xfh[$($i*2)]
+	   set rfh1[$i]=rfh[$($i*2)]
+	   set bfh1[$i]=bfh[$($i*2)]
+	   set xfh2[$i]=xfh[$($i*2+1)]
+	   set rfh2[$i]=rfh[$($i*2+1)]
+	   set bfh2[$i]=bfh[$($i*2+1)]
+	}
+
+	set xnfh1 = $howmany*xfh1
+	set rnfh1 = $howmany*rfh1
+	set bnfh1 = $howmany*bfh1
+	set xnfh2 = $howmany*xfh2
+	set rnfh2 = $howmany*rfh2
+	set bnfh2 = $howmany*bfh2
+
+	set err_xnfh1 = $width*sqrt($howmany*xfh1)
+	set err_rnfh1 = $width*sqrt($howmany*rfh1)
+	set err_bnfh1 = $width*sqrt($howmany*bfh1)
+	set err_xnfh2 = $width*sqrt($howmany*xfh2)
+	set err_rnfh2 = $width*sqrt($howmany*rfh2)
+	set err_bnfh2 = $width*sqrt($howmany*bfh2)
+
+	set strip_u_xnfh1 = xnfh1 + err_xnfh1 
+	set strip_d_xnfh1 = xnfh1 - err_xnfh1 
+	set strip_u_rnfh1 = rnfh1 + err_rnfh1 
+	set strip_d_rnfh1 = rnfh1 - err_rnfh1 
+	set strip_u_bnfh1 = bnfh1 + err_bnfh1 
+	set strip_d_bnfh1 = bnfh1 - err_bnfh1 
+
+	define limite ? {plot against Radio [1] or optlim [2] ?}
+	if(substr('$limite',0,1) == '1') {
+	    define plotx rlim 
+	    define check optval
+	    define xlim1 0.02
+	    define xlim2 0.3
+	    define labx  <Radio Flux>
+	} else {
+	    define plotx optlim
+	    define check rval
+	    define xlim1 20.5
+	    define xlim2 16.0
+	    define labx  <Optical Magnitude>
+	}
+
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0
+	limits $xlim1 $xlim2 0 $howmany
+	box
+	xlabel $labx
+	relocate ( $gx1 $($gy2+500) ) 
+	expand 1.2
+	putlabel 6 Number of HBL for the three scenarios
+
+	print '   %5.2f \n' <$check>
+	define checkval ? {which value of the other limiting vector ?}
+
+	if('$check' == 'rval') {
+	   set dimen(ax)   = $nopt
+	   set dimen(ax_u) = $nopt
+	   set dimen(ax_d) = $nopt
+	   set dimen(ar)   = $nopt
+	   set dimen(ar_u) = $nopt
+	   set dimen(ar_d) = $nopt
+	   set dimen(ab)   = $nopt
+	   set dimen(ab_u) = $nopt
+	   set dimen(ab_d) = $nopt
+	   do 1=0,$($nopt-1) {
+	     set ax  = xnfh1 if(rlim == $checkval)
+	     set ax_u= strip_u_xnfh1 if(rlim == $checkval)
+	     set ax_d= strip_d_xnfh1 if(rlim == $checkval)
+	     set ar  = rnfh1 if(rlim == $checkval)
+	     set ar_u= strip_u_rnfh1 if(rlim == $checkval)
+	     set ar_d= strip_d_rnfh1 if(rlim == $checkval)
+	     set ab  = bnfh1 if(rlim == $checkval)
+	     set ab_u= strip_u_bnfh1 if(rlim == $checkval)
+	     set ab_d= strip_d_bnfh1 if(rlim == $checkval)
+           }	      
+	}
+
+	expand 2.5
+	ptype 4 3 
+
+	#
+	# plotto con Optical Magnitude e seleziono con Radio
+	#
+	if('$check' == 'rval') {
+	lweight 2
+	ptype 4 0
+	points  $plotx xnfh1             if(rlim == $checkval)
+	ptype 4 3 
+	points  $plotx rnfh1             if(rlim == $checkval)
+	ptype 3 0
+	points  $plotx bnfh1             if(rlim == $checkval)
+
+	lweight 3
+	ltype 1
+	connect $plotx (xnfh1+err_xnfh1) if(rlim == $checkval)
+	connect $plotx (xnfh1-err_xnfh1) if(rlim == $checkval)
+	ltype 2
+	connect $plotx (rnfh1+err_rnfh1) if(rlim == $checkval)
+	connect $plotx (rnfh1-err_rnfh1) if(rlim == $checkval)	
+	ltype 4
+	connect $plotx (bnfh1+err_bnfh1) if(rlim == $checkval)
+	connect $plotx (bnfh1-err_bnfh1) if(rlim == $checkval)	
+	ltype 0
+	}
+
+	#
+	# plotto con Radio Flux e seleziono con MAG_V
+	#
+	if('$check' == 'optval') {
+	lweight 2
+	ptype 4 0 
+	points  $plotx xnfh1             if(optlim == $checkval)
+	ptype 4 3
+	points  $plotx rnfh1             if(optlim == $checkval)	
+	ptype 3 0
+	points  $plotx bnfh1             if(optlim == $checkval)
+
+	lweight 3
+	ltype 1 
+	connect $plotx (xnfh1+err_xnfh1) if(optlimaux == $checkval)
+	connect $plotx (xnfh1-err_xnfh1) if(optlim == $checkval)
+	ltype 2 
+	connect $plotx (rnfh1+err_rnfh1) if(optlim == $checkval)
+	connect $plotx (rnfh1-err_rnfh1) if(optlim == $checkval)
+	ltype 4 
+	connect $plotx (bnfh1+err_bnfh1) if(optlim == $checkval)
+	connect $plotx (bnfh1-err_bnfh1) if(optlim == $checkval)
+	ltype 0
+	}
+
+	lweight 2
+	relocate ( $($gx1+1000) $($gy2 - 1300) )
+	expand 2.5 ptype 4 0 dot
+	expand 1.5 putlabel 6 " X-ray leading"
+
+	relocate ( $($gx1+1000) $($gy2 - 2600) )
+	expand 2.5 ptype 4 3 dot
+	expand 1.5 putlabel 6 " Radio leading"
+
+	relocate ( $($gx1+1000) $($gy2 - 3900) )
+	expand 2.5 ptype 3 0 dot
+	expand 1.5 putlabel 6 " Bolometric"
+
+	relocate ( 6000 2800 )
+	if('$check' == 'rval') {
+	   expand 1.2 putlabel 6 "Radio flux limit = "$checkval Jy
+	} else {
+	   expand 1.2 putlabel 6 "Optical mag. limit = "$checkval
+	}
+
+	relocate ( 6000 1800 )
+	expand 1.2 putlabel 6 "Number of trial targets = "$howmany 
+
+	ctype 2
+	lweight 3
+
+#---------------------------------------------------------------------------
+# selectstrip2
+selectstrip2
+
+	location 6000 31000 6000 31000
+	define howmany ? {howmany trial targets ?}
+	define width   ? {number of sigmas-strip to plot ?}
+
+	define nmax $(dimen(rlim)-1)
+	set dimen(xfh1) = dimen(rlim)
+	set dimen(rfh1) = dimen(rlim)
+	set dimen(bfh1) = dimen(rlim)
+	set dimen(xfh2) = dimen(rlim)
+	set dimen(rfh2) = dimen(rlim)
+	set dimen(bfh2) = dimen(rlim)
+
+	do i=0,$nmax{
+	   set xfh1[$i]=xfh[$($i*2)]
+	   set rfh1[$i]=rfh[$($i*2)]
+	   set bfh1[$i]=bfh[$($i*2)]
+	   set xfh2[$i]=xfh[$($i*2+1)]
+	   set rfh2[$i]=rfh[$($i*2+1)]
+	   set bfh2[$i]=bfh[$($i*2+1)]
+	}
+
+	set xnfh1 = $howmany*xfh1
+	set rnfh1 = $howmany*rfh1
+	set bnfh1 = $howmany*bfh1
+	set xnfh2 = $howmany*xfh2
+	set rnfh2 = $howmany*rfh2
+	set bnfh2 = $howmany*bfh2
+
+	set err_xnfh1 = $width*sqrt($howmany*xfh1)
+	set err_rnfh1 = $width*sqrt($howmany*rfh1)
+	set err_bnfh1 = $width*sqrt($howmany*bfh1)
+	set err_xnfh2 = $width*sqrt($howmany*xfh2)
+	set err_rnfh2 = $width*sqrt($howmany*rfh2)
+	set err_bnfh2 = $width*sqrt($howmany*bfh2)
+
+	set strip_u_xnfh1 = xnfh1 + err_xnfh1 
+	set strip_d_xnfh1 = xnfh1 - err_xnfh1 
+	set strip_u_rnfh1 = rnfh1 + err_rnfh1 
+	set strip_d_rnfh1 = rnfh1 - err_rnfh1 
+	set strip_u_bnfh1 = bnfh1 + err_bnfh1 
+	set strip_d_bnfh1 = bnfh1 - err_bnfh1 
+
+	define limite ? {plot against Radio [1] or optlim [2] ?}
+	if(substr('$limite',0,1) == '1') {
+	    define plotx rval
+	    define check optval
+	    define xlim1 0.02
+	    define xlim2 0.3
+	    define labx  <Radio Flux [Jy]>
+	} else {
+	    define plotx optval
+	    define check rval
+	    define xlim1 20.5
+	    define xlim2 16.0
+	    define labx  <Optical Magnitude>
+	}
+
+	expand 1.5 
+	lweight 2
+	ctype 2
+	ticksize 0 0 0 0
+	limits $xlim1 $xlim2 0 $howmany
+	box
+	xlabel $labx
+	relocate ( $gx1 $($gy2+500) ) 
+	expand 1.2
+	putlabel 6 Number of HBL for the three scenarios
+
+	print '   %5.2f \n' <$check>
+	define checkval ? {which value of the other limiting vector ?}
+
+	if('$plotx' == 'optval') {
+	   foreach var {ax ax_u ax_d ar ar_u ar_d ab ab_u ab_d} {
+	   set dimen($var)   = $nopt
+	   }
+	   do 1=0,$($nopt-1) {
+	     set ax  = xnfh1         if(rlim == $checkval)
+	     set ax_u= strip_u_xnfh1 if(rlim == $checkval)
+	     set ax_d= strip_d_xnfh1 if(rlim == $checkval)
+	     set ar  = rnfh1         if(rlim == $checkval)
+	     set ar_u= strip_u_rnfh1 if(rlim == $checkval)
+	     set ar_d= strip_d_rnfh1 if(rlim == $checkval)
+	     set ab  = bnfh1         if(rlim == $checkval)
+	     set ab_u= strip_u_bnfh1 if(rlim == $checkval)
+	     set ab_d= strip_d_bnfh1 if(rlim == $checkval)
+           }	      
+	}
+
+	if('$plotx' == 'rval') {
+	   foreach var {ax ax_u ax_d ar ar_u ar_d ab ab_u ab_d} {
+	   set dimen($var)   = $nr
+	   }
+	   do 1=0,$($nr-1) {
+	     set ax  = xnfh1         if(optlim == $checkval)
+	     set ax_u= strip_u_xnfh1 if(optlim == $checkval)
+	     set ax_d= strip_d_xnfh1 if(optlim == $checkval)
+	     set ar  = rnfh1         if(optlim == $checkval)
+	     set ar_u= strip_u_rnfh1 if(optlim == $checkval)
+	     set ar_d= strip_d_rnfh1 if(optlim == $checkval)
+	     set ab  = bnfh1         if(optlim == $checkval)
+	     set ab_u= strip_u_bnfh1 if(optlim == $checkval)
+	     set ab_d= strip_d_bnfh1 if(optlim == $checkval)
+           }	      
+	}
+
+	#
+	# plotto 
+	#
+	expand 2.5
+	ptype 4 3 
+	lweight 2
+
+	ptype 4 0
+	points  $plotx ax
+
+	ptype 4 3 
+	points  $plotx ar
+
+	ptype 3 0
+	points  $plotx ab
+
+	define checkbars ? {Plot error bars on single points [y/n] ?}
+	if(substr('$checkbars',0,1) == 'y') {
+	expand 0.8
+	error_y $plotx ax (ax_u-ax)
+	error_y $plotx ar (ar_u-ar)
+	error_y $plotx ab (ab_u-ab)
+	}
+
+	lweight 3
+	ltype 1
+	connect $plotx ax_u 
+	connect $plotx ax_d
+	ltype 2
+	connect $plotx ar_u
+	connect $plotx ar_d
+	ltype 4
+	connect $plotx ab_u
+	connect $plotx ab_d
+	ltype 0
+	
+	if('$plotx' == 'optval') {
+	lweight 2
+	relocate ( $($gx1+1000) $($gy2 - 1300) )
+	expand 2.5 ptype 4 0 dot
+	expand 1.5 putlabel 6 " X-ray leading"
+
+	relocate ( $($gx1+1000) $($gy2 - 2600) )
+	expand 2.5 ptype 4 3 dot
+	expand 1.5 putlabel 6 " Radio leading"
+
+	relocate ( $($gx1+1000) $($gy2 - 3900) )
+	expand 2.5 ptype 3 0 dot
+	expand 1.5 putlabel 6 " Bolometric"
+	}
+	
+	if('$plotx' == 'rval') {
+	lweight 2
+	relocate ( $($gx1+16000) $($gy2 - 1300) )
+	expand 2.5 ptype 4 0 dot
+	expand 1.5 putlabel 6 " X-ray leading"
+
+	relocate ( $($gx1+16000) $($gy2 - 2600) )
+	expand 2.5 ptype 4 3 dot
+	expand 1.5 putlabel 6 " Radio leading"
+
+	relocate ( $($gx1+16000) $($gy2 - 3900) )
+	expand 2.5 ptype 3 0 dot
+	expand 1.5 putlabel 6 " Bolometric"
+	}
+
+	relocate ( 6000 2600 )
+	if('$check' == 'rval') {
+	   expand 1.2 putlabel 6 "Radio flux limit = "$checkval Jy
+	} else {
+	   expand 1.2 putlabel 6 "Optical mag. limit = "$checkval
+	}
+
+	relocate ( 6000 1600 )
+	expand 1.2 putlabel 6 "Number of trial targets = "$howmany 
+	relocate ( 6000  600 )
+	expand 1.2 putlabel 6 "Errorbars/Strips represent "$width" Poissonian \sigma"
+
+
+	ctype 2
+	lweight 3
+
+
+
+#---------------------------------------------------------------------------
+# selectstrip2_test
+selectstrip2_test
+
+	location 6000 31000 6000 31000
+	define howmany ? {howmany trial targets ?}
+	define width   ? {number of sigmas-strip to plot ?}
+
+	define nmax $(dimen(rlim)-1)
+	set dimen(xfh1) = dimen(rlim)
+	set dimen(rfh1) = dimen(rlim)
+	set dimen(bfh1) = dimen(rlim)
+
+	echo " Dividing line at a_RX: "
+	echo " [1] = 0.75 "
+	echo " [2] = 0.70 "
+	define who ? { Your Choice ? [1/2] }
+
+	if(who == 1) {
+	do i=0,$nmax{
+	   set xfh1[$i]=xfh[$($i*2)]
+	   set rfh1[$i]=rfh[$($i*2)]
+	   set bfh1[$i]=bfh[$($i*2)]
+	}
+	} else {
+	do i=0,$nmax{
+	   set xfh1[$i]=xfh[$($i*2+1)]
+	   set rfh1[$i]=rfh[$($i*2+1)]
+	   set bfh1[$i]=bfh[$($i*2+1)]
+	}
+	}
+
+	set xnfh1 = $howmany*xfh1
+	set rnfh1 = $howmany*rfh1
+	set bnfh1 = $howmany*bfh1
+
+	set err_xnfh1 = $width*sqrt($howmany*xfh1)
+	set err_rnfh1 = $width*sqrt($howmany*rfh1)
+	set err_bnfh1 = $width*sqrt($howmany*bfh1)
+
+	set strip_u_xnfh1 = xnfh1 + err_xnfh1 
+	set strip_d_xnfh1 = xnfh1 - err_xnfh1 
+	set strip_u_rnfh1 = rnfh1 + err_rnfh1 
+	set strip_d_rnfh1 = rnfh1 - err_rnfh1 
+	set strip_u_bnfh1 = bnfh1 + err_bnfh1 
+	set strip_d_bnfh1 = bnfh1 - err_bnfh1 
+
+	define limite ? {plot against Radio [1] or optlim [2] ?}
+	if(substr('$limite',0,1) == '1') {
+	    define plotx rval
+	    define check optval
+	    define xlim1 0.02
+	    define xlim2 0.3
+	    define labx  <Radio Flux [Jy]>
+	} else {
+	    define plotx optval
+	    define check rval
+	    define xlim1 20.5
+	    define xlim2 16.0
+	    define labx  <Optical Magnitude>
+	}
+
+	expand 1.5 
+	lweight 2
+	ctype 2
+	ticksize 0 0 0 0
+	limits $xlim1 $xlim2 0 $howmany
+	box
+	xlabel $labx
+	relocate ( $gx1 $($gy2+500) ) 
+	expand 1.2
+	putlabel 6 Number of HBL for the three scenarios
+
+	print '   %5.2f \n' <$check>
+	define checkval ? {which value of the other limiting vector ?}
+
+	if('$plotx' == 'optval') {
+	   foreach var {ax ax_u ax_d ar ar_u ar_d ab ab_u ab_d} {
+	   set dimen($var)   = $nopt
+	   }
+	   do 1=0,$($nopt-1) {
+	     set ax  = xnfh1         if(rlim == $checkval)
+	     set ax_u= strip_u_xnfh1 if(rlim == $checkval)
+	     set ax_d= strip_d_xnfh1 if(rlim == $checkval)
+	     set ar  = rnfh1         if(rlim == $checkval)
+	     set ar_u= strip_u_rnfh1 if(rlim == $checkval)
+	     set ar_d= strip_d_rnfh1 if(rlim == $checkval)
+	     set ab  = bnfh1         if(rlim == $checkval)
+	     set ab_u= strip_u_bnfh1 if(rlim == $checkval)
+	     set ab_d= strip_d_bnfh1 if(rlim == $checkval)
+           }	      
+	}
+
+	if('$plotx' == 'rval') {
+	   foreach var {ax ax_u ax_d ar ar_u ar_d ab ab_u ab_d} {
+	   set dimen($var)   = $nr
+	   }
+	   do 1=0,$($nr-1) {
+	     set ax  = xnfh1         if(optlim == $checkval)
+	     set ax_u= strip_u_xnfh1 if(optlim == $checkval)
+	     set ax_d= strip_d_xnfh1 if(optlim == $checkval)
+	     set ar  = rnfh1         if(optlim == $checkval)
+	     set ar_u= strip_u_rnfh1 if(optlim == $checkval)
+	     set ar_d= strip_d_rnfh1 if(optlim == $checkval)
+	     set ab  = bnfh1         if(optlim == $checkval)
+	     set ab_u= strip_u_bnfh1 if(optlim == $checkval)
+	     set ab_d= strip_d_bnfh1 if(optlim == $checkval)
+           }	      
+	}
+
+	#
+	# plotto 
+	#
+	expand 2.5
+	ptype 4 3 
+	lweight 2
+
+	ptype 4 0
+	points  $plotx ax
+
+	ptype 4 3 
+	points  $plotx ar
+
+	ptype 3 0
+	points  $plotx ab
+
+	define checkbars ? {Plot error bars on single points [y/n] ?}
+	if(substr('$checkbars',0,1) == 'y') {
+	expand 0.8
+	error_y $plotx ax (ax_u-ax)
+	error_y $plotx ar (ar_u-ar)
+	error_y $plotx ab (ab_u-ab)
+	}
+
+	lweight 3
+	ltype 1
+	connect $plotx ax_u 
+	connect $plotx ax_d
+	ltype 2
+	connect $plotx ar_u
+	connect $plotx ar_d
+	ltype 4
+	connect $plotx ab_u
+	connect $plotx ab_d
+	ltype 0
+	
+	if('$plotx' == 'optval') {
+	lweight 2
+	relocate ( $($gx1+1000) $($gy2 - 1300) )
+	expand 2.5 ptype 4 0 dot
+	expand 1.5 putlabel 6 " X-ray leading"
+
+	relocate ( $($gx1+1000) $($gy2 - 2600) )
+	expand 2.5 ptype 4 3 dot
+	expand 1.5 putlabel 6 " Radio leading"
+
+	relocate ( $($gx1+1000) $($gy2 - 3900) )
+	expand 2.5 ptype 3 0 dot
+	expand 1.5 putlabel 6 " Bolometric"
+	}
+	
+	if('$plotx' == 'rval') {
+	lweight 2
+	relocate ( $($gx1+16000) $($gy2 - 1300) )
+	expand 2.5 ptype 4 0 dot
+	expand 1.5 putlabel 6 " X-ray leading"
+
+	relocate ( $($gx1+16000) $($gy2 - 2600) )
+	expand 2.5 ptype 4 3 dot
+	expand 1.5 putlabel 6 " Radio leading"
+
+	relocate ( $($gx1+16000) $($gy2 - 3900) )
+	expand 2.5 ptype 3 0 dot
+	expand 1.5 putlabel 6 " Bolometric"
+	}
+
+	relocate ( 6000 2600 )
+	if('$check' == 'rval') {
+	   expand 1.2 putlabel 6 "Radio flux limit = "$checkval Jy
+	} else {
+	   expand 1.2 putlabel 6 "Optical mag. limit = "$checkval
+	}
+
+	relocate ( 6000 1600 )
+	expand 1.2 putlabel 6 "Number of trial targets = "$howmany 
+	relocate ( 6000  600 )
+	expand 1.2 putlabel 6 "Errorbars/Strips represent "$width" Poissonian \sigma"
+
+
+	ctype 2
+	lweight 3
+
+
+#---------------------------------------------------------------------------
+# selectstrip2_h   plot 3 models predictions, with choice of a_RX intervals
+selectstrip2_h
+
+	echo "-----------------------------------------------------------"
+	echo " histogram computed for the following intervals of a_RX:"
+	echo " [1]      - 0.55 "
+	echo " [2] 0.55 - 0.65 "
+	echo " [3] 0.65 - 0.70 "
+	echo " [4] 0.70 - 0.75 "
+	echo " [5] 0.75 - 0.80 "
+	echo " [6] 0.80 - 0.90 "
+	echo " [7] 0.90 -      "  
+	echo "-----------------------------------------------------------"
+	define which ? { Which histogram [1-7] ? }
+	define colore ? { Which Colour ? }
+
+	define long $(strlen('$which'))
+	echo $long
+
+	set xfh = xh1*0
+	set rfh = rh1*0
+	set bfh = bh1*0
+
+	if( $long == 1 ) {
+
+	   set xfh = xh$which
+	   set rfh = rh$which
+	   set bfh = bh$which
+
+	} else {
+	   do i=1,$long {
+	      define 2 $(substr('$which',$($i-1),1))
+	      echo $2
+	      set xfh = xfh + xh$2
+	      set rfh = rfh + rh$2
+	      set bfh = bfh + bh$2
+	   }
+	}
+
+	location 6000 31000 6000 31000
+	window 1 1 1 1
+	define howmany ? {howmany trial targets ?}
+	define width   ? {number of sigmas-strip to plot ?}
+
+	set xfh1 = xfh
+	set rfh1 = rfh
+	set bfh1 = bfh
+
+	set xnfh1 = $howmany*xfh1
+	set rnfh1 = $howmany*rfh1
+	set bnfh1 = $howmany*bfh1
+	set err_xnfh1 = $width*sqrt($howmany*xfh1)
+	set err_rnfh1 = $width*sqrt($howmany*rfh1)
+	set err_bnfh1 = $width*sqrt($howmany*bfh1)
+
+	set strip_u_xnfh1 = xnfh1 + err_xnfh1 
+	set strip_d_xnfh1 = xnfh1 - err_xnfh1 
+	set strip_u_rnfh1 = rnfh1 + err_rnfh1 
+	set strip_d_rnfh1 = rnfh1 - err_rnfh1 
+	set strip_u_bnfh1 = bnfh1 + err_bnfh1 
+	set strip_d_bnfh1 = bnfh1 - err_bnfh1 
+
+	define limite ? {plot against Radio [1] or optlim [2] ?}
+	if(substr('$limite',0,1) == '1') {
+	    define check optval
+	    define labx  <Radio Flux [Jy]>
+
+	    define come ? {LOG [1] LIN [2] ? }
+	    if(substr('$come',0,1) == '1') {
+	      define plotx "(lg(rval))"
+	      define xlim1 (lg(0.02))
+	      define xlim2 (lg(1.35))
+	      ticksize -1 5 0 0 
+	    } else { 
+	      define plotx rval
+	      define xlim1 0.02
+	      define xlim2 0.55
+	      ticksize 0 0 0 0 
+	    }
+	} else {
+	    define plotx optval
+	    define check rval
+	    define xlim1 22.5
+	    define xlim2 16.0
+	    ticksize 0.5 1 0 0
+	    define labx  <Optical Magnitude>
+	}
+
+	expand 1.5 
+	lweight 3
+	ctype 2
+	limits $xlim1 $xlim2 0 $howmany
+	box
+	xlabel $labx
+
+	relocate ( $gx1 $($gy2+500) ) 
+	expand 1.2
+	# putlabel 6 Number of HBL for the three scenarios
+	putlabel 6 only objects with \alpha_{rx} > 0.8
+
+	print '   %5.2f \n' <$check>
+	define checkval ? {which value of the other limiting vector ?}
+
+	if('$plotx' == 'optval') {
+	   foreach var {ax ax_u ax_d ar ar_u ar_d ab ab_u ab_d} {
+	   set dimen($var)   = $nopt
+	   }
+	   do 1=0,$($nopt-1) {
+	     set ax  = xnfh1         if(rlim == $checkval)
+	     set ax_u= strip_u_xnfh1 if(rlim == $checkval)
+	     set ax_d= strip_d_xnfh1 if(rlim == $checkval)
+	     set ar  = rnfh1         if(rlim == $checkval)
+	     set ar_u= strip_u_rnfh1 if(rlim == $checkval)
+	     set ar_d= strip_d_rnfh1 if(rlim == $checkval)
+	     set ab  = bnfh1         if(rlim == $checkval)
+	     set ab_u= strip_u_bnfh1 if(rlim == $checkval)
+	     set ab_d= strip_d_bnfh1 if(rlim == $checkval)
+           }	      
+	}
+
+	if('$plotx' == 'rval' || '$plotx' == '(lg(rval))' ) {
+	   foreach var {ax ax_u ax_d ar ar_u ar_d ab ab_u ab_d} {
+	   set dimen($var)   = $nr
+	   }
+	   do 1=0,$($nr-1) {
+	     set ax  = xnfh1         if(optlim == $checkval)
+	     set ax_u= strip_u_xnfh1 if(optlim == $checkval)
+	     set ax_d= strip_d_xnfh1 if(optlim == $checkval)
+	     set ar  = rnfh1         if(optlim == $checkval)
+	     set ar_u= strip_u_rnfh1 if(optlim == $checkval)
+	     set ar_d= strip_d_rnfh1 if(optlim == $checkval)
+	     set ab  = bnfh1         if(optlim == $checkval)
+	     set ab_u= strip_u_bnfh1 if(optlim == $checkval)
+	     set ab_d= strip_d_bnfh1 if(optlim == $checkval)
+           }	      
+	}
+
+	#
+	# plotto 
+	#
+	ctype $colore
+	expand 2.5
+	ptype 4 3 
+	# lweight 2
+
+	ptype 4 0
+	points  $plotx ax
+
+	ptype 4 3 
+	points  $plotx ar
+
+	ptype 3 0
+	points  $plotx ab
+
+	define checkbars ? {Plot error bars on single points [y/n] ?}
+	if(substr('$checkbars',0,1) == 'y') {
+	expand 0.8
+	error_y $plotx ax (ax_u-ax)
+	error_y $plotx ar (ar_u-ar)
+	error_y $plotx ab (ab_u-ab)
+	}
+
+	lweight 3
+	ltype 1
+	connect $plotx ax_u 
+	connect $plotx ax_d
+	ltype 2
+	connect $plotx ar_u
+	connect $plotx ar_d
+	ltype 4
+	connect $plotx ab_u
+	connect $plotx ab_d
+	ltype 0
+	
+	ctype 2 
+
+	# if('$plotx' == 'optval') {
+	# lweight 2
+	# relocate ( $($gx1+1000) $($gy2 - 1300) )
+	# expand 2.5 ptype 4 0 dot
+	# expand 1.5 putlabel 6 " X-ray leading"
+
+	# relocate ( $($gx1+1000) $($gy2 - 2600) )
+	# expand 2.5 ptype 4 3 dot
+	# expand 1.5 putlabel 6 " Radio leading"
+
+	# relocate ( $($gx1+1000) $($gy2 - 3900) )
+	# expand 2.5 ptype 3 0 dot
+	# expand 1.5 putlabel 6 " Bolometric"
+ 	# }
+	
+	# if('$plotx' == 'rval') {
+	# lweight 2
+	# relocate ( $($gx1+16000) $($gy2 - 1300) )
+	# expand 2.5 ptype 4 0 dot
+	# expand 1.5 putlabel 6 " X-ray leading"
+
+	# relocate ( $($gx1+16000) $($gy2 - 2600) )
+	# expand 2.5 ptype 4 3 dot
+	# expand 1.5 putlabel 6 " Radio leading"
+
+	# relocate ( $($gx1+16000) $($gy2 - 3900) )
+	# expand 2.5 ptype 3 0 dot
+	# expand 1.5 putlabel 6 " Bolometric"
+	# }
+
+	location 1000 6000 6000 31000
+	lweight 3
+	angle 90
+	relocate ( $($gx1+ 250) $($gy1 + 1750) )
+	expand 2.5 ptype 4 0 dot
+	# expand 1.2 putlabel 6 " X-ray leading"
+	expand 1.2 putlabel 6 " Pure Orientation (accelerating Jet)"
+
+	relocate ( $($gx1+1450) $($gy1 + 1750) )
+	expand 2.5 ptype 4 3 dot
+	# expand 1.2 putlabel 6 " Radio leading"
+	expand 1.2 putlabel 6 " \"Radio-leading\" "
+
+	relocate ( $($gx1+2650) $($gy1 + 1750) )
+	expand 2.5 ptype 3 0 dot
+	expand 1.2 putlabel 6 " Bolometric "
+	angle 0 
+	location 6000 31000 6000 31000
+
+	relocate ( 6000 2600 )
+	if('$check' == 'rval') {
+	   expand 1.2 putlabel 6 "Radio flux limit = "$checkval Jy
+	} else {
+	   expand 1.2 putlabel 6 "Optical mag. limit = "$checkval
+	}
+
+	relocate ( 6000 1600 )
+	expand 1.2 putlabel 6 "Number of trial targets = "$howmany 
+	relocate ( 6000  600 )
+	expand 1.2 putlabel 6 "Errorbars/Strips represent "$width" Poissonian \sigma"
+
+	ctype 2
+	lweight 3
+
+
+#---------------------------------------------------------------------------
+# selectstrip2_h2   plot single model predictions
+selectstrip2_h2
+
+	define model ? { Which model ? [x/r/b] }
+
+	echo "-----------------------------------------------------------"
+	echo " histogram computed for the following intervals of a_RX:"
+	echo " [1]      - 0.55 "
+	echo " [2] 0.55 - 0.65 "
+	echo " [3] 0.65 - 0.70 "
+	echo " [4] 0.70 - 0.75 "
+	echo " [5] 0.75 - 0.80 "
+	echo " [6] 0.80 - 0.90 "
+	echo " [7] 0.90 -      "  
+	echo "-----------------------------------------------------------"
+	define which ? { Which histogram [1-7] ? }
+	define colore ? { Which Colour ? }
+
+	define long $(strlen('$which'))
+	echo $long
+
+	set xfh = xh1*0
+	set rfh = rh1*0
+	set bfh = bh1*0
+
+	if( $long == 1 ) {
+
+	   set xfh = xh$which
+	   set rfh = rh$which
+	   set bfh = bh$which
+
+	} else {
+	   do i=1,$long {
+	      define 2 $(substr('$which',$($i-1),1))
+	      echo $2
+	      set xfh = xfh + xh$2
+	      set rfh = rfh + rh$2
+	      set bfh = bfh + bh$2
+	   }
+	}
+
+	location 6000 31000 6000 31000
+	window 1 1 1 1
+	define howmany ? {howmany trial targets ?}
+	define width   ? {number of sigmas-strip to plot ?}
+
+	set xfh1 = xfh
+	set rfh1 = rfh
+	set bfh1 = bfh
+
+	set xnfh1 = $howmany*xfh1
+	set rnfh1 = $howmany*rfh1
+	set bnfh1 = $howmany*bfh1
+	set err_xnfh1 = $width*sqrt($howmany*xfh1)
+	set err_rnfh1 = $width*sqrt($howmany*rfh1)
+	set err_bnfh1 = $width*sqrt($howmany*bfh1)
+
+	set strip_u_xnfh1 = xnfh1 + err_xnfh1 
+	set strip_d_xnfh1 = xnfh1 - err_xnfh1 
+	set strip_u_rnfh1 = rnfh1 + err_rnfh1 
+	set strip_d_rnfh1 = rnfh1 - err_rnfh1 
+	set strip_u_bnfh1 = bnfh1 + err_bnfh1 
+	set strip_d_bnfh1 = bnfh1 - err_bnfh1 
+
+	define limite ? {plot against Radio [1] or optlim [2] ?}
+	if(substr('$limite',0,1) == '1') {
+	    define check optval
+	    define labx  <Radio Flux [Jy]>
+
+	    define come ? {LOG [1] LIN [2] ? }
+	    if(substr('$come',0,1) == '1') {
+	      define plotx "(lg(rval))"
+	      define xlim1 (lg(0.02))
+	      define xlim2 (lg(1.35))
+	      ticksize -1 5 0 0 
+	    } else { 
+	      define plotx rval
+	      define xlim1 0.02
+	      define xlim2 0.55
+	      ticksize 0 0 0 0 
+	    }
+	} else {
+	    define plotx optval
+	    define check rval
+	    define xlim1 22.5
+	    define xlim2 16.0
+	    ticksize 0.5 1 0 0
+	    define labx  <Optical Magnitude>
+	}
+
+	expand 1.5 
+	lweight 2
+	ctype 2
+	limits $xlim1 $xlim2 0 $howmany
+	box
+	xlabel $labx
+
+	print '   %5.2f \n' <$check>
+	define checkval ? {which value of the other limiting vector ?}
+
+	if('$plotx' == 'optval') {
+	   foreach var {ax ax_u ax_d ar ar_u ar_d ab ab_u ab_d} {
+	   set dimen($var)   = $nopt
+	   }
+	   do 1=0,$($nopt-1) {
+	     set ax  = xnfh1         if(rlim == $checkval)
+	     set ax_u= strip_u_xnfh1 if(rlim == $checkval)
+	     set ax_d= strip_d_xnfh1 if(rlim == $checkval)
+	     set ar  = rnfh1         if(rlim == $checkval)
+	     set ar_u= strip_u_rnfh1 if(rlim == $checkval)
+	     set ar_d= strip_d_rnfh1 if(rlim == $checkval)
+	     set ab  = bnfh1         if(rlim == $checkval)
+	     set ab_u= strip_u_bnfh1 if(rlim == $checkval)
+	     set ab_d= strip_d_bnfh1 if(rlim == $checkval)
+           }	      
+	}
+
+	if('$plotx' == 'rval' || '$plotx' == '(lg(rval))' ) {
+	   foreach var {ax ax_u ax_d ar ar_u ar_d ab ab_u ab_d} {
+	   set dimen($var)   = $nr
+	   }
+	   do 1=0,$($nr-1) {
+	     set ax  = xnfh1         if(optlim == $checkval)
+	     set ax_u= strip_u_xnfh1 if(optlim == $checkval)
+	     set ax_d= strip_d_xnfh1 if(optlim == $checkval)
+	     set ar  = rnfh1         if(optlim == $checkval)
+	     set ar_u= strip_u_rnfh1 if(optlim == $checkval)
+	     set ar_d= strip_d_rnfh1 if(optlim == $checkval)
+	     set ab  = bnfh1         if(optlim == $checkval)
+	     set ab_u= strip_u_bnfh1 if(optlim == $checkval)
+	     set ab_d= strip_d_bnfh1 if(optlim == $checkval)
+           }	      
+	}
+
+	#
+	# plotto 
+	#
+	ctype $colore
+	expand 2.5
+	ptype 4 3 
+	lweight 2
+
+	define checkbars ? {Plot error bars on single points [y/n] ?}
+	if(substr('$checkbars',0,1) == 'y') {
+	   expand 0.8
+	   if(substr('$model',0,1) == 'x') { error_y $plotx ax (ax_u-ax) }
+	   if(substr('$model',0,1) == 'r') { error_y $plotx ar (ar_u-ar) }
+	   if(substr('$model',0,1) == 'b') { error_y $plotx ab (ab_u-ab) }
+	}
+
+	lweight 3
+	if(substr('$model',0,1) == 'x') { 
+	  ptype 4 0
+	  points  $plotx ax
+	  ltype 1
+	  connect $plotx ax_u 
+	  connect $plotx ax_d
+	  ltype 0
+	}
+	if(substr('$model',0,1) == 'r') { 
+	  ptype 4 3 
+	  points  $plotx ar
+	  ltype 2
+	  connect $plotx ar_u
+	  connect $plotx ar_d
+	  ltype 0
+	}
+	if(substr('$model',0,1) == 'b') { 
+	  ptype 3 0
+	  points  $plotx ab
+	  ltype 4
+	  connect $plotx ab_u
+	  connect $plotx ab_d
+	  ltype 0
+	}
+	
+	ctype 2 
+
+	location 1000 6000 6000 31000
+	lweight 2
+	angle 90
+	relocate ( $($gx1+ 250) $($gy1 + 1750) )
+	expand 2.5 ptype 4 0 dot
+	expand 1.2 putlabel 6 " X-ray leading"
+
+	relocate ( $($gx1+1450) $($gy1 + 1750) )
+	expand 2.5 ptype 4 3 dot
+	expand 1.2 putlabel 6 " Radio leading"
+
+	relocate ( $($gx1+2650) $($gy1 + 1750) )
+	expand 2.5 ptype 3 0 dot
+	expand 1.2 putlabel 6 " Bolometric"
+	angle 0 
+	location 6000 31000 6000 31000
+
+	relocate ( 6000 2600 )
+	if('$check' == 'rval') {
+	   expand 1.2 putlabel 6 "Radio flux limit = "$checkval Jy
+	} else {
+	   expand 1.2 putlabel 6 "Optical mag. limit = "$checkval
+	}
+
+	relocate ( 6000 1600 )
+	expand 1.2 putlabel 6 "Number of trial targets = "$howmany 
+	relocate ( 6000  600 )
+	expand 1.2 putlabel 6 "Errorbars/Strips represent "$width" Poissonian \sigma"
+
+	ctype 2
+	lweight 3
+
+#---------------------------------------------------------------------------
+# histo_h
+histo_h
+
+	window 1 1 1 1 
+	location 6000 29000 6000 31000
+	ltype 0
+	lweight 3
+
+	set dum = { 0.35 0.55 0.65 0.70 0.75 0.80 0.90 1.1 }
+	set dimen(xarx) = 7
+
+	do i=0,6 {
+	   set xarx[$i] = (dum[$i] + dum[$($i+1)])/2.
+	}
+
+	define colore ? { Which Colour ? }
+	define mettolabs ? { Put Model Labels [y/n] ? }
+
+	echo  " Optical and Radio Flux limits "
+	print '   %5.2f   %5.3f \n' <optval rval>
+
+	define ocut ? { Optical Limit ? }
+	define rcut ? { Radio Limit ? }
+	
+	define flag (0)
+
+	do i=0,$(dimen(rlim)-1) { 
+	  if( rlim[$i] == $rcut && $flag == 0 ) {
+	     do j=0,$($nopt-1) { 
+		define k $($i+$j) 
+		if( optlim[$k] == $ocut) { 
+		   define kk $k 
+		   define flag (1)
+		}
+	     }
+	  }
+	}
+
+	echo $kk $(rlim[$kk]) $(optlim[$kk])
+
+	set dimen(hx) = 7
+	set dimen(hr) = 7
+	set dimen(hb) = 7
+
+	do i=0,6 {
+	  define 1 $($i+1)
+	  set hx[$i] = xh$1[$kk] 
+	  set hr[$i] = rh$1[$kk] 
+	  set hb[$i] = bh$1[$kk] 
+	}
+
+	set dumxarx = { 0.35 0.35 0.55 0.55 0.65 0.65 0.70 0.70 0.75 0.75 0.80 0.80 0.90 0.90 1.10 1.10 }
+	set dumx = < 0 $(hx[0]) $(hx[0]) $(hx[1]) $(hx[1]) $(hx[2]) $(hx[2]) $(hx[3]) $(hx[3]) $(hx[4]) $(hx[4]) $(hx[5]) $(hx[5]) $(hx[6]) $(hx[6]) 0 >
+	set dumr = < 0 $(hr[0]) $(hr[0]) $(hr[1]) $(hr[1]) $(hr[2]) $(hr[2]) $(hr[3]) $(hr[3]) $(hr[4]) $(hr[4]) $(hr[5]) $(hr[5]) $(hr[6]) $(hr[6]) 0 > 
+	set dumb = < 0 $(hb[0]) $(hb[0]) $(hb[1]) $(hb[1]) $(hb[2]) $(hb[2]) $(hb[3]) $(hb[3]) $(hb[4]) $(hb[4]) $(hb[5]) $(hb[5]) $(hb[6]) $(hb[6]) 0 > 
+
+	# window 1 1 1 1 
+	# location 6000 29000 6000 31000
+	define howmany ? {howmany trial targets ?}
+
+	set dumxnfh1 = $howmany*dumx
+	set dumrnfh1 = $howmany*dumr
+	set dumbnfh1 = $howmany*dumb
+
+	set xnfh1 = $howmany*hx
+	set rnfh1 = $howmany*hr
+	set bnfh1 = $howmany*hb
+	set err_xnfh1 = $width*sqrt(xnfh1)
+	set err_rnfh1 = $width*sqrt(rnfh1)
+	set err_bnfh1 = $width*sqrt(bnfh1)
+
+	ptype 4 3 
+
+	#-----------------------
+	window 1 -3 1 1 
+
+	expand 1.5 
+	lweight 3
+	ctype 2
+	ticksize 0 0 0 0
+	limits 0.3 1.15 0 $howmany
+
+	lweight 5
+	ltype 2
+	ctype 4
+	relocate 0.75 0
+	echo X : $xp
+	echo Y : $yp
+	define xxp $xp
+	define yyp $yp
+
+	draw  0.75 $howmany
+	ltype 0
+	ctype 2
+	lweight 3
+
+	box
+	expand 2.5
+	# xlabel \alpha_{RX}
+	relocate ( $(($gx1+$gx2)/2) $($gy1-3700) ) 
+	putlabel 5 \alpha_{rx}
+
+	expand 2.0
+	# lweight 5
+	# ctype 4
+	# ltype 2
+	# relocate ( $xxp $yyp )
+	# draw     ( $xxp $($yyp-2500) )
+	# ltype 0
+	# lweight 3
+	# ctype 2
+
+	relocate ( $gx1 $($gy1-2000) ) 
+	ctype 5
+	lweight 5
+	putlabel 6 HBL 
+	relocate ( $($xxp - 7500) $($yp+300) )
+	draw ( $xxp $yp )
+	define yyp $yp
+	putlabel 4 >
+
+	ctype 3
+	relocate ( $xxp $yyp )
+	draw ( $($xxp + 7200) $yyp )
+	putlabel 4 >
+
+	relocate ( $gx2 $($gy1-2000) ) 
+	putlabel 4 LBL
+	lweight 3
+	expand 1.5
+	ctype 2
+
+	if( substr('$mettolabs',0,1) == 'y' ) { 
+	   relocate ( $($gx1 + 1000) $($gy2 - 1000) ) 
+	   putlabel 6 X-ray leading
+	} else {
+	   relocate ( $($gx1 + 1000) $($gy2 - 2000) ) 
+	   expand 2.0
+	   putlabel 6 (a)
+	   expand 1.5
+	}
+
+	ctype $colore
+	lweight 4
+	# histogram xarx xnfh1
+	connect  dumxarx dumxnfh1
+	points   xarx xnfh1
+	error_y  xarx xnfh1 err_xnfh1
+	lweight 3
+	ctype 2 
+
+	#-----------------------
+	window 1 -3 1 2 
+
+	expand 1.5 
+	lweight 3
+	ctype 2
+	ticksize 0 0 0 0
+	limits 0.3 1.15 0 $howmany
+
+	lweight 5
+	ltype 2
+	ctype 4
+	relocate 0.75 0
+	draw  0.75 $howmany
+	ltype 0
+	ctype 2
+	lweight 3
+
+	box 0 2 0 0 
+
+	if( substr('$mettolabs',0,1) == 'y' ) { 
+	    relocate ( $($gx1 + 1000) $($gy2 - 1000) ) 
+	    putlabel 6 Radio leading
+	} else {
+	   relocate ( $($gx1 + 1000) $($gy2 - 2000) ) 
+	   expand 2.0
+	   putlabel 6 (b)
+	   expand 1.5
+	}
+
+	ctype $colore
+	lweight 4
+	# histogram xarx rnfh1
+	connect  dumxarx dumrnfh1
+	points    xarx rnfh1
+	error_y   xarx rnfh1 err_rnfh1
+	ctype 2 
+	lweight 3
+
+	#-----------------------
+	window 1 -3 1 3 
+
+	expand 1.5 
+	lweight 3
+	ctype 2
+	ticksize 0 0 0 0
+	limits 0.3 1.15 0 $howmany
+
+	lweight 5
+	ltype 2
+	ctype 4
+	relocate 0.75 0
+	draw  0.75 $howmany
+	ltype 0
+	ctype 2
+	lweight 3
+
+	box 0 2 0 0 
+
+	if( substr('$mettolabs',0,1) == 'y' ) { 
+	    relocate ( $($gx1 + 1000) $($gy2 - 1000) ) 
+	    putlabel 6 Bolometric
+	} else {
+	   relocate ( $($gx1 + 1000) $($gy2 - 2000) ) 
+	   expand 2.0
+	   putlabel 6 (c)
+	   expand 1.5
+	}
+
+	ctype $colore
+	lweight 4
+	# histogram xarx bnfh1
+	connect  dumxarx dumbnfh1
+	points    xarx bnfh1
+	error_y   xarx bnfh1 err_bnfh1
+	ctype 2 
+	lweight 3
+
+	#-----------------------
+
+	window 1 1 1 1
+
+#---------------------------------------------------------------------------
+# histo_h2
+histo_h2
+
+	set dum = { 0.35 0.55 0.65 0.70 0.75 0.80 0.90 1.1 }
+	set dimen(xarx) = 7
+
+	do i=0,6 {
+	   set xarx[$i] = (dum[$i] + dum[$($i+1)])/2.
+	}
+
+	define colore ? { Which Colour ? }
+
+	echo  " Optical and Radio Flux limits "
+	print '   %5.2f   %5.3f \n' <optval rval>
+
+	define ocut ? { Optical Limit ? }
+	define rcut ? { Radio Limit ? }
+	
+	define flag (0)
+
+	do i=0,$(dimen(rlim)-1) { 
+	  if( rlim[$i] == $rcut && $flag == 0 ) {
+	     do j=0,$($nopt-1) { 
+		define k $($i+$j) 
+		if( optlim[$k] == $ocut) { 
+		   define kk $k 
+		   define flag (1)
+		}
+	     }
+	  }
+	}
+
+	echo $kk $(rlim[$kk]) $(optlim[$kk])
+
+	set dimen(hx) = 7
+	set dimen(hr) = 7
+	set dimen(hb) = 7
+
+	do i=0,6 {
+	  define 1 $($i+1)
+	  set hx[$i] = xh$1[$kk] 
+	  set hr[$i] = rh$1[$kk] 
+	  set hb[$i] = bh$1[$kk] 
+	}
+
+	set dumxarx = { 0.35 0.35 0.55 0.55 0.65 0.65 0.70 0.70 0.75 0.75 0.80 0.80 0.90 0.90 1.10 1.10 }
+	set dumx = < 0 $(hx[0]) $(hx[0]) $(hx[1]) $(hx[1]) $(hx[2]) $(hx[2]) $(hx[3]) $(hx[3]) $(hx[4]) $(hx[4]) $(hx[5]) $(hx[5]) $(hx[6]) $(hx[6]) 0 >
+	set dumr = < 0 $(hr[0]) $(hr[0]) $(hr[1]) $(hr[1]) $(hr[2]) $(hr[2]) $(hr[3]) $(hr[3]) $(hr[4]) $(hr[4]) $(hr[5]) $(hr[5]) $(hr[6]) $(hr[6]) 0 > 
+	set dumb = < 0 $(hb[0]) $(hb[0]) $(hb[1]) $(hb[1]) $(hb[2]) $(hb[2]) $(hb[3]) $(hb[3]) $(hb[4]) $(hb[4]) $(hb[5]) $(hb[5]) $(hb[6]) $(hb[6]) 0 > 
+
+	window 1 1 1 1 
+	location 6000 29000 6000 31000
+	define howmany ? {howmany trial targets ?}
+
+	set dumxnfh1 = $howmany*dumx
+	set dumrnfh1 = $howmany*dumr
+	set dumbnfh1 = $howmany*dumb
+
+	set xnfh1 = $howmany*hx
+	set rnfh1 = $howmany*hr
+	set bnfh1 = $howmany*hb
+	set err_xnfh1 = $width*sqrt(xnfh1)
+	set err_rnfh1 = $width*sqrt(rnfh1)
+	set err_bnfh1 = $width*sqrt(bnfh1)
+
+	ptype 4 3 
+
+	expand 1.5 
+	lweight 2
+	ctype 2
+	ticksize 0 0 0 0
+	limits 0.3 1.15 0 $howmany
+	box
+	expand 2.0
+	xlabel \alpha_{RX}
+	relocate ( $gx1 $($gy1-2500) ) 
+	putlabel 6 HBL <--
+	relocate ( $gx2 $($gy1-2500) ) 
+	putlabel 4 --> LBL
+	expand 1.5
+
+	define col_bw ? { MULTI-color or MONO-color ? [1/2] }
+
+	lweight 2
+	relocate ( $($gx1+1000) $($gy2 - 1300) )
+	if($col_bw == 1) { ctype 5 }
+	expand 2.5 ptype 4 0 dot
+	expand 1.5 putlabel 6 " X-ray leading"
+
+	relocate ( $($gx1+1000) $($gy2 - 2600) )
+	if($col_bw == 1) { ctype 4 }
+	expand 2.5 ptype 4 3 dot
+	expand 1.5 putlabel 6 " Radio leading"
+
+	relocate ( $($gx1+1000) $($gy2 - 3900) )
+	if($col_bw == 1) { ctype 3 }
+	expand 2.5 ptype 3 0 dot
+	expand 1.5 putlabel 6 " Bolometric"
+
+	ctype $colore
+	expand 2.5
+	lweight 2.5
+
+
+	if($col_bw == 1) { 
+	   ctype 5
+	   ptype 4 0
+	   points   xarx xnfh1
+	   error_y  xarx xnfh1 err_xnfh1
+	   ltype 1
+	   connect  dumxarx dumxnfh1
+	   ltype 0
+	
+	   ctype 4
+	   ptype 4 3 
+	   points    xarx rnfh1
+	   error_y   xarx rnfh1 err_rnfh1
+	   ltype 2
+	   connect  dumxarx dumrnfh1
+	   ltype 0
+	
+	   ctype 3 
+	   ptype 3 0
+	   points    xarx bnfh1
+	   error_y   xarx bnfh1 err_bnfh1
+	   ltype 4
+	   connect  dumxarx dumbnfh1
+	   ltype 0
+
+	ctype 2 
+	} else { 
+	   ptype 4 0
+	   points   xarx xnfh1
+	   error_y  xarx xnfh1 err_xnfh1
+	   ltype 1
+	   connect  dumxarx dumxnfh1
+	   ltype 0
+	
+	   ptype 4 3 
+	   points    xarx rnfh1
+	   error_y   xarx rnfh1 err_rnfh1
+	   ltype 2
+	   connect  dumxarx dumrnfh1
+	   ltype 0
+	
+	   ptype 3 0
+	   points    xarx bnfh1
+	   error_y   xarx bnfh1 err_bnfh1
+	   ltype 4
+	   connect  dumxarx dumbnfh1
+	   ltype 0
+
+	ctype 2 
+	}
+
+	#-----------------------
+
+	lweight 1.5
+	angle 90 
+	relocate ( 2000 6000 )
+	expand 1.2 putlabel 6 "Radio flux limit = "$rcut Jy
+	relocate ( 3500 6000 )
+	expand 1.2 putlabel 6 "Optical limit = "$ocut mag
+	angle 0
+
+	relocate ( 6000 1600 )
+
+	window 1 1 1 1
+
+#---------------------------------------------------------------------------
+# select
+select
+
+	define howmany ? {howmany trial targets ?}
+
+	define nmax $(dimen(rlim)-1)
+
+	do i=0,$nmax{
+	   set xfh1[$i]=xfh[$($i*2)]
+	   set rfh1[$i]=rfh[$($i*2)]
+	   set bfh1[$i]=bfh[$($i*2)]
+	   set xfh2[$i]=xfh[$($i*2+1)]
+	   set rfh2[$i]=rfh[$($i*2+1)]
+	   set bfh2[$i]=bfh[$($i*2+1)]
+	}
+
+	set xnfh1 = $howmany*xfh1
+	set rnfh1 = $howmany*rfh1
+	set bnfh1 = $howmany*bfh1
+	set xnfh2 = $howmany*xfh2
+	set rnfh2 = $howmany*rfh2
+	set bnfh2 = $howmany*bfh2
+
+	set err_xnfh1 = sqrt($howmany*xfh1)
+	set err_rnfh1 = sqrt($howmany*rfh1)
+	set err_bnfh1 = sqrt($howmany*bfh1)
+	set err_xnfh2 = sqrt($howmany*xfh2)
+	set err_rnfh2 = sqrt($howmany*rfh2)
+	set err_bnfh2 = sqrt($howmany*bfh2)
+
+	define limite ? {plot against Radio [1] or optlim [2] ?}
+	if(substr('$limite',0,1) == '1') {
+	    define plotx rlim 
+	    define check optval
+	    define xlim1 0.02
+	    define xlim2 0.3
+	} else {
+	    define plotx optlim
+	    define check rval
+	    define xlim1 20.5
+	    define xlim2 16.0
+	}
+
+
+	expand 1.5 
+	ctype 2
+	ticksize 0 0 0 0
+	limits $xlim1 $xlim2 0 $howmany
+	box
+
+	print <$check>
+	define checkval ? {which value of the other limiting vector ?}
+
+	expand 2.5
+	ptype 4 3 
+
+	if('$check' == 'rval') {
+	ctype 3
+	points  $plotx xnfh1             if(rlim == $checkval)
+	connect $plotx (xnfh1+err_xnfh1) if(rlim == $checkval)
+	connect $plotx (xnfh1-err_xnfh1) if(rlim == $checkval)
+
+	ctype 5
+	points  $plotx rnfh1             if(rlim == $checkval)
+	connect $plotx (rnfh1+err_rnfh1) if(rlim == $checkval)
+	connect $plotx (rnfh1-err_rnfh1) if(rlim == $checkval)
+
+	ctype 4
+	points  $plotx bnfh1             if(rlim == $checkval)
+	connect $plotx (bnfh1+err_bnfh1) if(rlim == $checkval)
+	connect $plotx (bnfh1-err_bnfh1) if(rlim == $checkval)
+	}
+
+	if('$check' == 'optval') {
+	ctype 3 
+	points  $plotx xnfh1             if(optlim == $checkval)
+	connect $plotx (xnfh1+err_xnfh1) if(optlim == $checkval)
+	connect $plotx (xnfh1-err_xnfh1) if(optlim == $checkval)
+
+	ctype 5 
+	points  $plotx rnfh1             if(optlim == $checkval)
+	connect $plotx (rnfh1+err_rnfh1) if(optlim == $checkval)
+	connect $plotx (rnfh1-err_rnfh1) if(optlim == $checkval)
+
+	ctype 4 
+	points  $plotx bnfh1             if(optlim == $checkval)
+	connect $plotx (bnfh1+err_bnfh1) if(optlim == $checkval)
+	connect $plotx (bnfh1-err_bnfh1) if(optlim == $checkval)
+	}
+
+	ctype 2
+
+
+#---------------------------------------------------------------------------

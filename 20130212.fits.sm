@@ -1,0 +1,844 @@
+###############################################################################
+# init_linear
+init_linear
+
+	echo " "
+	echo "*** Model is: Linear Fit (in log-log space) *** "
+	echo "    Give initial guess for parameters: "
+	if($linorlogx == 1) { 
+	   define var0 ? <                           Y value [@x=$(10**($x0))]: >
+	}
+	if($linorlogy == 1) { 
+	   define var0 $(lg($var0))
+	}
+	define var1  ? <                                   Slope : >
+
+	set parvec = < $var0 $var1 >
+
+	# convert the time vector back to actual values
+	#
+	## set pass_x = $xs*pass_x + $x0
+
+	## set xdum = $xstart,$(pass_x[$(dimen(pass_x)-1)]*1.05),$xstep
+	## set xdum = (xdum - $x0)/$xs
+
+	# set xdum   = $(pass_x[0]),$(pass_x[$(dimen(pass_x)-1)]+5000),500
+	# set pass_x = pass_x/$x0
+	# set xdum   = xdum/$x0
+
+##---------------------------------------------------------------------------
+## exit_linear
+exit_linear
+
+	if($linorlogy == 1) { 
+	    define p0 (10**$(parvec[0]))
+	}
+
+	echo "-------------------------------------------------------------" 
+	echo "*** Model is: CONSTANT + Straight line (for ???-??? data) ***" 
+	echo " " 
+	if($linorlogx == 1) { 
+	   echo   - Y value    : $p0 [@x=$(10**$x0)]
+	} else {
+	   echo   - Y value    : $p0 [@x=$x0]
+	}
+	echo   - Slope      : $(parvec[1])
+	echo -------------------------------------------------------------
+	echo  Chi^2 = $_newchi /$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo -------------------------------------------------------------
+
+	set ydum = $testfunc(xdum,_a)
+	# set xdum = xdum*$x0
+	set xdum = xdum*$xs + $x0
+
+##---------------------------------------------------------------------------
+## linear 2       : f(x,a)
+linear 2
+
+	set $0 =  $2[0] + $2[1]*$1
+
+##---------------------------------------------------------------------------
+## der_linear 3   : df(x,a,j)
+der_linear 3
+
+	if($3 == 0) { 
+	   set $0 = 1 + 0*$1
+	}
+
+	if($3 == 1) { 
+	   set $0 = $1
+	}
+
+###############################################################################
+# init_cons_pl
+init_cons_pl
+
+	echo "*** Model is: CONSTANT + PowerLaw (for LIN-LIN data) *** "
+	echo "    Give initial guess for parameters: "
+	define var0  ? <          Constant Baseline  :>
+	define var1  ? <          Y value    [@x=$x0]:> 
+	define var2  ? <          PowerLaw Exponent  :>
+
+	set parvec = < $var0 $var1 $var2 >
+
+	# convert the time vector back to actual values
+	#
+	## set pass_x = $xs*pass_x + $x0
+
+	## set xdum = $xstart,$(pass_x[$(dimen(pass_x)-1)]*1.05),$xstep
+	## set xdum = (xdum - $x0)/$xs
+
+	# set xdum   = $(pass_x[0]),$(pass_x[$(dimen(pass_x)-1)]+5000),500
+	# set pass_x = pass_x/$x0
+	# set xdum   = xdum/$x0
+
+##---------------------------------------------------------------------------
+## exit_cons_pl
+exit_cons_pl
+
+	echo "------------------------------------------------------------- "
+	echo "*** Model is: CONSTANT + PowerLaw (for LIN-LIN data) *** "
+	echo "  "
+	echo "  - Constant Baseline :" $(parvec[0])
+	echo "  - Y value           :" $(parvec[1]) [@x=$x0]
+	echo "  - PowerLaw Exponent :" $(parvec[2])
+	echo "------------------------------------------------------------- "
+	echo " Chi^2 =" $_newchi /$($npts-$nterms) ($($_newchi/($($npts-$nterms))))
+	echo "------------------------------------------------------------- "
+
+	set ydum = $testfunc(xdum,_a)
+	set xdum = xdum*$xs + $x0
+
+##---------------------------------------------------------------------------
+## cons_pl 2       : f(x,a)
+cons_pl 2
+
+	set $0 =  $2[0] + $2[1]*$1**$2[2]
+
+##---------------------------------------------------------------------------
+## der_cons_pl 3   : df(x,a,j)
+der_cons_pl 3
+
+	if($3 == 0) { 
+	   set $0 = 1 + 0*$1
+	}
+
+	if($3 == 1) { 
+	   set $0 = $1**$2[2]
+	}
+
+	if($3 == 2) { 
+	   set $0 = $2[1]*ln($1)*($1**$2[2])
+	}
+
+###############################################################################
+# steppar_relcons
+steppar_relcons
+
+	define testfunc "relcons_expo"
+	define var0 0.4
+	define var1 2.7
+	define var2 32e3
+
+	main_fit
+
+	define orig_b    $(parvec[0])
+	define orig_f0   $(parvec[1])
+	define orig_tau  $(parvec[2])
+	define orig_CHI2 $_newchi
+	define b         $orig_b
+	define f0	 $orig_f0
+	define tau       $orig_tau
+	define CHI2      $orig_CHI2
+
+	define tau1 ?     { Minimum value for tau : }
+	define tau2 ?     { Maximum value for tau : }
+	define taunstep ? { How many steps on tau (<15)}
+	define b1 ?       { Minimum value for RelCons : }
+	define b2 ?       { Maximum value for RelCons : }
+	define bnstep $taunstep
+	define bnstep ?   { How many steps on RelCons (<15)}
+
+	set tauvec = $tau1,$tau2,($tau2-$tau1)/$taunstep
+	set bvec   = $b1,$b2,($b2-$b1)/$bnstep
+        image ($(dimen(tauvec)),$(dimen(bvec))) $tau1 $tau2 $b1 $b2
+
+	define fguess $var1
+	define fguess (2.5)
+	define testfunc "cont_relcons_expo"
+
+	set _x      = pass_x
+	set _y      = pass_y 
+	set _sigmay = pass_w
+
+	do i=0,$taunstep {
+	   echo  -- [$i/$taunstep] external cycle starting -- 
+	   set dimen(mchi_$i) = $($bnstep+1)
+
+	   do jj=0,$bnstep {
+	      
+	      init_$testfunc $(bvec[$jj]) $fguess $(tauvec[$i])
+	      set _a      = parvec
+	      set _deltaa = parvec/10
+	      set _sigmaa = 0*parvec
+
+	      define flambda  0.0001
+	      define conv 10
+	      define iter 0
+
+	      while { $conv > 0.1 } {
+	          define iter ($iter+1)
+	          curfit _x _y _sigmay 1 _a _deltaa _sigmaa $flambda
+
+	          define conv ($_oldchi-$_newchi)
+	          if($(int($iter/$itercheck)*$itercheck) == $iter) { 
+	             print { _a }
+	             define goahead ? { Ten steps done, go ahead ? [y/n] }
+	             if(substr('$goahead',0,1) == 'n') {
+		         define conv 0.01
+	             }
+	          }
+	      }
+	      # echo  -- [$i,$jj] fit performed -- $_newchi
+	      
+	      if($_newchi < $CHI2) {
+	         define bb ( sprintf('%6.4f',$b) )
+	         define f0 ( sprintf('%8.5f',$(_a[0])) )
+	         define tt ( sprintf('%10.3f',$tau) )
+		 echo   --------------------------------------------------------------
+		 echo   * WARNING... new minimum found !!! 
+		 echo   * Chi^2 = $_newchi ( < $CHI2) at [$bb,$tt] [F_tot=$f0]
+		 echo   * Updating stored values for TAU and RATIO
+		 echo   --------------------------------------------------------------
+		 define CHI2 $_newchi
+		 define b    $(bvec[$jj])
+		 define f0   $(_a[0])
+		 define tau  $(tauvec[$i])
+	      }
+
+	      set mchi_$i[$jj]  = $_newchi
+	      set image[$i,$jj] = $_newchi
+	   }
+	}
+
+	if($CHI2 < $orig_CHI2) {
+	    define orig_bb  ( sprintf('%5.3f',$orig_b) )
+	    define orig_ff  ( sprintf('%8.5f',$orig_f0) ) 
+	    define orig_tt  ( sprintf('%8.1f',$orig_tau) )
+	    define orig_chi ( sprintf('%7.2f',$orig_CHI2) )
+	    define bb ( sprintf('%5.3f',$b) )
+	    define ff ( sprintf('%8.5f',$f0) ) 
+	    define tt ( sprintf('%8.1f',$tau) )
+	    define cc ( sprintf('%7.2f',$CHI2) )
+
+	    echo ----WARNING--WARNING--WARNING--WARNING--WARNING--WARNING----
+	    echo  Final "best fit" values for parameters are different
+	    echo  from the initial ones:
+	    echo    FINAL values : [$bb,$ff,$tt] Chi^2 = $cc
+	    echo  INITIAL values : [$orig_bb,$orig_ff,$orig_tt] Chi^2 = $orig_chi
+	}
+
+
+	define whattodo ? {Rename vectors ?}
+
+        if(substr('$whattodo',0,1) == 'y') {
+	  echo  ==> Remember that the data were $end
+          define matname ? {Suffix name for vectors to become mat_*_j ?}
+	  define 1 $matname
+          do 2=0,$taunstep {
+             set mat_$1_$2 = mchi_$2
+	     delete mchi_$2
+          }
+	  set mat_$1_aux = < $(dimen(tauvec)) $(dimen(bvec)) $tau1 $tau2 $b1 $b2 $tau $b $f0 $CHI2 >
+
+	  set bf_x_$1 = (xdum-$x0)/$xs
+	  set bf_a_$1 = < $b $f0 $($tau/$xs) >
+	  set bf_y_$1 = relcons_expo(bf_x_$1,bf_a_$1)
+	  set bf_x_$1 = xdum 
+        } 
+
+	define testfunc "relcons_expo"
+
+###############################################################################
+# draw_fit
+draw_fit
+
+	echo "-----------------------------------" 
+	echo " N.B.: the model used is" 
+	echo "       RELCONS_EXPO" 
+	echo "-----------------------------------" 
+	define band ? { Which Band [1/2/3/4/5] ? }
+	define day  ? { Day Number ? }
+
+	if($band == 5) { define 1 "tev_test" }
+	if($band == 1 && $day == 1) {define 1 "rel_lecs_01_05_2000_day1" }
+	if($band == 1 && $day == 2) {define 1 "rel_lecs_01_05_2000_day2" }
+	if($band == 2 && $day == 1) {define 1 "rel_lecs_05_2_1000_day1" }
+	if($band == 2 && $day == 2) {define 1 "rel_lecs_05_2_1000_day2" }
+	if($band == 3 && $day == 1) {define 1 "rel_mecs_2_3_1000_day1" }
+	if($band == 3 && $day == 2) {define 1 "rel_mecs_2_3_1000_day2" }
+	if($band == 4 && $day == 1) {define 1 "rel_mecs_4_6_1500_day1" }
+	if($band == 4 && $day == 2) {define 1 "rel_mecs_4_6_1500_day2" }
+
+	define matname $1 
+	define matname ? { Name of Matrix to be plotted [mat_*] ?}
+	define 1 $matname
+
+	echo string is = $1
+
+	define lognolog ? { Logarithmic or Linear plot ? [1/2] }
+	define which_cl ? { Which Conf. Level. ? [1/2/3] }
+	define fitcolor ? { Color ? }
+
+	if ( $day == 1 ) { set bf_x = 23e3,1e5,1000 }
+	if ( $day == 2 ) { set bf_x =170e3,3e5,1000 }
+
+	if ( $day == 1 ) { define x0 25e3 }
+	if ( $day == 2 ) { define x0 170e3 }
+	define x0 ? { Time ref x0 ? }
+
+	# define xs (1e4)
+        # set xdum = (bf_x - $x0)/$xs
+
+        set xdum = (bf_x - $x0)
+        set bf_y_$1 = relcons_expo(xdum,bf_a_$1)
+
+	set gu2   = 0*bf_x + bf_a_$1[0]*bf_a_$1[1]
+	set gu2_d = 0*bf_x + bf_a_$1[1]*$1_par1_cl[$(2*$which_cl-1)]
+	set gu2_u = 0*bf_x + bf_a_$1[1]*$1_par1_cl[$(2*$which_cl)]
+
+	if($lognolog == 1) {
+	   set gu1  = lg(bf_y_$1)
+   	   set gu2  = lg(gu2)
+	   set gu_d = lg(gu2_d)
+	   set gu_u = lg(gu2_u)
+	} else {
+	   set gu1 = bf_y_$1
+	}
+
+	ctype $fitcolor
+	ltype 0
+	lweight 4
+	connect bf_x gu1
+	ltype 2 
+	connect bf_x gu2
+	connect bf_x gu2_d
+	connect bf_x gu2_u
+
+	lweight 2
+	ctype 2
+	ltype 0
+
+	delete gu1
+	delete gu2
+	delete gu2_u
+	delete gu2_d
+
+#---------------------------------------------------------------------------
+# plot_cont [<shade-colour>] [<contours-colour>]
+plot_cont  01
+
+	if($?1) { define ccolor $1 }
+
+        location 6500 31000 6500 31000
+	lweight 2
+
+	define str_gl1 "1.0 2.3 2.7 4.61"
+	define str_gl2 "2.3 4.61 6.17 9.21"
+        set gldum1 = {1.0 2.3 2.7 4.61 }
+        set gldum2 = {2.3 4.61 6.17 9.21}
+
+	define matname ? { Name of Matrix to be plotted [mat_*] ?}
+	define 1 $matname
+
+	define 2 $(mat_$1_aux[0])
+        image ($(mat_$1_aux[0]),$(mat_$1_aux[1])) $(mat_$1_aux[2]) $(mat_$1_aux[3]) $(mat_$1_aux[4]) $(mat_$1_aux[5]) 
+
+	define tau  $(mat_$1_aux[6])
+	define tau1 $(mat_$1_aux[2])
+	define tau2 $(mat_$1_aux[3])
+	define b    $(mat_$1_aux[7])
+	define b1   $(mat_$1_aux[4])
+	define b2   $(mat_$1_aux[5])
+	define f0   $(mat_$1_aux[8])
+	define CHI2 $(mat_$1_aux[9])
+	set tauvec = $tau1,$tau2,($tau2-$tau1)/($2-1)
+	set bvec   = $b1,$b2,($b2-$b1)/($2-1)
+
+	echo * Remember that this routine assumes
+	echo   a SQUARE matrix.
+
+	# set bvec   = $b1,$b2,($b2-$b1)/$bnstep
+
+	do 3=0,$($2-1) {
+	   do 4=0,$($2-1) {
+	      set image[$3,$4] = mat_$1_$3[$4]
+	   }
+	}
+
+        echo * The pre-defined levels are at :
+        print '    %5.3f    %5.3f\n' { gldum1 gldum2 }
+
+        echo * Which set of levels do you prefer ? [0/1/2]
+        define change ? { Type '0' if you wish to change them ? }
+        if($change == 0) {
+           define str_gl ? { New level vector  : }
+           set gldum = < $!str_gl >
+        } else { 
+           set gldum = gldum$change
+	   define str_gl "$str_gl$!change"
+        }
+
+        set gl = $CHI2 + gldum
+
+        glevels gl
+        levels gl
+
+        define whatbox ? {Do you want to use the DEFAULT LIMITS ? [y/n] }
+
+        if(substr('$whatbox',0,1) == 'y') { 
+            limits $tau1 $tau2 $b1 $b2 
+        }
+
+        if(substr('$whatbox',0,1) == 'n') { 
+            define yourlim ? { Give me your limits x1 x2 y1 y2 in a row :}
+            limits $yourlim
+        }
+
+	#
+	# draw the grid of points used for the estimation of contours
+	#
+        define gridon ? {Do you want to plot the GRID of points ? [y/n] }
+        if(substr('$gridon',0,1) == 'y') { 
+	   do k=0,$(dimen(tauvec)-1) {
+	      set dum= 0*bvec + tauvec[$k]
+	      ctype 4
+	      ptype 4 1 
+	      angle 45
+	      points dum bvec
+	      angle 0
+	   }
+	}
+
+        ticksize 0 0 0 0
+        expand 1.5
+	ctype 2
+        box 
+
+        define labelon ? {Do you want to put labels ? [y/n] }
+        if(substr('$labelon',0,1) == 'y') { 
+           define lab_x ? { X-label ? }
+           define lab_y ? { Y-label ? }
+	   define lab_t ? { Top Label ? }
+           expand 2.0
+           xlabel $lab_x
+           ylabel $lab_y
+           expand 1.3
+	   relocate ( $(($gx1+$gx2)/2) $($gy2+500) ) 
+	   putlabel 8 $lab_t
+
+	   relocate ( $($gx2+500) $gy2 ) 
+	   angle 270
+	   putlabel 9 \Delta\Chi^2 = $str_gl
+	   angle 0
+	   expand 1.5
+	}
+
+        define labelnumon ? {Do you want to write BEST-FIT parameters ? [y/n] }
+        if(substr('$labelnumon',0,1) == 'y') { 
+	   define tt ( sprintf('%6.1f',$tau) )
+	   define bb ( sprintf('%5.3f',$b) )
+	   define ff ( sprintf('%5.3f',$f0) )
+
+	   relocate ( $($gx1+1000) $($gy1 + 4500) ) 
+	   putlabel 6 \tau
+	   relocate ( $($gx1+1000) $($gy1 + 3000) ) 
+	   putlabel 6 F_{cons}/F_{peak}
+	   relocate ( $($gx1+1000) $($gy1 + 1500) ) 
+	   putlabel 6 F_{peak}
+
+	   relocate ( $($gx1+6000) $($gy1 + 4500) ) 
+	   putlabel 6 = $tt
+	   relocate ( $($gx1+6000) $($gy1 + 3000) ) 
+	   putlabel 6 = $bb
+	   relocate ( $($gx1+6000) $($gy1 + 1500) ) 
+	   putlabel 6 = $ff
+        }
+
+        # if($?1) { 
+        # if($1 != 0) { 
+        #    ctype $1 
+        #    greyscale 200 200 12
+        # }
+        # }
+        if($?ccolor) { ctype $ccolor }
+        contour
+	define ccolor delete
+
+	#
+	# draw the best fit point
+	#
+	relocate $tau $b
+	ptype 4 1 
+	ctype 3 
+	angle 45
+	lweight 5
+	expand 3.5
+	dot
+	expand 1.5
+	lweight 2
+	angle 0
+	ctype 2 
+
+	foreach var { gl gldum gldum1 gldum2 gllevel_vec } {
+	    echo Deleting: $var
+	    delete $var
+	}
+
+#---------------------------------------------------------------------------
+# steppar_fixbase
+steppar_fixbase
+
+	define testfunc "conscons_expo"
+
+	main_fit
+
+	echo " - Constant Flux Baseline [frozen] :" $varbase
+	echo " "
+	echo "    corresponding to a fraction of :" $($varbase/($varbase+$(parvec[0]))) [@T=$x0]
+	echo " - Exponential Flux Scale          :" $(parvec[0]) [@T=$x0]
+	echo " - Exponential Time Scale          :" $(parvec[1]) [sec]
+	echo " "
+	echo " "
+
+	define orig_b    $($varbase/($varbase+$(parvec[0])))
+	define orig_f0   $($varbase+$(parvec[0]))
+	define orig_tau  $(parvec[1])
+	define orig_CHI2 $_newchi
+
+	define b         $orig_b
+	define f0	 $orig_f0
+	define tau       $orig_tau
+	define CHI2      $orig_CHI2
+
+	define fixbase $varbase
+	define fixrel    ? { RELATIVE baseline : Best value from PRIMARY FIT    : }
+	define fixrel1   ? { RELATIVE baseline : Minimum value from PRIMARY FIT : }
+	define tmpnstep1 ? { How many steps on LOWER side : }
+	define howstep   ? { Linearly spaced values ? [y/n] }
+	define fixrel2   ? { RELATIVE baseline : Maximum value from PRIMARY FIT : }
+	define tmpnstep2 ? { How many steps on HIGHER side : }
+
+	define fixbase1 ($fixbase*$fixrel1/$fixrel)
+	define fixbase2 ($fixbase*$fixrel2/$fixrel)
+
+	define tau1 ?     { Minimum value for tau : }
+	define tau2 ?     { Maximum value for tau : }
+	define taunstep ? { How many steps on tau : }
+
+	define b1 ?       { Minimum value for RelCons : }
+	define b2 ?       { Maximum value for RelCons : }
+	define bnstep $taunstep
+	define bnstep ?   { How many steps on RelCons : }
+
+
+	if(substr('$howstep',0,1) == 'y') { 
+	    set fixvec1a = $($fixrel-$fixrel1),0,-1*$($fixrel-$fixrel1)/$tmpnstep1
+	    set fixvec1  = $fixrel - fixvec1a
+	} else {
+	    set fixvec1a = $(sqrt($fixrel-$fixrel1)),0,-1*$(sqrt($fixrel-$fixrel1))/$tmpnstep1
+	    set fixvec1  = $fixrel - fixvec1a*fixvec1a
+	}
+
+	set fixvec2a = 0,$(sqrt($fixrel2-$fixrel)),$(sqrt($fixrel2-$fixrel))/$tmpnstep2
+	set fixvec2  = $fixrel + fixvec2a*fixvec2a
+
+	set dimen(fixvec) = $(($tmpnstep1+1)+($tmpnstep2+1)-1)
+
+	set fixvec[0] = fixvec1[0]
+	do i=1,$tmpnstep1 {
+	   set fixvec[$i]              = fixvec1[$i]
+	}
+	do i=1,$tmpnstep2 {
+	   set fixvec[$($i+$tmpnstep1)]= fixvec2[$i]
+	}
+
+	define fixnstep $(($tmpnstep1+1)+($tmpnstep2+1)-1)
+
+	foreach var { fixvec1a fixvec1 fixvec2a fixvec2 } {
+	    delete $var
+	}
+
+	set fixvec = $fixbase*fixvec/$fixrel
+	set tauvec = $tau1,$tau2,($tau2-$tau1)/$taunstep
+	set bvec   = $b1,$b2,($b2-$b1)/$bnstep
+        image ($(dimen(tauvec)),$(dimen(bvec))) $tau1 $tau2 $b1 $b2
+
+	#
+	#  initialize matrix
+	#
+	do i=0,$taunstep {
+	   set dimen(mchi_$i) = $($bnstep+1)
+	   set dimen(mfix_$i) = $($bnstep+1)
+	}
+	do i=0,$taunstep {
+	   do jj=0,$bnstep {
+	      set mchi_$i[$jj]  = 10000.
+	   }
+	}
+
+	#
+	# cycle on FIXBASE
+	#
+	do k=0,$fixnstep {
+	 
+	set ftot = fixvec[$k]/bvec
+
+	#
+	# cycle on TAU
+	#
+	do i=0,$taunstep {
+	   echo  -- [$k/$fixnstep - $i/$taunstep] --
+
+	   #
+	   # cycle on RelCons
+	   #
+	   do jj=0,$bnstep {
+	      
+	      set parvec = < $(bvec[$jj]) $(ftot[$jj]) $($(tauvec[$i])/$xs) >
+	      set fcalc  = relcons_expo(pass_x,parvec)
+	      set parvec[2] = parvec[2]*$xs
+
+	      set _newchivec = (pass_y - fcalc)**2./pass_w/pass_w
+	      define _newchi $(sum(_newchivec))
+	      
+	      if($_newchi < $CHI2) {
+	         define bb ( sprintf('%6.4f',$(parvec[0])) )
+	         define f0 ( sprintf('%8.5f',$(parvec[1])) )
+	         define tt ( sprintf('%10.3f',$(parvec[2])) )
+		 echo   --------------------------------------------------------------
+		 echo   * WARNING... new minimum found !!! 
+		 echo   * Chi^2 = $_newchi ( < $CHI2) at [$bb,$tt] [F_tot=$f0]
+		 echo   * Updating stored values for TAU and RATIO
+		 echo   --------------------------------------------------------------
+		 define CHI2 $_newchi
+		 define b    $(parvec[0])
+		 define f0   $(parvec[1])
+		 define tau  $(parvec[2])
+		 define i_min  $i
+		 define jj_min $jj
+	      }
+
+	      if($_newchi <  $(mchi_$i[$jj])) {
+	          set mchi_$i[$jj]  = $_newchi
+	          set mfix_$i[$jj]  = fixvec[$k]
+	          set image[$i,$jj] = $_newchi
+	      }
+	   }
+	}
+	}
+
+	if($CHI2 < $orig_CHI2) {
+	    define orig_bb  ( sprintf('%5.3f',$orig_b) )
+	    define orig_ff  ( sprintf('%8.5f',$orig_f0) ) 
+	    define orig_tt  ( sprintf('%8.1f',$orig_tau) )
+	    define orig_chi ( sprintf('%7.2f',$orig_CHI2) )
+	    define bb ( sprintf('%5.3f',$b) )
+	    define ff ( sprintf('%8.5f',$f0) ) 
+	    define tt ( sprintf('%8.1f',$tau) )
+	    define cc ( sprintf('%7.2f',$CHI2) )
+
+	    echo ----WARNING--WARNING--WARNING--WARNING--WARNING--WARNING----
+	    echo  Final "best fit" values for parameters are different
+	    echo  from the initial ones:
+	    echo    FINAL values : [$bb,$ff,$tt] Chi^2 = $cc
+	    echo  INITIAL values : [$orig_bb,$orig_ff,$orig_tt] Chi^2 = $orig_chi
+	    echo
+	    echo  The Best fit has been obtained for the following Baseline Flux
+	    echo     F_base = $(mfix_$i_min[$jj_min])
+	}
+
+
+	define whattodo ? {Rename vectors ?}
+
+        if(substr('$whattodo',0,1) == 'y') {
+	  echo  ==> Remember that the data were $end
+          define matname ? {Suffix name for vectors to become mat_*_j ?}
+	  define 1 $matname
+	  echo Your choice is : $1
+
+          do 2=0,$taunstep {
+             set mat_$1_$2 = mchi_$2
+	     delete mchi_$2
+	     help mat_$1_$2
+          }
+	  set mat_$1_aux = < $(dimen(tauvec)) $(dimen(bvec)) $tau1 $tau2 $b1 $b2 $tau $b $f0 $CHI2 >
+	  help mat_$1_aux
+
+	  set bf_x_$1 = (xdum-$x0)/$xs
+	  set bf_a_$1 = < $b $f0 $($tau/$xs) >
+	  set bf_y_$1 = relcons_expo(bf_x_$1,bf_a_$1)
+	  set bf_x_$1 = xdum 
+        } 
+
+	define testfunc "relcons_expo"
+
+
+#---------------------------------------------------------------------------
+# write_cont_matrix
+write_cont_matrix
+
+	define matname ? { Name of Matrix to be saved [mat_*] ?}
+	define 1 mat_$matname
+	define outname $1.dat
+
+	print $outname ' %.7e\n' < $1_aux >
+
+	define ncol  $($1_aux[0])
+	define ndec  (int($ncol/10.))
+	define resto ($ncol-$ndec*10)
+
+        do 2=0,$($ncol-1) {
+           set v_$2 = $1_$2
+        }
+
+	do 2=1,$ndec {
+	     define primo (($2-1)*10)
+	     define veclist < v_$primo>
+	     define 4 <   %.3f>
+	     # echo $2: $veclist
+	     # echo $2: $4
+	     do 5=$($primo+1),$($primo+9) {
+		define veclist <$veclist v_$5>
+		define 4 <$4   %.3f>
+	        # echo $5: $veclist
+	        # echo $5: $4
+	     }
+	     # echo -------------------------------------
+	     # echo vector list: $veclist
+	     # echo -------------------------------------
+	     # echo format     : $4
+	     # echo -------------------------------------
+	     print + $outname '$4\n' < $veclist >
+	}
+
+	define primo ($ndec*10)
+	define veclist < v_$primo>
+	define 4 <   %.3f>
+	# echo primo: $primo
+	# echo resto: $resto
+	do 5=$($primo+1),$($primo+$resto-1) {
+	   define veclist <$veclist v_$5>
+	   define 4 <$4   %.3f>
+	}
+	# echo -------------------------------------
+	# echo vector list: $veclist
+	# echo -------------------------------------
+	# echo format     : $4
+	# echo -------------------------------------
+	print + $outname '$4\n' < $veclist >
+
+	write + $outname \#
+	write + $outname $(dimen(bf_x_$matname))
+	print + $outname '  %.3f  %.4f\n' < bf_x_$matname bf_y_$matname >
+
+        do 2=0,$($ncol-1) {
+           delete v_$2 
+        }
+
+	foreach var { outname ndec ncol primo veclist } {
+	    define $var delete
+	}
+
+#---------------------------------------------------------------------------
+# read_cont_matrix
+read_cont_matrix
+
+	define matname ? { Name of Matrix to be loaded [mat_*] ?}
+	define 1 mat_$matname
+	define 2 $matname
+	define inname $1.dat
+
+	data $inname
+	lines 3 12 
+	read $1_aux 1
+	read row $2_par2_cl  9  # timescale
+	read row $2_par1_cl 10  # relative fraction
+	help $2_par2_cl
+	help $2_par1_cl
+	print < $2_par1_cl $2_par2_cl >
+
+	set bf_a_$matname = < $($1_aux[7]) $($1_aux[8]) $($1_aux[6]) >
+
+	define ncol  $($1_aux[0])
+	define nrow  $($1_aux[1])
+	define ndec  (int($ncol/10.))
+	define resto ($ncol-$ndec*10)
+
+	echo Ncol = $ncol
+	echo Nrow = $nrow
+	echo Ndec = $ndec
+	echo Resto = $resto
+
+	do 2=1,$ndec {
+	     define primo $(($2-1)*10)
+	     define l0 (13 + ($2-1)*(2+$nrow))
+	     lines $($l0+2) $($l0+2+$nrow-1) 
+
+	     define readlist < v_$primo 1>
+	     define prlist   < v_$primo>
+	     # echo $2: $readlist
+	     do 5=$($primo+1),$($primo+9) {
+		define prlist   <$prlist v_$5>
+		define readlist <$readlist v_$5 $($5-10*int($5/10)+1)>
+	        # echo $5: $prlist
+	     }
+	     echo -------------------------------------
+	     echo vector list: $readlist
+	     # echo print list: $prlist
+	     echo -------------------------------------
+	     read  < $readlist >
+	     # print < $prlist >
+	}
+
+	define primo ($ndec*10)
+	define l0 (13 + $ndec*(2+$nrow))
+	lines $($l0+2) $($l0+2+$nrow-1) 
+
+	define readlist < v_$primo 1 >
+	# echo primo: $primo
+	# echo resto: $resto
+	do 5=$($primo+1),$($primo+$resto-1) {
+	   define readlist <$readlist v_$5 $($5-10*int($5/10)+1)>
+	}
+
+	echo -------------------------------------
+	echo vector list: $readlist
+	echo -------------------------------------
+	read { $!!readlist }
+
+        do 2=0,$($ncol-1) {
+           set $1_$2 = v_$2
+        }
+
+	define readmodel ? { Go ahead reading model, if there is one ? [y/n] ? }
+
+	if( substr('$readmodel',0,1) == 'y') {
+	   echo reading line $($l0+2+$nrow-1+2)
+
+	   define ndum read $($l0+2+$nrow-1+2) 
+	   echo Ndum = $ndum
+	   lines $($l0+2+$nrow-1+5) $($l0+2+$nrow-1+4+$ndum)
+	   read < bf_x_$1 1 bf_y_$1 2 >
+	}
+
+	foreach var { inname ndec ncol primo l0 prlist readlist } {
+	    define $var delete
+ 	}
+
+#************************************************************************
+#** WARNING 
+#**   myload macro 'matrix' before to proceed.                         **
+#**   It is needed to load the macros necessary for matrix handling    **
+#**                                                                    ** 
+#************************************************************************

@@ -1,0 +1,151 @@
+#---------------------------------------------------------------------------
+# cmi_fov
+cmi_fov
+
+	set lp = 0,50,1
+	set lp[0]=0.000001
+	define pi 3.14159226
+
+	set lont= atan(sin(50.0*$pi/180.0)/sin(lp*$pi/180.0))*180.0/$pi
+	set lant= 90.0 - acos(cos(50.0*$pi/180.0)*cos(lp*$pi/180.0))*180.0/$pi
+
+	lweight 2 
+	ltype 0
+	ctype 2
+	location 2500 30000 2500 30000
+	limits -1 1 -1 1 
+	expand 1.5
+	ltype   1
+
+	circle  0 0 1 
+	foreach ang < 60 > {
+	   circle  0 0 $(cos($ang*$pi/180.))
+	}
+	define a $(cos(45.*$pi/180))
+	# relocate -$a -$a draw  $a  $a 
+	# relocate -$a  $a draw  $a -$a 
+	relocate -1  0 draw  1  0 
+	relocate  0 -1 draw  0  1
+
+	set r = cos(lant*$pi/180.)
+
+	#---------------------------------------------
+	#
+	lweight 3 
+	ltype 0 
+	define ang 40
+	relocate $(-1.*cos($ang*$pi/180)) 0 
+	draw     $(cos($ang*$pi/180))  0 
+	relocate 0 $(-1.*cos($ang*$pi/180)) 
+	draw     0 $(cos($ang*$pi/180)) 
+
+	lweight 10
+	relocate 0 0
+	draw     $(cos($ang*$pi/180))  0 
+	relocate 0 $(-1.*cos($ang*$pi/180)) 
+	draw     0 0
+
+	set dlont = -lont
+	set x = r*cos(dlont*$pi/180)
+	set y = r*sin(dlont*$pi/180)
+	set xprof = reverse(x)
+	set yprof = reverse(y)
+	set xhlr = x
+	set yhlr = y
+	connect x y
+	lweight 3
+
+	set dlont = lont
+	set x = r*cos(dlont*$pi/180)
+	set y = r*sin(dlont*$pi/180)
+	set xhur = x
+	set yhur = y
+	connect x y
+
+	set dlont = lont+180
+	set x = r*cos(dlont*$pi/180)
+	set y = r*sin(dlont*$pi/180)
+	set xhll = x
+	set yhll = y
+	connect x y
+
+	set dlont = -lont+180
+	set x = r*cos(dlont*$pi/180)
+	set y = r*sin(dlont*$pi/180)
+	set xhul = x
+	set yhul = y
+	connect x y
+
+	#---------------------------------------------
+	#
+	set lont = atan(sin(lp*$pi/180.0)/sin(50.0*$pi/180.0))*180.0/$pi
+	set lant = 90.0 - acos(cos(50.0*$pi/180.0)*cos(lp*$pi/180.0))*180.0/$pi
+	
+	set dlont = lont
+	set x = r*cos(dlont*$pi/180)
+	set y = r*sin(dlont*$pi/180)
+	set xvur = x
+	set yvur = y
+	connect x y
+
+	lweight 10
+	set dlont = -lont
+	set x = r*cos(dlont*$pi/180)
+	set y = r*sin(dlont*$pi/180)
+	connect x y
+	set xvlr = x
+	set yvlr = y
+	set xprof = xprof CONCAT < 0 > CONCAT x
+	set yprof = yprof CONCAT < 0 > CONCAT y
+	lweight 3
+
+	set dlont = lont+180
+	set x = r*cos(dlont*$pi/180)
+	set y = r*sin(dlont*$pi/180)
+	set xvll = x
+	set yvll = y
+	connect x y
+
+	set dlont = -lont+180
+	set x = r*cos(dlont*$pi/180)
+	set y = r*sin(dlont*$pi/180)
+	set xvul = x
+	set yvul = y
+	connect x y
+	ctype 2 
+
+	define ster ? { LAT FOV sr ? }
+	define latang $(acos(1.0 - $ster/2/$pi))
+
+	ltype 2 
+	lweight 5 
+	circle  0 0 $(sin($latang))
+	lweight 3
+	ltype 0 
+
+	# relocate $( cos(65*$pi/180)*cos(25*$pi/180) ) $( cos(65*$pi/180)*sin(25*$pi/180) ) dot
+	# ctype 3 connect xprof yprof
+	# ctype 2 
+	set xper = xhll CONCAT reverse(xvll) CONCAT xvul CONCAT reverse(xhul) CONCAT xhur CONCAT reverse(xvur) CONCAT xvlr CONCAT reverse(xhlr)
+	set yper = yhll CONCAT reverse(yvll) CONCAT yvul CONCAT reverse(yhul) CONCAT yhur CONCAT reverse(yvur) CONCAT yvlr CONCAT reverse(yhlr)
+
+	expand 1.35
+	relocate $(-1*sin(90*$pi/180)) -0.05 putlabel 5 90^o
+	relocate $(-1*sin(30*$pi/180)) -0.05 putlabel 5 30^o
+
+	expand 1.5
+	relocate 0.21 0.83
+	draw     0.36 1.03
+	putlabel 6 LAT 3 sr. FOV
+
+	relocate 0.29 0.67
+	draw     0.45 0.86
+	putlabel 6 LAT 2 sr. FOV
+
+	expand 1.34
+	relocate 0 -0.05
+	putlabel 3  single CMI imager 
+	relocate 0 -0.13
+	putlabel 3  FCFOV
+
+

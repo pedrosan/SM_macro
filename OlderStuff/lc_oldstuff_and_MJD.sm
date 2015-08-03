@@ -1,0 +1,1282 @@
+#---------------------------------------------------------------------------
+# aiuto.newlc
+aiuto.newlc
+
+	echo -------------------------------------------------------
+	echo * readdata_lc    [<filename-of-unbinned-LC>]
+	echo * dtlc
+	echo * 
+	echo * print_dtlc
+	echo * store_reb_lc
+	echo *
+	echo * plot_dtlc      [<exp-frac>]
+	echo * plot_dtlc_1    [<exp-frac>]
+	echo * 
+	echo * plot_dtlc_mjd  [<exp-frac>]
+	echo          con window del covering factor
+	echo * plot_dtlc_mjd2 [<exp-frac>]
+	echo          SENZA window del covering factor
+	echo * plot_dtlc_mjd3 [<exp-frac>]
+	echo          SENZA window del covering factor
+	echo          SENZA sapidi rescaling
+	echo *
+	echo * lincei_lc4
+	echo * lincei_lc2
+	echo * lincei_lc1
+	echo * lincei_lc1_bw
+	echo *
+	echo * plot_hr_mjd3
+	echo * hr_rate
+	echo * 
+	echo * zoom           
+	echo -------------------------------------------------------
+
+#---------------------------------------------------------------------------
+# readdata_lc  	Legge i dati dai file originali
+readdata_lc 01
+
+	if($?1 == 0) {
+	   define oldname  ? {Data file name ?}
+	   define 1 $oldname
+	}
+	define oldname  $1
+
+	data $1
+	lines 25 25   read ndum  5   define nn $(ndum)
+	lines 37 $(36+$nn)
+	read { t 1 dt 2 rate 3 cvrfr 5 }
+
+	echo ----------------------
+	echo  Bins = $nn
+	echo ----------------------
+
+
+	set t1         = t 
+	set t2         = t + 2.*dt
+	set dt_true    = cvrfr*2*dt
+
+	set counts     = dt_true*rate
+	set err_counts = sqrt(counts)
+	set err_rate   = err_counts/dt_true
+
+	define basicbin ($(2*$(dt[0])))
+
+	vecminmax t tmin tmax
+	define tmin_lim ($tmin-40*$basicbin)
+	define tmax_lim ($tmax+40*$basicbin)
+
+#---------------------------------------------------------------------------
+# dtlc  produce una curva di luce rebinnata ad un certo numero di secondi
+#	che deve essere multiplo del binning della curva di input.
+#	INPUT : prima di eseguire RILEGGE SEMPRE i file originali ("readdata").
+#	OUTPUT: cts_xxxx  [vettore] conteggi rebinnati 
+#	      : err_xxxx  [vettore] errore su cts_xxxx 
+#	      : ratio, err_ratio, sn_ratio [vettori]
+dtlc
+
+	readdata_lc
+
+	echo * the basic binning time is $(2*$(dt[0]))
+
+	define newbin ? {New binning interval (should be multiple of the basic one): }
+
+	define  howmany (int($newbin/$basicbin))
+	echo * the new bin time corresponds to $howmany of the old basic unity
+	set newt  = $tmin_lim,$tmax_lim,$newbin
+	set newt1 = newt-$newbin/2
+	set newt2 = newt+$newbin/2
+	set newbin = 0*newt + $newbin
+
+	define maxnewindex (dimen(newt))
+	set dimen(counts_reb)  = $maxnewindex
+	set dimen(dt_true_reb) = $maxnewindex
+
+	define maxindex (dimen(counts)-1)
+
+	define first     (0)
+	define tmp_first (0)
+	define topcts    (0)
+	define bottomcts (100)
+
+	echo "new LC vector dimension = "$maxnewindex
+	echo "Original LC vector dimension = "$($maxindex+1)
+
+	do i=0,$($maxnewindex-1) {
+	   # echo *--- $i -----------------------------------
+	   define cts_dum       (0)
+	   define dt_true_dum   (0)
+	   if($(int($i/10)*10) == $i) { echo * $i }
+	   do j=$first,$($first+$howmany+2) {
+	      if( $(t[$j]) < $(newt2[$i]) ) {
+		 # echo $($j-$first) $tmp_first
+	         define cts_dum      ($cts_dum + $(counts[$j]))
+	         define dt_true_dum  ($dt_true_dum + $(dt_true[$j]))
+	         define tmp_first ($j+1)
+		 # echo $cts_dum
+	      }
+           }
+	   define first $tmp_first
+	   # echo >> End of Bin >> new start : $first <<
+	   set counts_reb[$i]  = $cts_dum
+	   set dt_true_reb[$i] = $dt_true_dum
+	   if($cts_dum > $topcts ){
+		  define topcts  ($cts_dum) 
+		  define toprate ($cts_dum/$dt_true_dum) 
+           }
+	   if($cts_dum < $topcts && $cts_dum > 0 ){
+		  define bottomcts  ($cts_dum) 
+		  define bottomrate ($cts_dum/$dt_true_dum) 
+           }
+	}
+
+	set newt_reb       = newt
+	set newt1_reb      = newt1
+	set newt2_reb      = newt2
+	set newbin_reb     = newbin
+	set err_counts_reb = sqrt(counts_reb)
+	set rate_reb       = counts_reb/dt_true_reb
+	set cvrfr_reb      = dt_true_reb/$newbin
+	set err_rate_reb   = err_counts_reb/dt_true_reb
+
+	echo -----------------------------------------------------------------
+	echo * ha prodotto una serie di vettori/variabili del tipo *_reb
+	echo * Possono essere renamed con il comando "store_reb_lc"
+	echo -----------------------------------------------------------------
+
+	define whattodo ? {Rename vectors and rescale Time-Axis ?}
+	if(substr('$whattodo',0,1) == 'y') {
+	  define name ? {Suffix name for vectors to become *_name ?}
+	  foreach 3 {newt newt1 newt2 newbin dt_true counts err_counts rate err_rate cvrfr}{
+	     set $3_$name = $3_reb
+	  }
+	  define t0ref  ? { Time (in days) to which rescale ? }
+	  define t0refsec  ($t0ref*86400)
+	  set newt_$name  = newt_$name  + $t0refsec
+	  set newt1_$name = newt1_$name + $t0refsec
+	  set newt2_$name = newt2_$name + $t0refsec
+	} 
+
+#---------------------------------------------------------------------------
+# print_dtlc 
+print_dtlc
+
+	define 1 ? {Suffix of files to be printed ?}
+	define filename ? {File Name ? }
+
+	define format "%9.2f %9.2f %9.2f %6.1f %11.5f %8.1f %8.3f %8.5f %8.5f %7.5f\n"
+	print $filename '$!!format' <newt_$1 newt1_$1 newt2_$1 newbin_$1 dt_true_$1 counts_$1 err_counts_$1 rate_$1 err_rate_$1 cvrfr_$1>
+
+
+#---------------------------------------------------------------------------
+# store_reb_lc
+store_reb_lc
+
+	define suffix ? {Suffix for vector names ? (to be substitued to reb) }
+	define 1 $suffix
+
+	set newt_$1       = newt_reb
+	set newt1_$1      = newt1_reb
+	set newt2_$1      = newt2_reb
+	set newbin_$1     = newbin_reb
+	set dt_true_$1    = dt_true_reb
+	set counts_$1     = counts_reb
+	set err_counts_$1 = err_counts_reb 
+	set rate_$1       = rate_reb       
+	set err_rate_$1   = err_rate_reb  
+	set cvrfr_$1      = cvrfr_reb      
+
+#---------------------------------------------------------------------------
+# plot_dtlc [<exp-frac-threshold>]
+plot_dtlc 
+
+	define soglia (0.0)
+	define soglia ? { Exposed fraction threshold ? }
+	
+	define suffix "reb"
+	define suffix ? {Suffix of vectors to be loaded ?}
+
+	define bottomrate ? {Lower limit to count-rate : }
+	define toprate    ? {Upper limit to count-rate : }
+
+	set newt_tmp       = newt_$suffix
+	set newt1_tmp      = newt1_$suffix
+	set newt2_tmp      = newt2_$suffix
+	set newbin_tmp     = newbin_$suffix
+	set counts_tmp     = counts_$suffix
+	set dt_true_tmp    = dt_true_$suffix
+	set err_counts_tmp = err_counts_$suffix 
+	set rate_tmp       = rate_$suffix       
+	set cvrfr_tmp      = cvrfr_$suffix      
+	set err_rate_tmp   = err_rate_$suffix  
+
+	vecminmax newt_tmp inizio fine
+	# define inizio ($inizio*0.95)
+	# define fine   ($fine*1.05)
+
+	echo *---------------------------------------------
+	echo * Start Time= $inizio
+	echo * Stop Time = $fine
+	echo *---------------------------------------------
+	
+	define change "n"
+	define change ? {Would do like to change them ?}
+	if(substr('$change',0,1) == 'y') {
+	  define inizio ? {New Start Time ? }
+	  define fine   ? {New Stop Time ? }
+	}
+	define inizio ( $inizio-0.05*($fine-$inizio) )
+	define fine   ( $fine+0.05*($fine-$inizio) )
+	define ymin ( $bottomrate-0.10*($toprate-$bottomrate) )
+	define ymax ( $toprate+0.10*($toprate-$bottomrate) )
+
+	define cancello "y"
+	define cancello ? { Erase old Plot ? }
+	if(substr('$cancello',0,1) == 'y') { erase }
+
+	ctype 2
+	expand 1.5
+	location 4500 31500 25500 31000 
+	ticksize 0 0 0 0
+	limits $inizio $fine -0.1 1.1 
+	box 0 2 0 0 
+	ylabel Exp.frac.
+	ctype 4
+	ltype 1 
+	grid 
+	grid 1 1 
+	ltype 0
+	 
+	ctype 5
+	ptype 4 3 
+	points newt_tmp cvrfr_tmp 
+	ctype 6 
+	points newt_tmp cvrfr_tmp if(cvrfr_tmp < $soglia)
+
+	relocate (4500 31500)
+	ctype 2
+	putlabel 6 \Delta t = $newbin sec
+
+	ctype 2
+	lweight 2
+	expand 1.5
+	location 4500 31500 5000 25500
+	ticksize 0 0 0 0
+	## limits newt1_tmp $($bottomrate-0.90*($toprate-$bottomrate)) $(1.10*$toprate)
+	limits $inizio $fine $ymin $ymax 
+	box
+	xlabel Time (seconds)
+	ylabel cts/sec
+	ctype 3 
+	ptype 4 3
+	points  newt_tmp rate_tmp 
+	error_y newt_tmp rate_tmp err_rate_tmp
+	error_x newt_tmp rate_tmp (newbin_tmp/2)
+	ctype 4 
+	points  newt_tmp rate_tmp  if(cvrfr_tmp < $soglia )
+	ctype 4
+	ltype 1 
+	grid 1 1 
+	ltype 0
+
+
+#---------------------------------------------------------------------------
+# plot_dtlc_1 [<exp-frac-threshold>]
+plot_dtlc_1
+
+	define soglia (0.0)
+	define soglia ? { Exposed fraction threshold ? }
+	
+	define suffix "reb"
+	define suffix ? {Suffix of vectors to be loaded ?}
+
+	define bottomrate ? {Lower limit to count-rate : }
+	define toprate    ? {Upper limit to count-rate : }
+
+	set newt_tmp       = newt_$suffix
+	set newt1_tmp      = newt1_$suffix
+	set newt2_tmp      = newt2_$suffix
+	set newbin_tmp     = newbin_$suffix
+	set counts_tmp     = counts_$suffix
+	set dt_true_tmp    = dt_true_$suffix
+	set err_counts_tmp = err_counts_$suffix 
+	set rate_tmp       = rate_$suffix       
+	set cvrfr_tmp      = cvrfr_$suffix      
+	set err_rate_tmp   = err_rate_$suffix  
+
+	vecminmax newt_tmp inizio fine
+
+	echo *---------------------------------------------
+	echo * Start Time= $inizio
+	echo * Stop Time = $fine
+	echo *---------------------------------------------
+	
+	define change "n"
+	define change ? {Would do like to change them ?}
+	if(substr('$change',0,1) == 'y') {
+	  define inizio ? {New Start Time ? }
+	  define fine   ? {New Stop Time ? }
+	}
+	define inizio ( $inizio-0.05*($fine-$inizio) )
+	define fine   ( $fine+0.05*($fine-$inizio) )
+	define ymin ( $bottomrate-0.10*($toprate-$bottomrate) )
+	define ymax ( $toprate+0.10*($toprate-$bottomrate) )
+
+	define cancello "y"
+	define cancello ? { Erase old Plot ? }
+	if(substr('$cancello',0,1) == 'y') { erase }
+
+	relocate (4500 31500)
+	ctype 2
+	putlabel 6 \Delta t = $newbin sec
+
+	ctype 2
+	lweight 2
+	expand 1.5
+	location 4500 31500 9500 31000
+	ticksize 0 0 0 0
+	limits $inizio $fine $ymin $ymax 
+	box
+	xlabel Time (seconds)
+	ylabel cts/sec
+
+	define color ? {Color for light curve data ?}
+	ctype $color 
+	ptype 4 3
+	points  newt_tmp rate_tmp 
+	error_y newt_tmp rate_tmp err_rate_tmp
+	error_x newt_tmp rate_tmp (newbin_tmp/2)
+	ctype 2 
+	points  newt_tmp rate_tmp  if(cvrfr_tmp < $soglia )
+	# ctype 4
+	# ltype 1 
+	# grid 1 1 
+	# ltype 0
+
+#---------------------------------------------------------------------------
+# plot_dtlc_mjd [<exposed-frac-threshold>]
+plot_dtlc_mjd   01
+
+	if(!$?1){define 1 -0.1}
+	
+	define suffix "reb"
+	define suffix ? {Suffix of vectors to be loaded ?}
+
+	define bottomrate ? {Lower limit to count-rate : }
+	define toprate    ? {Upper limit to count-rate : }
+
+	set newt_tmp       = newt_$suffix
+	set newt1_tmp      = newt1_$suffix
+	set newt2_tmp      = newt2_$suffix
+	set newbin_tmp     = newbin_$suffix
+	set counts_tmp     = counts_$suffix
+	set dt_true_tmp    = dt_true_$suffix
+	set err_counts_tmp = err_counts_$suffix 
+	set rate_tmp       = rate_$suffix       
+	set cvrfr_tmp      = cvrfr_$suffix      
+	set err_rate_tmp   = err_rate_$suffix  
+
+	set newt_tmp   = newt_tmp/86400  + 50570.0 - 50000
+	set newt1_tmp  = newt1_tmp/86400 + 50570.0 - 50000
+	set newt2_tmp  = newt2_tmp/86400 + 50570.0 - 50000
+	set newbin_tmp = newbin_tmp/86400 
+
+	ctype 2
+	lweight 2
+	expand 1.5
+	location 4500 31500 5000 25500
+	ticksize 0 0 0 0
+	limits newt1_tmp $(0.90*$bottomrate) $(1.10*$toprate)
+	limits newt1_tmp 0.5 4.2
+	box
+	# limits 570 575 0.5 4.2
+	# box 1 2 0 3
+	xlabel Time (MJD-50000)
+	ylabel cts/sec
+
+	define color ? {Color to plot data points ?}
+	ctype $color 
+	ptype 4 3
+	points  newt_tmp rate_tmp 
+	error_y newt_tmp rate_tmp err_rate_tmp
+	error_x newt_tmp rate_tmp (newbin_tmp/2)
+	ctype 4
+	points  newt_tmp rate_tmp  if(cvrfr_tmp < $1)
+	ctype 4
+	ltype 1 
+	grid 1 1 
+	ltype 0
+
+	ctype 2
+	expand 1.5
+	location 4500 31500 25500 31000 
+	ticksize 0 0 0 0
+	limits newt1_tmp -0.1 1.1 
+	box 0 2 0 0 
+	ylabel Exp.frac.
+	ctype 4
+	ltype 1 
+	grid 
+	grid 1 1 
+	ltype 0
+	 
+	ctype 5
+	ptype 4 3 
+	points newt_tmp cvrfr_tmp 
+	ctype 6 
+	points newt_tmp cvrfr_tmp if(cvrfr_tmp < $1)
+
+	relocate (4500 31500)
+	ctype 2
+	putlabel 6 \Delta t = $newbin sec
+
+#---------------------------------------------------------------------------
+# plot_dtlc_mjd2 [<exposed-frac-threshold>]
+#	NON plotta la window con l'andamento del covering factor.
+#
+plot_dtlc_mjd2  01
+
+	if(!$?1){define 1 -0.1}
+	
+	define suffix "reb"
+	define suffix ? {Suffix of vectors to be loaded ?}
+	define scaling (1)
+	define scaling ? {Factor to rescale count rates for plot purposes ?}
+
+	define bottomrate ? {Lower limit to count-rate : }
+	define toprate    ? {Upper limit to count-rate : }
+
+	set newt_tmp       = newt_$suffix
+	set newt1_tmp      = newt1_$suffix
+	set newt2_tmp      = newt2_$suffix
+	set newbin_tmp     = newbin_$suffix
+	set counts_tmp     = counts_$suffix
+	set dt_true_tmp    = dt_true_$suffix
+	set err_counts_tmp = err_counts_$suffix 
+	set rate_tmp       = $scaling*rate_$suffix       
+	set cvrfr_tmp      = cvrfr_$suffix      
+	set err_rate_tmp   = $scaling*err_rate_$suffix  
+
+	set newt_tmp   = newt_tmp/86400  + 50570.0 - 50000
+	set newt1_tmp  = newt1_tmp/86400 + 50570.0 - 50000
+	set newt2_tmp  = newt2_tmp/86400 + 50570.0 - 50000
+	set newbin_tmp = newbin_tmp/86400 
+
+	vecminmax newt1_tmp inizio fine
+	define inizio ($tmin_lim/86400 + 50570.0 - 50000)
+	define fine   ($tmax_lim/86400 + 50570.0 - 50000)
+	define inizio ? {Begin Time of plot : }
+	define fine   ? {End Time of plot : }
+	set dumtime=$inizio,$fine,0.1
+
+	ctype 2
+	lweight 2
+	expand 1.5
+	location 4500 31500 8000 30500
+	ticksize 0 0 0 0
+	limits dumtime $(0.90*$bottomrate) $(1.10*$toprate)
+	limits dumtime 0.5 4.2
+	box
+
+	# limits 570 575 0.5 4.2
+	# box 1 2 0 3
+	xlabel Time (MJD-50000)
+	ylabel cts/sec
+	
+	define color ? {Color to plot data points ?}
+	ctype $color 
+	ptype 4 3
+	points  newt_tmp rate_tmp 
+	error_y newt_tmp rate_tmp err_rate_tmp
+	error_x newt_tmp rate_tmp (newbin_tmp/2)
+	ctype 4
+	points  newt_tmp rate_tmp  if(cvrfr_tmp < $1)
+	ctype 4
+	ltype 1 
+	grid 1 1 
+	ltype 0
+
+	relocate (4500 31500)
+	ctype 2
+	putlabel 6 \Delta t = $newbin sec
+
+
+#---------------------------------------------------------------------------
+# plot_dtlc_mjd3 [<exposed-frac-threshold>]
+#	come input vuole i LIMITS veri e propri del box
+#	che usa direttamente invece di fare sapidi rescaling
+#
+plot_dtlc_mjd3  01
+
+	if(!$?1){define 1 -0.1}
+	
+	define suffix "reb"
+	define suffix ? {Suffix of vectors to be loaded ?}
+	define scaling (1)
+	define scaling ? {Factor to rescale count rates for plot purposes ?}
+
+	define ratelim1 ? {Lower BOX limit : }
+	define ratelim2 ? {Upper BOX limit : }
+
+	set newt_tmp       = newt_$suffix
+	set newt1_tmp      = newt1_$suffix
+	set newt2_tmp      = newt2_$suffix
+	set newbin_tmp     = newbin_$suffix
+	set counts_tmp     = counts_$suffix
+	set dt_true_tmp    = dt_true_$suffix
+	set err_counts_tmp = err_counts_$suffix 
+	set rate_tmp       = $scaling*rate_$suffix       
+	set cvrfr_tmp      = cvrfr_$suffix      
+	set err_rate_tmp   = $scaling*err_rate_$suffix  
+
+	set newt_tmp   = newt_tmp/86400  + 50570.0 - 50000
+	set newt1_tmp  = newt1_tmp/86400 + 50570.0 - 50000
+	set newt2_tmp  = newt2_tmp/86400 + 50570.0 - 50000
+	set newbin_tmp = newbin_tmp/86400 
+
+	# vecminmax newt1_tmp inizio fine
+	# define inizio ($tmin_lim/86400 + 50570.0 - 50000)
+	# define fine   ($tmax_lim/86400 + 50570.0 - 50000)
+
+	# define inizio ? {Begin Time of plot : }
+	# define fine   ? {End Time of plot : }
+	# set dumtime = $inizio,$fine,0.1
+	define tt1 ? {Begin Time of plot : }
+	define tt2 ? {End Time of plot : }
+	set dumtime = $tt1,$tt2,0.1
+
+	ctype 2
+	lweight 2
+	expand 1.5
+	location 4500 31500 8000 30500
+	ticksize 0 0 0 0
+	limits dumtime $ratelim1 $ratelim2
+	box
+
+	# limits 570 575 0.5 4.2
+	# box 1 2 0 3
+	xlabel Time (MJD-50000)
+	ylabel cts/sec
+
+	define color ? {Color to plot data points ?}
+	ctype $color 
+	
+	define bw ? {B&W (to select suitable point type) ? [y/n]}
+	if(substr('$bw',0,1) == 'y') {
+	   define pt ? {give me the two numbers for the PTYPE}
+	   ptype $pt
+	   expand 2
+	} else {
+	   ptype 4 3
+	} 
+	points  newt_tmp rate_tmp 
+	error_y newt_tmp rate_tmp err_rate_tmp
+	error_x newt_tmp rate_tmp (newbin_tmp/2)
+	ctype 4
+	points  newt_tmp rate_tmp  if(cvrfr_tmp < $1)
+	ctype 4
+	ltype 1 
+	grid 1 1 
+	ltype 0
+
+	relocate (4500 31500)
+	ctype 2
+	putlabel 6 \Delta t = $newbin sec
+
+#---------------------------------------------------------------------------
+# plot_dtlc_mjd3 
+#	come input vuole i LIMITS veri e propri del box
+#	che usa direttamente invece di fare sapidi rescaling
+#
+plot_hr_mjd3  
+
+	define suffix1 ? {Suffix of first vector ?}
+	define suffix2 ? {Suffix of second vector?}
+	define 1 $suffix1
+	define 2 $suffix2
+
+	set newt_tmp       = newt_$suffix1
+	set newt1_tmp      = newt1_$suffix1
+	set newt2_tmp      = newt2_$suffix1
+	set newbin_tmp     = newbin_$suffix1
+
+	set hr1     = counts_$1/counts_$2
+	set err_hr1 = counts_$1/counts_$2*sqrt(1./counts_$1+1./counts_$2)
+
+	set hr2     = (counts_$1-counts_$2)/(counts_$1+counts_$2)
+	set err_hr2 = 2.*(counts_$1*counts_$2)/(counts_$1+counts_$2)**2.*sqrt(1./counts_$1+1./counts_$2)
+
+	set newt_tmp   = newt_tmp/86400  + 50570.0 - 50000
+	set newt1_tmp  = newt1_tmp/86400 + 50570.0 - 50000
+	set newt2_tmp  = newt2_tmp/86400 + 50570.0 - 50000
+	set newbin_tmp = newbin_tmp/86400 
+
+	echo > What HR definition ? 
+	echo   [1] A/B
+	echo   [2] (A-B)/(A+B)
+	define 3 ? {[2] (A-B)/(A+B)}
+
+	if($3 == 1) { define 4 "hr1"} 
+	if($3 == 2) { define 4 "hr2"} 
+
+	vecminmax $4 m1 m2
+	echo > Miminum and Maximum of HR are: [$m1 : $m2]
+
+	define ratelim1 ? {Lower Y-BOX limit : }
+	define ratelim2 ? {Upper Y-BOX limit : }
+
+	define tt1 ? {Begin Time of plot : }
+	define tt2 ? {End Time of plot : }
+	set dumtime = $tt1,$tt2,0.1
+
+	ctype 2
+	lweight 2
+	expand 1.5
+	location 4500 31500 8000 30500
+	ticksize 0 0 0 0
+	limits dumtime $ratelim1 $ratelim2
+	box
+
+	xlabel Time (MJD-50000)
+	ylabel HR
+	
+	define color ? {Color to plot data points ?}
+	ctype $color 
+	ptype 4 3
+	points  newt_tmp $4
+	error_y newt_tmp $4 err_$4
+	error_x newt_tmp $4 (newbin_tmp/2)
+
+	ctype 4
+	ltype 1 
+	grid 1 1 
+	ltype 0
+
+	relocate (4500 31500)
+	ctype 2
+	putlabel 6 \Delta t = $newbin sec
+
+
+#---------------------------------------------------------------------------
+# hr_rate
+hr_rate
+
+	window 1 1 1 1
+	location  6000 30000 6000 30000
+
+	define xmin ? {rate - X-minimum ?}
+	define xmax ? {rate - X-maximum ?}
+	define ymin ? {HR - Y-minimum ?}
+	define ymax ? {HR - Y-maximum ?}
+
+	limits $xmin $xmax $ymin $ymax 
+	expand 1.5
+	ctype 2 
+	ticksize 0 0 0 0
+	box 
+	xlabel cts/sec
+	ylabel HR
+
+	expand 2.0
+	ptype 4 3 
+	define color ? {Color ?}
+	ctype $color
+
+	define 1 (3)
+	define 1  ? {rate vector: low, high, total [1/2/3] ?}
+	define dt ? {rate vector: binning time, in KSEC ?}
+	if($1 == 1){
+	   set xvec     = rate_ml$dt
+	   set err_xvec = err_rate_ml$dt 
+	}
+	if($1 == 2){
+	   set xvec     = rate_mh$dt
+	   set err_xvec = err_rate_mh$dt 
+	}
+	if($1 == 3){
+	   set xvec     = rate_ml$dt + rate_mh$dt
+	   set err_xvec = sqrt(err_rate_ml$dt**2. + err_rate_mh$dt**2.)
+	}
+
+
+	define 2 ? {HR vector [1/2] ?}
+
+	points  xvec hr$2 
+	error_x xvec hr$2 err_xvec 
+	error_y xvec hr$2 err_hr$2 
+
+#---------------------------------------------------------------------------
+# lincei_lc4
+lincei_lc4
+
+	window 1 1 1 1
+	location 5500 31500 5500 31500
+
+	#-------------------------
+	# LECS
+	#
+	window 1 -4 1 1 
+	ctype 2
+	lweight 2
+	expand 1.5
+	ticksize 0 0 0 0
+	limits 569. 575.5 1. 3.
+	box 1 2 0 0 
+	xlabel Time (MJD-50000)
+	ylabel cts/sec
+	
+	define 1 "lecs52000"
+
+	set newt_tmp   = newt_$1/86400  + 50570.0 - 50000
+	set newt1_tmp  = newt1_$1/86400 + 50570.0 - 50000
+	set newt2_tmp  = newt2_$1/86400 + 50570.0 - 50000
+	set newbin_tmp = newbin_$1/86400 
+
+	ctype 3 
+	expand 1.5
+	ptype 20 3 
+	points  newt_tmp rate_$1 
+	error_y newt_tmp rate_$1 err_rate_$1
+	error_x newt_tmp rate_$1 (newbin_tmp/2)
+	ctype 2 
+
+	#-------------------------
+	# MECS LOW
+	#
+	window 1 -4 1 2 
+	ctype 2
+	lweight 2
+	expand 1.5
+	ticksize 0 0 0 0
+	limits 570. 575.5 1. 3.
+	box 0 2 0 0 
+	ylabel cts/sec
+	
+	define 1 "mlow2000"
+
+	set newt_tmp   = newt_$1/86400  + 50570.0 - 50000
+	set newt1_tmp  = newt1_$1/86400 + 50570.0 - 50000
+	set newt2_tmp  = newt2_$1/86400 + 50570.0 - 50000
+	set newbin_tmp = newbin_$1/86400 
+
+	ctype 5 
+	expand 1.5
+	ptype 20 3 
+	points  newt_tmp rate_$1 
+	error_y newt_tmp rate_$1 err_rate_$1
+	error_x newt_tmp rate_$1 (newbin_tmp/2)
+	ctype 2 
+
+	#-------------------------
+	# MECS HIGH 
+	#
+	window 1 -4 1 3 
+	ctype 2
+	lweight 2
+	expand 1.5
+	ticksize 0 0 0 0
+	limits 570. 575.5 0.05 0.9 
+	box 0 2 0 0 
+	ylabel cts/sec
+	
+	define 1 "mhigh2000"
+
+	set newt_tmp   = newt_$1/86400  + 50570.0 - 50000
+	set newt1_tmp  = newt1_$1/86400 + 50570.0 - 50000
+	set newt2_tmp  = newt2_$1/86400 + 50570.0 - 50000
+	set newbin_tmp = newbin_$1/86400 
+
+	ctype 4 
+	expand 1.5
+	ptype 20 3 
+	points  newt_tmp rate_$1 
+	error_y newt_tmp rate_$1 err_rate_$1
+	error_x newt_tmp rate_$1 (newbin_tmp/2)
+	ctype 2 
+
+
+	#-------------------------
+	# Whipple 
+	#
+	window 1 -4 1 4 
+	ctype 2
+	lweight 2
+	expand 1.5
+	ticksize 0 0 0 0
+	limits 570. 575.5 -0.01 1.2
+	box 0 2 0 0 
+	ylabel cts/sec
+
+	data whipple_lc.dat
+	read {newt_whipple 1 rate_whipple 2 err_rate_whipple 3 newbin_whipple 4}
+
+	set newt_tmp = newt_whipple
+	set newbin_tmp = newbin_whipple
+	
+	define 1 "whipple"
+
+	ctype 4 
+	expand 1.5
+	ptype 20 3 
+	points  newt_tmp rate_$1 
+	error_y newt_tmp rate_$1 err_rate_$1
+	error_x newt_tmp rate_$1 (newbin_tmp/2)
+	ctype 2 
+
+	ctype 7
+	ltype 1 
+	grid 
+	grid 1 1 
+	ltype 0
+
+#---------------------------------------------------------------------------
+# lincei_lc2
+lincei_lc2
+
+	window 1 1 1 1
+	location 5500 31500 5500 31500
+
+	define tt1 ? {Begin Time of plot : }
+	define tt2 ? {End Time of plot : }
+
+	#-------------------------
+	# LECS
+	#
+	window 1 -4 1 1:3 
+	expand 1.5
+	ticksize 0.5 1 0 0
+	limits $tt1 $tt2  0.3 3.1 
+
+	lweight 1
+	ctype 4
+	ltype 1 
+	grid 1 1 
+	ltype 0
+
+	lweight 2
+	ctype 2
+	box 1 2 0 0 
+	xlabel Time (MJD-50000)
+	ylabel cts/sec
+
+	relocate (20000 23500)
+	ctype 3 putlabel 6  LECS [0.1-4 keV]
+	
+	relocate (20000 22000)
+	ctype 5 putlabel 6  MECS [1.5-4 keV]
+	
+	relocate (20000 20500)
+	ctype 4 putlabel 6  MECS [4-10 keV]
+	relocate (20000 20500)
+	ctype 4 expand 1.1 putlabel 4  (2.5x)
+	
+	define 1 "lecs52000"
+
+	set newt_tmp   = newt_$1/86400  + 50570.0 - 50000
+	set newt1_tmp  = newt1_$1/86400 + 50570.0 - 50000
+	set newt2_tmp  = newt2_$1/86400 + 50570.0 - 50000
+	set newbin_tmp = newbin_$1/86400 
+
+	ctype 3 
+	expand 1.5
+	ptype 20 3 
+	points  newt_tmp rate_$1 
+	error_y newt_tmp rate_$1 err_rate_$1
+	error_x newt_tmp rate_$1 (newbin_tmp/2)
+	ctype 2 
+
+	#-------------------------
+	# MECS LOW
+	#
+	define 1 "mlow2000"
+
+	set newt_tmp   = newt_$1/86400  + 50570.0 - 50000
+	set newt1_tmp  = newt1_$1/86400 + 50570.0 - 50000
+	set newt2_tmp  = newt2_$1/86400 + 50570.0 - 50000
+	set newbin_tmp = newbin_$1/86400 
+
+	ctype 5 
+	expand 1.5
+	ptype 20 3 
+	points  newt_tmp rate_$1 
+	error_y newt_tmp rate_$1 err_rate_$1
+	error_x newt_tmp rate_$1 (newbin_tmp/2)
+	ctype 2 
+
+	#-------------------------
+	# MECS HIGH 
+	#
+	define 1 "mhigh2000"
+
+	set newt_tmp   = newt_$1/86400  + 50570.0 - 50000
+	set newt1_tmp  = newt1_$1/86400 + 50570.0 - 50000
+	set newt2_tmp  = newt2_$1/86400 + 50570.0 - 50000
+	set newbin_tmp = newbin_$1/86400 
+
+	define factor ? {Scaling factor for MECS HIGH ?}
+	ctype 4 
+	expand 1.5
+	ptype 20 3 
+	points  newt_tmp ($factor*rate_$1) 
+	error_y newt_tmp ($factor*rate_$1) ($factor*err_rate_$1)
+	error_x newt_tmp ($factor*rate_$1) (newbin_tmp/2)
+	ctype 2 
+
+
+	#-------------------------
+	# Whipple 
+	#
+	window 1 -4 1 4 
+	expand 1.5
+	ticksize 0 0 0 0
+	limits $tt1 $tt2 -0.01 1.2 
+
+	lweight 1
+	ctype 4
+	ltype 1 
+	grid 1 1 
+	ltype 0
+
+	ctype 2
+	lweight 2
+	box 0 2 0 0 
+	ylabel cts/min
+
+	relocate (18500 30250)
+	ctype 7 putlabel 6  Whipple [E>0.3 TeV]
+
+	data whipple_lc.dat
+	read {newt_whipple 1 rate_whipple 2 err_rate_whipple 3 newbin_whipple 4}
+
+	set newt_tmp = newt_whipple
+	set newbin_tmp = newbin_whipple
+	
+	define 1 "whipple" 
+
+	ctype 7 
+	expand 1.5
+	ptype 20 3 
+	points  newt_tmp rate_$1 
+	error_y newt_tmp rate_$1 err_rate_$1
+	error_x newt_tmp rate_$1 (newbin_tmp/2)
+	ctype 2 
+
+
+#---------------------------------------------------------------------------
+# lincei_lc1
+lincei_lc1
+
+	window 1 1 1 1
+	location 5500 31500 5500 31500
+
+	define tt1 ? {Begin Time of plot : }
+	define tt2 ? {End Time of plot : }
+
+	#-------------------------
+	# LECS
+	#
+	expand 1.5
+	ticksize 0.5 1 0 0
+	limits $tt1 $tt2  0.3 3.1 
+	limits $tt1 $tt2  0.1 3.1 
+
+	lweight 1
+	ctype 4
+	ltype 1 
+	grid 1 1 
+	ltype 0
+
+	lweight 2
+	ctype 2
+	box 1 2 0 0 
+	xlabel Time (MJD-50000)
+	ylabel cts/sec
+
+	relocate (20000 $($gy2-1500) )
+	ctype 3 putlabel 6  LECS [0.1-4 keV]
+	
+	relocate (20000 $($gy2-3000) )
+	ctype 5 putlabel 6  MECS [1.5-4 keV]
+	
+	relocate (20000 $($gy2-4500) )
+	ctype 4 putlabel 6  MECS [4-10 keV]
+	relocate (20000 $($gy2-4500) )
+	ctype 4 expand 1.1 putlabel 4  (2.5x)
+	
+	define 1 "lecs54000"
+
+	set newt_tmp   = newt_$1/86400  + 50570.0 - 50000
+	set newt1_tmp  = newt1_$1/86400 + 50570.0 - 50000
+	set newt2_tmp  = newt2_$1/86400 + 50570.0 - 50000
+	set newbin_tmp = newbin_$1/86400 
+
+	ctype 3 
+	expand 1.5
+	ptype 20 3 
+	points  newt_tmp rate_$1 
+	error_y newt_tmp rate_$1 err_rate_$1
+	error_x newt_tmp rate_$1 (newbin_tmp/2)
+	ctype 2 
+
+	#-------------------------
+	# MECS LOW
+	#
+	define 1 "mlow4000"
+
+	set newt_tmp   = newt_$1/86400  + 50570.0 - 50000
+	set newt1_tmp  = newt1_$1/86400 + 50570.0 - 50000
+	set newt2_tmp  = newt2_$1/86400 + 50570.0 - 50000
+	set newbin_tmp = newbin_$1/86400 
+
+	ctype 5 
+	expand 1.5
+	ptype 20 3 
+	points  newt_tmp rate_$1 
+	error_y newt_tmp rate_$1 err_rate_$1
+	error_x newt_tmp rate_$1 (newbin_tmp/2)
+	ctype 2 
+
+	#-------------------------
+	# MECS HIGH 
+	#
+	define 1 "mhigh4000"
+
+	set newt_tmp   = newt_$1/86400  + 50570.0 - 50000
+	set newt1_tmp  = newt1_$1/86400 + 50570.0 - 50000
+	set newt2_tmp  = newt2_$1/86400 + 50570.0 - 50000
+	set newbin_tmp = newbin_$1/86400 
+
+	define factor ? {Scaling factor for MECS HIGH ?}
+	ctype 4 
+	expand 1.5
+	ptype 20 3 
+	points  newt_tmp ($factor*rate_$1) 
+	error_y newt_tmp ($factor*rate_$1) ($factor*err_rate_$1)
+	error_x newt_tmp ($factor*rate_$1) (newbin_tmp/2)
+	ctype 2 
+
+
+
+#---------------------------------------------------------------------------
+# lincei_lc1_bw
+lincei_lc1_bw
+
+	window 1 1 1 1
+	location 5500 31500 5500 31500
+
+	define tt1 ? {Begin Time of plot : }
+	define tt2 ? {End Time of plot : }
+
+	#-------------------------
+	# LECS
+	#
+	expand 1.5
+	ticksize 0.5 1 0 0
+	limits $tt1 $tt2  0.3 3.1 
+	limits $tt1 $tt2  0.1 3.1 
+
+	lweight 1
+	ctype 2
+	lweight 0.5
+	ltype 2
+	# grid 1 1 
+	ltype 0
+
+	lweight 2
+	ctype 2
+	box 1 2 0 0 
+	xlabel Time (MJD-50000)
+	ylabel cts/sec
+
+	relocate (18000 $($gy2-1500) )
+	expand 2 ptype 20 0 dot 
+	relocate (18000 $($gy2-1500) )
+	expand 1.5
+	putlabel 6  LECS [0.1-4 keV]
+	
+	relocate (18000 $($gy2-3000) )
+	expand 2.0 ptype 3 0 dot
+	relocate (18000 $($gy2-3000) )
+	expand 1.5
+	putlabel 6  MECS [1.5-4 keV]
+	
+	relocate (18000 $($gy2-4500) )
+	expand 1.2 ptype 4 3 dot
+	relocate (18000 $($gy2-4500) )
+	expand 1.5
+	putlabel 6  MECS [4-10 keV]
+	#relocate (26000 $($gy2-4500) )
+	expand 1.1 putlabel 6  (2.5x)
+	
+	#-------------------------
+	# LECS
+	#
+	# define 1 "lecs54000"
+	define 1 "le4"
+
+	set newt_tmp   = newt_$1/86400  + 50570.0 - 50000
+	set newt1_tmp  = newt1_$1/86400 + 50570.0 - 50000
+	set newt2_tmp  = newt2_$1/86400 + 50570.0 - 50000
+	set newbin_tmp = newbin_$1/86400 
+
+	ctype 2
+	expand 2.0
+	# ptype 20 3
+	# points  newt_tmp rate_$1 
+	error_y newt_tmp rate_$1 err_rate_$1
+	# error_x newt_tmp rate_$1 (newbin_tmp/2)
+	ctype 1
+	expand 1.6
+	ptype 20 3
+	points  newt_tmp rate_$1 
+	ctype 2 
+	expand 2.0
+	ptype 20 0 
+	points  newt_tmp rate_$1 
+
+
+	#-------------------------
+	# MECS LOW
+	#
+	# define 1 "mlow4000"
+	define 1 "ml4000"
+
+	set newt_tmp   = newt_$1/86400  + 50570.0 - 50000
+	set newt1_tmp  = newt1_$1/86400 + 50570.0 - 50000
+	set newt2_tmp  = newt2_$1/86400 + 50570.0 - 50000
+	set newbin_tmp = newbin_$1/86400 
+
+	ctype 2
+	error_y newt_tmp rate_$1 err_rate_$1
+	# error_x newt_tmp rate_$1 (newbin_tmp/2)
+	ctype 1
+	expand 1.3
+	ptype 3 3 
+	points  newt_tmp rate_$1 
+	ctype 2 
+	expand 2
+	ptype 3 0
+	points  newt_tmp rate_$1 
+
+	#-------------------------
+	# MECS HIGH 
+	#
+	# define 1 "mhigh4000"
+	define 1 "mh4000"
+
+	set newt_tmp   = newt_$1/86400  + 50570.0 - 50000
+	set newt1_tmp  = newt1_$1/86400 + 50570.0 - 50000
+	set newt2_tmp  = newt2_$1/86400 + 50570.0 - 50000
+	set newbin_tmp = newbin_$1/86400 
+
+	define factor ? {Scaling factor for MECS HIGH ?}
+	ctype 2
+	expand 1.3
+	ptype 4 3
+	points  newt_tmp ($factor*rate_$1) 
+	error_y newt_tmp ($factor*rate_$1) ($factor*err_rate_$1)
+	# error_x newt_tmp ($factor*rate_$1) (newbin_tmp/2)
+	ctype 2 
+	angle 0
+
+
+
+
+#---------------------------------------------------------------------------
+# zoom  	: zoom the current plot (in abscissa) in the selected
+#		  range abscissa.
+#		  Ask for confirmation before plotting each dataset.
+zoom 
+
+	ctype 4
+	lweight 4
+	expand 4
+	angle 45
+	ptype 4 1
+	cursor lx ly
+	print {lx ly}
+	
+	define inizio (lx[0])
+	define fine   (lx[1])
+	define basso  (ly[0])
+	define alto   (ly[1])
+
+	define pinizio ( $inizio-0.05*($fine-$inizio) )
+	define pfine   ( $fine+0.05*($fine-$inizio) )
+	define pymin ( $basso-0.10*($alto-$basso) )
+	define pymax ( $alto+0.10*($alto-$basso) )
+
+	expand 1.5
+	lweight 2
+	ctype 2
+	angle 0
+	draw_box $pinizio $pymin $pfine $pymax
+
+
+	echo *---------------------------------------------
+	echo * New Start Time= $inizio
+	echo * New Stop Time = $fine
+	echo *---------------------------------------------
+	
+	define change "n"
+	define change ? {Would do like to change them again ?}
+	if(substr('$change',0,1) == 'y') {
+	   define inizio ? {  New Start Time ? }
+	   define fine   ? {  New Stop Time  ? }
+	}
+
+	define cancello "y"
+	define cancello ? {Erase old Plot ? }
+	if(substr('$cancello',0,1) == 'y') { erase }
+
+	define inizio ( $inizio-0.05*($fine-$inizio) )
+	define fine   ( $fine+0.05*($fine-$inizio) )
+	define ymin ( $basso-0.10*($alto-$basso) )
+	define ymax ( $alto+0.10*($alto-$basso) )
+
+	ctype 2
+	expand 1.5
+	location 4500 31500 25500 31000 
+	ticksize 0 0 0 0
+	limits $inizio $fine -0.1 1.1 
+	box 0 2 0 0 
+	ylabel Exp.frac.
+	ctype 4
+	ltype 1 
+	grid 
+	grid 1 1 
+	ltype 0
+	 
+	ctype 5
+	ptype 4 3 
+	points newt_tmp cvrfr_tmp 
+	ctype 6 
+	points newt_tmp cvrfr_tmp if(cvrfr_tmp < $soglia)
+
+	relocate (4500 31500)
+	ctype 2
+	putlabel 6 \Delta t = $newbin sec
+
+
+	ctype 2
+	lweight 2
+	expand 1.5
+	location 4500 31500 5000 25500
+	ticksize 0 0 0 0
+
+	limits $inizio $fine $ymin $ymax 
+	box
+	xlabel Time (seconds)
+	ylabel cts/sec
+	ctype 3 
+	ptype 4 3
+	points  newt_tmp rate_tmp 
+	error_y newt_tmp rate_tmp err_rate_tmp
+	error_x newt_tmp rate_tmp (newbin_tmp/2)
+	ctype 4 
+	points  newt_tmp rate_tmp  if(cvrfr_tmp < $soglia )
+	ctype 4
+	ltype 1 
+	grid 1 1 
+	ltype 0
+
+#---------------------------------------------------------------------------

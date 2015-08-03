@@ -1,0 +1,159 @@
+#---------------------------------------------------------------------------
+# matt
+matt	
+	location 6000 29000 7000 30000
+	window 1 1 1 1
+
+	ctype 2
+	lweight 2
+	expand 1.5
+
+	define e_break ? {E_break [keV] ?}
+	define a1     ? {alpha_1 ?}
+	define a2     ? {alpha_2 ?}
+	define beta   ? {Beta ?}
+
+	set lg_e=-2,2.1,0.01
+	define lg_e_break (lg($e_break))
+
+	set erat=10.**(lg_e - $lg_e_break)
+	set lg_fac=$beta*lg(1-exp(-erat))
+
+	set a3 = (10.**lg_fac)*$a2 + (1. - 10.**lg_fac)*$a1
+	set lg_f = -a3*lg_e + lg(2.)
+
+	set dimen(xx)=$(dimen(lg_e)-1)
+	set dimen(aa)=$(dimen(lg_e)-1)
+
+	do 1=0,$(dimen(lg_e)-2) {
+	  set xx[$1] = (lg_e[$1]+lg_e[$1+1])/2
+	  set aa[$1] = (lg_f[$1]-lg_f[$1+1])/(lg_e[$1+1]-lg_e[$1])
+	}
+
+	set a4 = -($a2-$a1)*erat*exp(-erat)
+
+	ticksize -1 0 0 0 
+
+	limits lg_e lg_f 
+	ctype 2 
+	box 1 2 0 3
+	connect lg_e lg_f
+
+	limits lg_e aa
+	box 1 3 0 2 
+	ctype 3
+	connect lg_e a3
+	ctype 5
+	connect xx aa
+
+	ctype 2
+	ltype 2
+	relocate 0 -10 
+	draw     0  10
+	ltype 0
+
+#---------------------------------------------------------------------------
+# matt2
+matt2	
+
+	location 6000 29000 7000 30000
+	window 1 1 1 1
+
+	ctype 2
+	lweight 2
+	expand 1.5
+
+	define e_break ? {E_break [keV] ?}
+	define a1      ? {alpha_1 ?}
+	define a2      ? {alpha_2 ?}
+	define beta    ? {Beta ?}
+
+	set lg_e=-2,2.1,0.01
+	define lg_e_break (lg($e_break))
+
+	set erat=10.**(lg_e - $lg_e_break)
+	set lg_fac=$beta*lg(1-exp(-erat))
+
+	set a3   = (10.**lg_fac)*$a2 + (1. - 10.**lg_fac)*$a1
+
+	set lg_e = lg_e - $lg_e_break
+	set lg_f = -a3*lg_e
+
+	set dimen(xx)=$(dimen(lg_e)-1)
+	set dimen(aa)=$(dimen(lg_e)-1)
+
+	do 1=0,$(dimen(lg_e)-2) {
+	  set xx[$1] = (lg_e[$1]+lg_e[$1+1])/2
+	  set aa[$1] = (lg_f[$1]-lg_f[$1+1])/(lg_e[$1+1]-lg_e[$1])
+	}
+
+	set a4 = -($a2-$a1)*erat*exp(-erat)
+
+	ticksize -1 0 0 0 
+
+	limits lg_e lg_f 
+	ctype 2 
+	box 1 2 0 3
+	connect lg_e lg_f
+
+	limits lg_e aa
+	box 1 3 0 2 
+	ctype 3
+	connect lg_e a3
+	ctype 5
+	connect xx aa
+
+	ctype 2
+
+#---------------------------------------------------------------------------
+# matt3
+matt3
+	location 6000 29000 7000 30000
+	window 1 1 1 1
+
+	ctype 2
+	lweight 2
+	expand 1.5
+
+	define e_break ? {E_break [keV] ?}
+	define a1     ? {alpha_1 ?}
+	define a2     ? {alpha_2 ?}
+
+	set lg_e=-2,2.1,0.01
+	define lg_e_break (lg($e_break))
+
+	set erat=10.**(lg_e - $lg_e_break)
+	set fac=1./(1+erat**2.)
+
+	set a3 = (1.-fac)*$a2 + fac*$a1
+	set lg_f = -a3*lg_e + lg(2.)
+
+	set dimen(xx)=$(dimen(lg_e)-1)
+	set dimen(aa)=$(dimen(lg_e)-1)
+
+	do 1=0,$(dimen(lg_e)-2) {
+	  set xx[$1] = (lg_e[$1]+lg_e[$1+1])/2
+	  set aa[$1] = (lg_f[$1]-lg_f[$1+1])/(lg_e[$1+1]-lg_e[$1])
+	}
+
+	ticksize -1 0 0 0 
+
+	limits lg_e lg_f 
+	ctype 2 
+	box 1 2 0 3
+	connect lg_e lg_f
+
+	limits lg_e aa
+	box 1 3 0 2 
+	ctype 3
+	connect lg_e a3
+	ctype 5
+	connect xx aa
+
+	ctype 2
+	ltype 2
+	relocate 0 -10 
+	draw     0  10
+	ltype 0
+
+#---------------------------------------------------------------------------

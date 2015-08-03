@@ -1,0 +1,1176 @@
+#===============================================================================
+# read_fermi_bright
+read_fermi_bright
+
+	data "/home/gfossati/Science/Fermi/bright_source_list/fermi_bright_source_list.dat"
+	read < ts 3 >
+	read < fa 4 efa 5 tsa 6 >
+	read < fb 7 efb 8 tsb 9 >
+	read < lat_classn_all 12 >
+
+	set flag_ul_a = 0*ts
+	set flag_ul_b = 0*ts
+	do 9=1,dimen(ts)-1 {
+	   if( efa[$9] == 1 ) { 
+	       set flag_ul_a[$9] = 1 
+	       set efa[$9] = 2*fa[$9]
+	   }
+	   if( efb[$9] == 1 ) { 
+	       set flag_ul_b[$9] = 1 
+	       set efb[$9] = 2*fb[$9]
+	   }
+	}
+	set snra = fa/efa
+	set snrb = fb/efb
+
+	foreach 9 < ts fa efa tsa fb efb tsb flag_ul_a flag_ul_b snra snrb > {
+	   set $9 = $9  if( lat_classn_all >= 0 )
+	}
+	set lat_classn = lat_classn_all  if( lat_classn_all >= 0 )
+	set lat_ratio = fa/fb
+	set e_lat_ratio = lat_ratio*sqrt((1.0/snra)**2.0 + (1.0/snrb)**2.0)
+	set snr_ratio = lat_ratio/e_lat_ratio
+
+	# compute_lat_flux_ratio_model
+	compute_lat_flux_ratio_model_bkn
+	set ratio_1 = ratio_bkn
+	compute_lat_flux_ratio_model_bkn
+	set ratio_2 = ratio_bkn
+
+	if( ratio_1[$(dimen(ratio_1)-1)]  >= ratio_2[$(dimen(ratio_1)-1)] ) {
+	   set ratio_high = ratio_1
+	   set ratio_low  = ratio_2
+	} else {
+	   set ratio_high = ratio_2
+	   set ratio_low  = ratio_1
+	}
+	delete ratio_1 
+	delete ratio_2 
+
+	set dimen(lat_gamma_low)  = dimen(ts)
+	set dimen(lat_gamma_high) = dimen(ts)
+
+	#-----------------------------------------------------------
+	# finds Gamma corresponding to each source flux ratio
+	#-----------------------------------------------------------
+	do 9=0,dimen(ts)-1 { 
+	   set test1 = ratio_low - $(lat_ratio[$9])
+	   set test1 = abs(test1)
+	   set test2 = Gamma
+	   sort < test1 test2 >
+	   set lat_gamma_high[$9] = $(test2[0])
+	}
+	do 9=0,dimen(ts)-1 { 
+	   set test1 = ratio_high - $(lat_ratio[$9])
+	   set test1 = abs(test1)
+	   set test2 = Gamma
+	   sort < test1 test2 >
+	   set lat_gamma_low[$9] = $(test2[0])
+	}
+	#-----------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# plot_lat_Gamma_histo_guess
+plot_lat_Gamma_histo_guess
+
+	define which_histo ? < Which Gamma values [low|high] : >
+        define hxstep      ? < Step for histogram [e.g. 0.2] : >
+
+	if( substr('$which_histo',0,1) == 'l' ) {
+	   set lat_gamma = lat_gamma_low
+	} else {
+	   set lat_gamma = lat_gamma_high
+	}
+
+        set hx = 0.0-2*$hxstep,4.0,$hxstep
+        set hx = hx - 0.5*$hxstep
+
+	set y_0 = lat_gamma  if( lat_classn == 0 )
+	set y_1 = lat_gamma  if( lat_classn == 1 )
+	set y_2 = lat_gamma  if( lat_classn == 2 )
+	set y_3 = lat_gamma  if( lat_classn == 3 )
+
+	set hy_0 = histogram(y_0:hx)
+	set hy_1 = histogram(y_1:hx)
+	set hy_2 = histogram(y_2:hx)
+	set hy_3 = histogram(y_3:hx)
+
+	set hy_test = hy_0 CONCAT hy_1 CONCAT hy_2 CONCAT hy_3
+	vecminmax hy_test dummy hytop
+
+	reset_graph
+
+	limits 0.9 3.1 -1 $(1.1*$hytop)
+	ticksize 0 0 0 0 
+	box
+	xlabel \Gamma
+	ylabel N
+
+	define hdx (0.01)
+	ctype 4 
+	lweight 3
+	# ltype 1 shade histogram 200 (hx - 1.0*$hdx) hy_0
+	ltype 0       histogram (hx - 1.0*$hdx) hy_0    
+	ctype 5 
+	lweight 5
+	# ltype 1 shade histogram 200 (hx - 1.0*$hdx) hy_1
+	ltype 0       histogram (hx + 0.0*$hdx) hy_1
+	ctype 3 
+	lweight 5
+	# ltype 1 shade histogram 200 (hx - 1.0*$hdx) hy_2
+	ltype 0       histogram (hx + 1.0*$hdx) hy_2
+	ctype 6 
+	lweight 3
+	# ltype 1 shade histogram 200 (hx - 1.0*$hdx) hy_3
+	ltype 0       histogram (hx + 1.5*$hdx) hy_3
+
+	lweight 3 
+	define labsep (1000)
+	relocate ( $($gx1+500) $($gy2 - 1.0*$labsep) ) ctype 5 putlabel 6 BLL
+	relocate ( $($gx1+500) $($gy2 - 2.0*$labsep) ) ctype 3 putlabel 6 FSRQ
+	relocate ( $($gx1+500) $($gy2 - 3.0*$labsep) ) ctype 4 putlabel 6 RG
+	relocate ( $($gx1+500) $($gy2 - 4.0*$labsep) ) ctype 6 putlabel 6 unk.
+
+#-------------------------------------------------------------------------------
+# compute_lat_flux_ratio_model
+compute_lat_flux_ratio_model
+
+	echo " Computing flux ratio for simple power law "
+	echo "  + assuming spectral break occurs at band separation, i.e. @1 GeV"
+
+	#--- preset values ---#
+	define xa1 (0.1)
+	define xa2 (1.0)
+	define xb1 (1.0)
+	define xb2 (100.0)
+	define flag_lim (1)
+	#
+	define xa1 (0.3)
+	define xa2 (1.0)
+	define xb1 (1.0)
+	define xb2 (300.0)
+	define flag_lim (2)
+
+	echo "------------------------------------------------------------"
+	echo " Energy bands boundaries : "$xa1"-"$xa2" , "$xb1"-"$xb2
+	echo "------------------------------------------------------------"
+
+	set Gamma = 1.001,3.002,0.01
+
+	define dGamma ? < delta_Gamma between low and high branches : >
+
+	set Gamma_low  = Gamma
+	set Gamma_high = Gamma_low + $dGamma
+
+	set f_low  = 1.0/(Gamma_low - 1)*$xa1**(1.0 - Gamma_low)*(1.0 - ($xa1/$xa2)**(Gamma_low - 1.0))
+	set f_high = 1.0/(Gamma_high - 1)*$xb1**(1.0 - Gamma_high)*(1.0 - ($xb1/$xb2)**(Gamma_high - 1.0))
+
+	set ratio = f_low/f_high
+	# set ratio = ($xa1/$xb1)**(1.0 - Gamma)*(1.0 - ($xa1/$xa2)**(Gamma - 1.0))/(1.0 - ($xb1/$xb2)**(Gamma - 1.0))
+
+	define ratio_G1 $(ln($xa2/$xa1)/ln($xb2/$xb1))
+	
+# compute_lat_flux_ratio_model_bkn
+compute_lat_flux_ratio_model_bkn
+
+	echo " Computing flux ratio for bkn power law "
+	echo "  + Takes variable energy for spectral break "
+
+	#--- preset values ---#
+	define xa1 (0.1)
+	define xa2 (1.0)
+	define xb1 (1.0)
+	define xb2 (100.0)
+	define flag_lim (1)
+	#
+	define xa1 (0.3)
+	define xa2 (1.0)
+	define xb1 (1.0)
+	define xb2 (300.0)
+	define flag_lim (2)
+
+	echo "------------------------------------------------------------"
+	echo " Energy bands boundaries : "$xa1"-"$xa2" , "$xb1"-"$xb2
+	echo "------------------------------------------------------------"
+
+	set Gamma = 1.001,3.002,0.01
+
+	define xb     ? <                Break energy [GeV 0.1-100] : >
+	define dGamma ? < delta_Gamma between low and high branches : >
+
+	set Gamma_low  = Gamma
+	set Gamma_high = Gamma_low + $dGamma
+
+	define xa1r $($xa1/$xb)
+	define xa2r $($xa2/$xb)
+	define xb1r $($xb1/$xb)
+	define xb2r $($xb2/$xb)
+
+	#---------------------------------------
+	# F_low
+	#---------------------------------------
+	if( $xa2r <= 1 ) { 
+	   set f_low  = 1.0/(Gamma_low - 1)*$xa1r**(1.0 - Gamma_low)*(1.0 - ($xa2r/$xa1r)**(1.0 - Gamma_low))
+	}
+	if( $xa1r <= 1 && $xa2r > 1 ) { 
+	   set f_low  = 1.0/(Gamma_low - 1)*($xa1r**(1.0 - Gamma_low) - 1.0) + 1.0/(Gamma_high - 1)*(1.0 - $xa2r**(1.0 - Gamma_high))
+	}
+	if( $xa1r >  1 ) { 
+	   set f_low  = 1.0/(Gamma_high - 1)*$xa1r**(1.0 - Gamma_high)*(1.0 - ($xa2r/$xa1r)**(1.0 - Gamma_high))
+	}
+
+	#---------------------------------------
+	# F_high
+	#---------------------------------------
+	if( $xb2r <= 1 ) { 
+	   set f_high  = 1.0/(Gamma_low - 1)*$xb1r**(1.0 - Gamma_low)*(1.0 - ($xb2r/$xb1r)**(1.0 - Gamma_low))
+	}
+	if( $xb1r <= 1 && $xb2r > 1 ) { 
+	   set f_high  = 1.0/(Gamma_low - 1)*($xb1r**(1.0 - Gamma_low) - 1.0) + 1.0/(Gamma_high - 1)*(1.0 - $xb2r**(1.0 - Gamma_high))
+	}
+	if( $xb1r >  1 ) { 
+	   set f_high  = 1.0/(Gamma_high - 1)*$xb1r**(1.0 - Gamma_high)*(1.0 - ($xb2r/$xb1r)**(1.0 - Gamma_high))
+	}
+
+	# set f_high = 1.0/(Gamma_high - 1)*$xb1**(1.0 - Gamma_high)*(1.0 - ($xb1/$xb2)**(Gamma_high - 1.0))
+
+	set ratio_bkn = f_low/f_high
+	# set ratio = ($xa1/$xb1)**(1.0 - Gamma)*(1.0 - ($xa1/$xa2)**(Gamma - 1.0))/(1.0 - ($xb1/$xb2)**(Gamma - 1.0))
+
+	define ratio_G1 $(ln($xa2r/$xa1r)/ln($xb2r/$xb1r))
+	
+# plot_lat_flux_ratio_model
+plot_lat_flux_ratio_model
+
+	reset_graph
+
+        compute_lat_flux_ratio_model
+        compute_lat_flux_ratio_model_bkn
+
+	ticksize 0 0 0 0 
+	limits 0.9 3.1 ratio
+	if( $flag_lim == 1 ) { limits 0.9 3.1 -5 105 }
+	if( $flag_lim == 2 ) { limits 0.9 3.1 -1  17 }
+	box
+	xlabel \Gamma
+	ylabel F_{[$xa1-$xa2 GeV]}/F_{[$xb1-$xb2 GeV]}
+	# ylabel F_{[0.1-1 GeV]}/F_{[1-100 GeV]}
+
+	ctype 3 
+	connect Gamma ratio
+	ctype 5 
+	connect Gamma ratio_bkn
+	ctype 2
+
+#===============================================================================
+# read_fermi_agn
+read_fermi_agn
+
+	data "/home/gfossati/Science/Fermi/bright_source_list/agn_tab3_sorted.dat"
+	read < flag_conf 3 sqrtTS 8 flag_variab 18.s >
+	read < Gamma 9 err_Gamma 10 f100 11 err_f100 12  fpeak 13 err_fpeak 14 f25 15 err_f25 16 flag_f25 17 >
+	set alpha_g = Gamma - 1
+
+	set lg_l_gamma_fudge = 4.0*(abs(1.0 - alpha_g))
+
+	foreach 9 < f100 err_f100 f25 err_f25 fpeak > {
+	   set $9 = $9/1.0e8
+	}
+
+	data "/home/gfossati/Science/Fermi/bright_source_list/agn_more_data.dat"
+	read < redshift 4 fr84 9 magR 11 extR 12 >
+	set flag_fr84 = redshift*0 + 1
+	set flag_magR = redshift*0 + 1
+	do 9=0,dimen(fr84)-1 {
+	   if( fr84[$9] < 0.0 ) { 
+	      set flag_fr84[$9] = 0 
+	      set fr84[$9]      = 1e-20
+	   }
+	   if( magR[$9] <= 0.0 ) { 
+	      set flag_magR[$9] = 0 
+	      set magR[$9]      = 40
+	   } else {
+	      set magR[$9]      = magR[$9] - extR[$9]
+	   }
+	}
+	set lg_fr84  = lg(fr84) - 26 
+	set lg_nfr84 = lg(fr84) - 26 + lg(8.4e9)
+
+	set lg_f_magR  = lg(3010.0) -0.4*magR - 23.0
+	set lg_nf_magR = lg_f_magR + 14.632
+
+	set a_RO = (lg_fr84 - lg_f_magR)/(14.632 - lg(8.4e9))
+
+	data "/home/gfossati/Science/Fermi/bright_source_list/agn_associations_sorted.dat"
+	read < flag_confb 3 redshift 4 classs 5.s classn 6 >
+
+	set flag_z = redshift*0 + 1
+	do 9=0,dimen(f100)-1 {
+	   if( redshift[$9] > 10 )  { set flag_z[$9]  = 0 } 
+	   if( alpha_g[$9] == 1.0 ) { set alpha_g[$9] = 1.0001 } 
+	}
+
+	data "/home/gfossati/Science/Fermi/bright_source_list/agn_from_bright_source_list.dat"
+	read < sqrtTSb 3 fa 4 err_fa 5 tsa 6 fb 7 err_fb 8 tsb 9 classn_b 12 >
+
+	set fab = fa + fb
+	set ftest = flag_f25 ? fab : fb
+
+	set flag_ul_a = 0*flag_conf
+	set flag_ul_b = 0*flag_conf
+	do 9=1,dimen(flag_conf)-1 {
+	   if( err_fa[$9] == 1 ) { 
+	       set flag_ul_a[$9] = 1 
+	       # set err_fa[$9] = 2*fa[$9]
+	   }
+	   if( err_fb[$9] == 1 ) { 
+	       set flag_ul_b[$9] = 1 
+	       # set err_fb[$9] = 2*fb[$9]
+	   }
+	}
+
+	set snra = fa/err_fa
+	set snrb = fb/err_fb
+
+	set lat_ratio = fa/fb
+	set err_lat_ratio = lat_ratio*sqrt((1.0/snra)**2.0 + (1.0/snrb)**2.0)
+	set snr_ratio = lat_ratio/err_lat_ratio
+
+	lumdist_zvec redshift
+
+	set flux = 1.602e-12*(1e8*f100)*alpha_g/(alpha_g - 1)*(1 - 10.0**(2*(1-alpha_g)))
+	set err_flux = flux*err_f100/f100   # Cheat
+	do 9=0,dimen(f100)-1 {
+	   if( alpha_g[$9] == 1 ) { set flux[$9] = 7.38e-4*f100[$9] }
+	}
+
+	set flux_alt = 4.806e-12*(1e8*f100)*alpha_g/(alpha_g - 1)*(1 - 33.0**(1-alpha_g))/3.**alpha_g*(1+redshift)**(alpha_g-1)
+	set err_flux_alt = flux_alt*err_f100/f100   # cheating, forcing same fractional error
+	set lg_flux_alt = lg(flux_alt)
+
+	set lg_l_gamma     = lg(4*3.1415) + 2*d_l_vec + lg(flux)
+	set lg_l_gamma_alt = lg(4*3.1415) + 2*d_l_vec + lg(flux_alt)
+	set l_gamma     = 10.0**lg_l_gamma
+	set l_gamma_alt = 10.0**lg_l_gamma_alt
+	set err_l_gamma = l_gamma*err_f100/f100
+	set err_l_gamma_alt = l_gamma_alt*err_f100/f100
+
+	set lg_l_r_84 = lg(4*3.1415) + 2*d_l_vec + lg_fr84 + lg(8.4e9)
+	set lg_l_magR = lg(4*3.1415) + 2*d_l_vec + lg_nf_magR 
+
+	set f100l = f100*(0.1/0.1)**alpha_g*(1 - (0.1/1)**alpha_g)
+	set f100h = f100*(0.1/1.0)**alpha_g*(1 - (1.0/100.0)**alpha_g)
+	
+	set gdom = lg_flux_alt - lg_nfr84
+
+#-------------------------------------------------------------------------------
+# plot_ag_vs_lg
+plot_ag_vs_lg
+
+	reset_graph
+
+	ticksize -1 0 0.1 0.5
+	limits 43.2 49.8 0.1 2.1
+	box
+	expand 2
+	xlabel L_{\gamma}  [erg/s]
+	ylabel \alpha_\gamma
+	expand 1.5
+
+	foreach 9 < lg_l_gamma_alt alpha_g err_Gamma err_l_gamma_alt > {
+	  foreach 8 < 0 1 2 3 > { 
+	  set tmp$8_$9 local
+	  set tmp$8_$9 = $9   if( classn == $8 )
+	  }
+	}
+
+	ptype 4 3 
+	ctype 3 
+	points   tmp2_lg_l_gamma_alt tmp2_alpha_g   
+	error_y  tmp2_lg_l_gamma_alt tmp2_alpha_g tmp2_err_Gamma
+	logerr_x tmp2_lg_l_gamma_alt tmp2_alpha_g tmp2_err_l_gamma_alt
+
+	ctype 5 
+	points   tmp1_lg_l_gamma_alt tmp1_alpha_g 
+	error_y  tmp1_lg_l_gamma_alt tmp1_alpha_g tmp1_err_Gamma 
+	logerr_x tmp1_lg_l_gamma_alt tmp1_alpha_g tmp1_err_l_gamma_alt
+
+	ctype 4 
+	points   tmp0_lg_l_gamma_alt tmp0_alpha_g 
+	error_y  tmp0_lg_l_gamma_alt tmp0_alpha_g tmp0_err_Gamma 
+	logerr_x tmp0_lg_l_gamma_alt tmp0_alpha_g tmp0_err_l_gamma_alt
+
+	ctype 6
+	points   tmp3_lg_l_gamma_alt tmp3_alpha_g 
+	error_y  tmp3_lg_l_gamma_alt tmp3_alpha_g tmp3_err_Gamma 
+	logerr_x tmp3_lg_l_gamma_alt tmp3_alpha_g tmp3_err_l_gamma_alt
+	ctype 2 
+
+	#--------------------
+	set test_ag = 0.2,2.0,0.01
+	set test_ag = test_ag + 0.001
+	set lg_flim_3mo = -8.15 + 0.666*test_ag
+	# set flim_3mo = 10.0**lg_flim_3mo
+
+	# set xlim2 = -9.85 + 1.666*(abs(ylim - 1.1))**$exp - 0.666*lg($T)
+	# T=0.1, exp=0.58 match well the envelope of the real data points
+	# purely empirical!
+	set lg_flim_3mo = -9.85 + 1.666*(abs(test_ag+1 - 1.1))**0.58 - 0.666*lg(0.1)
+	set flim_3mo = 10.0**lg_flim_3mo
+
+	set flim1     = 1.602e-12*(1e8*flim_3mo)*test_ag/(test_ag - 1)*(1 - 10.0**(2*(1-test_ag)))
+	set flim1_alt = 4.806e-12*(1e8*flim_3mo)*test_ag/(test_ag - 1)*(1 - 33.0**(1-test_ag))/3.**test_ag
+
+	foreach test_z < 0.1 0.3 1.0 1.5 2.0 3.0 > {
+	   # lumdist $test_z
+	   systemcall cosmo_calculator.py $test_z | egrep -v Age >! /tmp/lumdist
+	   ## systemcall ls -o /tmp/lumdist
+	   data "/tmp/lumdist"
+	   define lumdist read 1 3 
+	   echo " D_L["$test_z"] = "$lumdist
+	   set flim2           = flim1
+	   set flim2_alt       = flim1_alt*(1+$test_z)**(test_ag-1)
+	   set lg_llim_3mo     = lg(4.*3.1415) + 2*$lumdist + lg(flim2)
+	   set lg_llim_3mo_alt = lg(4.*3.1415) + 2*$lumdist + lg(flim2_alt)
+	   ctype 4 
+	   # ltype 1 connect lg_llim_3mo     test_ag
+	   ltype 2 connect lg_llim_3mo_alt test_ag
+	}
+	ctype 2 
+	ltype 0
+	
+#-------------------------------------------------------------------------------
+# plot_lr_vs_lg
+plot_lr_vs_lg
+
+	reset_graph
+
+	#ticksize -1 0 -1 0 
+	ticksize 0.25 1 0.25 1 
+	limits 43.2 49.8 40.2 46.5
+	box
+	expand 2
+	xlabel L_\gamma [erg/s]
+	ylabel L_{radio} [erg/s]
+	expand 1.5
+
+	foreach 9 < lg_l_gamma_alt err_l_gamma_alt lg_l_r_84 > {
+	  foreach 8 < 0 1 2 3 > { 
+	  set tmp$8_$9 local
+	  set tmp$8_$9 = $9   if( classn == $8 && flag_z == 1 && flag_fr84 == 1)
+	  }
+	}
+
+	ptype 4 3 
+	ctype 3 
+	points   tmp2_lg_l_gamma_alt tmp2_lg_l_r_84    
+	# error_y  tmp2_lg_l_gamma_alt tmp2_lg_l_r_84  tmp2_err_Gamma
+	logerr_x tmp2_lg_l_gamma_alt tmp2_lg_l_r_84  tmp2_err_l_gamma_alt
+
+	ctype 5 
+	points   tmp1_lg_l_gamma_alt tmp1_lg_l_r_84  
+	# error_y  tmp1_lg_l_gamma_alt tmp1_lg_l_r_84  tmp1_err_Gamma 
+	logerr_x tmp1_lg_l_gamma_alt tmp1_lg_l_r_84  tmp1_err_l_gamma_alt
+
+	ctype 4 
+	points   tmp0_lg_l_gamma_alt tmp0_lg_l_r_84  
+	# error_y  tmp0_lg_l_gamma_alt tmp0_lg_l_r_84  tmp0_err_Gamma 
+	logerr_x tmp0_lg_l_gamma_alt tmp0_lg_l_r_84  tmp0_err_l_gamma_alt
+
+	ctype 6
+	points   tmp3_lg_l_gamma_alt tmp3_lg_l_r_84  
+	# error_y  tmp3_lg_l_gamma_alt tmp3_lg_l_r_84  tmp3_err_Gamma 
+	logerr_x tmp3_lg_l_gamma_alt tmp3_lg_l_r_84  tmp3_err_l_gamma_alt
+	ctype 2 
+
+#-------------------------------------------------------------------------------
+# plot_lo_vs_lg
+plot_lo_vs_lg
+
+	reset_graph
+
+	ticksize 0.25 1 0.25 1 
+	limits 43.2 49.8 43.2 48
+	box
+	expand 2
+	xlabel L_\gamma [erg/s]
+	ylabel L_{opt} [erg/s]
+	expand 1.5
+
+	foreach 9 < lg_l_gamma_alt err_l_gamma_alt lg_l_magR > {
+	  foreach 8 < 0 1 2 3 > { 
+	  set tmp$8_$9 local
+	  set tmp$8_$9 = $9   if( classn == $8 && flag_z == 1 && flag_magR == 1)
+	  }
+	}
+
+	ptype 4 3 
+	ctype 3 
+	points   tmp2_lg_l_gamma_alt tmp2_lg_l_magR   
+	logerr_x tmp2_lg_l_gamma_alt tmp2_lg_l_magR tmp2_err_l_gamma_alt
+
+	ctype 5 
+	points   tmp1_lg_l_gamma_alt tmp1_lg_l_magR 
+	logerr_x tmp1_lg_l_gamma_alt tmp1_lg_l_magR tmp1_err_l_gamma_alt
+
+	ctype 4 
+	points   tmp0_lg_l_gamma_alt tmp0_lg_l_magR 
+	logerr_x tmp0_lg_l_gamma_alt tmp0_lg_l_magR tmp0_err_l_gamma_alt
+
+	ctype 6
+	points   tmp3_lg_l_gamma_alt tmp3_lg_l_magR 
+	logerr_x tmp3_lg_l_gamma_alt tmp3_lg_l_magR tmp3_err_l_gamma_alt
+	ctype 2 
+
+#-------------------------------------------------------------------------------
+# plot_nfr_vs_fg
+plot_nfr_vs_fg
+
+	reset_graph
+
+	ticksize -1 0 -1 0 
+	limits -12 -8.5 -25 -21
+	limits -12 -8.5 -15 -11
+	box
+	expand 2
+	xlabel F_\gamma
+	ylabel F_{radio}
+	expand 1.5
+
+	ctype 4 
+	ltype 2
+	relocate $($fx1+0) $($fy1+0)  draw $($fx1+4) $($fy1+4)
+	relocate $($fx1+1) $($fy1+0)  draw $($fx1+5) $($fy1+4)
+	relocate $($fx1-1) $($fy1+0)  draw $($fx1+3) $($fy1+4)
+	ltype 0
+	ctype 2 
+
+	foreach 9 < lg_flux_alt err_flux_alt lg_nfr84 > {
+	  foreach 8 < 0 1 2 3 > { 
+	     set tmp$8_$9 local
+	     set tmp$8_$9 = $9   if( classn == $8 && flag_fr84 == 1 )
+	  }
+	}
+
+	ptype 4 3 
+	ctype 3 
+	points   tmp2_lg_flux_alt tmp2_lg_nfr84    
+	logerr_x tmp2_lg_flux_alt tmp2_lg_nfr84  tmp2_err_flux_alt
+
+	ctype 5 
+	points   tmp1_lg_flux_alt tmp1_lg_nfr84  
+	logerr_x tmp1_lg_flux_alt tmp1_lg_nfr84  tmp1_err_flux_alt
+
+	ctype 4 
+	points   tmp0_lg_flux_alt tmp0_lg_nfr84  
+	logerr_x tmp0_lg_flux_alt tmp0_lg_nfr84  tmp0_err_flux_alt
+
+	ctype 6
+	points   tmp3_lg_flux_alt tmp3_lg_nfr84  
+	logerr_x tmp3_lg_flux_alt tmp3_lg_nfr84  tmp3_err_flux_alt
+	ctype 2 
+
+	
+#-------------------------------------------------------------------------------
+# plot_lg_vs_aro
+plot_lg_vs_aro
+
+	reset_graph
+
+	ticksize 0 0 0 0
+	limits -0.2 1.2 43.2 49.8
+	box 1 2 0 0 
+	expand 2
+	xlabel \alpha_{RO} [*]
+	ylabel L_\gamma [erg/s]
+	expand 1.5
+
+        # ctype 4 
+        # ltype 2
+        # relocate $($fx1+0) $($fy1+0)  draw $($fx1+4) $($fy1+4)
+        # relocate $($fx1+1) $($fy1+0)  draw $($fx1+5) $($fy1+4)
+        # relocate $($fx1-1) $($fy1+0)  draw $($fx1+3) $($fy1+4)
+        # ltype 0
+        # ctype 2 
+
+	foreach 9 < lg_l_gamma_alt err_l_gamma_alt a_RO > {
+	  foreach 8 < 0 1 2 3 > { 
+	     set tmp$8_$9 local
+	     set tmp$8_$9 = $9   if( classn == $8 && flag_fr84 == 1 && flag_magR == 1 )
+	  }
+	}
+
+	ptype 4 3 
+	ctype 3 
+	points   tmp2_a_RO tmp2_lg_l_gamma_alt   
+	logerr_y tmp2_a_RO tmp2_lg_l_gamma_alt tmp2_err_l_gamma_alt
+
+	ctype 5 
+	points   tmp1_a_RO tmp1_lg_l_gamma_alt 
+	logerr_y tmp1_a_RO tmp1_lg_l_gamma_alt tmp1_err_l_gamma_alt
+
+	ctype 4 
+	points   tmp0_a_RO tmp0_lg_l_gamma_alt 
+	logerr_y tmp0_a_RO tmp0_lg_l_gamma_alt tmp0_err_l_gamma_alt
+
+	ctype 6
+	points   tmp3_a_RO tmp3_lg_l_gamma_alt 
+	logerr_y tmp3_a_RO tmp3_lg_l_gamma_alt tmp3_err_l_gamma_alt
+	ctype 2 
+
+#-------------------------------------------------------------------------------
+# plot_g2r_vs_aro
+plot_g2r_vs_aro
+
+	reset_graph
+
+	define fudge_gamma ? < Use fudge factor [1|0] : >
+
+	set lg_lg = lg_l_gamma_alt + $fudge_gamma*lg_l_gamma_fudge
+
+	ticksize 0 0 0 0
+	limits -0.2 1.2 1 5 
+	box 1 2 0 0 
+	expand 2
+	xlabel \alpha_{RO} [*]
+	ylabel L_\gamma/L_{R}
+	expand 1.5
+
+	set g2r     = lg_lg - lg_l_r_84
+	set err_g2r = err_l_gamma_alt/l_gamma_alt*10.0**g2r
+	
+	foreach 9 < g2r err_g2r a_RO > {
+	  foreach 8 < 0 1 2 3 > { 
+	     set tmp$8_$9 local
+	     set tmp$8_$9 = $9   if( classn == $8 && flag_fr84 == 1 && flag_magR == 1 )
+	  }
+	}
+
+	ptype 4 3 
+	ctype 3 
+	points   tmp2_a_RO tmp2_g2r   
+	logerr_y tmp2_a_RO tmp2_g2r tmp2_err_g2r
+
+	ctype 5 
+	points   tmp1_a_RO tmp1_g2r 
+	logerr_y tmp1_a_RO tmp1_g2r tmp1_err_g2r
+
+	ctype 4 
+	points   tmp0_a_RO tmp0_g2r 
+	logerr_y tmp0_a_RO tmp0_g2r tmp0_err_g2r
+
+	ctype 6
+	points   tmp3_a_RO tmp3_g2r 
+	logerr_y tmp3_a_RO tmp3_g2r tmp3_err_g2r
+	ctype 2 
+
+
+#-------------------------------------------------------------------------------
+# plot_g2r_vs_ag
+plot_g2r_vs_ag
+
+	reset_graph
+
+	define fudge_gamma ? < Use fudge factor [1|0] : >
+
+	set lg_lg = lg_l_gamma_alt + $fudge_gamma*lg_l_gamma_fudge
+
+	ticksize 0 0 0 0
+	limits 0.1 2.4 1 5 
+	box 1 2 0 0 
+	expand 2
+	xlabel \alpha_\gamma
+	ylabel L_\gamma/L_{R}
+	expand 1.5
+
+	set g2r     = lg_lg - lg_l_r_84
+	set err_g2r = err_l_gamma_alt/l_gamma_alt*10.0**g2r
+	
+	foreach 9 < g2r err_g2r alpha_g > {
+	  foreach 8 < 0 1 2 3 > { 
+	     set tmp$8_$9 local
+	     set tmp$8_$9 = $9   if( classn == $8 && flag_fr84 == 1 )
+	  }
+	}
+
+	ptype 4 3 
+	ctype 3 
+	points   tmp2_alpha_g tmp2_g2r   
+	logerr_y tmp2_alpha_g tmp2_g2r tmp2_err_g2r
+
+	ctype 5 
+	points   tmp1_alpha_g tmp1_g2r 
+	logerr_y tmp1_alpha_g tmp1_g2r tmp1_err_g2r
+
+	ctype 4 
+	points   tmp0_alpha_g tmp0_g2r 
+	logerr_y tmp0_alpha_g tmp0_g2r tmp0_err_g2r
+
+	ctype 6
+	points   tmp3_alpha_g tmp3_g2r 
+	logerr_y tmp3_alpha_g tmp3_g2r tmp3_err_g2r
+	ctype 2 
+
+
+#-------------------------------------------------------------------------------
+# plot_g2o_vs_aro
+plot_g2o_vs_aro
+
+	reset_graph
+
+	ticksize 0 0 0 0
+	limits -0.2 1.2 -3.5 3.5
+	box 1 2 0 0 
+	expand 2
+	xlabel \alpha_{RO} [*]
+	ylabel L_\gamma/L_{opt}
+	expand 1.5
+
+	set g2o     = lg_l_gamma_alt - lg_l_magR
+	set err_g2o = err_l_gamma_alt/l_gamma_alt*10.0**g2o
+
+	foreach 9 < g2o err_g2o a_RO > {
+	  foreach 8 < 0 1 2 3 > { 
+	     set tmp$8_$9 local
+	     set tmp$8_$9 = $9   if( classn == $8 && flag_fr84 == 1 && flag_magR == 1 )
+	  }
+	}
+
+	ptype 4 3 
+	ctype 3 
+	points   tmp2_a_RO tmp2_g2o   
+	logerr_y tmp2_a_RO tmp2_g2o tmp2_err_g2o
+
+	ctype 5 
+	points   tmp1_a_RO tmp1_g2o 
+	logerr_y tmp1_a_RO tmp1_g2o tmp1_err_g2o
+
+	ctype 4 
+	points   tmp0_a_RO tmp0_g2o 
+	logerr_y tmp0_a_RO tmp0_g2o tmp0_err_g2o
+
+	ctype 6
+	points   tmp3_a_RO tmp3_g2o 
+	logerr_y tmp3_a_RO tmp3_g2o tmp3_err_g2o
+	ctype 2 
+
+
+#-------------------------------------------------------------------------------
+# plot_ag_vs_aro
+plot_ag_vs_aro
+
+	reset_graph
+
+	ticksize 0 0 0 0
+	limits -0.2 1.2 0.1 2.1
+	box 1 2 0 0 
+	expand 2
+	xlabel \alpha_{RO} [*]
+	ylabel \alpha_\gamma
+	expand 1.5
+
+	foreach 9 < alpha_g err_Gamma a_RO > {
+	  foreach 8 < 0 1 2 3 > { 
+	     set tmp$8_$9 local
+	     set tmp$8_$9 = $9   if( classn == $8 && flag_fr84 == 1 && flag_magR == 1 )
+	  }
+	}
+
+	ptype 4 3 
+	ctype 3 
+	points   tmp2_a_RO tmp2_alpha_g   
+	error_y  tmp2_a_RO tmp2_alpha_g tmp2_err_Gamma
+
+	ctype 5 
+	points   tmp1_a_RO tmp1_alpha_g 
+	error_y  tmp1_a_RO tmp1_alpha_g tmp1_err_Gamma 
+
+	ctype 4 
+	points   tmp0_a_RO tmp0_alpha_g 
+	error_y  tmp0_a_RO tmp0_alpha_g tmp0_err_Gamma 
+
+	ctype 6
+	points   tmp3_a_RO tmp3_alpha_g 
+	error_y  tmp3_a_RO tmp3_alpha_g tmp3_err_Gamma 
+	ctype 2 
+
+
+#-------------------------------------------------------------------------------
+# plot_ag_vs_lr
+plot_ag_vs_lr
+
+	reset_graph
+
+	ticksize -1 0 0.1 0.5
+	limits 39.0 46.5 0.1 2.1
+	box
+	expand 2
+	xlabel L_{radio} [erg/s]
+	ylabel \alpha_\gamma
+	expand 1.5
+
+	foreach 9 < lg_l_r_84 alpha_g err_Gamma > {
+	  foreach 8 < 0 1 2 3 > { 
+	  set tmp$8_$9 local
+	  set tmp$8_$9 = $9   if( classn == $8 )
+	  }
+	}
+
+	ptype 4 3 
+	ctype 3 
+	points   tmp2_lg_l_r_84 tmp2_alpha_g   
+	error_y  tmp2_lg_l_r_84 tmp2_alpha_g tmp2_err_Gamma
+	# logerr_x tmp2_lg_l_r_84 tmp2_alpha_g tmp2_err_l_r_84
+
+	ctype 5 
+	points   tmp1_lg_l_r_84 tmp1_alpha_g 
+	error_y  tmp1_lg_l_r_84 tmp1_alpha_g tmp1_err_Gamma 
+	# logerr_x tmp1_lg_l_r_84 tmp1_alpha_g tmp1_err_l_r_84
+
+	ctype 4 
+	points   tmp0_lg_l_r_84 tmp0_alpha_g 
+	error_y  tmp0_lg_l_r_84 tmp0_alpha_g tmp0_err_Gamma 
+	# logerr_x tmp0_lg_l_r_84 tmp0_alpha_g tmp0_err_l_r_84
+
+	ctype 6
+	points   tmp3_lg_l_r_84 tmp3_alpha_g 
+	error_y  tmp3_lg_l_r_84 tmp3_alpha_g tmp3_err_Gamma 
+	# logerr_x tmp3_lg_l_r_84 tmp3_alpha_g tmp3_err_l_r_84
+	ctype 2 
+
+	ltype 0
+	
+#-------------------------------------------------------------------------------
+# plot_flux_vs_z
+plot_flux_vs_z
+
+	reset_graph
+
+	define whatflux ? < F_100 or F_alt [1|2] : >
+	if( $whatflux == 1 ) { define 9 "f100" }
+	if( $whatflux == 2 ) { define 9 "flux_alt" }
+
+	if( $whatflux == 1 ) { limits -0.05 3.05  -9.0 -5.0 }
+	if( $whatflux == 2 ) { limits -0.05 3.05 -12.0 -9.0 }
+	ticksize 0 0 0.1 1.0
+	box
+	xlabel redshift
+	if( $whatflux == 1 ) { ylabel F_{100} } 
+	if( $whatflux == 2 ) { ylabel Flux    } 
+
+	set lg_f100 = lg(f100)
+	set lg_flux_alt = lg(flux_alt)
+
+	foreach 7 < lg_f100 lg_flux_alt redshift err_flux_alt err_f100 >  {
+	  set tmp1_$7 local
+	  set tmp2_$7 local
+	  set tmp1_$7 = $7   if( classn == 1 )
+	  set tmp2_$7 = $7   if( classn == 2 )
+	}
+
+	ptype 4 3 
+	ctype 3 
+	points   tmp2_redshift tmp2_lg_$9   
+	logerr   tmp2_redshift tmp2_lg_$9 tmp2_err_$9
+
+	ctype 5 
+	points   tmp1_redshift tmp1_lg_$9   
+	logerr   tmp1_redshift tmp1_lg_$9 tmp1_err_$9
+	ctype 2 
+
+	#--------------------
+        set test_ag = < 0.5 1.0 1.5 2.0 > 
+	set test_ag = test_ag + 0.001
+        set lg_flim_3mo = -8.15 + 0.666*test_ag
+        set flim_3mo    = 10.0**lg_flim_3mo
+	set flim1_alt   = 4.806e-12*(1e8*flim_3mo)*test_ag/(test_ag - 1)*(1 - 33.0**(1-test_ag))/3.**test_ag
+	set lg_flim1_alt= lg(flim1_alt)
+
+	if( $whatflux == 1 ) {
+           ctype 4 
+           ltype 1 
+           do 6=0,dimen(test_ag)-1 {
+	      define ag   $(test_ag[$6])
+	      define f3mo $(flim_3mo[$6])
+	      set z_dum=0.001,3.0,0.01
+	      # set lg_flim = lg($f3mo) - $ag*lg(3) + $ag*lg(1+z_dum)
+	      set lg_flim = lg($f3mo) + $ag*lg(1+z_dum)
+	      ltype 2 
+	      connect z_dum lg_flim
+             
+           }
+           ctype 2 
+           ltype 0 
+	}
+
+	# converts to energy flux
+	if( $whatflux == 2 ) {
+	   do 6=0,dimen(test_ag)-1 {
+	      define ag   $(test_ag[$6])
+	      define f3mo $(flim_3mo[$6])
+	      # define flim1     $( 1.602e-12*(1e8*$f3mo)*$ag/($ag - 1)*(1 - 10.0**(2*(1-$ag))) )
+	      define flim1_alt $(flim1_alt[$6])   ## 4.806e-12*(1e8*$f3mo)*$ag/($ag - 1)*(1 - 33.0**(1-$ag))/3.**$ag )
+
+	      set z_dum=0.001,3.0,0.01
+
+	      set flim2           = $flim1 + 0*z_dum
+	      set flim2_alt       = $flim1_alt*(1+z_dum)**($ag-1)
+	      set lg_flim2_alt    = lg(flim2_alt)
+	      ctype 4 
+	      ltype 2 
+	      connect z_dum (lg(flim2_alt))
+	   }
+	}
+	ctype 2 
+	ltype 0
+	
+#-------------------------------------------------------------------------------
+# plot_lg_vs_z
+plot_lg_vs_z
+
+	reset_graph
+
+	limits -0.05 3.05 43.2 49.8
+	ticksize 0 0 -1 0 
+	box
+	expand 2
+	xlabel redshift
+	ylabel L_\gamma [erg/s]
+	expand 1.5
+
+	foreach 9 < lg_l_gamma_alt alpha_g err_Gamma err_l_gamma_alt redshift > {
+	  set tmp1_$9 local
+	  set tmp2_$9 local
+	  set tmp1_$9 = $9   if( classn == 1 )
+	  set tmp2_$9 = $9   if( classn == 2 )
+	}
+
+	ptype 4 3 
+	ctype 3 
+	points tmp2_redshift tmp2_lg_l_gamma_alt   
+	logerr tmp2_redshift tmp2_lg_l_gamma_alt tmp2_err_l_gamma_alt
+
+	ctype 5 
+	points tmp1_redshift tmp1_lg_l_gamma_alt   
+	logerr tmp1_redshift tmp1_lg_l_gamma_alt tmp1_err_l_gamma_alt
+	ctype 2 
+
+	#--------------------
+        set test_ag = < 0.5 1.0 1.5 2.0 > 
+	set test_ag = test_ag + 0.001
+        set lg_flim_3mo = -8.15 + 0.666*test_ag
+        set flim_3mo    = 10.0**lg_flim_3mo
+	set flim1_alt   = 4.806e-12*(1e8*flim_3mo)*test_ag/(test_ag - 1)*(1 - 33.0**(1-test_ag))/3.**test_ag
+	set lg_flim1_alt= lg(flim1_alt)
+
+	# converts to energy flux
+	do 6=0,dimen(test_ag)-1 {
+	   define ag        $(test_ag[$6])
+	   define f3mo      $(flim_3mo[$6])
+	   define flim1_alt $(flim1_alt[$6])   ## 4.806e-12*(1e8*$f3mo)*$ag/($ag - 1)*(1 - 33.0**(1-$ag))/3.**$ag )
+
+	   set z_dum=0.001,3.0,0.01
+	   lumdist_zvec z_dum
+
+	   set flim2_alt       = $flim1_alt*(1+z_dum)**($ag-1)
+	   set lg_llim_3mo_alt = lg(4.*3.1415) + 2*d_l_vec + lg(flim2_alt)
+	   ctype 4 
+	   ltype 2 
+	   connect z_dum lg_llim_3mo_alt
+	}
+	ctype 6 
+	connect z_dum lg_llim_3mo_alt
+	ctype 2 
+	ltype 0
+	
+#-------------------------------------------------------------------------------
+# plot_ag_histo
+plot_ag_histo
+
+        define hxstep      ? < Step for histogram [e.g. 0.2] : >
+
+        set hx = -0.2-2*$hxstep,4.0,$hxstep
+        set hx = hx - 0.5*$hxstep
+
+	set y_0 = alpha_g  if( classn == 0 )
+	set y_1 = alpha_g  if( classn == 1 )
+	set y_2 = alpha_g  if( classn == 2 )
+	set y_3 = alpha_g  if( classn == 3 )
+
+	set hy_0 = histogram(y_0:hx)
+	set hy_1 = histogram(y_1:hx)
+	set hy_2 = histogram(y_2:hx)
+	set hy_3 = histogram(y_3:hx)
+
+	set hy_test = hy_0 CONCAT hy_1 CONCAT hy_2 CONCAT hy_3
+	vecminmax hy_test dummy hytop
+
+	reset_graph
+
+	limits 0.1 2.4 -1 $(1.1*$hytop)
+	ticksize 0 0 0 0 
+	box
+	expand 2
+	xlabel \alpha_\gamma
+	ylabel N
+	expand 1.5
+
+	define hdx (0.01)
+	ctype 4 
+	lweight 3
+	# ltype 1 shade histogram 200 (hx - 1.0*$hdx) hy_0
+	ltype 0       histogram (hx - 1.0*$hdx) hy_0    
+	ctype 5 
+	lweight 5
+	# ltype 1 shade histogram 200 (hx - 1.0*$hdx) hy_1
+	ltype 0       histogram (hx + 0.0*$hdx) hy_1
+	ctype 3 
+	lweight 5
+	# ltype 1 shade histogram 200 (hx - 1.0*$hdx) hy_2
+	ltype 0       histogram (hx + 1.0*$hdx) hy_2
+	ctype 6 
+	lweight 3
+	# ltype 1 shade histogram 200 (hx - 1.0*$hdx) hy_3
+	ltype 0       histogram (hx + 1.5*$hdx) hy_3
+
+	lweight 3 
+	define labsep (1000)
+	relocate ( $($gx1+500) $($gy2 - 1.0*$labsep) ) ctype 5 putlabel 6 BLL
+	relocate ( $($gx1+500) $($gy2 - 2.0*$labsep) ) ctype 3 putlabel 6 FSRQ
+	relocate ( $($gx1+500) $($gy2 - 3.0*$labsep) ) ctype 4 putlabel 6 RG
+	relocate ( $($gx1+500) $($gy2 - 4.0*$labsep) ) ctype 6 putlabel 6 unk.
+
+
+#-------------------------------------------------------------------------------
+# make_all_plots
+make_all_plots
+
+	foreach 1 < plot_ag_vs_lg \
+		plot_lr_vs_lg \
+		plot_lo_vs_lg \
+		plot_nfr_vs_fg \
+		plot_lg_vs_aro \
+		plot_g2r_vs_aro \
+		plot_g2r_vs_ag \
+		plot_g2o_vs_aro \
+		plot_ag_vs_aro \
+		plot_ag_vs_lr \
+		plot_flux_vs_z \
+		plot_lg_vs_z \
+		plot_ag_histo > { 
+	   device postencap $1.ps
+	   $1
+	   device x11
+	}
+
+#-------------------------------------------------------------------------------
+# gamma_vs_flim
+gamma_vs_flim
+
+	reset_graph
+	ticksize -1 0 0.1 0.5
+	limits -10 -5 0.2 3.8
+	box
+	expand 2.0
+	xlabel F_{100} [c.g.s.]
+	ylabel \Gamma
+
+	data "/home/gfossati/Science/Fermi/effarea/ajello_ref_points_transformed.dat"
+	read < flim 3 glim 4 >
+
+	data "/home/gfossati/Science/Fermi/effarea/flim_data_1.dat"
+	read < gg1 1 ff1 2 >
+	data "/home/gfossati/Science/Fermi/effarea/flim_data_2.dat"
+	read < gg2 1 ff2 2 >
+
+	ctype 3 lweight 3 ltype 2 connect flim glim
+	ctype 3 lweight 5 ltype 0 connect ff1  gg1
+	ctype 3 lweight 5 ltype 2 connect ff2  gg2
+	ctype 2 lweight 3 
+
+	set xlim local
+	set ylim local
+
+	set ylim=1.0,3.5,0.05
+
+	define T ?    < Time [years]          : >
+	define exp  ? < exponent [0.58 was ok]: > 
+	set xlim_3m_ts100  = -7.95 + 0.666*(ylim - 2.2) - 0.666*lg(0.25)
+	set xlim   = -8.35 + 0.666*(ylim - 2.2) - 0.666*lg($T)
+	set xlim2a = -9.85 + 1.666*(abs(ylim - 1.1))**$exp - 0.666*lg($T)
+	# set xlim2b = -10.05 + $bb*(abs(ylim - 0.9))**$exp - 0.666*lg($T)
+	set xlim3  = -10. + 1.630*(abs(ylim - 0.9))**0.62 - 0.666*lg($T)
+
+	#ctype 7 ltype 3 connect xlim_3m_ts100  ylim
+	#ctype 7 ltype 2 connect xlim  ylim
+	ctype 5 ltype 2 connect xlim2a ylim 
+	# ctype 4 ltype 2 connect xlim2b ylim
+	ctype 2 ltype 0 connect xlim3 ylim 
+	ctype 2 ltype 0 
+
+	echo "------------------------------------------------------------"
+	echo "  magenta long dash  3m ts100"
+	echo "  magenta dash       $T straight "
+	echo "  blue    dash       $T curved with $exp "
+	echo "------------------------------------------------------------"
+
+#-------------------------------------------------------------------------------
+# flim_vs_gamma
+flim_vs_gamma
+
+	reset_graph
+	ticksize 0.1 0.5 -1 0 
+	limits 0.2 3.8 -10 -5
+	limits 0.9 3.0 -9.9 -7
+	box
+	expand 2.0
+	xlabel \Gamma
+	ylabel F_{100} [c.g.s.]
+
+	data "/home/gfossati/Science/Fermi/effarea/ajello_ref_points_transformed.dat"
+	read < flim 3 glim 4 >
+
+	data "/home/gfossati/Science/Fermi/effarea/flim_data_1.dat"
+	read < gg1 1 ff1 2 >
+	data "/home/gfossati/Science/Fermi/effarea/flim_data_2.dat"
+	read < gg2 1 ff2 2 >
+
+	ctype 3 lweight 3 ltype 2 connect glim flim
+	ctype 3 lweight 5 ltype 0 connect gg1  ff1
+	ctype 3 lweight 5 ltype 2 connect gg2  ff2
+	ctype 2 lweight 3 
+
+	set xlim local
+	set ylim local
+
+	set ylim=1.0,3.5,0.05
+
+	define T ?    <        Time [years]           : >
+	define exp  ? <        exponent [0.58 was ok] : > 
+	define bb   ? < second case pre-factor (1.62) : >
+	set xlim_3m_ts100  = -7.95 + 0.666*(ylim - 2.2) - 0.666*lg(0.25)
+	set xlim   =  -8.35 + 0.666*(ylim - 2.2) - 0.666*lg($T)
+	set xlim2a =  -9.85 + 1.666*(abs(ylim - 1.1))**$exp - 0.666*lg($T)
+	# set xlim2b = -10.05 + 1.620*(abs(ylim - 0.9))**$exp - 0.666*lg($T)
+	set xlim2b = -10.05 + $bb*(abs(ylim - 0.9))**$exp - 0.666*lg($T)
+	set xlim3 = -10. + 1.630*(abs(ylim - 0.9))**0.62 - 0.666*lg($T)
+
+	set lg_flim_3mo = -9.85 + 1.666*(abs(ylim - 1.1))**0.58 - 0.666*lg(0.1)
+
+	#ctype 7 ltype 3 connect ylim xlim_3m_ts100  
+	#ctype 7 ltype 2 connect ylim xlim
+	ctype 5 ltype 2 connect ylim xlim2a
+	ctype 4 ltype 2 connect ylim xlim2b
+	ctype 2 ltype 0 connect ylim xlim3
+	# ctype 6 
+	# connect ylim lg_flim_3mo
+	ctype 2 ltype 0 
+
+	echo "------------------------------------------------------------"
+	echo "  magenta long dash  3m ts100"
+	echo "  magenta dash       $T straight "
+	echo "  blue    dash       $T curved with $exp "
+	echo "  cyan    dash       lg_flim_3mo (?) exp=0.58"
+	echo "------------------------------------------------------------"
+
+#===============================================================================

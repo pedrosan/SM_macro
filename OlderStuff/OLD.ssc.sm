@@ -1,0 +1,899 @@
+#---------------------------------------------------------------------------
+# systemcall
+systemcall 101
+
+	!$1
+	return
+
+#---------------------------------------------------------------------------
+# run_ssc [ <R> <lh> <bfield> <gmin> <gmax> <slope> <delta>]
+run_ssc 07
+
+	if($?1) {
+	    foreach n < 1 2 3 4 5 6 7 > { parsing $$n }
+	} else {
+	    define r   ? < R_blob (units of 1e15) : >
+	    define lh  ? <   injected compactness : >
+	    define b   ? <         magnetic field : >
+	    define g1  ? <              gamma_min : >
+	    define g2  ? <              gamma_max : >
+	    define s   ? <                  slope : >
+	    define d   ? <                  delta : >
+	}
+	define r      ($r*1e15)
+	define lext   1e-5
+	# define d  10
+
+	define name ? < ID name for this run's files: >
+
+	set input_var = < $r $lh $lext $b $g1 $g2 $s $d > 
+	local define print_noheader 1
+	print MAIN.input < input_var >
+
+	define CODE ? < Code : OLD or Check : >
+	# !Check_SEDs.x
+	!"$!CODE"_SEDs.x
+	!cp MAIN.input $name.MAIN.input
+	!cp output_sed.dat output_"$!name".dat
+	!cp output_sed_electron.dat output_"$!name"_electron.dat
+
+  	define mec2   8.81871111059e-7
+  	define emc2   8.81871111059e-7
+	define sigmaT 6.6524e-25
+	define c      2.99792e10
+
+	define r    ( $r/1e15 )
+	define Lh   ( $lh*$r*1e15*$mec2*$c/$sigmaT )
+	define Urad ( $lh/($r*1e15)*$mec2/(4*3.1415*$sigmaT) )
+	define Ub   ( $b*$b/(8*3.1415) )
+
+	echo -----------------------------------------------------------------
+	echo > Lh   = $Lh
+	echo > Urad = $Urad
+	echo > Ub   = $Ub
+	echo -----------------------------------------------------------------
+
+#---------------------------------------------------------------------------
+# check_input_parms 09
+check_input_parms 09
+
+	define check 0
+	foreach n < 1 2 3 4 5 6 7 8 9 > {
+	   if($?$n) { define check ($check + 2**($n-1)) }
+	}
+
+#---------------------------------------------------------------------------
+# parsing 1
+parsing 1
+
+	define key   $(substr('$1',0,index('$1','=')))
+	define value $(substr('$1',index('$1','=')+1,strlen('$1')-index('$1','=')-1))
+	         # define STRlen1 $(strlen('$(substr('$1',index('$1','=')+1,strlen('$1')-index('$1','=')-1))'))
+	         # define STRlen2 $(strlen('$value'))
+	         # echo String lengths: $STRlen1 $STRlen2
+	         # define fmt1 "%."$!STRlen1"s"
+	         # echo fmt1: $fmt1
+	         # define $key (sprintf('$fmt1','$value'))
+
+	define $key $value
+	if(!$?silentpars) {
+	   echo PLAIN PARSED [$1]: $key = $value   # $(sprintf('$fmt1','$value'))
+	}
+
+	         # echo FAV.PARSED [$1]: $key = $(sprintf('$fmt1','$(substr('$1',index('$1','=')+1,strlen('$1')-index('$1','=')-1))'))
+	         # define VALUE $(sprintf('$fmt1','$(substr('$1',index('$1','=')+1,strlen('$1')-index('$1','=')-1))'))
+	         # echo VALUE: $VALUE
+
+#---------------------------------------------------------------------------
+# read_params_sed  <filecode>  :    [as in $filecode.MAIN.input]
+read_params_sed 1
+	
+	data $1.MAIN.input
+	define r  read 1 1
+	define lh read 2 1
+	define b  read 4 1
+	define g1 read 5 1
+	define g2 read 6 1
+	define s  read 7 1
+	define d  read 8 1
+	define r  ($r/1e15)
+	echo r=$r lh=$lh b=$b g1=$g1 g2=$g2 s=$s d=$d
+
+#---------------------------------------------------------------------------
+# compute_physics   : needs to know $r $lh $b $g1 $g2 $s $d
+compute_physics 
+	
+  	define mec2   8.81871111059e-7
+  	define emc2   8.81871111059e-7
+	define sigmaT 6.6524e-25
+	define c      2.99792e10
+
+	define Lh   ( $lh*$r*1e15*$mec2*$c/$sigmaT )
+	define Urad ( $lh/($r*1e15)*$mec2/(4*3.1415*$sigmaT) )
+	define Ub   ( $b*$b/(8*3.1415) )
+	define peak_sync (2.8e6*$g2**2.*$b*$d)
+	if( $peak_sync > 2.4e10 ) { 
+	    define pop $(sprintf('%8.2f',$(13400./($peak_sync/2.418e14)/1e4))) 
+	    define pop "$!pop um"
+    	}
+	if( $peak_sync > 5e13 ) { 
+	    define pop $(sprintf('%8.2f',$(13400./($peak_sync/2.418e14)))) 
+	    define pop "$!pop A"
+	}
+	if( $peak_sync > 2.4e15 ) { 
+	    define pop $(sprintf('%8.4f',$($peak_sync/2.418e14))) 
+	    define pop "$!pop eV"
+	}
+	if( $peak_sync > 2.4e16 ) {
+	    define pop $(sprintf('%8.4f',$($peak_sync/2.418e17))) 
+	    define pop "$!pop keV"
+	}
+
+	echo -----------------------------------------------------------------
+	echo > Lh   = $Lh
+	echo > Urad = $Urad
+	echo > Ub   = $Ub
+	echo >      Sync. Peak [log]= $(sprintf('%.4g',$(lg($peak_sync))))    [$pop]
+	echo -----------------------------------------------------------------
+
+#---------------------------------------------------------------------------
+# read_grid_sed  [ <R> <lh> <bfield> <gmin> <gmax> <slope> <delta> ]
+#               r=10  lh=1e-4  b=0.02  g1=10   g2=3e6   s=2   d=10
+read_grid_sed 17
+
+	if($?2) {
+
+	    foreach n < 1 2 3 4 5 6 7 > {
+	       parsing $$n
+	    }
+	    compute_physics
+
+	    define silentpars 1
+	    plot_grid_ele $1 $2 $3 $4 $5 $6 $7 noplot
+	    define silentpars delete
+
+	    define datafilename "sed_$!1_$!2_$!3_$!4_$!5_$!6.dat" 
+	    data "dat/$!datafilename"
+	} else {
+	    read_params_sed $1
+	    compute_physics
+	    plot_grid_ele $1 noplot
+	    data output_$1.dat
+	}
+	verbose 0
+	read ! < x 1 y 2 >
+	verbose 1
+	if($?2){
+	   set x = x + lg($d/10)
+	   set y = y + 4.*lg($d/10)
+	}
+	return 
+
+#---------------------------------------------------------------------------
+# plot_grid_sed [ <flux/lum> <R> <lh> <bfield> <gmin> <gmax> <slope> <delta> ]
+#               r=20   lh=1e-4   b=0.02  g1=10   g2=3e6   s=2   d=10
+#
+# It can be called as:
+#    > plot_grid_sed <flux/lum> z=0.031 r=20 lh=1e-4 b=0.02 g1=10  g2=3e6  s=2  d=10
+# OR
+#    > plot_grid_sed <flux/lum> z=0.031 <file ID>  [as in: output_ID.dat]
+#         
+plot_grid_sed 39
+
+	if($?4) {
+	   read_grid_sed $3 $4 $5 $6 $7 $8 $9
+	} else {
+	   read_grid_sed $3 
+	}
+	parsing $2
+
+	#---------------------------------
+	define pltype (substr('$1',0,1))
+
+	if( '$pltype' == 'l' ) {
+	   define ymin  39
+	   define ymax  47
+	   define ystr "log(\\nu L_\\nu)"
+	   define ydumcut 30
+	}
+	if( '$pltype' == 'f' ) {
+	   define ymin -13
+	   define ymax  -8.5
+	   define ymin -14.5
+	   define ymin -12.0
+	   define ymax  -8.5
+	   define ystr "log(\\nu F_\\nu)"
+	   # calls lumdist... which has to be loaded already
+	   lumdist 70.0 0.0 $z
+	   echo dL = $(10.**$lumdist) cm
+	   set x = x - lg(1+$z)
+	   set y = y - lg(4.*3.1415) - 2.*$lumdist
+	   define ydumcut -13 
+	}
+
+	reset_graph
+	limits 9 28.2 $ymin $ymax
+	limits 8 28 $ymin $ymax
+	limits 15 28 $ymin $ymax
+	ticksize 0 0 0 0 
+	box 
+	xlabel log(\\nu)
+	ylabel $ystr
+
+        ltype 2 ctype 4
+	#             2kev   15kev 0.5TeV 10TeV
+	foreach nu < 17.684 18.559 26.083 27.383 > { 
+           relocate $nu -20   
+           draw     $nu  50
+	}
+        ltype 0 
+	ctype 3
+	define cty ? < Color : >
+	ctype $cty
+	connect x y
+	ctype 2
+
+	#--- alpha_X ---#
+	define ex1 2.0
+	define ex2 8.0
+	define x1 (lg($ex1*2.418e17))
+	define x2 (lg($ex2*2.418e17))
+	set dumx = x if(x>=$x1 && x<=$x2)
+	set dumy = y if(x>=$x1 && x<=$x2)
+	define ix (dimen(dumx)-1)
+
+	define ax ( (dumy[$ix] - dumy[0])/(dumx[0] - dumx[$ix]) + 1 )
+	echo > alpha_x[$ex1-$ex2 keV] = $ax
+	relocate  $(dumx[0])   $(dumy[0])
+	draw      $(dumx[$ix]) $(dumy[$ix])
+
+	#--- alpha_g ---#
+	define eg1 0.5
+	define eg2 4.0
+	define x1 (lg($eg1*2.418e26))
+	define x2 (lg($eg2*2.418e26))
+	set dumx = x if(x>=$x1 && x<=$x2 && y>= $ydumcut)
+	set dumy = y if(x>=$x1 && x<=$x2 && y>= $ydumcut)
+	define ix (dimen(dumx)-1)
+
+        if($ix >= 5) {
+	    define ag ( (dumy[$ix] - dumy[0])/(dumx[0] - dumx[$ix]) + 1 )
+	    relocate  $(dumx[0])   $(dumy[0])
+	    draw      $(dumx[$ix]) $(dumy[$ix])
+	    echo > alpha_g[$eg1-$eg2 TeV] = $ag
+	} else {
+	    define highE  $( 10.**(x[(dimen(x)-3)]-23.384) )
+	    echo > IC component dies at $(sprintf('%5.0f',$highE)) GeV
+	}
+	echo -----------------------------------------------------------------
+	return
+
+	if($?4) {
+	    define SAVEexpand $expand
+	    expand 1.01
+	    foreach n < 3 4 5 6 7 8 9 > {
+	       define silentpars 1
+	       parsing $$n
+	       define silentpars delete
+	       grelocate 0.05 $(1-0.05*($n-2))
+	       putlabel 6 $$n
+	    }
+	    define expand $SAVEexpand 
+	}
+	return
+
+#---------------------------------------------------------------------------
+# plot_grid_ele  [ <R> <lh> <bfield> <gmin> <gmax> <slope> <delta> <noplot> ]
+#                  r=20  lh=1e-4  b=0.02  g1=10  g2=3e6  s=2  d=10  noplot
+#            or: FILEFLAG [ as in output_FILEFLAG_electron.dat
+#                     also used to load the physical parameters of the model]
+plot_grid_ele 18
+
+	define plotflag 1
+	define check 0
+	foreach n < 1 2 3 4 5 6 7 8 > {
+	   if($?$n) { define check ($check + 2**($n-1)) }
+	}
+
+	if($check == 3) {
+	    if(substr('$2',0,2) == 'no' ) { define plotflag 0 }
+	    if(substr('$2',0,2) == 'pl' ) { define plotflag 1 }
+	}
+	if($check  > 3 && $?8 ) {
+	    if(substr('$8',0,2) == 'no' ) { define plotflag 0 }
+	    if(substr('$8',0,2) == 'pl' ) { define plotflag 1 }
+	}
+
+	if($check >= 127) {
+	    foreach n < 1 2 3 4 5 6 7 > { 
+	        parsing $$n 
+	    }
+	    compute_physics
+
+	    define datafilename "ele_$!1_$!2_$!3_$!4_$!5_$!6.dat"
+	    data "ele/$!datafilename"
+	} else {
+	    read_params_sed $1
+	    compute_physics
+	    data output_$1_electron.dat
+	}
+	verbose 0
+	read ! < lg_g 1 lg_Ug 2 lg_Pg 3 Ur 4 >
+	verbose 1
+	set lg_Ug = lg_Ug + lg_g
+	set lg_Pg = lg_Pg + lg_g
+	set g = 10.**lg_g
+
+	# cooling rates
+	set dotgIC = 4./3.*($sigmaT*$c)/$emc2*g**2.*Ur
+	set dotgSy = 4./3.*($sigmaT*$c)/$emc2*g**2.*($b*$b/(8.*3.1415))
+	set tcool_IC = g/dotgIC
+	set tcool_Sy = g/dotgSy
+	set tcool_tot = g/(dotgIC+dotgSy)
+	set tcool_obs = tcool_tot/$d
+
+	echo ** minimum gamma for t_cool_obs
+	echo **   t_cool_obs   lg(g)   lg(nu)
+	set _dum_lg_g local 
+	set _dum_lg_g = lg_g     if( tcool_obs < 3e4 )
+	echo          30 ks  $(_dum_lg_g[0])  $(lg(2.8e6*$b*$d)+2*$(_dum_lg_g[0])) 
+	set _dum_lg_g = lg_g     if( tcool_obs < 2e4 )
+	echo          20 ks  $(_dum_lg_g[0])  $(lg(2.8e6*$b*$d)+2*$(_dum_lg_g[0])) 
+	set _dum_lg_g = lg_g     if( tcool_obs < 1e4 )
+	echo          10 ks  $(_dum_lg_g[0])  $(lg(2.8e6*$b*$d)+2*$(_dum_lg_g[0])) 
+	set _dum_lg_g = lg_g     if( tcool_obs < 5e3 )
+	echo           5 ks  $(_dum_lg_g[0])  $(lg(2.8e6*$b*$d)+2*$(_dum_lg_g[0])) 
+
+	set testg  = lg_g 
+	set testug = lg_Ug
+	sort < testug testg >
+	set testg =reverse(testg)
+	set testug=reverse(testug)
+	define lg_gpeak $(testg[0]) 
+	define gpeak (10.**$lg_gpeak)
+
+	define real_peak_sync (2.8e6*$gpeak**2.*$b*$d)
+	if( $real_peak_sync > 2.4e10 ) { 
+	    define pop $(sprintf('%8.2f',$(13400./($real_peak_sync/2.418e14)/1e4))) 
+	    define pop "$!pop um"
+	}
+	if( $real_peak_sync > 5e13 ) { 
+	    define pop $(sprintf('%8.2f',$(13400./($real_peak_sync/2.418e14)))) 
+	    define pop "$!pop A"
+	}
+	if( $real_peak_sync > 2.4e15 ) { 
+	    define pop $(sprintf('%8.4f',$($real_peak_sync/2.418e14))) 
+	    define pop "$!pop eV"
+	}
+	if( $real_peak_sync > 2.4e16 ) {
+	    define pop $(sprintf('%8.4f',$($real_peak_sync/2.418e17))) 
+	    define pop "$!pop keV"
+	}
+
+	echo -----------------------------------------------------------------
+	echo > REAL gamma_peak [log]=  $lg_gpeak
+	echo > REAL Sync. Peak [log]= $(sprintf('%.4g',$(lg($real_peak_sync))))    [$pop]
+	echo -----------------------------------------------------------------
+
+	echo ** slope of the N(g) distribution in different ranges of lg(g)
+	set _g1=< 1 2 3 4 5 6 >
+	set _g2=< 2 3 4 5 6 7 >
+	do i=0,5 {
+	  set _lg_Ug = lg_Ug  if(lg_g>=_g1[$i] && lg_g<=_g2[$i])
+  	  set _lg_g  = lg_g   if(lg_g>=_g1[$i] && lg_g<=_g2[$i])
+	  if( dimen(_lg_Ug) > 10 ) { 
+	     lsq _lg_g _lg_Ug 
+	     echo   $(_g1[$i])-$(_g2[$i]) : $(-1*($a-3))
+	  }
+	}
+	echo -----------------------------------------------------------------
+
+	if(!$plotflag) { return }
+	#-----------------------------------------------------------------
+	# skips the plotting section if called with the 'noplot' switch
+	#-----------------------------------------------------------------
+
+	reset_graph
+	expand 1.2
+	#---- window 1 ----#
+	window 1 -3 1 1 
+	limits -0.1 7.1 lg_Ug 
+	ticksize 0.25 1 0 0 
+	box 1 2 3 0 
+	xlabel log(\gamma)
+	ylabel log(\gamma^3 N_\gamma)
+	ctype 3
+	connect lg_g lg_Ug 
+	ctype 2
+
+	#---- window 2 ----#
+	# window 1 -3 1 2 
+	# range 0 4 
+	# limits -0.1 7.1 lg_Pg 
+	# box 0 2 3 0 
+	# ylabel log(\gamma P_\gamma)
+	# ctype 3
+	# connect lg_g lg_Pg 
+	# ctype 2
+	# range 0 0 
+
+	#---- window 2 ----#
+	# window 1 -3 1 3 
+	window 1 -3 1 2 
+	limits -0.1 7.1 Ur
+	box 0 2 3 0 
+	ylabel U_{rad}
+	ctype 3
+	connect lg_g Ur
+	ctype 2
+
+	#---- window 3 ----#
+	window 1 -3 1 3 
+	limits -0.1 7.1 (lg(tcool_tot))
+	box 0 2 3 0 
+	ylabel log(t_{cool}) [s]
+	ctype 6 connect lg_g (lg(tcool_IC))
+	        relocate ( $($gx1 + 0.25*($gx2-$gx1)) $($gy2+ 600) )
+		putlabel 5 Inv. Compt.
+	ctype 4 connect lg_g (lg(tcool_Sy))
+	        relocate ( $($gx1 + 0.50*($gx2-$gx1)) $($gy2+ 600) )
+		putlabel 5 Sychro
+	ctype 3 connect lg_g (lg(tcool_tot))
+	        relocate ( $($gx1 + 0.75*($gx2-$gx1)) $($gy2+ 600) )
+		putlabel 5 Total
+	ctype 2
+
+#---------------------------------------------------------------------------
+# ng  3		: arg[1],arg[2]=location, arg[3]=colore
+ng    3		#
+
+		set loc1 = $2*1000
+		set loc2 = $3*1000
+		 # location 4500 22000 2000 10000 
+		location $(loc1) $(loc2) 2000 10000 
+
+
+		expand 1.5
+		ctype 2
+		ltype 0
+		data ng.qdp
+		read {g 1 u 2 ee 3 urad 4}
+		set gu = g+u
+
+		limits 0. 7. -5.5 0.5
+		ticksize 0.5 1.0 0.25 1.0 
+		box 
+		ctype $1
+		connect g gu
+		ctype $1
+		ltype 2
+		connect g (g+ee)
+		ctype 2
+
+		ltype 1
+		ctype 4
+		grid
+		ctype 2
+
+#---------------------------------------------------------------------------
+# nulnu	 1	: arg[1]=colore
+nulnu	 1	#
+
+		location 4500 32000 14000 32000
+
+		ctype 2
+		ltype 0
+
+		limits 9.1 26 42 50
+		ticksize 0 0 0 0
+		expand 1.5
+		ltype 1
+		ctype 4
+		grid
+		ctype 2
+		ltype 0
+		box
+
+		expand 1.5
+		xlabel Log \\nu
+		ylabel Log \\nu L(\\nu )
+
+		 # data "../data/2155l.dat"
+		 # read{x_obs 1 y_obs 2}
+		expand 2
+		ptype 4 0
+		points x_obs y_obs
+
+		data units.qdp
+		read {x_model 1 y_model 2}
+		ctype $1
+		lweight 1.5
+		connect x_model y_model
+		lweight 1.
+		ctype 2
+
+		data units_bump.qdp
+		read {x_bump 1 y_bump 2}
+		ctype $1
+		lweight 1.5
+		connect x_bump y_bump
+		lweight 1.
+		ctype 2
+
+		 # expand 1.5
+		 # relocate 20.5 42.5
+		 # label 2155+304
+
+		ng $1 6. 22.
+
+#---------------------------------------------------------------------------
+# ng2  4	: arg[1]=name, arg[2],arg[3]=location, arg[4]=colore
+ng2    4	#
+
+		set name = $1
+		set loc1 = $2*1000
+		set loc2 = $3*1000
+		 # location 4500 22000 2000 10000 
+		location $(loc1) $(loc2) 2000 10000 
+
+		expand 1.5
+		ctype 2
+		ltype 0
+		data $(name).ng.dat
+		read {g 1 u 2 ee 3 urad 4}
+		set gu = g+u
+
+		limits 0. 7. -5.5 1.5
+		ticksize 0.5 1.0 0.25 1.0 
+		box 
+		ctype $4
+		connect g gu
+		ctype $4
+		ltype 2
+		connect g (g+ee)
+		ctype 2
+
+		ltype 1
+		ctype 4
+		grid
+		ctype 2
+
+#---------------------------------------------------------------------------
+# nulnu2 2	: arg[1]=nome
+#  		: arg[2]=colore
+nulnu2	 2	#
+
+		location 4500 32000 14000 32000
+		set name = $1
+
+		ctype 2
+		ltype 0
+
+		limits 9.1 26 42 50
+		ticksize 0 0 0 0
+		expand 1.5
+		ltype 1
+		ctype 4
+		grid
+		ctype 2
+		ltype 0
+		box
+
+		expand 1.5
+		xlabel Log \\nu
+		ylabel Log \\nu L(\\nu )
+
+		 # data "../data/2155l.dat"
+		 # read{x_obs 1 y_obs 2}
+		expand 2
+		ptype 4 0
+		points x_obs y_obs
+
+		data $(name).units.dat
+		read {x_model 1 y_model 2}
+		ctype $2
+		lweight 1.5
+		connect x_model y_model
+		lweight 1.
+		ctype 2
+
+		data $(name).units_bump.dat
+		read {x_bump 1 y_bump 2}
+		ctype $2
+		lweight 1.5
+		connect x_bump y_bump
+		lweight 1.
+		ctype 2
+
+		 # expand 1.5
+		 # relocate 20.5 42.5
+		 # label 2155+304
+
+		ng2  $1 6. 22. $2
+
+#------------------------------------------------------------------------------
+# sed_ic_split   [<FILEFLAG>]
+sed_ic_split 01
+
+	if(!$?1) {
+	    define fileflag ? < File Name : >
+	    define 1 $fileflag
+	}
+	read_params_sed $1
+	compute_physics
+	plot_grid_ele $1 noplot
+
+	data output_$1.dat
+	
+	verbose 0
+	read ! < x 1 y 2 >
+	verbose 1
+	if($?2){
+	   set x = x + lg($d/10)
+	   set y = y + 4.*lg($d/10)
+	}
+	return 
+	read_params_sed $1
+	compute_physics
+	data output_$1_electron.dat
+	verbose 0
+	read ! < lg_g 1 lg_Ug 2 >
+	verbose 1
+	set lg_Ng = lg_Ug - 2.*lg_g
+
+	if($?1) {
+	   define n1 $1
+	   define n2 $2
+	   define gb $3
+	   define g2 $4
+	   define Ke $5
+	   define B  $6
+	} else {
+	   echo  Electron spectrum parameters
+	   define n1 ?       <          n_1 : >
+	   define n2 ?       <          n_2 : >
+	   # define gb ?     <  gamma_break : >
+	   define g1 ?       <    gamma_min : >
+	   define g2 ?       <    gamma_max : >
+	   # define K1 ?     <          K_e : >
+	   define nu_b_obs ? < nu_peak [Hz] : >
+	   define B  ?       <      B field : >
+	   define doppler ?  <        delta : >
+	}
+	define F0 1
+	define K1 1
+
+	define a1    $(0.5*($n1-1))
+	define a2    $(0.5*($n2-1))
+	define da1a2 $($a1 - $a2)
+	define da2a1 $($a2 - $a1)
+
+	define nu_b ( $nu_b_obs/$doppler )
+	define gb   ( sqrt($nu_b/2.8e6/$B) )
+	# define B    ( $nu_b/2.8e6/$gb**2. )
+	define Ke ( $K1 )
+	define K2 ( $K1*$gb**($n2-$n1) )
+
+	define lg_g1 (lg($g1))
+	define lg_g2 (lg($g2))
+	define lg_gb (lg($gb))
+	set lg_g_l = $lg_g1,$lg_gb,0.01
+	set lg_g_h = $lg_gb,$lg_g2,0.01
+	set lg_g = lg_g_l concat lg_g_h
+
+	echo --------------------------------------
+	echo  * Synchrotron Peak (obs.) : $nu_b_obs
+	echo  * Magnetic field          : $B
+	echo  * gamma_peak              : $gb
+	echo --------------------------------------
+
+	set lg_xs = (lg(2.8e6) + 2.*lg_g + lg($B)) - lg(511.*2.418e17)
+	set lg_xc = lg(4./3.) + 2.*lg_g + lg_xs
+	vecminmax lg_xc dum lg_xc2
+
+	define lg_xs1  ( (lg(2.8e6) + 2.*$lg_g1 + lg($B)) - lg(511.*2.418e17) )
+	define lg_xsb  ( (lg(2.8e6) + 2.*$lg_gb + lg($B)) - lg(511.*2.418e17) )
+	define lg_xs2  ( (lg(2.8e6) + 2.*$lg_g2 + lg($B)) - lg(511.*2.418e17) )
+
+  	define mec2    8.81871111059e-7
+  	define emc2    8.81871111059e-7
+	define sigmaT  6.6524e-25
+	define c       2.99792e10
+	define pi      3.1415
+	define hplanck 6.626176e-27
+	
+	#--- 1,1 case ---#
+	# define C11 ( (4./3.)**($a1)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )
+	define C11 ( (4./3.)**(-$a1)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )
+	set lg_x1a = 0*lg_xs+  $lg_xs1 
+	set lg_x1b = 0*lg_xs+  lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = 0*lg_xs
+	do 1=0,dimen(lg_xs)-1 {
+	     set lg_x1v = < $(lg_x1a[$1]) $(lg_x1b[$1]) >
+	     vecminmax lg_x1v dum x1
+	     set lg_x1[$1] = $x1
+	}
+
+	set lg_x2a = 0*lg_xs+   $lg_xsb
+	set lg_x2b = 0*lg_xs+   lg(3./4.) + lg_xc 
+	set lg_x2c = 0*lg_xs+   lg(3./4.) - lg_xc
+	set lg_x2  = 0*lg_xs
+	do 1=0,dimen(lg_xs)-1 {
+	     set lg_x2v = < $(lg_x2a[$1]) $(lg_x2b[$1]) $(lg_x2c[$1]) >
+	     vecminmax lg_x2v x2 dum
+	     set lg_x2[$1] = $x2
+	}
+	set lg_nus = 20.0916 + lg_xs
+	set lg_nuc = 20.0916 + lg_xc
+	set lg_nu1 = 20.0916 + lg_x1
+	set lg_nu2 = 20.0916 + lg_x2
+
+	# set lg_I11 = lg($C11*$K1*$F0) - $a1*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x1/10.**lg_x2)) 
+	verbose 0
+	set lg_I11 = lg($C11*$K1*$F0) - $a1*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+	set lg_nuI11 = lg_xc + lg_I11
+	verbose 1
+
+
+	#--- 1,2 case ---#
+	define C12 ( $C11 )
+	set lg_x1a = 0*lg_xs+  $lg_xsb 
+	set lg_x1b = 0*lg_xs+  lg(3./4.) + lg_xc - 2.*$lg_gb
+	set lg_x1  = 0*lg_xs
+	do 1=0,dimen(lg_xs)-1 {
+	     set lg_x1v = < $(lg_x1a[$1]) $(lg_x1b[$1]) >
+	     vecminmax lg_x1v dum x1
+	     set lg_x1[$1] = $x1
+	}
+
+	set lg_x2a = 0*lg_xs+   lg(3./4.) + lg_xc 
+	set lg_x2b = 0*lg_xs+   lg(3./4.) - lg_xc
+	set lg_x2  = 0*lg_xs
+	do 1=0,dimen(lg_xs)-1 {
+	     set lg_x2v = < $(lg_x2a[$1]) $(lg_x2b[$1]) >
+	     vecminmax lg_x2v x2 dum
+	     set lg_x2[$1] = $x2
+	}
+
+	verbose 0
+	set lg_I12 = lg($C11*$K1*$F0) - $a1*lg_xc + $a2*$lg_xsb - lg($a2-$a1) + lg(10.**($da1a2*lg_x1) - 10.**($da1a2*lg_x2))
+	set lg_nuI12 = lg_xc + lg_I12
+	verbose 1
+
+
+	#--- 2,1 case ---#
+	define C21 ( (4./3.)**(-$a2)*($sigmaT*$mec2*$c)/(8.*$pi*$hplanck) )
+	set lg_x1a = 0*lg_xs+  $lg_xs1 
+	set lg_x1b = 0*lg_xs+  lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = 0*lg_xs
+	do 1=0,dimen(lg_xs)-1 {
+	     set lg_x1v = < $(lg_x1a[$1]) $(lg_x1b[$1]) >
+	     vecminmax lg_x1v dum x1
+	     set lg_x1[$1] = $x1
+	}
+
+	set lg_x2a = 0*lg_xs+   $lg_xsb
+	set lg_x2b = 0*lg_xs+   lg(3./4.) + lg_xc -  2.*$lg_gb
+	set lg_x2c = 0*lg_xs+   lg(3./4.) - lg_xc
+	set lg_x2  = 0*lg_xs
+	do 1=0,dimen(lg_xs)-1 {
+	     set lg_x2v = < $(lg_x2a[$1]) $(lg_x2b[$1]) $(lg_x2c[$1]) >
+	     vecminmax lg_x2v x2 dum
+	     set lg_x2[$1] = $x2
+	}
+
+	verbose 0
+	set lg_I21 = lg($C21*$K2*$F0) - $a2*lg_xc + $a1*$lg_xsb - lg($a2-$a1) + \
+	             lg(10.**($da2a1*lg_x2) - 10.**($da2a1*lg_x1))
+	set lg_nuI21 = lg_xc + lg_I21
+	verbose 1
+
+	#--- 2,2 case ---#
+	define C22 ( $C21 )
+	set lg_x1a = 0*lg_xs+  $lg_xsb 
+	set lg_x1b = 0*lg_xs+  lg(3./4.) + lg_xc - 2.*$lg_g2
+	set lg_x1  = 0*lg_xs
+	do 1=0,dimen(lg_xs)-1 {
+	     set lg_x1v = < $(lg_x1a[$1]) $(lg_x1b[$1]) >
+	     vecminmax lg_x1v dum x1
+	     set lg_x1[$1] = $x1
+	}
+
+	set lg_x2a = 0*lg_xs+   $lg_xc2
+	set lg_x2b = 0*lg_xs+   lg(3./4.) + lg_xc -  2.*$lg_gb
+	set lg_x2c = 0*lg_xs+   lg(3./4.) - lg_xc
+	set lg_x2  = 0*lg_xs
+	do 1=0,dimen(lg_xs)-1 {
+	     set lg_x2v = < $(lg_x2a[$1]) $(lg_x2b[$1]) $(lg_x2c[$1]) >
+	     vecminmax lg_x2v x2 dum
+	     set lg_x2[$1] = $x2
+	}
+
+	verbose 0
+	set lg_I22 = lg($C22*$K2*$F0) - $a2*(lg_xc - $lg_xsb) + lg(ln(10.**lg_x2/10.**lg_x1)) 
+	set lg_nuI22 = lg_xc + lg_I22
+	verbose 1
+
+
+#------------------------------------------------------------------------------
+# plot_sed_ic_split
+plot_sed_ic_split
+
+	set all_lg_nuI = < -1000 > 
+	foreach 1 < 11 12 21 22 > {
+	  set all_lg_nuI = all_lg_nuI concat lg_nuI$1 
+	}
+	set all_lg_nuI = all_lg_nuI   if( all_lg_nuI > -800 )
+
+	set Itot = lg_xc*0 
+	foreach 1 < 11 12 21 22 > {
+	  set Itot = Itot + 10.**lg_nuI$1 
+	}
+	set lg_Itot = lg(Itot)  
+
+	# vecminmax all_lg_nuI dum top
+	# foreach 1 < 11 12 21 22 > {
+	#    set lg_nuI$1 = lg_nuI$1 - $top
+	# }
+
+	vecminmax lg_Itot dum top
+	foreach 1 < 11 12 21 22 > {
+	   set lg_nuI$1 = lg_nuI$1 - $top
+	}
+	set lg_Itot = lg_Itot - $top
+
+	location 5500 30000 5500 28000
+	ctype 2 
+	ltype 0 
+	limits 1 7.5 -2.5 0.4
+	ticksize 0.5 1 0 0 
+	box 3 2 3 0
+	ylabel log(\\nu F_\\nu)    [arb. units]
+	relocate ( $(0.5*($gx1+$gx2)) $($gy2+2500) )
+	putlabel 5 Energy [TeV]
+
+	ltype 1 connect (lg_xc+lg($doppler)) lg_nuI11
+	ltype 2 connect (lg_xc+lg($doppler)) lg_nuI12
+	ltype 3 connect (lg_xc+lg($doppler)) lg_nuI21
+	ltype 5 connect (lg_xc+lg($doppler)) lg_nuI22
+	lweight 3 
+	ctype 3
+	ltype 0 connect (lg_xc+lg($doppler)) (lg_Itot+0.02)
+	lweight 3
+	ctype 2
+
+	echo ---------------------------------------------
+	echo   [1,1] : dotted
+	echo   [1,2] : dashed
+	echo   [2,1] : long dashed
+	echo   [2,2] : dot-dashed
+	echo ---------------------------------------------
+
+	define nu1 $($fx1 + 20.0916)
+	define nu2 $($fx2 + 20.0916)
+	limits $nu1 $nu2 -3 1 
+	ticksize 0.5 1 0 0 
+	notation -2 4 -4 4 
+	box 1 3 3 3 
+	xlabel log(\\nu)  [Hz]  (observed)
+
+	define nu1 $($fx1 - 26.384)
+	define nu2 $($fx2 - 26.384)
+	limits $nu1 $nu2 -3 1 
+	ticksize -1 100 0 0 
+	notation -2 4 -4 4 
+	box 3 3 1 3 
+
+	relocate ( $gx1 $($gy1-4200) )
+	putlabel 6 \\nu_{p,obs}=$nu_b_obs   B=$B   \delta=$doppler   \gamma_b=$(sprintf('%.1t',$gb))
+
+	define saveexp $expand
+	expand 1.1
+	relocate ( $($gx2+1500) $gy1 )
+	angle 90
+	putlabel 6 n_{1}=$n1   n_{2}=$n2   \gamma_1=$(sprintf('%.1t',$g1))   \gamma_2=$(sprintf('%.1t',$g2)) 
+	angle 0
+	expand $saveexp
+
+#------------------------------------------------------------------------------
+#---------------------------------------------------------------------------
